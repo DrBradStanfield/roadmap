@@ -20,7 +20,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { getEraseIdentity, getShownErase } from '../lib/roadmap-data';
-import { WRITE_REFUSED } from '../lib/erase-copy';
+import { RECORD_UNREACHABLE, WRITE_REFUSED } from '../lib/erase-copy';
 import { openAboutYou, seedGuest, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
 /** The harness's drain and settle on the fake clock: twenty macrotask hops,
@@ -131,5 +131,42 @@ describe('fix 4 (2b-2, Fable): a re-read never asks a save (US-34 AC4, US-16 AC2
     expect(alerts).toEqual([WRITE_REFUSED]);
     expect(asks).toHaveBeenCalledTimes(1); // the refused save; its re-read asked nothing
     expect(view.container.querySelector<HTMLInputElement>('#heightCm')?.value).toBe('180'); // the record shown again
+  });
+});
+
+describe('US-16 (H39 PR 2, Brad 2026-11-26): a repeat refused save while the record cannot be read', () => {
+  it('keeps the typed value and says "Your record could not be shown. Your value was not saved."', async () => {
+    expect(RECORD_UNREACHABLE).toBe('Your record could not be shown. Your value was not saved.');
+    const view = await openPage();
+    openAboutYou(view.container);
+    const line = () => [...view.container.querySelectorAll('[role="status"]')].map(n => n.textContent).filter(t => t === RECORD_UNREACHABLE);
+    // Every read of the record from here fails: another writer's erase is heard and cannot be shown.
+    const reads = vi.spyOn(RoadmapStore.prototype, 'loadLatestMeasurements').mockImplementation(() => { throw new Error('Synthetic test: read failed'); });
+    await act(async () => { await anotherTabWrites(erased); await drain(); });
+    await settle(1000);
+    expect(getShownErase()).not.toBe(getEraseIdentity()); // heard, not shown
+    expect(line()).toEqual([]); // nothing typed, nothing lost
+
+    const height = () => view.container.querySelector<HTMLInputElement>('#heightCm')!;
+    const type = async (value: string) => {
+      fireEvent.change(height(), { target: { value } });
+      fireEvent.blur(height());
+      await settle(700); // the profile save (500 ms), refused, then its read
+      await settle(1000);
+    };
+    await type('190');
+    expect(alerts).toEqual([WRITE_REFUSED]); // the first refusal is alerted
+    expect(line()).toEqual([]);
+
+    await type('191');
+    expect(alerts).toEqual([WRITE_REFUSED]); // no second alert (Q4)
+    expect(line()).toEqual([RECORD_UNREACHABLE]);
+    expect(height().value).toBe('191'); // the typed value stays in the box
+
+    // A read that lands shows the erase, and the line goes.
+    reads.mockRestore();
+    await type('192');
+    expect(getShownErase()).toBe(getEraseIdentity());
+    expect(line()).toEqual([]);
   });
 });

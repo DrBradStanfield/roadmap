@@ -16,6 +16,8 @@ export const SAVE_ERRORS: Record<Exclude<Extract<CorrectStatus, string>, 'ok'>, 
 /** A refusal's words: the engine's own when it gave them (US-21 AC26). */
 export const saveErrorText = (status: Exclude<CorrectStatus, 'ok'>) => typeof status === 'string' ? SAVE_ERRORS[status] : status.refused;
 
+/** A read of saved values that failed (US-21 AC30); also a value page Add whose write landed, or may have, and whose re-read threw (US-03 AC11). */
+export const HISTORY_UNSHOWN = 'Your history could not be shown. Reload the page to try again.';
 /** What an editor closed by a unit switch says (US-05 AC2). */
 export const UNIT_CHANGED = 'The unit changed, so your edit was not saved. Type it again in the new unit.';
 /** What an editor left for its own unit control says (US-05 AC2). */

@@ -3,8 +3,8 @@ import { askedUnder, deleteUserData, getBackendKind, getEraseIdentity, getShownE
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
 import { recordFailure, writesStopped } from '../lib/error-diagnostics';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
-import { createEraseStore, refusal, unreachable, type EraseState, type EraseStore } from '../lib/erase-machine';
+import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, RECORD_UNREACHABLE, WRITE_REFUSED } from '../lib/erase-copy';
+import { createEraseStore, refusal, saveLost, unreachable, type EraseState, type EraseStore } from '../lib/erase-machine';
 import { tellChats } from './chatStore';
 
 /**
@@ -67,6 +67,8 @@ export interface Erase {
   eraseUnshown: () => boolean;
   /** Another writer's erase is heard and its latest read failed, the first read shown (H39). Never after a failed first read (L2). */
   unreachable: boolean;
+  /** RECORD_UNREACHABLE while a repeat refused save's read failed (`saveLost`, H39 PR 2), else null. */
+  lostLine: string | null;
   /** A save the store refused, asked under `erase`: said once per erase, and the record re-read once. */
   writeRefused: (erase?: string) => void;
   /** Ask, erase, and say how it went; true on success. */
@@ -141,5 +143,5 @@ export function useErase(props: EraseDoorProps): Erase {
     return result.success;
   }, [store]);
 
-  return { store, shownErase: state.shown, loaded: state.read === 'shown', firstReadFailed: state.read === 'failed', erasing: state.phase === 'erasing', eraseUnshown, unreachable: unreachable(state), writeRefused, eraseAll };
+  return { store, shownErase: state.shown, loaded: state.read === 'shown', firstReadFailed: state.read === 'failed', erasing: state.phase === 'erasing', eraseUnshown, unreachable: unreachable(state), lostLine: saveLost(state) ? RECORD_UNREACHABLE : null, writeRefused, eraseAll };
 }

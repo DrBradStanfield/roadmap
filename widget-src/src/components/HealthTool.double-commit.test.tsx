@@ -45,6 +45,7 @@ vi.mock('./UploadModal', () => ({
   UploadModal: ({ onStart }: { onStart: () => Promise<void> }) => { upload.onStart = onStart; return null; },
 }));
 
+import { SAVE_ERRORS } from '../lib/value-cell-state';
 import { HealthTool } from './HealthTool';
 
 useHealthToolLifecycle();
@@ -199,20 +200,20 @@ describe('US-03 AC2a (double commit): a blood-test New cell committed twice in o
 
 describe('US-03 AC2, AC2a (double commit): the value page\'s Add pressed twice in one render saves once', () => {
   /** The weight's value page, opened from its My health row; the store's writes counted from here. */
-  async function weightPage(savedDay: string) {
+  async function weightPage(savedDay: string, label = 'Weight') {
     await seedGuest(PROFILE, [['weight', 82]], [], savedDay);
     const inserts = vi.spyOn(RoadmapStore.prototype, 'addMeasurement');
     const corrections = vi.spyOn(RoadmapStore.prototype, 'correctValue');
     const view = render(<HealthTool />);
     const weightRow = await waitFor(() => {
-      const r = [...view.container.querySelectorAll<HTMLElement>('[data-topic="weight"] .md-row')]
-        .find((x) => x.querySelector('.md-row-label')?.textContent === 'Weight');
+      const r = [...view.container.querySelectorAll<HTMLElement>('.md-row')]
+        .find((x) => x.querySelector('.md-row-label')?.textContent === label);
       expect(r).toBeDefined();
       return r!;
     });
     fireEvent.click(weightRow);
     const page = view.container.querySelector<HTMLElement>('.md-page:not(.mh-settings)')!;
-    const value = within(page).getByLabelText(/Value/) as HTMLInputElement;
+    const value = (within(page).queryByLabelText(/Value/) ?? within(page).getByLabelText('Systolic (top number)')) as HTMLInputElement;
     const form = page.querySelector('form.md-add') as HTMLFormElement;
     // Every message the page's live region says, in order.
     const said: string[] = [];
@@ -245,9 +246,9 @@ describe('US-03 AC2, AC2a (double commit): the value page\'s Add pressed twice i
     noRefusal(page);
   });
 
-  // A save that throws (the store's write failing) still hands the button back and frees the
-  // claim. What the page says then is not settled (lead H128).
-  it('a save that throws: the Add button comes back enabled, and the next Add saves', () => catchingRejections(async (caught) => {
+  // A save that throws (the store's write failing) hands the button back, frees the claim and
+  // says the value was not saved, keeping the typed value (lead H128, Brad 2026-11-26).
+  it('a save that throws: the Add button comes back enabled with its line, and the next Add saves', () => catchingRejections(async (caught) => {
     const { inserts, value, form, page, said } = await weightPage(SAVED_DAY);
     inserts.mockImplementationOnce(writeFails);
     const add = within(page).getByRole('button', { name: 'Add' }) as HTMLButtonElement;
@@ -258,10 +259,61 @@ describe('US-03 AC2, AC2a (double commit): the value page\'s Add pressed twice i
     expect(caught).toHaveLength(1);
     expect(add.disabled).toBe(false);
     expect(said).toEqual([]);
+    expect(within(page).getByRole('alert').textContent).toBe('Your value could not be saved. Try again.');
+    expect(value.value).toBe('84');
     fireEvent.submit(form);
     await settled();
     expect(inserts).toHaveBeenCalledTimes(2);
     expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
     expect(said).toEqual(['Added.']);
+  }));
+
+  // Review of H128: only a failed write says "could not be saved". A write that landed, whose
+  // re-read then threw, is saved: the reload line, and the typed value is cleared.
+  it('a save that lands but whose re-read throws: the reload line, the typed value cleared, the value saved', () => catchingRejections(async (caught) => {
+    const { inserts, value, form, page, said } = await weightPage(SAVED_DAY);
+    vi.spyOn(RoadmapStore.prototype, 'loadLatestMeasurements').mockImplementationOnce(() => { throw new Error('test read failed'); });
+    fireEvent.change(value, { target: { value: '84' } });
+    fireEvent.submit(form);
+    await settled();
+    expect(inserts).toHaveBeenCalledTimes(1);
+    expect(caught).toHaveLength(1);
+    expect(within(page).getByRole('alert').textContent).toBe('Your history could not be shown. Reload the page to try again.');
+    expect(value.value).toBe('');
+    expect(said).toEqual([]);
+    expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active'], [84, today(), 'active']]);
+  }));
+
+  // Codex on the review fix: a refused write whose re-read then throws is not saved. The typed value
+  // stays, and the refusal's own line shows, never the saved-but-unread outcome.
+  it('a refused write whose re-read throws: the refusal\'s line, the typed value kept, nothing saved', () => catchingRejections(async (caught) => {
+    const { inserts, value, form, page } = await weightPage(SAVED_DAY);
+    inserts.mockImplementationOnce(() => ({ status: 'duplicate' }) as ReturnType<RoadmapStore['addMeasurement']>);
+    vi.spyOn(RoadmapStore.prototype, 'loadLatestMeasurements').mockImplementationOnce(() => { throw new Error('test read failed'); });
+    fireEvent.change(value, { target: { value: '84' } });
+    fireEvent.submit(form);
+    await settled();
+    expect(caught).toHaveLength(1);
+    expect(within(page).getByRole('alert').textContent).toBe(SAVE_ERRORS.changed);
+    expect(value.value).toBe('84');
+    expect(await rowsOf('weight')).toEqual([[82, SAVED_DAY, 'active']]);
+  }));
+
+  // A blood pressure saves in two parts. One landed and the next threw: the page never says
+  // nothing was saved; it says the reload line, and keeps what was typed (limit in US-03 AC11).
+  it('a blood pressure whose first part lands and second throws: the reload line, never "could not be saved"', () => catchingRejections(async (caught) => {
+    const real = RoadmapStore.prototype.addMeasurement;
+    const { inserts, value: sys, form, page } = await weightPage(SAVED_DAY, 'Blood Pressure');
+    inserts.mockImplementationOnce(function (this: RoadmapStore, ...args: Parameters<typeof real>) { return real.apply(this, args); })
+      .mockImplementationOnce(writeFails);
+    fireEvent.change(sys, { target: { value: '120' } });
+    fireEvent.change(within(page).getByLabelText('Diastolic (bottom number)'), { target: { value: '80' } });
+    fireEvent.submit(form);
+    await settled();
+    expect(inserts).toHaveBeenCalledTimes(2);
+    expect(caught).toHaveLength(1);
+    expect(within(page).getByRole('alert').textContent).toBe('Your history could not be shown. Reload the page to try again.');
+    expect(sys.value).toBe('120');
+    expect((await rowsOf('systolic_bp')).length + (await rowsOf('diastolic_bp')).length).toBe(1); // one part landed
   }));
 });

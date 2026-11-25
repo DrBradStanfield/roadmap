@@ -21,6 +21,7 @@ import { Sentry } from '../lib/sentry';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
 import { initialHistoryRead, transition, type HistoryRead } from '../lib/history-read';
+import { HISTORY_UNSHOWN } from '../lib/value-cell-state';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { mixedUnitsNote, savedLabText } from '@roadmap/health-core/lab-series';
 
@@ -281,7 +282,7 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
   useEffect(() => {
     // The local store returns the complete history. There is no server page
     // to append, even when the record happens to contain exactly 50 rows.
-    // A failed read ends the wait and claims nothing (US-21 AC3b); reported as the main form's first read is.
+    // A failed read ends the wait and says so (US-21 AC3b, lead H117); reported as the main form's first read is.
     // A failed lab or medication read leaves its rows empty.
     const report = (error: unknown) => { Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'load' } }); };
     loadAllHistory().then(rows => send({ type: 'vitalsRead', rows }), error => { send({ type: 'vitalsFailed' }); report(error); });
@@ -347,7 +348,9 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
 
       {read.phase === 'loading' ? (
         <p className="history-loading">Loading history...</p>
-      ) : read.phase === 'failed' ? null : metricTypes.length === 0 && labMetricNames.length === 0 ? (
+      ) : read.phase === 'failed' ? (
+        <p className="history-empty">{HISTORY_UNSHOWN}</p>
+      ) : metricTypes.length === 0 && labMetricNames.length === 0 ? (
         <p className="history-empty">No measurements recorded yet.</p>
       ) : (
         <>

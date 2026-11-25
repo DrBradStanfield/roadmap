@@ -17,7 +17,7 @@ import { limitText, LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
 import { limitUngraded, pressureStatus, valueStatus } from '@roadmap/health-core/row-grade';
 import { rowTarget } from '@roadmap/health-core/row-target';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance, readTypedValue, sameAsSaved, savedCellText, validateTypedValue } from '../lib/blood-test-cell';
-import { activeRowIndex, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
+import { activeRowIndex, slotOf, UnreadAfterWrite, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { pressureReadings, readingsOf, type DayReading } from '../lib/my-data-rows';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 import { getShownErase } from '../lib/roadmap-data';
@@ -304,8 +304,9 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
     const values = parse();
     if (typeof values === 'string') { send({ type: 'faulted', message: values }); return; }
     send({ type: 'sent' });
-    let unchanged: boolean;
+    let unchanged = false;
     let refused: Refused;
+    let unread: UnreadAfterWrite | null = null;
     try {
       const expected = Object.fromEntries(metrics.map((m, i) => [m, held[i]?.id ?? null]));
       // The same number again writes nothing (matrix-save's `sameAsSaved`), so say so.
@@ -320,23 +321,27 @@ function AddValue({ metric, history, unit, start, onSave, say, onDone, dirtyRef,
       if (metric === 'weight') onWeightAnswered?.();
       refused = await onSave([{ date, values, expected, unit }], seen?.erase ?? getShownErase());
     } catch (e) {
-      // A throw anywhere gives the Add button back, says nothing (lead H128), and still escapes.
-      send({ type: 'threw' });
-      throw e;
+      // A re-read that threw after the writes answered carries their answers; any other throw is the
+      // writes' own (or the weight answer's before them). It gives the Add button back and still escapes.
+      if (!(e instanceof UnreadAfterWrite)) { send({ type: 'ended', write: { kind: 'threw', partial: !metric }, read: 'none' }); throw e; }
+      refused = e.refused;
+      unread = e;
     }
     const [why] = refused.values();
-    send({ type: 'settled', why: why ?? null });
-    if (why) {
-      // The form now shows what is there, so the next press is a deliberate correction of it.
-      if (why === 'changed') setSeen({ day: date, rows: rowsOn(date), erase: seen?.erase ?? getShownErase() });
-      return;
-    }
+    // The machine decides the line and whether the typed value clears (`draft`, the effect below).
+    send({ type: 'ended', write: why ? { kind: 'refused', why } : { kind: 'landed' }, read: unread ? 'failed' : 'shown' });
+    // The form now shows what is there, so the next press is a deliberate correction of it.
+    if (why === 'changed') setSeen({ day: date, rows: rowsOn(date), erase: seen?.erase ?? getShownErase() });
+    if (unread) throw unread; // reported, as every throw here is
+    if (why) return;
     say(unchanged ? 'No change.' : taken ? 'Corrected.' : 'Added.');
     const focused = document.activeElement;
-    const focusInForm = !!formRef.current && (formRef.current.contains(focused) || focused === document.body);
-    setText(''); setDia(''); setDate(today); setSeen(null); setTypedIn(null);
-    onDone(date, focusInForm);
+    onDone(date, !!formRef.current && (formRef.current.contains(focused) || focused === document.body));
   });
+  // A save that landed clears the typed value; every other end keeps it (the machine's `draft`).
+  useEffect(() => {
+    if (form.kind === 'ready' && form.draft === 'cleared') { setText(''); setDia(''); setDate(today); setSeen(null); setTypedIn(null); }
+  }, [form]);
 
   // Read-only, not disabled, while the save runs: the focus and the keyboard stay, and the
   // clear on ok wipes nothing typed after the press (H301, US-03 AC2b).

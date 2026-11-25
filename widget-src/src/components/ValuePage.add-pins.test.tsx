@@ -180,7 +180,7 @@ describe('US-05 AC2, D2: the unit changes while a save is out (P4)', () => {
 });
 
 describe('US-03 AC2a, lead H128: a save that throws (P5)', () => {
-  it('shows no alert line: nothing is said, as today', async () => {
+  it('a failed write says "Your value could not be saved. Try again." and keeps the typed value (US-03 AC11)', async () => {
     const caught: unknown[] = [];
     const before = process.listeners('unhandledRejection');
     process.removeAllListeners('unhandledRejection');
@@ -193,7 +193,7 @@ describe('US-03 AC2a, lead H128: a save that throws (P5)', () => {
       await act(async () => { fireEvent.submit(page.form()); });
       await settled();
       expect(caught).toHaveLength(1);
-      expect(page.alert()).toBeNull();
+      expect(page.alert()).toBe('Your value could not be saved. Try again.');
       expect(page.said()).toBe('');
       expect(page.value().value).toBe('90');
       expect(page.button().disabled).toBe(false);

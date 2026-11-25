@@ -141,7 +141,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The chat's banners (a profile proposal, a medication Undo) go when the
   // screen moves to another erase, this tab's or another device's, even with
   // post-erase rows. A re-read that brings no erase keeps them. A refused save re-reads the record the store holds (US-34 AC4).
-  const { store: eraseStore, shownErase, loaded, firstReadFailed: readFailed, erasing: isDeleting, eraseUnshown, writeRefused, eraseAll } = useErase({
+  const { store: eraseStore, shownErase, loaded, firstReadFailed: readFailed, erasing: isDeleting, eraseUnshown, writeRefused, eraseAll, lostLine } = useErase({
     clearDrafts: () => clearChatEdits(), forget: () => forgetRecord(), reread: reason => { void rereadRecord(reason); }, // declared below
     shows: id => showErase(id), spend: () => clearAnswered(true),
   });
@@ -338,7 +338,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // shown; one calm line says how many, read on every render so a re-read
   // that brings or clears them shows at once. Counted once per tab, count only.
   const unreadable = getUnreadableCount();
-  const unreadableLine = unreadableNote(unreadable);
+  const recordNotes = [lostLine, unreadableNote(unreadable)].filter(Boolean); // H39 PR 2's line, then US-65's
   useEffect(() => {
     if (unreadable > 0) trackProductEvent('record_unreadable_kept', { count: Math.min(unreadable, 1000) });
   }, [unreadable]);
@@ -662,7 +662,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   );
   return (
     <div className="health-tool" ref={rootRef} data-clarity-mask="true">
-      {unreadableLine && <p className="hr-unreadable-note no-print" role="status">{unreadableLine}</p>}
+      {recordNotes.map(note => <p key={note} className="hr-unreadable-note no-print" role="status">{note}</p>)}
       {isMobile ? (
         <>
           {panel('health', healthForm)}
