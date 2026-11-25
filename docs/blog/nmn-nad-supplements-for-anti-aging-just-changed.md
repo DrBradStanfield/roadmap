@@ -149,7 +149,7 @@ The **placebo effect** is one explanation. But there may be something else.
 
 Many people who take NAD+ precursors also take **TMG (trimethylglycine)**. And there’s **study evidence** that TMG may offer real benefits—especially when combined with exercise.
 
-For example, a **2024 meta-analysis** found that **TMG supplements enhance strength and jumping performance** \[7\]:
+For example, a **2024 meta-analysis** found that **[TMG supplements](/blogs/articles/tmg-betaine-exploding-popularity) enhance strength and jumping performance** \[7\]:
 
 *   Maximal strength improvement (lower body):
     *   Standardized Mean Difference (SMD): **0.49**, 95% CI: 0.01–0.98
