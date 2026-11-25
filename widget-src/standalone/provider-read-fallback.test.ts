@@ -140,7 +140,7 @@ describe.each(providers)('%s record-read fallback (US-09 AC13b)', (backend, make
   });
   it('a rejected fetch boots on the saved device copy and marks it for later sync', async () => {
     const local = await RoadmapStore.create(new LocalStorageAdapter());
-    local.addMeasurement('weight', 80);
+    local.addMeasurement('weight', 80, undefined, local.shownErase);
     await local.flush();
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('synthetic network failure')));
     const result = await startOnBackend({ backend, adapter: make() }, init);

@@ -6,8 +6,15 @@
  * it does not (review U4, U5).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, waitFor } from '@testing-library/react';
-import { SchemaTooNewError } from '@roadmap/health-core/migrate';
+import { act, fireEvent, waitFor } from '@testing-library/react';
+import { SchemaTooNewError, migrateFile } from '@roadmap/health-core/migrate';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
+import { rowRootIds } from '@roadmap/health-core/merge';
+import { CURRENT_SCHEMA_VERSION } from '@roadmap/health-core/roadmap-file';
+import { RoadmapStore } from '../src/storage/roadmap-store';
+import * as data from '../src/lib/roadmap-data';
+import { trackProductEvent } from '../src/lib/server-api';
 
 const boot = vi.hoisted(() => vi.fn());
 vi.mock('./boot', () => ({ boot }));
@@ -89,9 +96,60 @@ describe('single-topic widget entry (US-74)', () => {
   });
 
   it('a page with no known topic opens nothing', async () => {
-    document.body.innerHTML = block('blood-pressure');
+    document.body.innerHTML = block('not-a-topic');
     await act(async () => { await startWidgets(); });
     expect(boot).not.toHaveBeenCalled();
     expect(blocks()[0].innerHTML).toBe('&nbsp;');
+  });
+});
+
+// US-75 AC8 with US-74 and US-75 AC1's usage signal: a start-over after a newer erase is the same page view, so it
+// sends no second viewed event and no second saved event. Counted as deltas: StrictMode's dev double mount at the
+// start is not what is checked here.
+describe('the widgets page follows a newer erase within one page view', () => {
+  it('a re-read brings an erase: no second viewed event, and a save after it sends no second saved event', async () => {
+    let store!: RoadmapStore;
+    vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockImplementation(function (this: RoadmapStore) { store = this; return () => {}; });
+    localStorage.setItem('health_roadmap_backend', 'memory');
+    const cloud = new MemoryCloud();
+    await data.initRoadmapStore(new MemoryAdapter(cloud));
+    boot.mockResolvedValue({ backend: 'memory' });
+    vi.mocked(trackProductEvent).mockClear();
+    document.body.innerHTML = block('blood-pressure') + block('waist-to-height');
+    await act(async () => { await startWidgets(); });
+    const count = (name: string) => vi.mocked(trackProductEvent).mock.calls.filter(([n]) => n === name).length;
+    const reading = () => document.querySelector('.hr-widget[data-widget="blood-pressure"] fieldset')!;
+    const enterPair = async (sys: string, dia: string) => {
+      const [top, bottom] = [...reading().querySelectorAll<HTMLInputElement>('input')];
+      fireEvent.change(top, { target: { value: sys } });
+      fireEvent.change(bottom, { target: { value: dia } });
+      fireEvent.keyDown(bottom, { key: 'Enter' });
+      await act(async () => { await new Promise((r) => setTimeout(r, 30)); await data.flushRoadmapStore(); });
+    };
+    await enterPair('128', '82');
+    const viewed = { bp: count('bp_widget_viewed'), waist: count('waist_widget_viewed') };
+    expect(count('bp_widget_saved')).toBe(1);
+
+    // Another device erases the record in the cloud, as its deleteUserData writes it; this page hears by its re-read.
+    const adapter = new MemoryAdapter(cloud);
+    const { body, version } = await adapter.read(ROADMAP_FILE_NAME);
+    const now = new Date(Date.now() + 1000).toISOString();
+    const prior = migrateFile(body, { deviceId: 'other-device', now });
+    const erased = migrateFile(null, { deviceId: 'other-device', now });
+    const epoch = (prior.meta.eraseEpoch ?? 0) + 1;
+    erased.schemaVersion = CURRENT_SCHEMA_VERSION;
+    erased.erasedRows = { fromEpoch: epoch, ids: [...new Set(rowRootIds(prior))].sort() };
+    erased.meta.eraseEpoch = epoch;
+    erased.meta.erasedAt = now;
+    await adapter.write(ROADMAP_FILE_NAME, erased, version);
+    const before = data.getShownErase();
+    await act(async () => { await store.refreshFromRemote(); });
+    expect(data.getShownErase()).not.toBe(before); // the page followed the erase and started over
+    expect(reading().querySelector('input')!.value).toBe('');
+
+    await enterPair('130', '84');
+    expect(count('bp_widget_viewed')).toBe(viewed.bp);
+    expect(count('waist_widget_viewed')).toBe(viewed.waist);
+    expect(count('bp_widget_saved')).toBe(1);
   });
 });

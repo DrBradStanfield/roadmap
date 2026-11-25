@@ -17,6 +17,7 @@ import { BACKEND_KEY, webRecordHost } from './web-record-host';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { clearOffFileAfterErase, deleteUserData, initRoadmapStore, setPreEraseHook } from '../lib/roadmap-data';
 import { setChatHistoryFactory } from '../lib/chat-history-access';
+import { seedDocuments } from '../testing/seed-record';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -25,13 +26,13 @@ const blobKeys = () => Object.keys(localStorage).filter((k) => k.startsWith(DOC_
 const pdf = () => new Blob(['%PDF-1.4 lipids'], { type: 'application/pdf' });
 
 async function upload(store: RoadmapStore): Promise<string> {
-  const result = await store.bulkSaveDocuments([{
+  const saved = await seedDocuments(store, [{
     documentType: 'pathology_report', title: 'Lipids', documentDate: '2026-10-20', contentMd: 'x',
     metadata: {}, sourceFileName: 'lipids.pdf', file: pdf(),
   }]);
-  expect(result.saved).toHaveLength(1);
+  expect(saved).toHaveLength(1);
   await store.flush();
-  return result.saved[0].fileRef!;
+  return saved[0].fileRef;
 }
 
 beforeEach(() => {
@@ -59,7 +60,7 @@ async function eraseElsewhere(cloud: MemoryCloud, at: string): Promise<void> {
 
 it('a stale guest tab that takes in the erase keeps an original uploaded after it (US-11 AC6, US-09 AC23)', async () => {
   const a = await RoadmapStore.create(new LocalStorageAdapter());
-  a.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+  a.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', a.shownErase);
   await a.flush();
   const b = await RoadmapStore.create(new LocalStorageAdapter()); // the stale tab
 
@@ -84,7 +85,7 @@ it("a cloud page that takes in another device's erase keeps the originals an on-
   const cloud = new MemoryCloud();
   localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   const page = await RoadmapStore.create(new MemoryAdapter(cloud));
-  page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+  page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', page.shownErase);
   await page.flush();
   // A tab of this browser running on the device copy (the cloud could not be
   // read there): its document lives in the device record, which no erase listed.
@@ -103,7 +104,7 @@ it('a stored original no live document names still goes (US-11 AC6)', async () =
   const cloud = new MemoryCloud();
   localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   const page = await RoadmapStore.create(new MemoryAdapter(cloud));
-  page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+  page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', page.shownErase);
   await page.flush();
   localStorage.setItem(`${DOC_PREFIX}orphan.pdf`, 'data:application/pdf;base64,AAAA');
   await eraseElsewhere(cloud, '2026-10-21T10:01:00.000Z');
@@ -134,7 +135,7 @@ it('a device record that cannot be read names no original (US-11 AC6)', async ()
   const cloud = new MemoryCloud();
   localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered
   const page = await RoadmapStore.create(new MemoryAdapter(cloud));
-  page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+  page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', page.shownErase);
   await page.flush();
   localStorage.setItem(`${DOC_PREFIX}erased.pdf`, 'data:application/pdf;base64,AAAA');
   await eraseElsewhere(cloud, '2026-10-21T10:01:00.000Z');
@@ -156,13 +157,13 @@ it("the page's erase keeps the original another tab saved while it ran, and remo
   // Saved by the other tab after the erase read the record: no erase lists it.
   setPreEraseHook(async () => {
     vi.setSystemTime(new Date('2026-10-21T10:01:00.000Z'));
-    otherTab.addMeasurement('weight', 79, '2026-10-21T00:00:00.000Z');
-    const result = await otherTab.bulkSaveDocuments([{
+    otherTab.addMeasurement('weight', 79, '2026-10-21T00:00:00.000Z', otherTab.shownErase);
+    const saved = await seedDocuments(otherTab, [{
       documentType: 'pathology_report', title: 'Thyroid', documentDate: '2026-10-21', contentMd: 'y',
       metadata: {}, sourceFileName: 'thyroid.pdf', file: new Blob(['%PDF-1.4 thyroid'], { type: 'application/pdf' }),
     }]);
     await otherTab.flush();
-    savedRef = result.saved[0].fileRef!;
+    savedRef = saved[0].fileRef;
     return null;
   });
   vi.setSystemTime(new Date('2026-10-21T10:00:30.000Z'));

@@ -96,7 +96,7 @@ enum EraseText {
     /// How a person deletes this app's samples themselves (US-72 AC16, Brad 2026-11-12): the
     /// Settings path the live cards name (`LiveFooter.healthPath`, "Apps ›" from iOS 18) and the
     /// system's own labels, seen on the iOS 27.2 simulator 2026-11-11.
-    private static let healthDeleteSteps = "open \(LiveFooter.healthPath), tap Data from “Health Roadmap”, then Delete All Data from “Health Roadmap”"
+    private static let healthDeleteSteps = "open \(LiveFooter.healthPath), tap Data from “Dr Brad”, then Delete All Data from “Dr Brad”"
 
     /// Apple Health refused to delete the app's samples: the record erase still stands.
     static let healthNotErased = " The readings this app wrote to Apple Health could not be deleted. To delete them yourself, \(healthDeleteSteps)."

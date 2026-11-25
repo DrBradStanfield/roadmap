@@ -12,16 +12,22 @@
  */
 import * as z from './zod';
 import { COMPARATORS } from './lab-limits';
+import { LAB_CATALOG } from './lab-catalog';
 import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValue, UnifiedExtractionResult } from './lab-extraction';
-import { UNIT_SYSTEMS } from './units';
+import { LPA_UNITS, UNIT_SYSTEMS } from './units';
 import type { ChoiceChange, FileChoices } from './upload-choices';
-import { UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
+import { NOT_SAVED_REASONS } from './import-review';
+import { isLabUnitWord, LAB_UNIT_BLANK, MEASUREMENT_REFUSAL_REASONS } from './product-events';
+import { METRIC_TYPES } from './validation';
+import { GATE_WORDS_MAX, NETWORK_FAILURES, UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
+import { UPLOAD_READERS } from './upload-rules';
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
 
 const text = z.string();
-const maybeText = z.string().nullable();
+export const maybeText = z.string().nullable();
 const count = z.number().int().nonnegative();
-const platform = z.enum(['web', 'phone']);
+export const platform = z.enum(['web', 'phone']);
+const reader = z.enum(UPLOAD_READERS).optional();
 const comparator = z.enum(COMPARATORS).optional();
 const day = { recordedAt: text.optional(), printedMonth: text.optional() };
 const confidence = z.enum(['high', 'medium', 'low']);
@@ -58,12 +64,24 @@ export const UPLOAD_EXTRACTION = z.looseObject({
 
 // --- The machine (upload-flow.ts) --------------------------------------------------------------
 const strict = z.strictObject;
+/** A core value's unit as typed (cell-unit.ts `CellUnit`), null for a lab. */
+const cellUnit = z.enum([...UNIT_SYSTEMS, ...LPA_UNITS]).nullable();
 const documentFix = strict({ title: text.optional(), kind: text.optional(), date: maybeText.optional() });
+/** The web's letter also takes the screening box's tick (upload-screening.ts); the phone's never does. */
+const webDocumentFix = documentFix.extend({ screening: z.boolean().optional() });
 const choices = strict({
   ticks: z.record(z.string(), z.boolean()), testDay: maybeText, previousDay: maybeText,
-  replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
+  replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: webDocumentFix,
+  columnDays: z.record(z.string(), z.string()).optional(), typed: z.record(z.string(), strict({ text: z.string(), unit: cellUnit })).optional(),
+  editUnits: z.record(z.string(), cellUnit.unwrap()).optional(),
 });
-const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network', 'keyRefused', 'noCredit', 'keyRateLimit', 'noKey']);
+const failReason = z.enum(['unreadable', 'bytesUnreadable', 'zipUnreadable', 'zipEmpty', 'timeout', 'busy', 'dailyLimit', 'declined', 'tooLong', 'server', 'network', 'keyRefused', 'noCredit', 'keyRateLimit', 'noKey', 'appRefused', 'tooLarge', 'cannotAttest', 'attestFailed']);
+/** An App Attest step or code: a short word, nothing else from the error (US-52 AC7e). */
+export const ATTEST_PART = z.string().regex(/^[A-Za-z0-9_-]{1,24}$/);
+/** upload-failure.ts FailDetail: the server's own words, as text; the App Attest step and code; or how the request failed. */
+export const NETWORK_FAILURE = z.enum(NETWORK_FAILURES);
+const failDetail = z.union([strict({ message: z.string().min(1).max(GATE_WORDS_MAX) }), strict({ stage: ATTEST_PART, code: ATTEST_PART }),
+  strict({ network: NETWORK_FAILURE })]);
 const runRefusal = z.enum(['dailyLimit', 'noKey', 'server']);
 const status = z.discriminatedUnion('s', [
   strict({ s: z.literal('unlisted') }),
@@ -77,40 +95,56 @@ const status = z.discriminatedUnion('s', [
   strict({ s: z.literal('ready'), attempt: count }),
   strict({ s: z.literal('sending'), attempt: count }),
   strict({ s: z.literal('read'), extraction: UPLOAD_EXTRACTION, choices }),
-  strict({ s: z.literal('failed'), reason: failReason, attempt: count }),
+  strict({ s: z.literal('failed'), reason: failReason, attempt: count, detail: failDetail.optional() }),
   strict({ s: z.literal('stopped') }),
 ]);
 const file = strict({
-  id: text, name: text, zip: text.optional(), bytes: z.number(), hash: maybeText,
+  id: text, name: text, zip: text.optional(), bytes: z.number(), hash: maybeText, original: z.literal(false).optional(),
   pages: strict({ count, truncated: z.boolean() }).nullable(), status,
 });
-const pick = { platform, run: count, files: z.array(file), started: text, firstRead: maybeText };
-const outcome = strict({ values: count, documents: count, archived: count, unstored: count.optional() });
+const pick = { platform, reader, run: count, files: z.array(file), started: text, firstRead: maybeText };
+const notSavedReason = z.enum(NOT_SAVED_REASONS);
+const reviewed = z.array(strict({ file: text, ref: text, lab: z.boolean() })).optional();
+/** Every key a lab refusal can name (record-edits.ts bulkAppendValues): a catalogue entry's, or a core blood test's. */
+export const REFUSED_CODE_KEYS: ReadonlySet<string> = new Set<string>([...LAB_CATALOG.map((e) => e.key), ...METRIC_TYPES]);
+const outcome = strict({
+  values: count, documents: count, archived: count, unstored: count.optional(), skippedValues: count.optional(), skippedLabValues: count.optional(), screenings: count.optional(),
+  refused: z.array(z.union([strict({ label: text, reason: notSavedReason }), strict({ line: text })])).optional(),
+  // Closed words only (US-12 AC6): a key the writer cannot emit or a unit that is no unit word is refused, so no value rides in one.
+  refusedCodes: z.array(z.union([
+    strict({ kind: z.literal('measurement'), reason: z.enum(MEASUREMENT_REFUSAL_REASONS), metricType: z.enum(METRIC_TYPES).optional() }),
+    strict({ kind: z.literal('lab'), key: text.refine((k) => REFUSED_CODE_KEYS.has(k)), reason: z.enum(['unit', 'value']), unit: text.refine((u) => u === LAB_UNIT_BLANK || isLabUnitWord(u)).optional() }),
+  ])).optional(),
+});
 
 export const UPLOAD_STATE = z.discriminatedUnion('phase', [
-  strict({ phase: z.literal('choosing'), platform, run: count }),
+  strict({ phase: z.literal('choosing'), platform, reader, run: count }),
   strict({ phase: z.literal('consent'), ...pick }),
   strict({ phase: z.literal('open'), ...pick }),
-  strict({ phase: z.literal('saving'), ...pick, attempt: count }),
+  strict({ phase: z.literal('saving'), ...pick, attempt: count, reviewed, erase: text.optional() }),
   strict({ phase: z.literal('saveFailed'), ...pick, attempt: count, message: text }),
   strict({ phase: z.literal('done'), ...pick, outcome }),
   strict({ phase: z.literal('failed'), ...pick, refused: runRefusal.nullable() }),
 ]);
 
 /** Strict branches: a change naming two kinds (a tick and a day) matches none and is refused. */
-const change = z.union([
+const phoneChanges = [
   strict({ tick: text, on: z.boolean() }),
   strict({ testDay: maybeText }),
   strict({ previousDay: maybeText }),
   strict({ replace: text, correctsId: maybeText }),
   strict({ edit: text, value: z.number().nullable() }),
   strict({ document: documentFix }),
-]);
+] as const;
+/** The changes the iPhone's page makes: its door takes no other (ios/engine/upload-doors.ts, US-13 AC24). */
+export const PHONE_CHANGE = z.union(phoneChanges);
+/** Every change: the web's review adds a dated previous column's day, text typed into a row, and a letter's screening tick. */
+const change = z.union([...phoneChanges, strict({ columnDay: text, day: maybeText }), strict({ typed: text, text: z.string(), unit: cellUnit }), strict({ document: webDocumentFix })]);
 const failure = z.enum(UPLOAD_FAILURES);
 
 /** Each event by its type, for a caller that sends some of them in a shape of its own (the doors' wire). */
 export const UPLOAD_EVENTS = {
-  picked: strict({ type: z.literal('picked'), files: z.array(strict({ id: text, name: text, bytes: z.number(), kind: z.enum(['file', 'zip']) })), needsConsent: z.boolean(), now: text }),
+  picked: strict({ type: z.literal('picked'), files: z.array(strict({ id: text, name: text, bytes: z.number(), kind: z.enum(['file', 'zip']), original: z.literal(false).optional() })), needsConsent: z.boolean(), now: text }),
   consented: strict({ type: z.literal('consented') }),
   listed: strict({ type: z.literal('listed'), run: count, zip: text, members: z.array(strict({ id: text, name: text, bytes: z.number() })) }),
   zipFailed: strict({ type: z.literal('zipFailed'), run: count, zip: text }),
@@ -119,12 +153,13 @@ export const UPLOAD_EVENTS = {
   converted: strict({ type: z.literal('converted'), run: count, id: text, pages: count, truncated: z.boolean() }),
   convertFailed: strict({ type: z.literal('convertFailed'), run: count, id: text, reason: z.enum(['unreadable', 'timeout']) }),
   answered: strict({ type: z.literal('answered'), run: count, id: text, extraction: UPLOAD_EXTRACTION, legacy: z.boolean(), now: text }),
-  sendFailed: strict({ type: z.literal('sendFailed'), run: count, id: text, failure }),
+  sendFailed: strict({ type: z.literal('sendFailed'), run: count, id: text, failure, detail: failDetail.optional() }),
   runRefused: strict({ type: z.literal('runRefused'), run: count, reason: runRefusal }),
   retry: strict({ type: z.literal('retry'), id: text }),
   stop: strict({ type: z.literal('stop') }),
   chose: strict({ type: z.literal('chose'), id: text, change, now: text }),
-  saveStarted: strict({ type: z.literal('saveStarted') }),
+  replacesLost: strict({ type: z.literal('replacesLost'), lost: z.array(strict({ id: text, ref: text })) }),
+  saveStarted: strict({ type: z.literal('saveStarted'), reviewed, erase: text.optional() }),
   saved: strict({ type: z.literal('saved'), run: count, attempt: count, outcome }),
   saveFailed: strict({ type: z.literal('saveFailed'), run: count, attempt: count, message: text }),
   close: strict({ type: z.literal('close') }),
@@ -133,7 +168,7 @@ export const UPLOAD_EVENTS = {
 const E = UPLOAD_EVENTS;
 export const UPLOAD_EVENT = z.discriminatedUnion('type', [
   E.picked, E.consented, E.listed, E.zipFailed, E.hashed, E.hashFailed, E.converted, E.convertFailed, E.answered,
-  E.sendFailed, E.runRefused, E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
+  E.sendFailed, E.runRefused, E.retry, E.stop, E.chose, E.replacesLost, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
 ]);
 
 const ids = z.array(text);

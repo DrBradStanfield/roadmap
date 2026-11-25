@@ -89,9 +89,11 @@ function expectParity(container: HTMLElement, sections: FormSection[]) {
       if (field.kind !== 'choice') continue;
       const select = card!.querySelector<HTMLSelectElement>(`#${selectId(field.key)}`);
       expect(select, field.key).not.toBeNull();
-      expect([...select!.options].map(o => ({ value: o.value, label: o.textContent, ...(o.disabled ? { disabled: true } : null) })), field.key)
+      // An answer off the list sits under a fixed key on the web, never its own text (US-09 AC7l): it stands for the field's value.
+      const answer = (key: string) => (key === 'recorded-off-list' ? field.value : key);
+      expect([...select!.options].map(o => ({ value: answer(o.value), label: o.textContent, ...(o.disabled ? { disabled: true } : null) })), field.key)
         .toEqual(field.options);
-      expect(select!.value, field.key).toBe(field.value);
+      expect(answer(select!.value), field.key).toBe(field.value);
     }
   }
 }
@@ -148,6 +150,16 @@ describe('US-25 AC8, US-06 — the web screening cards are screeningForm', () =>
     // Review R4: after "Not yet started" the question stays, so LDCT can be picked again.
     const notYet = renderPanel({ sex: 'male', basis: { age: 60 }, screenings: { lung_smoking_history: 'former_smoker', lung_pack_years: '15', lung_screening: 'not_yet_started' } });
     expect(notYet.querySelector('#lung-screening')).not.toBeNull();
+  });
+
+  it('US-07 AC1k: with no sex at 86, the web draws the cancer card only while a group shows, as screeningForm does', () => {
+    const lung = { lung_smoking_history: 'former_smoker', lung_pack_years: '25', lung_screening: 'annual_ldct' };
+    expectParity(renderPanel({ basis: { age: 86 }, screenings: lung }), screeningForm(86, undefined, screeningsToInputs(screeningRows(lung))));
+    cleanup();
+    const intro = screeningForm(85, undefined, {})[0].intro;
+    expect(renderPanel({ basis: { age: 85 } }).textContent).toContain(intro);
+    cleanup();
+    expect(renderPanel({ basis: { age: 86 } }).textContent).not.toContain(intro);
   });
 });
 

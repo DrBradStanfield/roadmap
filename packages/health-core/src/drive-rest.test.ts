@@ -444,8 +444,8 @@ describe('documents: refused by default, written only on opt-in', () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
     const adapter = new DriveAdapter('token');
-    await expect(adapter.readDocument('Lab results/a.pdf')).rejects.toThrow(new StorageError('The hosted server does not read uploaded documents.'));
-    await expect(adapter.writeDocument('Lab results/a.pdf', new Blob(['x']))).rejects.toThrow(new StorageError('The hosted server does not write uploaded documents.'));
+    await expect(adapter.readDocument('Lab results/a.pdf')).rejects.toThrow(new StorageError('The hosted server does not read uploaded documents.', undefined, undefined, undefined, undefined, 'refused'));
+    await expect(adapter.writeDocument('Lab results/a.pdf', new Blob(['x']))).rejects.toThrow(new StorageError('The hosted server does not write uploaded documents.', undefined, undefined, undefined, undefined, 'refused'));
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

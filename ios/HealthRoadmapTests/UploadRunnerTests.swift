@@ -73,9 +73,7 @@ final class UploadRunnerTests: XCTestCase {
         let store = try RecordStore(folder: folder, engine: HealthEngine(), deviceId: "test")
         let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Letter","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
         let bytes = Data("%PDF synthetic".utf8)
-        let original = LabFileReader.Original(bytes, mimeType: "application/pdf")
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Letter", documentDate: nil, mimeType: "application/pdf", contentHash: original.contentHash)
-        _ = await store.saveDocument(extractionJSON: letter, choice: choice, original: original)
+        try await store.fileForTest(letter, name: "Letter.pdf", title: "Letter", mimeType: "application/pdf", hash: LabFileReader.contentHash(bytes))
         serve { _ in Kit.read() }
         let record = store.recordJSON
         let runner = try runner(record: { record })
@@ -209,7 +207,7 @@ final class UploadRunnerTests: XCTestCase {
                 }
                 return .ended(line: Kit.finalLine)
             }
-            let setup = UploadRunner.Setup(deviceId: "test", record: { "" }, send: send, frame: .milliseconds(1))
+            let setup = UploadRunner.Setup(deviceId: "test", record: { "" }, ask: LabFileReader.swiftRules, send: send, frame: .milliseconds(1))
             let runner = UploadRunner(engine: try HealthEngine(), model: UploadModel(), setup: setup)
             _ = await runner.pick(Kit.pictures(1), needsConsent: false)
             try await until("run 1 sending") { calls.withLock { $0 } == 1 }
@@ -272,7 +270,7 @@ final class UploadRunnerTests: XCTestCase {
         try await until("two in flight") { server.count == 2 }
         record.withLock { $0 = #"{"schemaVersion": 999, "measurements": []}"# }
         gate.open()
-        try await until("refused") { runner.model.state == .refused(UploadDoors.Refusal(reason: "record-too-new", message: "A newer version of Health Roadmap wrote this record. Update the app to open it.")) }
+        try await until("refused") { runner.model.state == .refused(UploadDoors.Refusal(reason: "record-too-new", message: "A newer version of this app wrote this record. Update the app to open it.")) }
         try await until("nothing in flight") { await stages(runner).values.allSatisfy { ["stopped", "read"].contains($0) } }
         try await Task.sleep(for: .milliseconds(200))
         guard case .refused = runner.model.state else { return XCTFail("a later view drew over the refusal: \(runner.model.state)") }

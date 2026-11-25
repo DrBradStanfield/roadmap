@@ -23,8 +23,10 @@ export const UNIT_FIRST = 'Not saved: choose the unit first, then type the value
 
 /**
  * Every open state carries the row the editor opened on, which its correction
- * names (the store refuses it once another writer has replaced that row), and
- * the unit shown then: a correction is saved only in that unit (US-05 AC2).
+ * names (the store refuses it once another writer has replaced that row), the
+ * unit shown then: a correction is saved only in that unit (US-05 AC2), and
+ * `openAt`, the erase the page showed as it opened, which the correction is
+ * written under, however late its save runs (US-16 AC2a).
  * - closed: the saved value shows, with `message` if the last edit said one;
  *   `refocus`: the focus comes back to the cell (a unit switch closed the
  *   editor that had it).
@@ -40,9 +42,9 @@ export const UNIT_FIRST = 'Not saved: choose the unit first, then type the value
  */
 export type ValueCellState =
   | { kind: 'closed'; message?: string; refocus?: true }
-  | { kind: 'editing'; row: string; unit?: CellUnit; typed: string; error?: string }
-  | { kind: 'blurPending'; row: string; unit?: CellUnit; typed: string; error?: string; wait: 'delay' | 'press' | 'release' }
-  | { kind: 'saving'; row: string; unit?: CellUnit; typed: string }
+  | { kind: 'editing'; row: string; unit?: CellUnit; openAt: string; typed: string; error?: string }
+  | { kind: 'blurPending'; row: string; unit?: CellUnit; openAt: string; typed: string; error?: string; wait: 'delay' | 'press' | 'release' }
+  | { kind: 'saving'; row: string; unit?: CellUnit; openAt: string; typed: string }
   | { kind: 'savingClosed' };
 
 /** How long each click-away wait lasts, in ms. */
@@ -54,7 +56,7 @@ export const WAIT_MS = { delay: 150, press: 1000, release: 0 } as const;
 export type Verdict = 'unitChanged' | 'unchanged' | 'unusable' | { save: number };
 
 export type ValueCellEvent =
-  | { type: 'opened'; row: string; unit?: CellUnit; text: string } // a click on the saved value
+  | { type: 'opened'; row: string; unit?: CellUnit; openAt: string; text: string } // a click on the saved value
   | { type: 'typed'; text: string }
   | { type: 'blurred' } // the focus left, for anywhere but this row's unit control
   | { type: 'focused' } // the focus came back
@@ -70,8 +72,8 @@ export type ValueCellEvent =
   | { type: 'leftForUnit'; edited: boolean } // a press on, or Tab to, a unit control that governs this editor
   | { type: 'refocused' }; // the cell took the focus back
 
-/** save: send the correction of `row` to `value` (as stored), then `result`. */
-export type ValueCellEffect = { type: 'save'; row: string; value: number };
+/** save: send the correction of `row` to `value` (as stored), under `erase`, then `result`. */
+export type ValueCellEffect = { type: 'save'; row: string; value: number; erase: string };
 
 export interface Step { state: ValueCellState; effects: ValueCellEffect[] }
 
@@ -93,20 +95,20 @@ function submit(s: Extract<ValueCellState, { kind: 'editing' | 'blurPending' }>,
   if (verdict === 'unitChanged') return closed(UNIT_CHANGED);
   if (verdict === 'unchanged') return closed();
   if (verdict === 'unusable') return how === 'enter' ? stay(s) : closed();
-  return { state: { kind: 'saving', row: s.row, unit: s.unit, typed: s.typed }, effects: [{ type: 'save', row: s.row, value: verdict.save }] };
+  return { state: { kind: 'saving', row: s.row, unit: s.unit, openAt: s.openAt, typed: s.typed }, effects: [{ type: 'save', row: s.row, value: verdict.save, erase: s.openAt }] };
 }
 
 /** The only way the editor's mode changes. Every pair not named leaves it as it is. */
 export function transition(state: ValueCellState, event: ValueCellEvent): Step {
   switch (state.kind) {
     case 'closed':
-      if (event.type === 'opened') return stay({ kind: 'editing', row: event.row, unit: event.unit, typed: event.text });
+      if (event.type === 'opened') return stay({ kind: 'editing', row: event.row, unit: event.unit, openAt: event.openAt, typed: event.text });
       if (event.type === 'refocused' && state.refocus) return closed(state.message);
       return stay(state);
     case 'editing':
     case 'blurPending': {
-      const { row, unit, typed, error } = state;
-      const editing: ValueCellState = { kind: 'editing', row, unit, typed, ...(error ? { error } : {}) };
+      const { row, unit, openAt, typed, error } = state;
+      const editing: ValueCellState = { kind: 'editing', row, unit, openAt, typed, ...(error ? { error } : {}) };
       const pending = (wait: 'delay' | 'press' | 'release'): Step => stay({ ...editing, kind: 'blurPending', wait });
       switch (event.type) {
         case 'unitSwitched':
@@ -115,7 +117,7 @@ export function transition(state: ValueCellState, event: ValueCellEvent): Step {
       }
       if (state.kind === 'editing') {
         switch (event.type) {
-          case 'typed': return stay({ kind: 'editing', row, unit, typed: event.text });
+          case 'typed': return stay({ kind: 'editing', row, unit, openAt, typed: event.text });
           case 'blurred': return pending('delay');
           case 'escape': return closed();
           case 'submitted': return submit(state, event.how, event.verdict);
@@ -142,7 +144,7 @@ export function transition(state: ValueCellState, event: ValueCellEvent): Step {
       // edit went; any other failure keeps it open for a retry.
       if (event.status === 'ok') return closed();
       if (event.status === 'changed') return closed(saveErrorText(event.status));
-      return stay({ kind: 'editing', row: state.row, unit: state.unit, typed: state.typed, error: saveErrorText(event.status) });
+      return stay({ kind: 'editing', row: state.row, unit: state.unit, openAt: state.openAt, typed: state.typed, error: saveErrorText(event.status) });
     case 'savingClosed':
       if (event.type !== 'result') return stay(state);
       return closed(event.status === 'ok' ? undefined : saveErrorText(event.status));

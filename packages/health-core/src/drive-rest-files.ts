@@ -5,10 +5,12 @@
  * drive-rest.ts re-exports the public names, so callers import from there.
  */
 import {
+  answerOutcome,
   ConflictError,
   fetchOrFail,
   jsonBody,
   StorageError,
+  type StorageFailureReason,
   type StoredFile,
 } from './adapter';
 import { documentUploadMs, TRANSFER_DEADLINE_MS } from './transfer-deadline';
@@ -47,8 +49,30 @@ export const PROVIDER = 'Google Drive';
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
 export const request = (url: string | URL, init?: Parameters<typeof fetchOrFail>[2]): Promise<Response> => fetchOrFail(PROVIDER, url, init);
 
-export async function fail(what: string, res: Response): Promise<never> {
-  throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+/** Drive's own reasons for a rate or daily limit (the error body's `errors[].reason`). A
+ *  limit passes, so it is retried and never called an access refusal. Not
+ *  `dailyLimitExceededUnreg`: that is a call with no valid credentials. */
+const LIMITS: ReadonlySet<string> = new Set(['rateLimitExceeded', 'userRateLimitExceeded', 'dailyLimitExceeded']);
+
+/** `rate-limited` for a 403 whose body names a limit, `storage-full` for one that names a full
+ *  Drive (`storageQuotaExceeded`); else none, so the status sets it. */
+function limitOf(status: number, text: string): StorageFailureReason | undefined {
+  if (status !== 403) return undefined;
+  try {
+    const errors = (JSON.parse(text) as { error?: { errors?: unknown } } | null)?.error?.errors;
+    const said = Array.isArray(errors) ? errors.map((e) => String((e as { reason?: unknown } | null)?.reason)) : [];
+    return said.some((reason) => LIMITS.has(reason)) ? 'rate-limited' : said.includes('storageQuotaExceeded') ? 'storage-full' : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** A non-ok answer, as a typed failure. `wrote`: the call sent a write to a
+ *  file (an upload, a create, a delete), so an answer that is not a refusal may
+ *  have landed. A folder create stores no file, so it sends none (US-10 AC16). */
+export async function fail(what: string, res: Response, wrote = false): Promise<never> {
+  const text = await res.text();
+  throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${text}`, undefined, undefined, res.status, limitOf(res.status, text), answerOutcome(res.status, wrote));
 }
 
 /** Find one file by name, optionally inside one parent. Undefined = not there.
@@ -105,7 +129,7 @@ export async function driveCreateFolder(accessToken: string, name: string, paren
   });
   if (!res.ok) await fail('folder create', res);
   const id = (await jsonBody<{ id?: string }>(res)).id;
-  if (!id) throw new StorageError(`${PROVIDER} folder create returned no id.`);
+  if (!id) throw new StorageError(`${PROVIDER} folder create returned no id.`, undefined, undefined, undefined, undefined, 'no-answer');
   return id;
 }
 
@@ -132,7 +156,7 @@ export async function driveListByPrefix(accessToken: string, prefix: string, sig
 /** Delete one file by id. Already gone (404) is not a failure. */
 export async function driveDelete(accessToken: string, fileId: string, signal?: AbortSignal): Promise<void> {
   const res = await request(`${DRIVE_API}/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', headers: auth(accessToken), signal });
-  if (!res.ok && res.status !== 404) await fail('delete', res);
+  if (!res.ok && res.status !== 404) await fail('delete', res, true);
 }
 
 /** Create a file inside `parentId` — metadata and content in one multipart POST. */
@@ -174,28 +198,32 @@ export function driveCreateFile(
  */
 export async function driveUploadDocument(accessToken: string, name: string, bytes: Blob, parentId: string): Promise<void> {
   const res = await driveCreateFile(accessToken, name, bytes.type || 'application/octet-stream', bytes, parentId);
-  if (!res.ok) throw new StorageError(`${PROVIDER} document create failed (${res.status}).`, undefined, undefined, res.status);
+  if (!res.ok) {
+    // Drive's named limits are its reasons, as on the record's writes (`fail`).
+    const text = await res.text();
+    throw new StorageError(`${PROVIDER} document create failed (${res.status}).`, undefined, undefined, res.status, limitOf(res.status, text), answerOutcome(res.status, true));
+  }
 }
 
 /** The bytes of the document named `name` inside `parentId`, under the document deadline and
  *  the caller's own signal (US-09 AC53); not res.blob(), which the engine shim lacks (US-73 AC12). */
 export async function driveDownloadDocument(accessToken: string, name: string, parentId: string, signal?: AbortSignal): Promise<Blob> {
   const id = await driveFindFileId(accessToken, name, parentId, signal);
-  if (!id) throw new StorageError(`${PROVIDER} document not found.`, undefined, undefined, undefined, 'not-found');
+  if (!id) throw new StorageError(`${PROVIDER} document not found.`, undefined, undefined, undefined, 'not-found', 'refused');
   const res = await request(`${DRIVE_API}/files/${id}?alt=media`, { headers: auth(accessToken), signal, timeoutMs: TRANSFER_DEADLINE_MS.document });
-  if (!res.ok) throw new StorageError(`${PROVIDER} document read failed (${res.status}).`, undefined, undefined, res.status);
+  if (!res.ok) throw new StorageError(`${PROVIDER} document read failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
   return new Blob([await res.arrayBuffer()], { type: res.headers.get('content-type') ?? '' });
 }
 
 /** Overwrite a file's bytes. Unconditional — Drive offers no precondition. */
-async function driveUpdateFile(accessToken: string, fileId: string, json: string, signal?: AbortSignal): Promise<string> {
+export async function driveUpdateFile(accessToken: string, fileId: string, json: string, signal?: AbortSignal): Promise<string> {
   const res = await request(`${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
     method: 'PATCH',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: json,
     signal, mayHaveWritten: true,
   });
-  if (!res.ok) await fail('write', res);
+  if (!res.ok) await fail('write', res, true);
   return JSON.stringify([fileId, String((await jsonBody<{ version?: string }>(res)).version ?? '')]);
 }
 
@@ -246,13 +274,16 @@ export async function driveUpdateIfVersion(
   expectedVersion: string | null,
   signal?: AbortSignal,
 ): Promise<string> {
-  const current = await driveFileVersion(accessToken, fileId, signal);
-  if (current !== expectedVersion) {
-    throw new ConflictError(
-      `${PROVIDER} file identity or version changed since it was read`,
-    );
-  }
+  await driveCheckVersion(accessToken, fileId, expectedVersion, signal);
   return driveUpdateFile(accessToken, fileId, json, signal);
+}
+
+/** `driveUpdateIfVersion`'s check alone. It sends no upload, so any failure
+ *  here stored nothing (the record's save keeps it apart, lead S62b). */
+export async function driveCheckVersion(accessToken: string, fileId: string, expectedVersion: string | null, signal?: AbortSignal): Promise<void> {
+  if (await driveFileVersion(accessToken, fileId, signal) !== expectedVersion) {
+    throw new ConflictError(`${PROVIDER} file identity or version changed since it was read`);
+  }
 }
 
 /** Download a file's bytes as JSON. Null = the file is gone. */
@@ -265,6 +296,6 @@ export async function driveDownloadJson(accessToken: string, fileId: string, sig
   try {
     return JSON.parse(text) as unknown;
   } catch (error) {
-    throw new StorageError(`${PROVIDER} read failed: file is not valid JSON (possible corruption).`, undefined, error);
+    throw new StorageError(`${PROVIDER} read failed: file is not valid JSON (possible corruption).`, undefined, error, undefined, undefined, 'no-answer');
   }
 }

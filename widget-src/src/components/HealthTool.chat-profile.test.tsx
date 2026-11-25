@@ -22,7 +22,7 @@ import { rowRootIds } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveDocuments, bulkSaveLabValues, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, recordFileSync, saveChangedMeasurements, saveMedication, saveSupplement, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { openAboutYou, recordOnDisk } from '../testing/health-tool-harness';
 import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, MIRROR_KEY } from '../lib/storage';
@@ -31,12 +31,12 @@ const chat = vi.hoisted(() => ({
   proposeEdit: null as null | ((edits: ProposedEdit[]) => void),
   context: null as null | (() => unknown),
 }));
-/** What the upload modal is handed: its completion (the page's re-read) and
- *  the history it shows. */
+/** What the upload modal is handed: its completion (the page's re-read). */
 const reload = vi.hoisted(() => ({
   complete: null as null | (() => Promise<void>),
-  history: null as unknown,
 }));
+/** What the upload list reads (mount 3b): the record as the store holds it now, its live lab rows and documents. */
+const uploadSees = () => { const f = recordFileSync(); return { labValues: (f?.labValues ?? []).filter((r) => r.status === 'active'), documents: (f?.documents ?? []).filter((d) => !d.deleted) }; };
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
@@ -54,15 +54,15 @@ vi.mock('./ChatEmbed', () => ({
   },
 }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete, history }: { onComplete: () => Promise<void>; history: unknown }) => {
+vi.mock('./UploadModal', () => ({ UploadModal: ({ onComplete }: { onComplete: () => Promise<void> }) => {
   reload.complete = onComplete;
-  reload.history = history;
   return null;
 } }));
 
 import { HealthTool } from './HealthTool';
 import { ERASE_DONE_CHAT_UNREAD, WRITE_REFUSED } from '../lib/erase-copy';
 import { deleteButton } from '../testing/settings';
+import { seedOpenDocuments, seedOpenLabValues } from '../testing/seed-record';
 
 /** The guest's record as this browser holds it, after every pending save. */
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
@@ -80,8 +80,8 @@ async function openStore(adapter: StorageAdapter) {
 /** A guest with a saved weight and no sex or height (unless given): no plan yet. */
 async function guestWithoutProfile(saved: { sex?: 'male' | 'female'; heightCm?: number } = {}, adapter: StorageAdapter = new LocalStorageAdapter()): Promise<RenderResult> {
   await openStore(adapter);
-  await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, ...saved }, {});
-  await addMeasurement('weight', 82, '2026-09-01');
+  await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, ...saved }, {}, getShownErase());
+  await addMeasurement('weight', 82, '2026-09-01', getShownErase());
   const view = render(<HealthTool />);
   await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
   await wait(600);
@@ -271,7 +271,7 @@ describe('US-16 AC2: the proposal banner, after review', () => {
     await guestWithoutProfile({ sex: 'male' });
     reply({ height: { value: 178, unit: 'cm' } });
     // A re-read of a record that still holds values keeps the banner.
-    await act(async () => { await addMeasurement('weight', 83, '2026-09-02'); });
+    await act(async () => { await addMeasurement('weight', 83, '2026-09-02', getShownErase()); });
     act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await wait(600);
     expect(banner()).not.toBeNull();
@@ -531,10 +531,10 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   async function cloudGuestOnLists(cloud: MemoryCloud) {
     vi.spyOn(RoadmapStore, 'create');
     await openStore(new MemoryAdapter(cloud));
-    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
-    await saveMedication('statin', 'rosuvastatin', 10, 'mg');
-    await saveSupplement('omega3', 'Omega-3', 1, 'g');
+    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+    await saveMedication('statin', 'rosuvastatin', 10, 'mg', getShownErase());
+    await saveSupplement('omega3', 'Omega-3', 1, 'g', undefined, undefined, getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
@@ -546,8 +546,8 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
    *  the form is back at the stage that shows the supplements. */
   async function startAgain() {
     await act(async () => {
-      await saveChangedMeasurements({ birthYear: 1980, birthMonth: 1, sex: 'female', heightCm: 165 }, {});
-      await addMeasurement('weight', 70, '2026-09-03');
+      await saveChangedMeasurements({ birthYear: 1980, birthMonth: 1, sex: 'female', heightCm: 165 }, {}, getShownErase());
+      await addMeasurement('weight', 70, '2026-09-03', getShownErase());
     });
     act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await wait(600);
@@ -621,9 +621,9 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   it('US-09 AC23: an erase refused because the cloud cannot be read leaves the medications and screenings on screen', async () => {
     const cloud = new MemoryCloud();
     await openStore(new MemoryAdapter(cloud));
-    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
-    await saveMedication('statin', 'atorvastatin', 20, 'mg');
+    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+    await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(chat.proposeEdit).toBeTruthy());
@@ -647,20 +647,20 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   it('US-11: a successful erase clears the lab rows and documents the upload view holds', async () => {
     await guestWithoutProfile({ sex: 'male', heightCm: 175 });
     await act(async () => {
-      await bulkSaveLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]);
-      await bulkSaveDocuments([{
+      await seedOpenLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]);
+      await seedOpenDocuments([{
         documentType: 'lab_report', title: 'Synthetic prior report', documentDate: '2026-09-01',
         contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic-prior.pdf',
       }]);
       await reload.complete!();
     });
-    expect(JSON.stringify(reload.history)).toContain('Synthetic prior report');
-    expect(JSON.stringify(reload.history)).toContain('Ferritin');
+    expect(JSON.stringify(uploadSees())).toContain('Synthetic prior report');
+    expect(JSON.stringify(uploadSees())).toContain('Ferritin');
     vi.stubGlobal('confirm', () => true);
     vi.stubGlobal('alert', () => {});
     fireEvent.click(await waitFor(() => deleteButton()));
     await wait(1500);
-    expect(reload.history).toEqual({ measurements: [], labValues: [], documents: [] });
+    expect(uploadSees()).toEqual({ labValues: [], documents: [] });
   });
 
   // Review R1/R3 (2026-10-21): while the store holds an erase the screen does
@@ -691,9 +691,9 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   }
   async function cloudGuestOnStatin(adapter: HeldCloud, seed?: () => Promise<unknown>) {
     await openStore(adapter);
-    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
-    await addMeasurement('weight', 82, '2026-09-01');
-    await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {}, getShownErase());
+    await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+    await saveMedication('statin', 'rosuvastatin', 10, 'mg', getShownErase());
     await seed?.();
     await flushRoadmapStore();
     const view = render(<HealthTool />);
@@ -801,8 +801,8 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
     const cloud = new MemoryCloud();
     // An LDL over target opens the cascade; a recorded answer keeps the question on the form (US-06 AC7).
     const view = await cloudGuestOnStatin(new HeldCloud(cloud), async () => {
-      await addMeasurement('ldl', 4.2, '2026-09-01');
-      await saveMedication('statin_escalation', 'not_yet');
+      await addMeasurement('ldl', 4.2, '2026-09-01', getShownErase());
+      await saveMedication('statin_escalation', 'not_yet', undefined, undefined, getShownErase());
     });
     const select = await waitFor(() => {
       const el = view.container.querySelector<HTMLSelectElement>('#statin-escalation');
@@ -821,8 +821,8 @@ describe('US-16 AC2a: a pending proposal follows the record\'s erase, not its ro
   it('US-06 AC12: a chat dose equal to the saved one still resets an answer given after a form dose change not yet saved', async () => {
     const cloud = new MemoryCloud();
     const view = await cloudGuestOnStatin(new HeldCloud(cloud), async () => {
-      await addMeasurement('ldl', 4.2, '2026-09-01');
-      await saveMedication('statin_escalation', 'not_yet');
+      await addMeasurement('ldl', 4.2, '2026-09-01', getShownErase());
+      await saveMedication('statin_escalation', 'not_yet', undefined, undefined, getShownErase());
     });
     // Saved: rosuvastatin 10 mg. The form moves to 20 mg and answers the
     // escalation; both saves wait 300 ms. The chat then states 10 mg.

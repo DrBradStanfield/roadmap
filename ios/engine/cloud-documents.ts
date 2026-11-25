@@ -96,9 +96,11 @@ async function saveOneDocument(
   const io: DocumentSaveIO<Uint8Array<ArrayBuffer>> = {
     // Hashed by the phone as it read the file: the same bytes it uploads, or none.
     hash: async () => hash!,
+    // Asked before every write attempt, retries included (US-11 AC1a): the session closed, or an erase moved.
+    stopped: () => !!at && (open !== at || at.session.refuses(erase)),
     write: (ref, data) => (bytes
       ? at!.host.store.writeDocument(ref, new Blob([data], { type: choice.mimeType }))
-      : Promise.reject(new StorageError('The original changed or could not be read.'))),
+      : Promise.reject(new StorageError('The original changed or could not be read.', undefined, undefined, undefined, undefined, 'refused'))),
     mimeType: () => choice.mimeType,
   };
 

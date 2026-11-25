@@ -9,7 +9,8 @@ import { CURRENT_SCHEMA_VERSION } from '../../packages/health-core/src/roadmap-f
 import { planSections, topicSections, type PlanSection, type TopicLayout } from '../../packages/health-core/src/plan-sections';
 import { statTiles, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
-import { fileNameLine, labSearch, MAX_FILE_NAME_LENGTH, zipMemberName } from '../../packages/health-core/src/lab-extraction';
+import { labSearch } from '../../packages/health-core/src/lab-extraction';
+import { uploadFileName } from '../../packages/health-core/src/upload-flow';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
 import { applyEdit, movedRecord, myData, newRecord, parseEdit, readNumber, readRecord, readView } from './my-data';
@@ -59,13 +60,13 @@ export { documentSave } from './cloud-documents';
 // "Delete all my data" on the phone's own file (erase.ts); a cloud's is cloudErase.
 export { erasePhoneJson } from './erase';
 /** The `sourceFileName` of each file read, as JSON (US-52 AC13d): the document
- *  dedup key, by health-core's own rules, one call per read. A ZIP member
- *  (`{ zip, path }`) by zipMemberName, the web's rule and cap; any other file
- *  (`{ name }`) on one line and cut to the cap, as the connector stores one. */
+ *  dedup key, by health-core's own rule (uploadFileName, the shared upload's too), one call per read. A
+ *  ZIP member (`{ zip, path }`) by zipMemberName, the web's rule and cap; any other file (`{ name }`) on
+ *  one line and cut to the cap, as the connector stores one. */
 export function fileNamesJson(filesJson: string): string {
   checkArgs('fileNamesJson', arguments);
   const files = JSON.parse(filesJson) as Array<{ name: string } | { zip: string; path: string }>;
-  return JSON.stringify(files.map((f) => ('zip' in f ? zipMemberName(f.zip, f.path) : fileNameLine(f.name).slice(0, MAX_FILE_NAME_LENGTH))));
+  return JSON.stringify(files.map((f) => uploadFileName('zip' in f ? { zip: f.zip, name: f.path } : { name: f.name })));
 }
 
 /** The plan for a record, as JSON. `nowIso` is passed in so tests can pin it. `unitsJson`,
@@ -218,7 +219,7 @@ export function labSearchJson(text: string): string {
 /** The upload's verdicts for one pick on the phone, as JSON (health-core upload-rules, US-52 AC7):
  *  `request` {files: [{name, bytes}], zipMembers: [path]} answers {limits, files: [verdict],
  *  zipMembers: [verdict]}, in order, each "keep", "tooLarge", "unsupported" or "hidden". An optional
- *  door: an app reaches it only through HealthEngine.optionalCall and keeps its Swift rules without it. */
+ *  door: an app reaches it only through HealthEngine.optionalCall and keeps nothing without it (lead U14). */
 export function uploadVerdictsJson(request: string): string {
   checkArgs('uploadVerdictsJson', arguments);
   const { files = [], zipMembers = [] } = JSON.parse(request) as { files?: Array<{ name: string; bytes: number }>; zipMembers?: string[] };
@@ -243,7 +244,10 @@ export function uploadStartJson(platform: string): string {
  * sends only what it saw; the door fills in what only the engine knows (health-core upload-schema.ts
  * UPLOAD_EVENTS is the full shape). Times are ISO strings; `run` is the effect's run being answered.
  * - picked {files: [{id, name, bytes, kind: "file" | "zip"}], needsConsent, now}
- * - consented {} · stop {} · saveStarted {} · close {} · discard {} · retry {id (a file id or "all")}
+ * - consented {} · stop {} · close {} · discard {} · retry {id (a file id or "all")}
+ * - saveStarted {reviewed?}: the view's `reviewed` as drawn at the tap, sent back untouched; Save writes only those values.
+ * Before every event (and in the view and plan doors), a chosen Replace whose target left its slot on the record is
+ * dropped and its value unticked (health-core replacesLost): the app never sends that event itself.
  * - listed {run, zip (the ZIP's file id), members: [{id, name, bytes}]} · zipFailed {run, zip}
  * - hashed {run, id, hash}: the door adds `known` (knownIndex and knownAs over the record).
  * - hashFailed {run, id} · converted {run, id, pages, truncated} · convertFailed {run, id, reason: "unreadable" | "timeout"}
@@ -255,7 +259,14 @@ export function uploadStartJson(platform: string): string {
  *   network failure, which Try again mends. The app never decides read or failed itself.
  * - sendFailed {run, id, status (HTTP status, null when no answer came), body (its text, null when
  *   none), contentType (its header, null when none)}: a real HTTP refusal before any stream (the
- *   gate's 401, 413, 429, 503) or a thrown request; the door adds `failure` (uploadFailureOfText).
+ *   gate's 401, 413, 429, 503) or a thrown request; the door adds `failure` (appGateFailure: a final 401, and any other 4xx but 422 and 429, is
+ *   app_refused, a 413 too_large; the gate's own `error` words, trimmed and capped, travel as text).
+ *   `local` (optional), the phone's own outcome when no lab-read answer came; status and body are
+ *   then not read (US-52 AC7e): {kind: "cannotAttest"}; {kind: "attestFailed", stage, code} (each
+ *   letters, digits, dash or underscore, at most 24); {kind: "refused", status, message}, the App
+ *   Attest registration or challenge refused (under 500 app_refused, from 500 server_error, with
+ *   its words); {kind: "badAnswer"}; or {kind: "timeout" | "dropped" | "unreachable"}, how the
+ *   request failed on the way. The gate's 400 `body_read_failed` is the network's, mended.
  * - answered {run, id, extraction (a read, as received), now}: for a route that answers the read
  *   whole; the door checks it (health-core UPLOAD_EXTRACTION) and adds `legacy` (readIsLegacy).
  * - chose {id, change, now}: change is one of {tick, on}, {testDay}, {previousDay}, {replace,
@@ -351,7 +362,7 @@ export async function documentOriginal(id: string): Promise<ArrayBuffer> {
 
 /** The cloud no longer holds the original (PR 1051 review R1): any 404; Dropbox answers a download
  *  of a missing path 409 (path/not_found; dropbox-rest.ts `dropboxDownload` keeps the status, not
- *  the body, so every download 409 counts); Drive finds no file of that name (drive-rest.ts
+ *  the body, so every download 409 counts); Drive finds no file of that name (drive-rest-files.ts
  *  `driveDownloadDocument`, which sets no status but the reason not-found, #979). */
 function originalGone(error: unknown): boolean {
   return error instanceof StorageError && (error.status === 404 || error.status === 409 || error.reason === 'not-found');

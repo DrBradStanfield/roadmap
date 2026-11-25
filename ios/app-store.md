@@ -200,7 +200,21 @@ declares the three rows below; declare them as written.
    `ios/scripts/app-store-video.sh` records and edits the app video and the
    product-page header (`app-store-video-compose.swift`); its lab read goes through a
    local reader (`app-store-video-lab-server.mts`). Rerun both after a UI change.
-7. Archive in Xcode, upload, TestFlight, then submit.
-8. Get advice on whether the app counts as a medical device in each market
+7. **Read the review screenshots before each submission** (Brad 2026-11-21). Run
+   `ios/scripts/review-shots.sh [output folder]` (default `ios/build/review-shots`). It
+   builds the app, installs it fresh on the shared simulator under its lock, seeds the
+   fictional sample record with the values in `ios/scripts/fixtures/review-shots.values.json`,
+   skips the welcome and onboarding, and runs the opt-in `ReviewScreenshots` UI test. It
+   saves numbered pictures of the screens whose words name a medicine or a range:
+   Settings, the lab upload's first screen, Chat's consent before agreeing, the BMI, HbA1c
+   and eGFR pages, My health screen by screen, and every plan step that names a medicine,
+   opened to its sources. It sends nothing: it never agrees to Chat or the lab read, and
+   the app's server points at a closed local port. It checks no wording itself, so read
+   every picture for wording, and its notes for any screen it could not reach. The store
+   text and any reply to App Review are audited claim by claim first
+   (docs/git-workflow.md, § Reviews). Why: Apple rejected build 12 under guideline 1.4.1
+   on wording, and build 14's wording check then needed a simulator pass built by hand.
+8. Archive in Xcode, upload, TestFlight, then submit.
+9. Get advice on whether the app counts as a medical device in each market
    (ios/architecture.md, Open questions). Apple asks medical apps for regulatory
    clearance where it applies.

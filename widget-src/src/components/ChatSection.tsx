@@ -7,18 +7,15 @@
  *
  * All API calls are lazy — nothing fires until the user clicks the bubble.
  */
-import React, { useState, useEffect, useCallback, useReducer } from 'react';
+import React, { useState, useEffect, useCallback, useReducer, useRef } from 'react';
 import { FeedbackForm } from './FeedbackForm';
 import { trackProductEvent } from '../lib/server-api';
 import { getChatGate } from '../lib/chat-api';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ChatKeyGate } from './ChatKeyGate';
-import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
+import { useChatState, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
 import { useFollowLatest } from '../hooks/useFollowLatest';
-import { ChatMessageBubble } from './ChatMessageBubble';
-import { SubscriptionChangeCard } from './SubscriptionChangeCard';
-import { ChatPendingReply } from './ChatPendingReply';
-import { ChatLoadLine } from './ChatLoadLine';
+import { ChatMessageList, ChatComposer } from './ChatPanel';
 import { ChatThreadList } from './ChatThreadList';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
 import { MUTED_CHAT } from './chat-muted';
@@ -59,6 +56,37 @@ interface ChatSectionProps {
   muted?: boolean;
 }
 
+function hasChatDraft(message: string, keyField: HTMLInputElement | null) {
+  return message !== '' || !!keyField?.value;
+}
+
+function dismissesChat(e: React.KeyboardEvent, hasDraft: () => boolean) {
+  return e.key === 'Escape' && !e.nativeEvent.isComposing && e.keyCode !== 229 && !hasDraft();
+}
+
+/**
+ * US-15 AC12a: the pop-up chat as a dialog. Its title takes the focus on opening, not the message
+ * box, so that opening does not call up a phone's keyboard. Escape inside it closes it unless there
+ * is unsent message text, an unsaved key, or an IME composition (both forms of AC26a). Closing gives
+ * focus to the "Open chat" button that comes back: both surfaces class it `chat-fab`, found on the next frame.
+ * A panel drawn with no such button on the page was brought back by the page, not opened by a press
+ * (the tool page, after a width change): it takes no focus, so a draft typed in a grid is not saved (US-03 AC5).
+ */
+function useChatDialog(isExpanded: boolean, inline: boolean | undefined, hide: () => void, hasDraft: () => boolean) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const [replacesButton] = useState(() => !!document.querySelector('.chat-fab'));
+  const popup = isExpanded && !inline;
+  useEffect(() => { if (popup && replacesButton) titleRef.current?.focus(); }, [popup, replacesButton]);
+  const close = () => {
+    hide();
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('.chat-fab')?.focus());
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (popup && dismissesChat(e, hasDraft)) close();
+  };
+  return { titleRef, close, onKeyDown };
+}
+
 export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData, onProposeEdit, muted }: ChatSectionProps) {
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -69,12 +97,16 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   const copy = SURFACE_COPY[getChatSurface()];
 
   const closeThreadsPanel = useCallback(() => setShowThreads(false), []);
-  const { state, actions, refs } = useChatState({
+  const chat = useChatState({
     isLoggedIn, guestInputs, prefetchedData,
     onRemoteConversationSelected: closeThreadsPanel,
     onProposeEdit,
   });
-  const { inputRef, messagesContainerRef } = refs;
+  const { state, actions, refs: { messagesContainerRef } } = chat;
+  const keyInputRef = useRef<HTMLInputElement>(null);
+  const dialog = useChatDialog(isExpanded, inline, () => { setIsExpanded(false); onClose?.(); },
+    // The message can outlive its textbox (History); the key lives in the mounted gate.
+    () => hasChatDraft(state.inputText, keyInputRef.current));
 
   // Load on mount when startExpanded (mirrors original lazy-load behavior).
   // chat_opened must fire on EVERY entry path — both live FABs mount
@@ -87,7 +119,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   }, [startExpanded, actions.loadConversationsIfNeeded]);
 
   // Follow a new message or any pending-reply change while the reader is at the latest one
-  const { showScrollBtn, onScroll: handleMessagesScroll } = useFollowLatest(messagesContainerRef, state.activeConversationId, state.messages, [state.pending]);
+  const follow = useFollowLatest(messagesContainerRef, state.activeConversationId, state.messages, [state.pending]);
 
   const handleExpand = useCallback(() => {
     trackProductEvent('chat_opened');
@@ -96,13 +128,6 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
     setShowFeedback(false);
     actions.loadConversationsIfNeeded();
   }, [onExpand, actions.loadConversationsIfNeeded]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (sendsOnEnter(e)) {
-      e.preventDefault();
-      actions.handleSend();
-    }
-  }, [actions.handleSend]);
 
   const handleSelectConversation = useCallback((id: string) => {
     actions.selectConversation(id);
@@ -144,14 +169,14 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
 
   // ----- EXPANDED STATE -----
   return (
-    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label={copy.label} data-clarity-mask="true">
+    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label={copy.label} data-clarity-mask="true" onKeyDown={dialog.onKeyDown}>
       <div className="chat-header">
         <button className="chat-threads-btn" onClick={() => setShowThreads(!showThreads)}>
           {showThreads ? 'Back' : 'History'}
         </button>
-        <ChatHeaderTitle title={copy.title} subtitle={muted ? MUTED_CHAT.subtitle : copy.subtitle} />
+        <ChatHeaderTitle title={copy.title} subtitle={muted ? MUTED_CHAT.subtitle : copy.subtitle} titleRef={dialog.titleRef} />
         {!inline && (
-          <button className="chat-close-btn" aria-label="Close chat" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
+          <button className="chat-close-btn" aria-label="Close chat" onClick={dialog.close}>✕</button>
         )}
       </div>
 
@@ -168,77 +193,15 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         )}
 
         {!showThreads && gate?.needsKey && (
-          <ChatKeyGate gate={gate} onConnected={refreshGate} />
+          <ChatKeyGate gate={gate} onConnected={refreshGate} inputRef={keyInputRef} />
         )}
         {!showThreads && !gate?.needsKey && (
-          <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
-            {state.messages.length === 0 && !state.replying && state.load === 'none' && !state.wait && (
-              <div className="chat-empty">
-                <p>{muted ? MUTED_CHAT.empty : copy.empty}</p>
-              </div>
-            )}
-            {state.messages.map(msg => (
-              <React.Fragment key={msg.id}>
-                <ChatMessageBubble msg={msg} approach={state.approachById[msg.id]} />
-                {state.cardsById?.[msg.id] && (
-                  <SubscriptionChangeCard
-                    entry={state.cardsById[msg.id]}
-                    onConfirm={() => actions.confirmSubscription(msg.id)}
-                    onDismiss={() => actions.dismissSubscription(msg.id)}
-                  />
-                )}
-              </React.Fragment>
-            ))}
-            <ChatLoadLine load={state.load} wait={state.wait} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
-            {state.replying && (
-              <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
-            )}
-            {state.error && <div className="chat-error">{state.error}</div>}
-            {showScrollBtn && (
-              <button
-                className="chat-scroll-btn"
-                onClick={() => { const el = messagesContainerRef.current; if (el) el.scrollTop = el.scrollHeight; }}
-              >↓</button>
-            )}
-          </div>
+          <ChatMessageList chat={chat} className="chat-messages" emptyText={muted ? MUTED_CHAT.empty : copy.empty} onNew={handleStartNewChat} follow={follow} />
         )}
       </div>
 
       {!showThreads && !gate?.needsKey && (
-        <div className="chat-input-bar">
-          {state.isOffline && <div className="chat-offline">You're offline</div>}
-          <div className="chat-input-shell">
-            <textarea
-              ref={inputRef}
-              className="chat-input"
-              value={state.inputText}
-              onChange={e => actions.handleInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={state.messages.length === 0 ? 'Ask a question' : 'Ask a follow-up…'}
-              disabled={state.isLoading}
-              rows={1}
-            />
-            <button
-              className="chat-send-btn"
-              onClick={actions.handleSend}
-              disabled={state.isLoading || !state.inputText.trim()}
-              aria-label="Send"
-            >↑</button>
-          </div>
-          <div className="chat-input-meta">
-            <span className="chat-doctor-note">Always discuss with your doctor</span>
-            {gate && (
-              <button
-                type="button"
-                className="chat-key-disconnect"
-                onClick={() => { gate.clearKey(); refreshGate(); }}
-              >
-                Disconnect AI key
-              </button>
-            )}
-            <span className="chat-char-count">{state.inputText.length}/{MAX_CHARS}</span>
-          </div>
-        </div>
+        <ChatComposer chat={chat} className="chat-input-bar" gate={gate} onGateChange={refreshGate} />
       )}
     </div>
   );

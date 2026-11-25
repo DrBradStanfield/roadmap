@@ -4,12 +4,13 @@
 // rule. Every input is checked once, where it enters, by health-core's strict schemas
 // (upload-schema.ts), and the PARSED value is what runs. A malformed input answers a refusal,
 // never a throw. Nothing is logged: the state holds file names, hashes and read values.
-import { initialUpload, transition, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
-import { UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
+import { initialUpload, transition, uploadFileName, type UploadEvent, type UploadState } from '../../packages/health-core/src/upload-flow';
+import { ATTEST_PART, maybeText, NETWORK_FAILURE, PHONE_CHANGE, platform, UPLOAD_EVENTS, UPLOAD_STATE } from '../../packages/health-core/src/upload-schema';
 import { knownAs, knownIndex, readIsLegacy, type KnownIndex } from '../../packages/health-core/src/upload-known';
-import { uploadFailureOfText } from '../../packages/health-core/src/upload-failure';
+import { appGateFailure, boundedWords, type FailDetail, type UploadFailure } from '../../packages/health-core/src/upload-failure';
+import { PHONE_FAIL_TEXT } from '../../packages/health-core/src/upload-text';
 import { labStreamAnswer } from '../../packages/health-core/src/upload-answer';
-import { uploadReview } from '../../packages/health-core/src/upload-review';
+import { choosesReplace, dropLostReplaces, uploadReview, type UploadReview } from '../../packages/health-core/src/upload-review';
 import { uploadView } from '../../packages/health-core/src/upload-view';
 import { uploadSavePlan } from '../../packages/health-core/src/upload-plan';
 import { uploadUsageCounts } from '../../packages/health-core/src/upload-usage';
@@ -35,8 +36,38 @@ export class Refused extends Error {
 
 // --- The wire -------------------------------------------------------------------------------
 
-const platform = z.enum(['web', 'phone']);
-const maybeText = z.string().nullable();
+/**
+ * A send with no lab-read answer, as the phone saw it (US-52 AC7e): the phone could not prove the
+ * app, its App Attest registration was refused (`refused`, with the status and the words today's
+ * iPhone shows), an answer it could not read, or how the request failed on the way (its kind).
+ */
+const LOCAL = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('cannotAttest') }),
+  z.strictObject({ kind: z.literal('attestFailed'), stage: ATTEST_PART, code: ATTEST_PART }),
+  // The words are cut by the engine (boundedWords), never a reason to refuse the event.
+  z.strictObject({ kind: z.literal('refused'), status: z.number().int().min(100).max(599), message: z.string() }),
+  z.strictObject({ kind: z.literal('badAnswer') }),
+  z.strictObject({ kind: NETWORK_FAILURE }),
+]);
+
+/**
+ * The phone's own outcome as the failure: a refused registration under 500 (a 429 included: the
+ * registration's limit, not the upload's day) is app_refused, which Try again never mends, so taps
+ * cannot spend registrations; from 500 the server's failure, which it mends; each with its words.
+ */
+function localFailure(local: z.infer<typeof LOCAL>): { failure: UploadFailure; detail?: FailDetail } {
+  switch (local.kind) {
+    case 'cannotAttest': return { failure: 'cannot_attest' };
+    case 'attestFailed': return { failure: 'attest_failed', detail: { stage: local.stage, code: local.code } };
+    case 'badAnswer': return { failure: 'app_refused', detail: { message: PHONE_FAIL_TEXT.badAnswer } };
+    case 'refused': {
+      const message = boundedWords(local.message);
+      const failure = local.status < 500 ? 'app_refused' : 'server_error';
+      return message ? { failure, detail: { message } } : { failure };
+    }
+    default: return { failure: 'network', detail: { network: local.kind } };
+  }
+}
 const E = UPLOAD_EVENTS;
 /**
  * The events Swift sends (entry.ts uploadStepJson lists them): health-core's, less what only the
@@ -46,9 +77,11 @@ const E = UPLOAD_EVENTS;
 const WIRE_EVENT = z.discriminatedUnion('type', [
   E.picked, E.consented, E.listed, E.zipFailed, E.hashed.omit({ known: true }), E.hashFailed, E.converted, E.convertFailed,
   E.answered.omit({ legacy: true }),
-  E.sendFailed.omit({ failure: true }).extend({ status: z.number().int().nullable(), body: maybeText, contentType: maybeText }),
+  E.sendFailed.omit({ failure: true, detail: true }).extend({ status: z.number().int().nullable(), body: maybeText, contentType: maybeText, local: LOCAL.optional() }),
   z.strictObject({ type: z.literal('streamEnded'), run: z.number().int().nonnegative(), id: z.string(), line: maybeText, now: z.string() }),
-  E.retry, E.stop, E.chose, E.saveStarted, E.saved, E.saveFailed, E.close, E.discard,
+  // Only the changes the iPhone's page makes: the web's column day is refused here (US-13 AC24).
+  // A Save's erase is the web's: the phone's Save door reads its own session's.
+  E.retry, E.stop, E.chose.extend({ change: PHONE_CHANGE }), E.saveStarted.omit({ erase: true }), E.saved, E.saveFailed, E.close, E.discard,
 ]);
 type Wire = z.infer<typeof WIRE_EVENT>;
 
@@ -62,7 +95,12 @@ function parsed<S extends z.ZodType>(json: string, schema: S, reason: UploadRefu
   if (!read.success) throw new Refused(reason);
   return read.data;
 }
-export const readState = (json: string): UploadState => parsed(json, UPLOAD_STATE, 'invalid-state');
+/** No state at the phone's doors holds the web's column day (US-13 AC24), a row's held text (AC12), an edit's typed unit,
+ *  a letter's screening tick (AC6) or a reader (US-12 AC9), whatever platform it claims: no step, view, plan or Save door runs one. */
+const PHONE_STATE = UPLOAD_STATE.refine((s) => s.reader === undefined && (!('files' in s)
+  || s.files.every((f) => f.status.s !== 'read' || (f.status.choices.columnDays === undefined && f.status.choices.typed === undefined
+    && f.status.choices.editUnits === undefined && f.status.choices.document.screening === undefined))));
+export const readState = (json: string): UploadState => parsed(json, PHONE_STATE, 'invalid-state');
 
 /** The record as the save writes it (read raw), through the app's own deviceId, so the screen doors'
  *  cached read is shared, not emptied; '' is a record with nothing in it yet. Read-only here. */
@@ -86,22 +124,23 @@ function indexOf(record: RoadmapFile): KnownIndex {
 /** The wire event made whole with what only the engine knows (health-core's own rules). */
 function engineEvent(state: UploadState, wire: Wire, record: () => RoadmapFile): UploadEvent {
   const legacy = (id: string, extraction: Extract<UploadEvent, { type: 'answered' }>['extraction']) => {
-    const name = 'files' in state ? state.files.find((f) => f.id === id)?.name : undefined;
-    return name !== undefined && readIsLegacy(record(), name, extraction);
+    const file = 'files' in state ? state.files.find((f) => f.id === id) : undefined;
+    return file !== undefined && readIsLegacy(record(), uploadFileName(file), extraction);
   };
   switch (wire.type) {
     case 'hashed': return { ...wire, known: knownAs(indexOf(record()), wire.hash) };
     case 'answered': return { ...wire, legacy: legacy(wire.id, wire.extraction) };
     case 'sendFailed': {
-      const { status, body, contentType, ...rest } = wire;
-      return { ...rest, failure: uploadFailureOfText(status, body, contentType) };
+      const { status, body, contentType, local, ...rest } = wire;
+      // The phone's own outcome, when there is one, is the failure: status and body are not read.
+      return { ...rest, ...(local ? localFailure(local) : appGateFailure(status, body, contentType)) };
     }
     case 'streamEnded': {
       const { run, id, line, now } = wire;
       const answer = labStreamAnswer(line);
       return 'extraction' in answer
         ? { type: 'answered', run, id, extraction: answer.extraction, legacy: legacy(id, answer.extraction), now }
-        : { type: 'sendFailed', run, id, failure: answer.failure };
+        : { type: 'sendFailed', run, id, failure: answer.failure, ...(answer.detail ? { detail: answer.detail } : {}) };
     }
     default: return wire;
   }
@@ -126,22 +165,43 @@ export const uploadStart = (platformName: string) => answer(() => {
   return initialUpload(read.data);
 });
 
-/** The record is read only for an event that needs it (`hashed`, `answered`, `streamEnded`). */
+/** The record is read only for an event that needs it (`hashed`, `answered`, `streamEnded`), and while a Replace is chosen. */
 export const uploadStep = (stateJson: string, eventJson: string, recordJson: string, deviceId: string) => answer(() => {
   const state = readState(stateJson);
   const wire = parsed(eventJson, WIRE_EVENT, 'invalid-event');
   // Known and legacy go by hash, name and date, never a time; the clock only stamps a record the
   // read migrates, which readRecord then keeps for the screen doors, so it is the real one.
-  return transition(state, engineEvent(state, wire, () => readUploadRecord(recordJson, new Date().toISOString(), deviceId)));
+  const now = new Date().toISOString();
+  const record = () => readUploadRecord(recordJson, now, deviceId);
+  const { state: current } = withoutLostReplaces(state, recordJson, record, now);
+  return transition(current, engineEvent(current, wire, record));
 });
 
+/**
+ * A chosen Replace whose target another writer moved, corrected or deleted on this record is dropped and its
+ * value unticked (health-core `dropLostReplaces`, owner ruling 2026-11-20, US-13 AC21), before the next event and
+ * in every view, so the page shows an ordinary value to tick again. The record is read only when a Replace is chosen.
+ * `review`: the review it judged by, when nothing was dropped, so a view reviews that state once.
+ */
+function withoutLostReplaces(state: UploadState, recordJson: string, record: () => RoadmapFile, now: string): { state: UploadState; review?: UploadReview } {
+  // No record to judge by ('' while the app has none it can read) or one that will not read drops nothing (adversary R1):
+  // every Replace stands, and the next record that reads is judged.
+  if (recordJson === '' || !choosesReplace(state)) return { state };
+  let read: RoadmapFile;
+  try { read = record(); } catch { return { state }; }
+  return dropLostReplaces(state, read, now);
+}
+
 /** One review per call, as health-core's callers take it: the view and its plan count the same rows. */
-const reviewed = (make: typeof uploadView | typeof uploadSavePlan) => (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
-  const state = readState(stateJson);
-  const record = readUploadRecord(recordJson, nowIso, deviceId);
-  return make(state, record, nowIso, uploadReview(state, record, nowIso), cloudConnected);
-});
-export const uploadViewOf = reviewed(uploadView);
+const reviewed = <T,>(make: (state: UploadState, record: RoadmapFile, nowIso: string, review: UploadReview, cloudConnected: boolean) => T) =>
+  (stateJson: string, recordJson: string, nowIso: string, cloudConnected: boolean, deviceId: string) => answer(() => {
+    const record = readUploadRecord(recordJson, nowIso, deviceId);
+    const { state, review } = withoutLostReplaces(readState(stateJson), recordJson, () => record, nowIso);
+    return make(state, record, nowIso, review ?? uploadReview(state, record, nowIso), cloudConnected);
+  });
+/** The view, with the words the app shows when a later engine call gives no answer at all
+ *  (`engineError`, the doors' own engine-error line): the page keeps them from its last view. */
+export const uploadViewOf = reviewed((...args: Parameters<typeof uploadView>) => ({ ...uploadView(...args), engineError: REFUSAL_WORDS['engine-error'] }));
 export const uploadPlanOf = reviewed(uploadSavePlan);
 
 export const uploadUsage = (stateJson: string) => answer(() => uploadUsageCounts(readState(stateJson)));

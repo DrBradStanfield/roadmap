@@ -252,7 +252,7 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     const adapter = new MemoryAdapter(cloud);
     const read = adapter.read.bind(adapter);
     const write = adapter.write.bind(adapter);
-    const fatal = new StorageError('synthetic access refused', undefined, undefined, 403);
+    const fatal = new StorageError('synthetic access refused', undefined, undefined, 403, undefined, 'refused');
     let reads = 0;
     let writes = 0;
     adapter.read = async (...args) => {
@@ -305,7 +305,7 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     const read = adapter.read.bind(adapter);
     let reads = 0;
     adapter.read = async (...args) => {
-      if (++reads === 2) throw new StorageError('synthetic token expired', undefined, undefined, 401);
+      if (++reads === 2) throw new StorageError('synthetic token expired', undefined, undefined, 401, undefined, 'refused');
       return read(...args);
     };
     const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
@@ -334,7 +334,7 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     const write = adapter.write.bind(adapter);
     let reads = 0;
     adapter.read = async (...args) => {
-      if (++reads === 2) throw new StorageError('synthetic read failure', 'synthetic hint');
+      if (++reads === 2) throw new StorageError('synthetic read failure', 'synthetic hint', undefined, undefined, undefined, 'no-answer');
       return read(...args);
     };
     adapter.write = async (...args) => ({ ...(await write(...args)), warning });
@@ -377,7 +377,7 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
       const write = adapter.write.bind(adapter);
       let reads = 0;
       adapter.read = async (...args) => {
-        if (++reads === 2) throw new StorageError('synthetic token refused', undefined, undefined, status);
+        if (++reads === 2) throw new StorageError('synthetic token refused', undefined, undefined, status, undefined, 'refused');
         return read(...args);
       };
       adapter.write = async (...args) => ({ ...(await write(...args)), warning });
@@ -400,7 +400,7 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
       const read = adapter.read.bind(adapter);
       let reads = 0;
       adapter.read = async (...args) => {
-        if (++reads === 2) throw new StorageError('synthetic read failure', 'synthetic hint');
+        if (++reads === 2) throw new StorageError('synthetic read failure', 'synthetic hint', undefined, undefined, undefined, 'no-answer');
         return read(...args);
       };
       const failure = await new SyncManager(adapter, 'writer', ROADMAP_DOC).save(makeFile('writer')).then(() => null, (error: unknown) => error);
@@ -426,7 +426,7 @@ describe('SyncManager.save — uncertainty survives later failures', () => {
     adapter.read = async (...args) => {
       reads++;
       if (reads === 2) throw new LostUpdateError('synthetic lost update');
-      if (reads === 4) throw new StorageError('synthetic read failure', 'synthetic hint');
+      if (reads === 4) throw new StorageError('synthetic read failure', 'synthetic hint', undefined, undefined, undefined, 'no-answer');
       return read(...args);
     };
     adapter.write = async (...args) => {
@@ -480,11 +480,11 @@ describe('describeStorageFailure — a rejected token is a reconnect, not a fold
   it('sends a 401/403 to reconnect, and leaves other statuses on the generic wording', async () => {
     const { describeStorageFailure } = await import('./sync-manager');
     for (const status of [401, 403]) {
-      const told = describeStorageFailure(new StorageError('Dropbox read failed (401): expired', undefined, undefined, status), 'Dropbox');
+      const told = describeStorageFailure(new StorageError('Dropbox read failed (401): expired', undefined, undefined, status, undefined, 'refused'), 'Dropbox');
       expect(told.message).toContain('refused this connection');
       expect(told.hint).toContain('Reconnect');
     }
-    const other = describeStorageFailure(new StorageError('Dropbox read failed (503): down', undefined, undefined, 503), 'Dropbox');
+    const other = describeStorageFailure(new StorageError('Dropbox read failed (503): down', undefined, undefined, 503, undefined, 'no-answer'), 'Dropbox');
     expect(other.hint).not.toContain('Reconnect');
   });
 });

@@ -24,16 +24,16 @@ import {
   cellText,
   cellToSI,
   readTypedValue,
-  trendGeometry,
 } from '../lib/blood-test-cell';
-import { BackfillCell, DraftCell } from './MatrixInputCells';
+import { BackfillCell, DraftCell, SAME_SLOT } from './MatrixInputCells';
+export { SAME_SLOT } from './MatrixInputCells';
 import { CommitTickButton } from './CommitTickButton';
 import { DraftDateCell } from './DraftDateCell';
 import { LpaChecks } from './LpaChecks';
 import { LpaUnitControl } from './LpaUnitControl';
 import type { MoveHeaders } from './MoveTestPanel';
 import { UnitChip } from './UnitChip';
-import { BatchDateCell, ValueCell, useLiveRegion, SAVE_FAILED, saveErrorText } from './MatrixSavedCells';
+import { BatchDateCell, Sparkline, ValueCell, useLiveRegion, SAVE_FAILED, saveErrorText } from './MatrixSavedCells';
 export { BatchDateCell, headerDay, useLiveRegion, SAVE_FAILED, SAVE_ERRORS, saveErrorText, ValueCell } from './MatrixSavedCells';
 
 // PSA is omitted from the matrix — rendered separately in the men's section
@@ -82,31 +82,6 @@ function groupByBatch(measurements: ApiMeasurement[]): Batch[] {
     else delete comparators[m.metricType];
   }
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
-}
-
-/** A small trend line. A point printed as a limit (`limits[i]`) is a hollow
- *  dot at its bound, left out of the line (US-12 AC20). */
-export function Sparkline({ points, limits, width = 44, height = 18 }: { points: number[]; limits?: boolean[]; width?: number; height?: number }) {
-  if (points.length < 2) {
-    return (
-      <svg width={width} height={height} style={{ display: 'block' }}>
-        <line x1="0" y1={height / 2} x2={width} y2={height / 2}
-              stroke="var(--bt-ink-200)" strokeDasharray="2 3" strokeWidth="1"/>
-      </svg>
-    );
-  }
-  // Area path: line + drop down to baseline + back to its start, closed.
-  const { coords, exact, line: d, area: areaD } = trendGeometry(points, limits, width, height, height - 2);
-  return (
-    <svg width={width} height={height} style={{ display: 'block' }}>
-      {areaD && <path d={areaD} fill="var(--bt-ink-100)" opacity="0.7"/>}
-      {areaD && <path d={d} fill="none" stroke="var(--bt-ink-700)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>}
-      {exact.length === 1 && <circle cx={exact[0][0]} cy={exact[0][1]} r="1.75" fill="var(--bt-ink-700)"/>}
-      {coords.map(([x, y], i) => limits?.[i] && (
-        <circle key={i} className="bt-spark-limit" cx={x} cy={y} r="1.75" fill="none" stroke="var(--bt-ink-700)" strokeWidth="1"/>
-      ))}
-    </svg>
-  );
 }
 
 export interface BloodTestTimelineProps {
@@ -158,9 +133,6 @@ export type BloodTestPrefillFn = (
   fromUnit: UnitSystem,
   date: string | null,
 ) => string | null;
-
-/** What two typed cells for one test on one day say, on both (US-03 AC3). */
-export const SAME_SLOT = 'This test already has a value on that day in another column.';
 
 export function BloodTestTimeline({
   bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, startUnitOf, onUnitSwitch,

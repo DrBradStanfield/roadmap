@@ -16,6 +16,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { MetricType, UnitSystem } from '@roadmap/health-core/units';
 import { BloodTestTimeline, SAVE_ERRORS, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { formatShortDate } from '../lib/constants';
+import { getShownErase } from '../lib/roadmap-data';
 import { slotOf } from '../lib/matrix-save';
 import { press, turnFrom } from '../testing/matrix-gestures';
 import { noteDevicePage } from '../lib/storage';
@@ -106,7 +107,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     const m = matrix();
     await m.answer(mgL(156, 39));
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 39);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 39, getShownErase());
     expect(m.notices()).toHaveLength(0);
     expect(m.answers()).toEqual([{ answer: 'mg/L' }]);
   });
@@ -125,7 +126,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     const m = matrix();
     await m.answer(/^My report says 156 mg\/dL/);
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 390);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 390, getShownErase());
     expect(m.answers()).toEqual([{ answer: 'mg/dL' }]);
   });
 
@@ -133,7 +134,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     const m = matrix();
     await m.answer('My report says 156 nmol/L');
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 156);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 156, getShownErase());
     expect(m.answers()).toEqual([{ answer: 'nmol/L' }]);
   });
 
@@ -176,7 +177,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     const m = matrix([typedRow({ value: 180 })]);
     await m.answer(capped(750));
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 750);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 750, getShownErase());
     expect(m.answers()).toEqual([{ answer: 'mg/dL' }]);
   });
 
@@ -205,11 +206,11 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     expect(m.notices()[0].querySelector('p')?.textContent).toBe(copy(11));
     expect(m.labels()).toEqual(['My report says 45.5 mg/dL (saves 113.75 nmol/L)', 'My report says 45.5 nmol/L', mgL(45.5, 11.375), NEITHER]);
     await m.answer(/mg\/dL/);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 113.75);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 113.75, getShownErase());
     cleanup();
     const n = matrix([typedRow({ value: 10.92 })]);
     await n.answer('My report says 45.5 nmol/L');
-    expect(n.onCorrectValue).toHaveBeenCalledWith('row0', 45.5);
+    expect(n.onCorrectValue).toHaveBeenCalledWith('row0', 45.5, getShownErase());
   });
 
   it('asks nothing of a user whose field never showed mg/L', () => {
@@ -299,6 +300,26 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     expect(m.view.container.querySelector('.lpa-check-status')?.textContent).toBe(NBSP);
   });
 
+  // US-05 AC3a (lead H300): a correction that throws ends as an error, never stuck saving.
+  it('a correction that rejects frees the buttons, says the error words, and lets no rejection escape', async () => {
+    const escaped = vi.fn();
+    process.on('unhandledRejection', escaped);
+    try {
+      const m = matrix();
+      m.onCorrectValue.mockRejectedValue(new Error('store threw'));
+      await m.answer(/mg\/dL/);
+      expect(within(m.notices()[0]).getByText(SAVE_ERRORS.error)).toBeTruthy();
+      await wait(REST);
+      expect(m.buttons().every((b) => !b.disabled)).toBe(true);
+      expect(m.answers()).toEqual([]);
+      vi.useRealTimers(); // node reports an unhandled rejection a macrotask later
+      await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+      expect(escaped).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', escaped);
+    }
+  });
+
   it('asks nothing, and holds no region, when no row needs checking', () => {
     expect(matrix([typedRow()], 'si').view.container.querySelector('.lpa-check-status')).toBeNull();
   });
@@ -308,7 +329,7 @@ describe('US-05 AC3 — the Lp(a) check: a number with its unit', () => {
     expect(m.notices()).toHaveLength(2);
     expect(m.labels(1)).toEqual(['My report says 50 mg/dL (saves 125 nmol/L)', 'My report says 50 nmol/L', mgL(50, 12.5), NEITHER]);
     await m.answer('My report says 50 nmol/L', 1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row1', 50);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row1', 50, getShownErase());
   });
 });
 
@@ -445,7 +466,7 @@ describe('US-05 AC3 — a double click answers one question', () => {
     fireEvent.click(firstButton(m), { detail: 2 });
     await wait(0);
     expect(m.onCorrectValue).toHaveBeenCalledTimes(1);
-    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 390);
+    expect(m.onCorrectValue).toHaveBeenCalledWith('row0', 390, getShownErase());
     expect(m.notices()).toHaveLength(1);
   });
 

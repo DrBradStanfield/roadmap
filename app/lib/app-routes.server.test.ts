@@ -581,16 +581,26 @@ describe('US-52 AC4f: the gate with its limit maps full of other callers', () =>
     expect(mocks.getChatCompletion).not.toHaveBeenCalled();
   });
 
-  it('a spent challenge stays spent however many are spent after it in its life (US-52 AC1a)', async () => {
+  it('at its bound the spent-challenge set forgets its oldest entry; a new challenge registers, and the same key again is 409 (US-52 AC1, AC16)', async () => {
     const spent = await fresh();
     expect((await reg(spent, 'AA==', '198.51.100.30')).status).toBe(401); // spends it
-    fill(appLimits.challenges, MAX_TRACKED_KEYS + 1); // more than any bounded map holds
-    const again = await reg(spent, device.attest(spent).toString('base64'), '198.51.100.32');
-    expect(again.status).toBe(401);
-    expect((await again.json()).reason).toBe('bad_challenge');
-    expect(store.rows.size).toBe(0);
-    const challenge = await fresh(); // a new challenge still registers
+    expect((await reg(spent, device.attest(spent).toString('base64'), '198.51.100.31')).status).toBe(401); // held: refused
+    fill(appLimits.challenges); // the set reaches its bound: the oldest entry, `spent`, is forgotten
+    const challenge = await fresh();
     expect((await reg(challenge, device.attest(challenge).toString('base64'), '198.51.100.33')).status).toBe(200);
+    const replay = await reg(spent, device.attest(spent).toString('base64'), '198.51.100.32');
+    expect(replay.status).toBe(409); // the challenge passes again, and the key row answers
+    expect((await replay.json()).reason).toBe('key_exists');
+    expect(store.rows.size).toBe(1);
+  });
+
+  it('a forgotten challenge used again with a key not registered takes the ordinary registration path (US-52 AC1a limit, AC16)', async () => {
+    const spent = await fresh();
+    expect((await reg(spent, 'AA==', '198.51.100.40')).status).toBe(401); // spends it
+    fill(appLimits.challenges); // at the bound: `spent`, the oldest entry, is forgotten
+    const again = await reg(spent, device.attest(spent).toString('base64'), '198.51.100.41');
+    expect(again.status).toBe(200); // checked and registered as any new key
+    expect(store.rows.has(device.keyId)).toBe(true);
   });
 });
 
@@ -628,7 +638,7 @@ describe('US-67 AC1: the app asks for the form tools with edits: 1', () => {
     expect(out.at(-1)).toMatchObject({ type: 'done', success: true, proposedEdits: [proposal] });
     const [, , canApplyEdits, , opts] = mocks.getChatCompletion.mock.calls[0];
     expect(canApplyEdits).toBe(true);
-    expect(opts).toEqual({ subscriptionTool: false, guestInputs: chatBody.guestInputs, profileEdits: true, app: true });
+    expect(opts).toEqual({ purpose: 'CHAT', subscriptionTool: false, guestInputs: chatBody.guestInputs, profileEdits: true, app: true });
     // D9: no guest session, no row, no audit, and no run_roadmap usage row (product_events).
     expect(mocks.guest).not.toHaveBeenCalled();
     expect(mocks.from).not.toHaveBeenCalled();
@@ -647,7 +657,7 @@ describe('US-67 AC1: the app asks for the form tools with edits: 1', () => {
     await lines(await appChat(signed('/api/app/v1/chat', { ...chatBody, ...flags }), store));
     const [, , canApplyEdits, , opts] = mocks.getChatCompletion.mock.calls[0];
     expect(canApplyEdits).toBe(false);
-    expect(opts).toBeUndefined();
+    expect(opts).toEqual({ purpose: 'CHAT' });
   });
 });
 
@@ -662,7 +672,7 @@ describe('US-52 AC7: lab import', () => {
     expect(json.success).toBe(true);
     expect(json.data.values.map((v: { metric: string }) => v.metric)).toEqual(['ldl', 'hba1c']);
     expect(json.data.refusedValues).toHaveLength(1);
-    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 90_000, retryRateLimit: true, oneDeadline: true, onRetry: expect.any(Function) });
+    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { purpose: 'LABS', timeoutMs: 90_000, retryRateLimit: true, oneDeadline: true, onRetry: expect.any(Function) });
   });
 
   // US-52 AC7c: the phone gives up after 120 s idle; the web's retry of a

@@ -101,7 +101,7 @@ describe('validateTypedValue — weight bounds evaluated in the active unit', ()
 // US-02 AC4/AC6 (2026-08-07): numeric-only keystroke filtering + systolic
 // auto-advance. blockBadNumericKeys previously blocked ONLY -,+,e,E — letters
 // sailed through on text-type inputs (and Safari's type="number").
-import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance } from './blood-test-cell';
+import { blockBadNumericKeys, blockNonIntegerKeys, bpDiaAdvance, bpSysAdvance } from './blood-test-cell';
 
 function key(k: string, mods: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean }> = {}) {
   return {
@@ -158,6 +158,15 @@ describe('blockNonIntegerKeys — integer fields like BP (US-02 AC4)', () => {
       blockNonIntegerKeys(e);
       expect(e.preventDefault).not.toHaveBeenCalled();
     }
+  });
+});
+
+describe('bpDiaAdvance — diastolic → the next reading (US-75 AC2)', () => {
+  it('moves on at a complete diastolic: two digits 40-99, three digits 100-150', () => {
+    for (const t of ['40', '80', '99', '100', '150']) expect(bpDiaAdvance(t)).toBe('advance');
+  });
+  it('stays on a prefix, out of range, or not digits', () => {
+    for (const t of ['', '8', '10', '15', '39', '151', '999', '8a', '1000']) expect(bpDiaAdvance(t)).toBe('stay');
   });
 });
 

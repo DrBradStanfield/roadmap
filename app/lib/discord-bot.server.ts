@@ -101,7 +101,7 @@ export function startDiscordBot(): void {
   }
 
   if (CHAT_PROMPT.kind === 'missing') {
-    console.warn('Discord bot: chat system prompt missing — bot disabled');
+    console.warn(`Discord bot: chat docs missing (${CHAT_PROMPT.files.join(', ')}) — bot disabled`);
     return;
   }
 
@@ -321,6 +321,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     const result = await platformChatCompletion({
       message: truncatedInput,
       history,
+      purpose: 'DISCORD',
     });
     const tAfterLlm = Date.now();
     stage = 'send';

@@ -3,7 +3,7 @@ import * as z from '../../packages/health-core/src/zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MEASURES, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, ONBOARDING_STEPS, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, SIGNIN_PLACEMENTS, TOOL_DEVICES, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_FLAGS, UPLOAD_REVIEW_KEYS, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey, type UploadReviewKey } from '../../packages/health-core/src/product-events';
+import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MEASURES, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, ONBOARDING_STEPS, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, SIGNIN_PLACEMENTS, TOOL_DEVICES, UPLOAD_LABS_PLACEMENTS, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_FLAGS, UPLOAD_REVIEW_KEYS, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey, type UploadReviewKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { SAVE_RETRY_OUTCOMES, SAVE_RETRY_TRIGGERS } from '../../packages/health-core/src/save-retry-words';
 import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-products';
@@ -40,8 +40,8 @@ const metadataSchema = z
     files: z.enum(MCP_IMPORT_FILE_BUCKETS).optional(),
     /** US-37: this extract followed a read's folder nudge — the retirement query. */
     fromNudge: z.literal(true).optional(),
-    /** US-38, US-62 AC1: which guide-link or sign-in surface was clicked, judged against its event in checkEventKeys. */
-    placement: z.enum([...GUIDE_PLACEMENTS, ...SIGNIN_PLACEMENTS]).optional(),
+    /** US-38, US-62 AC1, US-73 AC14: which guide-link, sign-in or Upload labs surface was clicked, judged against its event in checkEventKeys. */
+    placement: z.enum([...GUIDE_PLACEMENTS, ...SIGNIN_PLACEMENTS, ...UPLOAD_LABS_PLACEMENTS]).optional(),
     /** US-62 AC1: the device a tool tab opened on. Owned by `tool_opened`. */
     device: z.enum(TOOL_DEVICES).optional(),
     /** US-62 AC1: which onboarding question was answered, never the answer. Owned by `onboarding_step`. */
@@ -158,7 +158,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
  *  placement on a guide row, or a connector step on an onboarding row, would
  *  split both counts. The key is owned by exactly the events listed. */
 const EVENT_WORDS: Record<string, Partial<Record<string, readonly string[]>>> = {
-  placement: { guide_opened: GUIDE_PLACEMENTS, signin_opened: SIGNIN_PLACEMENTS },
+  placement: { guide_opened: GUIDE_PLACEMENTS, signin_opened: SIGNIN_PLACEMENTS, upload_labs_opened: UPLOAD_LABS_PLACEMENTS },
   step: { mcp_tool_call: MCP_TOOL_STEPS, onboarding_step: ONBOARDING_STEPS },
   outcome: { mcp_tool_call: MCP_TOOL_OUTCOMES, save_retry: SAVE_RETRY_OUTCOMES },
 };
@@ -169,6 +169,7 @@ const EVENT_REQUIRED_KEY: Partial<Record<string, string | readonly string[]>> = 
   tool_opened: 'device',
   onboarding_step: 'step',
   signin_opened: 'placement',
+  upload_labs_opened: 'placement', // US-73 AC14: which heading's button
   us_product_shown: 'product', // US-61 AC8: a row without its product counts nothing
   us_product_link_clicked: 'product',
   measurement_added: 'measure', // US-07 AC11
@@ -199,12 +200,15 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   plan_ready_dismissed: [],
   signin_opened: ['placement'],
   guide_opened: ['placement'],
+  upload_labs_opened: ['placement'], // US-73 AC14: the heading alone, never a value
   record_unreadable_kept: ['count'], // US-65 AC6: how many entries, nothing else
   blood_tests_unified: ['moved', 'folded', 'keptApart'], // US-66 AC13: counts only
   measurement_added: ['measure'], // US-07 AC11: the measure alone, never the value
   save_retry: ['trigger', 'outcome'], // US-09 AC30: how a retry started and ended, never a value
   waist_widget_viewed: [], // US-74: the names alone, never a value, grade or unit
   waist_widget_saved: [],
+  bp_widget_viewed: [], // US-75: as US-74's
+  bp_widget_saved: [],
 };
 
 /**

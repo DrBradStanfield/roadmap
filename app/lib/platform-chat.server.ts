@@ -16,11 +16,12 @@ import {
 } from './chat.server';
 import type { ChatFailureMode } from './chat.server';
 import { DISCORD_SAVED_CHAT, savedChatBlock } from './chat-save-answers';
-import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { reportRouterFailure, sanitizeForRouter, type RouterResult } from './chat-router.server';
+import { runRouter } from './chat-router-stage.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { loadBlogIndex } from './blog-index.server';
 import { preferMasters } from './router-view';
-import type { AnthropicUsage } from './anthropic.server';
+import type { AnthropicUsage, ChatPurpose } from './anthropic.server';
 import { Classification, type RefusalCategory } from '../../packages/health-core/src/models';
 
 export interface PlatformCompletionResult {
@@ -75,8 +76,9 @@ Override the following default system prompt behaviours:
 export async function platformChatCompletion(params: {
   message: string;
   history: Array<{ role: 'user' | 'assistant'; content: string }>;
+  purpose: ChatPurpose;
 }): Promise<PlatformCompletionResult> {
-  const { message, history } = params;
+  const { message, history, purpose } = params;
 
   const sanitizedCurrent = sanitizeForRouter(message);
   const firstUserMsg = history.find(m => m.role === 'user')?.content;
@@ -85,7 +87,7 @@ export async function platformChatCompletion(params: {
   const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
 
   // Stage 1: classifier (Discord has no per-user data fetch to parallelize with).
-  const classifierResult = await classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
+  const classifierResult = await classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent, purpose);
   const classifier = {
     classification: classifierResult.classification,
     routerSkipped: classifierResult.routerSkipped,
@@ -100,7 +102,7 @@ export async function platformChatCompletion(params: {
 
   // Stage 2: router fires only when the classifier didn't bypass it (ROUTE/ERROR → fire).
   const routerResult: RouterResult | null = shouldFireRouter(classifierResult)
-    ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+    ? await runRouter(sanitizedCurrent, sanitizedFirst, sanitizedRecent, purpose, (r) => reportRouterFailure(r, 'discord'))
     : null;
 
   // US-50 AC14: an older post gives way to its topic masters unless the message gives its URL or handle.
@@ -113,7 +115,7 @@ export async function platformChatCompletion(params: {
   const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(DISCORD_SAVED_CHAT), blogArticles });
   const conversationMessages = buildConversationMessages(history, message);
   // No form here to apply an edit to, so no tools (US-15 AC19).
-  const completion = await getChatCompletion(systemBlocks, conversationMessages, false);
+  const completion = await getChatCompletion(systemBlocks, conversationMessages, false, undefined, { purpose });
 
   return {
     content: completion.content,

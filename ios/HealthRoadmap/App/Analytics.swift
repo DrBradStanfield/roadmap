@@ -90,18 +90,17 @@ final class Analytics {
         /// US-73: one of My health's jump pills tapped, and a save from the Add blood test sheet.
         /// Never which pill, which test or a value.
         case jumpPillTapped = "Jump pill tapped", bloodTestAdded = "Blood test added"
-        /// US-52 AC8b: save all tapped (once per run), and a lab report's own Save tapped.
-        /// Never a count, a report's name or a value.
+        /// US-52 AC8b, AC8c: the one Save of an upload of two or more files, or of one file; once a
+        /// pick. Never a count, a report's name or a value.
         case labSaveAll = "Lab save all", labSaveOne = "Lab save one"
         /// US-13 AC13: the review's Show all opened, its not-saved detail opened, and a value
         /// unticked. Never a value, a test's name or a count.
         case labReviewShowAll = "Lab review show all", labReviewNotSavedOpened = "Lab review not saved opened", labReviewUntick = "Lab review untick"
-
-        /// "Lab save one" only on an upload of two or more reports, where save all was there to
-        /// choose instead, so the two counts compare like with like (US-52 AC8b).
-        static func saveOne(inUploadOf reports: Int) -> Event? {
-            reports >= 2 ? .labSaveOne : nil
-        }
+        /// US-12 AC30: an upload skipped a file already in the record, and its first file was read
+        /// within 30 seconds of the pick. Once a pick; never a count, a name or a hash.
+        case labUploadKnownSkipped = "Lab upload known skipped", labUploadFirstReadUnder30s = "Lab upload first read under 30 s"
+        /// US-73 AC14: a heading's "Upload labs" pressed, naming the heading (`HealthTopic.uploadLabsEvent`). Never a value.
+        case uploadLabsWeight = "Upload labs weight", uploadLabsCholesterol = "Upload labs cholesterol", uploadLabsBloodTests = "Upload labs blood tests"
 
         /// A tour tip closed (its Next or Done, a tap outside it, leaving it, its action, or no anchor) or skipped.
         static func tip(_ step: TourStep, skipped: Bool) -> Event? {
