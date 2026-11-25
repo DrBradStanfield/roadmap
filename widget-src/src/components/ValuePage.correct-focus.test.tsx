@@ -19,6 +19,12 @@ vi.mock('./HistoryPanel', () => ({ TimeSeriesChart: () => null, MixedUnitsNote: 
 
 import { ValuePage } from './ValuePage';
 
+function held<T>() {
+  let open!: (value: T) => void;
+  const promise = new Promise<T>((resolve) => { open = resolve; });
+  return { promise, open };
+}
+
 type Save = (tasks: SaveTask[], erase?: string) => Promise<Refused>;
 const settled = () => act(async () => { for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0)); });
 
@@ -43,13 +49,14 @@ function bpPage(onSave: Save) {
   return { view, corrects, form, systolic, diastolic, reread: () => view.rerender(<ValuePage {...props(after)}/>) };
 }
 
-/** Correct on the older day, a new reading typed, Enter in the diastolic. */
-async function correctOlderDay(onSave: Save) {
+/** Correct on the older day, a new reading typed (on `day`, if given), Enter in the diastolic. */
+async function correctOlderDay(onSave: Save, day?: string) {
   const p = bpPage(onSave);
   const older = p.corrects()[1];
   older.focus();
   fireEvent.click(older);
   expect(document.activeElement).toBe(p.systolic());
+  if (day) fireEvent.change(p.form().querySelector('input[type="date"]')!, { target: { value: day } });
   fireEvent.change(p.systolic(), { target: { value: '125' } });
   fireEvent.change(p.diastolic(), { target: { value: '80' } });
   p.diastolic().focus();
@@ -87,6 +94,37 @@ describe('US-03 AC10 (H302): the focus after a blood pressure\'s Correct saves o
     await settled();
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(document.activeElement).toBe(p.view.container.querySelector('h3.md-page-title'));
+  });
+
+  it('a correction moved to another day hands the focus to the Correct button of the day saved', async () => {
+    const onSave = vi.fn<Save>(async () => new Map());
+    const p = await correctOlderDay(onSave, DAYS[0]);
+    await settled();
+    expect(onSave.mock.calls[0][0][0].date).toBe(DAYS[0]);
+    expect(document.activeElement).toBe(p.corrects()[0]);
+  });
+
+  it('the focus moved out of the form while the save runs stays where the person put it', async () => {
+    const save = held<Refused>();
+    const p = await correctOlderDay(vi.fn<Save>(() => save.promise));
+    const back = p.view.container.querySelector('.md-back') as HTMLButtonElement;
+    back.focus();
+    await act(async () => { save.open(new Map()); });
+    await settled();
+    expect(document.activeElement).toBe(back);
+  });
+
+  it('another day\'s Correct pressed while the save runs keeps that day\'s form open, with the focus in it', async () => {
+    const save = held<Refused>();
+    const p = await correctOlderDay(vi.fn<Save>(() => save.promise));
+    fireEvent.click(p.corrects()[0]);
+    expect(document.activeElement).toBe(p.systolic());
+    expect(p.systolic().value).toBe('128');
+    await act(async () => { save.open(new Map()); });
+    await settled();
+    expect(p.systolic().value).toBe('128');
+    expect(p.diastolic().value).toBe('82');
+    expect(document.activeElement).toBe(p.systolic());
   });
 
   it('a refused save leaves the focus on the field the person was in', async () => {
