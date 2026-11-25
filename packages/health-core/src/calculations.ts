@@ -4,6 +4,7 @@ import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, 
 import { generateSuggestions } from './suggestions';
 import { validateInputValue } from './validation';
 import { limitOf } from './lab-limits';
+import { BMI_THRESHOLDS } from './bmi-thresholds';
 
 /**
  * Calculate Ideal Body Weight using the Peterson Formula (2016)
@@ -117,14 +118,14 @@ export function calculateEGFR(creatinineUmolL: number, age: number, sex: 'male' 
  * is reclassified as "Normal" since central adiposity is absent.
  */
 export function getBMICategory(bmi: number, waistToHeightRatio?: number): string {
-  if (bmi < 18.5) return 'Underweight';
-  if (bmi < 25) return 'Normal';
-  if (bmi < 30) {
+  if (bmi < BMI_THRESHOLDS.normal) return 'Underweight';
+  if (bmi < BMI_THRESHOLDS.overweight) return 'Normal';
+  if (bmi < BMI_THRESHOLDS.obese) {
     if (waistToHeightRatio !== undefined && !isWaistToHeightElevated(waistToHeightRatio)) return 'Normal';
     return 'Overweight';
   }
-  if (bmi < 35) return 'Obese (Class I)';
-  if (bmi < 40) return 'Obese (Class II)';
+  if (bmi < BMI_THRESHOLDS.obeseClass2) return 'Obese (Class I)';
+  if (bmi < BMI_THRESHOLDS.obeseClass3) return 'Obese (Class II)';
   return 'Obese (Class III)';
 }
 
