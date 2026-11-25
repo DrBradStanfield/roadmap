@@ -10,7 +10,8 @@
  * user pays for it, so it stays on Haiku (its body still comes from modelParams).
  *
  * Haiku 5.5 since 2026-10-16 (Brad, no benchmark): the classifier, extraction and
- * BYOK chat, all with thinking off (US-15 AC34).
+ * BYOK chat, all with thinking off (US-15 AC34). Since 2026-11-26 also YOUTUBE_MODEL, the
+ * YouTube bot's router (thinking off) and answer (adaptive thinking, medium effort; AC77).
  */
 
 /** Main chat answer on the web and Discord. */
