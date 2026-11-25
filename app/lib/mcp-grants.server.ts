@@ -7,7 +7,7 @@
 import crypto from 'node:crypto';
 import * as Sentry from '@sentry/react-router';
 import { createQuotaCounter, createRateLimiter, DAY_MS } from './rate-limiter';
-import type { IpKey } from './ip-key.server';
+import type { IpKey, PlainKey } from './ip-key.server';
 import { getClientIp } from './local-first-route.server';
 import { claimSingleUse, type ClaimOutcome } from './single-use-claims.server';
 import { MCP_SCOPES, resetMcpWarnings } from './mcp-config.server';
@@ -153,7 +153,7 @@ export function issueTokens(clientId: string, provider: McpProvider, from: Grant
  * is at most that lifetime after it was issued. The set is bounded (US-52 AC16): room comes only from
  * expired ids, so a set full of live ones refuses the redemption.
  */
-const spentCodes = createQuotaCounter(1, CODE_LIFETIME_SECONDS * 1000, 60_000, { name: 'mcp spent codes', oneUse: true });
+const spentCodes = createQuotaCounter<PlainKey>(1, CODE_LIFETIME_SECONDS * 1000, 60_000, { name: 'mcp spent codes', oneUse: true });
 
 /**
  * Proposal receipts already confirmed on this machine (US-36 AC9): the fast
@@ -251,7 +251,7 @@ export function chargeWrites(connection: string, cost: number): string | null {
 }
 
 /** Files extracted per connection today, beside the writes — the same key, the same reset. */
-export const importFiles = createQuotaCounter(IMPORT_FILES_PER_DAY, DAY_MS, 30 * 60_000, { name: 'mcp import files per connection' });
+export const importFiles = createQuotaCounter<PlainKey>(IMPORT_FILES_PER_DAY, DAY_MS, 30 * 60_000, { name: 'mcp import files per connection' });
 
 /** Test seam — the maps are process-global and would leak between cases. */
 export function resetMcpMemory(): void {
@@ -281,7 +281,7 @@ export const allowAuthorize = createRateLimiter<IpKey>(AUTHORIZE_PER_WINDOW, 60_
  * limiter paying the cost it exists to avoid. One row per IP per window says
  * the same thing.
  */
-export const allowRateLimitEvent = createRateLimiter(1, 60_000, 10 * 60_000, { name: 'mcp rate-limit events' });
+export const allowRateLimitEvent = createRateLimiter<IpKey>(1, 60_000, 10 * 60_000, { name: 'mcp rate-limit events' });
 
 /**
  * Per-IP at `/token`, and per-connection at `tools/call`. Both are flood
@@ -290,9 +290,9 @@ export const allowRateLimitEvent = createRateLimiter(1, 60_000, 10 * 60_000, { n
  * it locks out the honest ones. The per-connection one also bounds how often
  * one connection can make us refresh a Dropbox access token.
  */
-const allowToken = createRateLimiter(300, 60_000, 10 * 60_000, { name: 'mcp token' });
+const allowToken = createRateLimiter<PlainKey>(300, 60_000, 10 * 60_000, { name: 'mcp token' });
 /** `/token` keys on the address, not its /64: a /64 could fold a vendor's thousands into one count (untangle S-21, owner ruling 1b). */
 export const allowTokenFrom = (request: Request): boolean => allowToken(getClientIp(request, 'fly'));
-export const allowToolCall = createRateLimiter(120, 60_000, 10 * 60_000, { name: 'mcp tool calls per connection' });
+export const allowToolCall = createRateLimiter<PlainKey>(120, 60_000, 10 * 60_000, { name: 'mcp tool calls per connection' });
 /** search_knowledge and get_article on top of that (US-41 AC11): reads of public text, so a tighter brake on bulk copying. */
-export const allowKnowledgeCall = createRateLimiter(30, 60_000, 10 * 60_000, { name: 'mcp knowledge calls per connection' });
+export const allowKnowledgeCall = createRateLimiter<PlainKey>(30, 60_000, 10 * 60_000, { name: 'mcp knowledge calls per connection' });

@@ -141,9 +141,9 @@ describe('guest session IP hashing (US-15 AC7)', () => {
     expect(db.inserts.some((i) => i.table === 'guest_chat_sessions')).toBe(true);
   });
 
-  describe('US-52 AC4k: the new-session limit keys on the one per-IP bucket', () => {
+  describe('US-52 AC4k: the new-session limit keys on the one per-IP bucket, 10 an hour (30 for an IPv6 /64)', () => {
     ipKeyedLimitCases({
-      limit: 10, windowMs: 60 * 60_000, v6: '2001:db8:5e', v4: '100.79',
+      limit: 10, v6Limit: 30, windowMs: 60 * 60_000, v6: '2001:db8:5e', v4: '100.79',
       allowed: (ip) => getOrCreateGuestSession(ip).then(() => true, (error: Error) => {
         if (error.message !== 'Too many requests') throw error;
         return false;

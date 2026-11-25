@@ -2,16 +2,22 @@
  * The one key shape for every per-IP limit (US-52 AC4g, AC4k; untangle S-21).
  * A limiter keyed per IP takes an `IpKey`, and only this module makes one, so
  * a raw address cannot be passed as a limiter key by mistake: the compiler
- * refuses it. `app/lib/ip-key.guard.test.ts` holds the rest: no other file
- * reads the address for a limit, and no other file casts to `IpKey`.
+ * refuses it, as it refuses an `IpKey` in any other limiter (`PlainKey`).
+ * `app/lib/ip-key.guard.test.ts` holds the rest: no other file reads the
+ * address for a limit, casts to `IpKey`, or joins one into a string.
  */
 import { isIP } from 'node:net';
 import { parseIpv6 } from './ip-groups.server';
 import { getClientIp } from './local-first-route.server';
 
 declare const ipKeyBrand: unique symbol;
-/** A per-IP limiter key, made only by `ipBucket` (and so `clientKey`) or `hashedKey`. */
+/** A per-IP limiter key, made only by `ipBucket` (and so `clientKey`), `hashedKey` or `scopedKey`. */
 export type IpKey = string & { readonly [ipKeyBrand]: true };
+/**
+ * Every other limiter's key. Any string is one, but an `IpKey` is not, so a key built from the
+ * request's address cannot reach a limiter not declared on `IpKey` (US-52 AC4k).
+ */
+export type PlainKey = string & { readonly [ipKeyBrand]?: never };
 
 /**
  * The per-IP bucket. IPv6 is keyed on its /64, which one subscriber holds
@@ -50,5 +56,27 @@ const UNKNOWN_IP = 'unknown' as IpKey;
 /** The request's per-IP key: the address the server already trusts for `trust`, folded by `ipBucket`. */
 export const clientKey = (request: Request, trust: 'fly' | 'shopify'): IpKey => ipBucket(getClientIp(request, trust));
 
-/** A key that must not sit in memory as an address (US-15 AC7, US-17): the bucket, hashed. One bucket, one hash. */
-export const hashedKey = (key: IpKey, hash: (value: string) => string): IpKey => hash(key) as IpKey;
+/**
+ * A key that must not sit in memory as an address (US-15 AC7, US-17): the bucket, hashed. One bucket, one hash.
+ * It keeps its kind: an IPv6 bucket's hash ends `/64` (a hash never does), and `unknown` is no address, so it stays.
+ */
+export const hashedKey = (key: IpKey, hash: (value: string) => string): IpKey => {
+  const kind = ipKeyKind(key);
+  return kind === 'unknown' ? key : (hash(key) + (kind === 'v6-bucket' ? '/64' : '')) as IpKey;
+};
+
+/** One count per `scope` for the same key (the MCP log brake counts per reason). It keeps its kind. */
+export const scopedKey = (scope: string, key: IpKey): IpKey => `${scope}|${key}` as IpKey;
+
+/** What a key stands for: an IPv4 address, an IPv6 /64, or a value that is not an address. */
+export type IpKeyKind = 'v4' | 'v6-bucket' | 'unknown';
+export function ipKeyKind(key: IpKey): IpKeyKind {
+  const bare = key.slice(key.lastIndexOf('|') + 1);
+  return bare === UNKNOWN_IP ? 'unknown' : bare.endsWith('/64') ? 'v6-bucket' : 'v4';
+}
+
+/**
+ * A limit that depends on the key's kind, the one place one is set (Brad, 2026-11-26): an IPv6 /64 can hold
+ * many unrelated people (carrier and relay egress), so the tightest shared limits give it more room.
+ */
+export const perKindLimit = (limits: Record<IpKeyKind, number>) => (key: IpKey): number => limits[ipKeyKind(key)];

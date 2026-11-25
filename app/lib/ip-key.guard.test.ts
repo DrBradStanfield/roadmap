@@ -1,8 +1,9 @@
 /**
  * US-52 AC4k (untangle S-21): every per-IP limit builds its key with the one helper. The compiler
  * holds most of it: a per-IP limiter takes an `IpKey`, which only ip-key.server.ts makes. This scan
- * holds the rest: no other file casts to `IpKey`, every per-IP limiter is declared on it, and the
- * address is read outside the helper only where a named ruling keeps the address itself.
+ * holds the rest: no other file casts to `IpKey`, every limiter states its key type (`IpKey` or
+ * `PlainKey`, which an `IpKey` cannot reach), no key is joined into a plain string, and the address
+ * is read outside the helper only where a named ruling keeps the address itself.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -39,18 +40,33 @@ describe('US-52 AC4k: every per-IP limit builds its key with the one helper', ()
     expect(prod.filter(({ text }) => /as IpKey\b/.test(text)).map(({ file }) => file)).toEqual(['lib/ip-key.server.ts']);
   });
 
-  it('declares every per-IP limiter on IpKey', () => {
-    const raw: string[] = [];
-    for (const { text } of prod) {
-      for (const call of text.matchAll(/(?<!function )create(?:RateLimiter|QuotaCounter)(<\w+>)?\(/g)) {
-        const site = text.slice(call.index, text.indexOf('})', call.index) + 2);
-        const name = /name: '([^']+)'/.exec(site)?.[1] ?? '';
-        if (call[1] !== '<IpKey>') raw.push(name);
-      }
-    }
-    // Names that say "per IP", and the per-IP limits whose names do not.
-    const perIp = raw.filter((name) => / per IP$/.test(name) || ['mcp authorize', 'mcp reviewer failures'].includes(name));
-    expect(perIp).toEqual([]);
-    expect(raw).toContain('mcp token'); // the named exception above, on the address
+  it('states the key type of every limiter, so the compiler keeps an address key out of any other limiter', () => {
+    // A limiter with no stated type is keyed on `never`, and `PlainKey` refuses an `IpKey`: the type checker does the rest.
+    const unstated = prod.flatMap(({ file, text }) => [...text.matchAll(/(?<!function )create(?:RateLimiter|QuotaCounter)(<\w+>)?\(/g)]
+      .filter((call) => call[1] !== '<IpKey>' && call[1] !== '<PlainKey>')
+      .map(() => file));
+    expect(unstated).toEqual([]);
+    const factories = prod.find(({ file }) => file === 'lib/rate-limiter.ts')!.text;
+    expect(count(factories, /export function create(?:RateLimiter|QuotaCounter)<K extends string = never>\(/g)).toBe(2);
+  });
+
+  it('builds no limiter key from an address key by joining strings', () => {
+    // The one gap the compiler leaves: a template or `+` turns an IpKey into a plain string. scopedKey is the way.
+    expect(prod.filter(({ file, text }) => file !== 'lib/ip-key.server.ts' && joinsAnIpKey(text)).map(({ file }) => file)).toEqual([]);
+    // The scan sees the shapes it exists for (the log brake's keys before scopedKey).
+    expect(joinsAnIpKey("allowRateLimitEvent(`register:${clientKey(request, 'fly')}`)")).toBe(true);
+    expect(joinsAnIpKey('const ip = clientKey(request, \'fly\');\nallowRateLimitEvent(`${reason}:${ip}`);')).toBe(true);
+    expect(joinsAnIpKey('function f(ip: IpKey) { return limit(\'x:\' + ip); }')).toBe(true);
+    expect(joinsAnIpKey('const ip = clientKey(request, \'fly\');\nallowRateLimitEvent(scopedKey(reason, ip));')).toBe(false);
   });
 });
+
+/** True when the text joins a value from the key helpers, or a name holding one, into a string. */
+function joinsAnIpKey(text: string): boolean {
+  const names = [
+    ...[...text.matchAll(/\b(\w+)\s*=\s*(?:clientKey|ipBucket|hashedKey|scopedKey)\(/g)].map((m) => m[1]),
+    ...[...text.matchAll(/\b(\w+)\??:\s*IpKey\b/g)].map((m) => m[1]),
+  ];
+  const key = `(?:${['(?:clientKey|ipBucket|hashedKey|scopedKey)\\(', ...names.map((n) => `\\b${n}\\b(?!\\()`)].join('|')})`;
+  return new RegExp(`(?:\\$\\{|\\+)\\s*${key}|${key}\\s*\\+(?!\\+)`).test(text);
+}

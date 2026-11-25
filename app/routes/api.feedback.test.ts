@@ -136,9 +136,9 @@ describe('api.feedback body cap (US-09 AC25)', () => {
   });
 });
 
-describe('US-52 AC4k: the feedback limit keys on the one per-IP bucket', () => {
+describe('US-52 AC4k: the feedback limit keys on the one per-IP bucket, 3 an hour (10 for an IPv6 /64)', () => {
   ipKeyedLimitCases({
-    limit: 3, windowMs: 60 * 60_000, v6: '2001:db8:f1', v4: '100.71',
+    limit: 3, v6Limit: 10, windowMs: 60 * 60_000, v6: '2001:db8:f1', v4: '100.71',
     allowed: async (ip) => (await submit(proxied(ip, '6.6.6.1'))).status !== 429,
   });
 });

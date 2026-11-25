@@ -3,11 +3,11 @@ import { authenticate } from '../shopify.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { isBotUA } from '../lib/bot-detect';
 import { BODY_TOO_LARGE, parseSimpleRequestJson } from '../lib/local-first-route.server';
-import { clientKey, type IpKey } from '../lib/ip-key.server';
+import { clientKey, type IpKey, type PlainKey } from '../lib/ip-key.server';
 import { parseProductEvent, recordProductEvent } from '../lib/product-events.server';
 
 // 20 events per minute per visitor — a full session emits well under this.
-const checkEventRateLimit = createRateLimiter(20, 60_000, 5 * 60_000, { name: 'events per visitor' });
+const checkEventRateLimit = createRateLimiter<PlainKey>(20, 60_000, 5 * 60_000, { name: 'events per visitor' });
 // The visitor id is in the body, so rotating it defeats the limit above. The
 // IP is the one key the caller cannot choose; loose enough for CGNAT.
 const checkEventIpRateLimit = createRateLimiter<IpKey>(600, 60 * 60_000, 10 * 60_000, { name: 'events per IP' });

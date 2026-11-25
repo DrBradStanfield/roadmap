@@ -4,7 +4,7 @@
  * normal client.
  */
 import { describe, expect, it } from 'vitest';
-import { ipBucket } from './ip-key.server';
+import { hashedKey, ipBucket, ipKeyKind, perKindLimit, scopedKey } from './ip-key.server';
 
 describe('ipBucket: canonical inputs key as before (US-52 AC4g pin)', () => {
   it.each([
@@ -87,5 +87,33 @@ describe('ipBucket: every spelling of one address is one key (US-52 AC4g)', () =
 
   it('two different invalid values share one key, never their own text', () => {
     expect(ipBucket('x'.repeat(200))).toBe(ipBucket('y'));
+  });
+});
+
+describe('US-52 AC4k: a key knows its kind, and a limit may depend on it', () => {
+  const hash = (value: string) => `h${value.length}`;
+  it.each([
+    ['203.0.113.9', 'v4'],
+    ['::ffff:203.0.113.9', 'v4'],
+    ['2001:db8:1:2:aaaa::1', 'v6-bucket'],
+    ['not-an-address', 'unknown'],
+    [undefined, 'unknown'],
+  ] as const)('%s is a %s key, hashed or scoped alike', (raw, kind) => {
+    const key = ipBucket(raw);
+    expect(ipKeyKind(key)).toBe(kind);
+    expect(ipKeyKind(hashedKey(key, hash))).toBe(kind);
+    expect(ipKeyKind(scopedKey('register', key))).toBe(kind);
+    expect(ipKeyKind(scopedKey('register', hashedKey(key, hash)))).toBe(kind);
+  });
+
+  it('a hashed key holds no address, and one hash per bucket', () => {
+    expect(hashedKey(ipBucket('2001:db8:1:2::1'), hash)).toBe(hashedKey(ipBucket('2001:db8:1:2::9'), hash));
+    expect(hashedKey(ipBucket('2001:db8:1:2::1'), hash)).not.toContain('2001');
+    expect(hashedKey(ipBucket('nope'), hash)).toBe('unknown');
+  });
+
+  it('perKindLimit answers the number set for the key\'s kind; unknown is set like v4 by its callers', () => {
+    const limit = perKindLimit({ v4: 3, 'v6-bucket': 10, unknown: 3 });
+    expect([ipBucket('203.0.113.9'), ipBucket('2001:db8::1'), ipBucket('x')].map(limit)).toEqual([3, 10, 3]);
   });
 });

@@ -5,13 +5,14 @@ import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
 import { recordFeedbackSubmission } from '../lib/product-events.server';
 import { BODY_TOO_LARGE, parseSimpleRequestJson } from '../lib/local-first-route.server';
-import { clientKey, type IpKey } from '../lib/ip-key.server';
+import { clientKey, perKindLimit, type IpKey } from '../lib/ip-key.server';
 import { getCustomerId } from '../lib/route-helpers.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
-// 3 submissions per hour per IP — the same limiter every other route uses.
-const checkFeedbackRateLimit = createRateLimiter<IpKey>(3, 60 * 60_000, 10 * 60_000, { name: 'feedback per IP' });
+// 3 submissions per hour per IPv4 address, 10 per IPv6 /64, which can hold many people (US-52 AC4k).
+const FEEDBACK_PER_HOUR = perKindLimit({ v4: 3, 'v6-bucket': 10, unknown: 3 });
+const checkFeedbackRateLimit = createRateLimiter<IpKey>(FEEDBACK_PER_HOUR, 60 * 60_000, 10 * 60_000, { name: 'feedback per IP' });
 
 const feedbackSchema = z.object({
   email: z.email().max(200),

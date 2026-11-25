@@ -8,7 +8,7 @@ import { supabaseAdmin } from './supabase-client.server';
 import { logAudit } from './supabase-identity.server';
 import { safeErrorFields } from './safe-error-fields.server';
 import { createRateLimiter } from './rate-limiter';
-import { hashedKey, ipBucket, type IpKey } from './ip-key.server';
+import { hashedKey, ipBucket, perKindLimit, type IpKey } from './ip-key.server';
 
 // ---------------------------------------------------------------------------
 // Guest chat session management
@@ -33,15 +33,16 @@ export function hashClientIp(ip: string): string {
   return crypto.createHmac('sha256', Buffer.from(key)).update(ip, 'utf8').digest('base64url');
 }
 
-// Hashed-IP rate limit for guest session creation: 10 new sessions/hour per IP,
-// per-process in-memory. Resets on redeploy; effective ceiling is ~N × 10/hr
-// where N is the Fly machine count. Sophisticated IP-rotation abuse isn't
+// Hashed-IP rate limit for guest session creation: 10 new sessions/hour per IPv4 address, 30 per IPv6 /64,
+// which can hold many people (US-52 AC4k), per-process in-memory. Resets on redeploy; effective ceiling is
+// that limit × N, where N is the Fly machine count. Sophisticated IP-rotation abuse isn't
 // caught here — would need an upstream WAF. Bounded like every limiter map
 // (US-15 AC67): a live entry is evicted only once MAX_TRACKED_KEYS other hashes
 // are live within the hour, and a caller holding that many addresses already
-// gets 10 per address.
+// gets a full count per address.
 // The limit keys on the hashed bucket (IPv6 /64, US-52 AC4k); the session itself stays bound to the address.
-const takeGuestSession = createRateLimiter<IpKey>(10, 60 * 60_000, 10 * 60_000, { name: 'guest sessions per IP' });
+const GUEST_SESSIONS_PER_HOUR = perKindLimit({ v4: 10, 'v6-bucket': 30, unknown: 10 });
+const takeGuestSession = createRateLimiter<IpKey>(GUEST_SESSIONS_PER_HOUR, 60 * 60_000, 10 * 60_000, { name: 'guest sessions per IP' });
 
 export interface GuestSessionResult {
   sessionId: string;

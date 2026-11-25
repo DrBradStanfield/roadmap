@@ -7,11 +7,11 @@ import { sendPlanReadyEmail } from '../lib/email.server';
 import { buildUnsubscribeUrl, emailLimiterKey, enrolByEmail, scheduleSchema, type Enrolment } from '../lib/reminder-v2.server';
 import { recordServerEvent } from '../lib/product-events.server';
 import { BODY_TOO_LARGE, parseSimpleRequestJson } from '../lib/local-first-route.server';
-import { clientKey, type IpKey } from '../lib/ip-key.server';
+import { clientKey, type IpKey, type PlainKey } from '../lib/ip-key.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
-const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000, { name: 'email capture per email' }); // 5/day per email
+const checkGuestReportLimit = createRateLimiter<PlainKey>(5, 24 * 60 * 60_000, 30 * 60_000, { name: 'email capture per email' }); // 5/day per email
 // Per-IP as well as per-victim-email: the email limiter bounds harm to ONE
 // address but nothing stopped one client enrolling a whole address LIST
 // (N strangers' emails at rest + N sends from our domain). Best-effort — the

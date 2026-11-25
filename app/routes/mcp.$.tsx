@@ -21,7 +21,7 @@
 import crypto from 'node:crypto';
 import { sameBytes } from '../lib/crypto-compare.server';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
-import { clientKey } from '../lib/ip-key.server';
+import { clientKey, scopedKey } from '../lib/ip-key.server';
 import { cappedBody } from '../lib/capped-body.server';
 import { mcpClientLabel, mcpEndpoint, originRejected } from '../lib/mcp.server';
 import { recordServerEvent } from '../lib/product-events.server';
@@ -361,7 +361,7 @@ function reviewerSignIn(request: Request, form: URLSearchParams, state: StatePay
   const ip = clientKey(request, 'fly');
   const retry = (reason: 'reviewer-credentials' | 'reviewer-rate-limited', message: string, status: number) => {
     // One row per IP per window, per reason: a flood is when these run.
-    if (allowRateLimitEvent(`${reason}:${ip}`)) connectFailed(reason, state);
+    if (allowRateLimitEvent(scopedKey(reason, ip))) connectFailed(reason, state);
     const again: AuthorizeRequest = {
       client,
       redirectUri: state.redirectUri,
@@ -468,7 +468,7 @@ async function registerEndpoint(request: Request): Promise<Response> {
   }
   const client = registerClient(body);
   if (!client) {
-    if (allowRateLimitEvent(`register:${clientKey(request, 'fly')}`)) void recordServerEvent('mcp_authorize_refused', { reason: 'register-redirect', detail: registrationRefused(body) });
+    if (allowRateLimitEvent(scopedKey('register', clientKey(request, 'fly')))) void recordServerEvent('mcp_authorize_refused', { reason: 'register-redirect', detail: registrationRefused(body) });
     return oauthError('invalid_redirect_uri', 'This server registers only known assistant redirect URIs');
   }
   return Response.json(

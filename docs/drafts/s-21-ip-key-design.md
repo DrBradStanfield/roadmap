@@ -75,4 +75,8 @@ Tests per change: per route, two IPv6 addresses in one /64 share the count (refu
 ## Rulings (owner, 2026-11-14)
 
 Owner 1 (b): bucket everywhere but mcp token. 2 (a): guest binding stays on the address. 3 (a): lab join key stays on the address. 4 (a): the one-line fix. 5 (a): leave the clock, documented. 6 yes: ttl-bound.test.ts must see activeBatches' bound where it lives (api.lab-import-v2.ts:181), not a hand reclassification; move guestIpRateMap; leave the rest.
-Brad 1 goes to Brad as written. Security class: a fresh adversary reviews this note before any PR is built, and nothing in the S-21 series merges before Brad answers. Not started.
+Security class: a fresh adversary reviews this note before any PR is built.
+
+## Brad's answer (2026-11-26)
+
+Brad 1: "raise the two, then merge". Limits are unchanged except two, which rise for an IPv6 /64 only, since one /64 can hold many unrelated people (carrier and relay egress): feedback from 3 to 10 an hour, and new guest chat sessions from 10 to 30 an hour. IPv4 keys and the `unknown` key keep 3 and 10. Built as one rule, `perKindLimit` in app/lib/ip-key.server.ts (US-52 AC4k). The refusal texts stay.

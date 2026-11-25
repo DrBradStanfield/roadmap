@@ -1,7 +1,7 @@
 // In-memory rate limiter factory
 // Shared across routes (api.measurements, api.events, etc.)
 import * as Sentry from '@sentry/react-router';
-import type { IpKey } from './ip-key.server';
+import type { IpKey, PlainKey } from './ip-key.server';
 
 export const DAY_MS = 24 * 60 * 60_000;
 const HOUR_MS = 60 * 60_000;
@@ -73,8 +73,13 @@ export function boundedMap<V>(map: Map<string, V>, expiresAt: (entry: V) => numb
 
 const resetAtOf = (entry: { resetAt: number }) => entry.resetAt;
 
-/** `K` is the key's type: a per-IP limiter is `createRateLimiter<IpKey>`, so it takes only the one bucket (US-52 AC4k). */
-export function createRateLimiter<K extends string = string>(max: number, windowMs: number, cleanupMs: number, options: LimitMapOptions) {
+/**
+ * `K` is the key's type, and every limiter states it (US-52 AC4k): `IpKey` for a per-IP limit, so it takes only the
+ * one bucket, `PlainKey` for any other, which an `IpKey` cannot reach. Left out, it is `never`: nothing can be counted.
+ * `max` may be `perKindLimit(...)`, a number per kind of key.
+ */
+export function createRateLimiter<K extends string = never>(max: number | ((key: K) => number), windowMs: number, cleanupMs: number, options: LimitMapOptions) {
+  const limitOf = typeof max === 'number' ? () => max : max;
   const map = new Map<string, { count: number; resetAt: number }>();
   sweepExpired(map, resetAtOf, cleanupMs);
   const room = boundedMap(map, resetAtOf, options);
@@ -90,7 +95,7 @@ export function createRateLimiter<K extends string = string>(max: number, window
         return true;
       }
       entry.count++;
-      return entry.count <= max;
+      return entry.count <= limitOf(key);
     },
     { reset: () => map.clear() },
   );
@@ -101,7 +106,7 @@ export function createRateLimiter<K extends string = string>(max: number, window
  * day"). Same Map+sweep machinery as createRateLimiter, but consumption has a
  * weight and callers can read the remainder without consuming.
  */
-export function createQuotaCounter<K extends string = string>(limit: number, windowMs: number, cleanupMs: number, options: LimitMapOptions) {
+export function createQuotaCounter<K extends string = never>(limit: number, windowMs: number, cleanupMs: number, options: LimitMapOptions) {
   const map = new Map<string, { count: number; resetAt: number }>();
   sweepExpired(map, resetAtOf, cleanupMs);
   const room = boundedMap(map, resetAtOf, options);
@@ -156,7 +161,7 @@ const DEFAULT_DAILY_FILE_CAP = 2000;
  * `AI_DAILY_FILE_CAP × machines × 2 apps` and it resets on deploy — an
  * accepted approximation until a shared counter is worth its DDL.
  */
-export const machineFiles = createQuotaCounter(dailyFileCap(process.env.AI_DAILY_FILE_CAP), DAY_MS, 30 * 60_000, { name: 'machine files per day' });
+export const machineFiles = createQuotaCounter<PlainKey>(dailyFileCap(process.env.AI_DAILY_FILE_CAP), DAY_MS, 30 * 60_000, { name: 'machine files per day' });
 
 /**
  * AI_DAILY_FILE_CAP as a number. A value that is not a finite number of 0 or
@@ -193,7 +198,7 @@ export function envCap(name: string, raw: string | undefined, fallback: number, 
  */
 export const webChatTurns = {
   ip: createQuotaCounter<IpKey>(200, DAY_MS, 30 * 60_000, { name: 'web chat turns per IP' }),
-  machine: createQuotaCounter(envCap('WEB_CHAT_DAILY_CAP', process.env.WEB_CHAT_DAILY_CAP, 10_000), DAY_MS, 30 * 60_000, { name: 'web chat turns per machine' }),
+  machine: createQuotaCounter<PlainKey>(envCap('WEB_CHAT_DAILY_CAP', process.env.WEB_CHAT_DAILY_CAP, 10_000), DAY_MS, 30 * 60_000, { name: 'web chat turns per machine' }),
 };
 
 /**

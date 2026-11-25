@@ -6,7 +6,7 @@
  * Fails closed: no config or no key store is a 503, never a pass.
  */
 import { readCappedBytes } from './capped-body.server';
-import { clientKey, type IpKey } from './ip-key.server';
+import { clientKey, type IpKey, type PlainKey } from './ip-key.server';
 import { createQuotaCounter, dailyFileCap, DAY_MS, envCap, machineFiles } from './rate-limiter';
 import { supabaseAdmin } from './supabase-client.server';
 import {
@@ -65,14 +65,14 @@ export function appRoutesOff(env: NodeJS.ProcessEnv = process.env): boolean {
 export const appLimits = {
   ip: { chat: createQuotaCounter<IpKey>(200, DAY_MS, 30 * 60_000, { name: 'app chat per IP' }), lab: createQuotaCounter<IpKey>(200, DAY_MS, 30 * 60_000, { name: 'app lab per IP' }) },
   machine: {
-    chat: createQuotaCounter(envCap('APP_CHAT_DAILY_CAP', process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000, { name: 'app chat per machine' }),
+    chat: createQuotaCounter<PlainKey>(envCap('APP_CHAT_DAILY_CAP', process.env.APP_CHAT_DAILY_CAP, 500), DAY_MS, 30 * 60_000, { name: 'app chat per machine' }),
     // Never more than 15% of the web's shared file cap, whatever the env says (AC4, Codex R7).
-    lab: createQuotaCounter(Math.min(envCap('APP_LAB_DAILY_CAP', process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * dailyFileCap(process.env.AI_DAILY_FILE_CAP))), DAY_MS, 30 * 60_000, { name: 'app lab per machine' }),
+    lab: createQuotaCounter<PlainKey>(Math.min(envCap('APP_LAB_DAILY_CAP', process.env.APP_LAB_DAILY_CAP, 300), Math.floor(0.15 * dailyFileCap(process.env.AI_DAILY_FILE_CAP))), DAY_MS, 30 * 60_000, { name: 'app lab per machine' }),
   },
   /** Signed requests refused before their signature verified, per IP per day; past it, no key lookup or body read (adversary code R3). A backstop: a verified key's failures are its own (AC4c). */
   failures: createQuotaCounter<IpKey>(200, DAY_MS, 30 * 60_000, { name: 'app failures per IP' }),
   /** A verified key's refused requests (stale counter, key gone) per day, so one broken device stops only itself (US-52 AC4c). */
-  keyFailures: createQuotaCounter(20, DAY_MS, 30 * 60_000, { name: 'app failures per key' }),
+  keyFailures: createQuotaCounter<PlainKey>(20, DAY_MS, 30 * 60_000, { name: 'app failures per key' }),
   /** Registration attempts per IP per day, counted before verifying (R11); a success hands its attempt back (AC1b). */
   register: createQuotaCounter<IpKey>(10, DAY_MS, 30 * 60_000, { name: 'app registration attempts per IP' }),
   /** Successful registrations per IP per day (US-52 AC1b). */
@@ -80,9 +80,9 @@ export const appLimits = {
   /** Challenges used, each once, success or failure (US-52 AC1a). A minute longer than a challenge lives, for clock skew between machines.
    *  The set is per machine: the minute covers a challenge minted by a machine whose clock runs up to a minute ahead, which stays
    *  valid here that much longer. Bounded at the default; at the bound it forgets its oldest entry, as the other maps do (US-52 AC16). */
-  challenges: createQuotaCounter(1, CHALLENGE_TTL_MS + 60_000, 60_000, { name: 'app spent challenges' }),
+  challenges: createQuotaCounter<PlainKey>(1, CHALLENGE_TTL_MS + 60_000, 60_000, { name: 'app spent challenges' }),
   /** The dev bypass's per-key count, since no key row exists for it. */
-  dev: { chat: createQuotaCounter(PER_KEY_DAILY.chat, DAY_MS, 30 * 60_000, { name: 'app dev chat per key' }), lab: createQuotaCounter(PER_KEY_DAILY.lab, DAY_MS, 30 * 60_000, { name: 'app dev lab per key' }) },
+  dev: { chat: createQuotaCounter<PlainKey>(PER_KEY_DAILY.chat, DAY_MS, 30 * 60_000, { name: 'app dev chat per key' }), lab: createQuotaCounter<PlainKey>(PER_KEY_DAILY.lab, DAY_MS, 30 * 60_000, { name: 'app dev lab per key' }) },
 };
 
 const refuse = (status: number, reason: string, error: string) =>
