@@ -40,10 +40,6 @@ issue, and nothing private.
   The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
   "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
   option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
-- **An erase message needs a truer sentence.** Issue: when an erase partly fails, the iPhone can show an empty or
-  wrong reason, and the web says nothing about the chat step. Draft lines exist for each case. Options: approve the
-  drafts as one set; approve some; keep today's words. Recommendation: approve the set, because today's words can be
-  wrong about what was deleted.
 - **A screen that still offers Delete and Log off after a crash.** Issue: when the web page crashes, or the iPhone
   app cannot start, the fallback screen hides "Delete all my data" and "Log off". A fallback with those two buttons
   needs one sentence. Options: approve a sentence and build it; leave. Recommendation: yes, because deleting your data
@@ -184,6 +180,10 @@ issue, and nothing private.
 - Chat wording and counting differ between the chat panel and the pop-up: the recommendation. The panel takes the
   pop-up's words by the same rule, from one table; a panel shown is counted as `chat_panel_shown`, and the pop-up's
   `chat_opened` is unchanged. No new sentences (US-15 AC77).
+- An erase message says what each step did, from one table in the shared engine (US-11 AC13): "this. and use your
+  judement for the sentences. must be succinct, and I approve whatever sentences you suggest". The web uses it now; the
+  iPhone with its next engine release. A record not erased: "Your health record was not deleted: the erase could not be
+  saved.", then "Your chat history was deleted." or "Your chat history could not be reached just now.", then "Try again."
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
