@@ -44,6 +44,13 @@ export class WritesStoppedError extends StorageError {
   }
 }
 
+/** A device write refused because this page may no longer write here (US-09 AC59): read from the typed reason set
+ *  where it was raised (root fix R6), so the session's own gate counts too, never the class or the words. A refusal
+ *  SyncManager rewrapped after a write keeps the reason but may have landed, so it is not one. */
+export function writesStopped(error: unknown): boolean {
+  return error instanceof StorageError && error.reason === 'writes-stopped' && error.outcome === 'refused';
+}
+
 /** Fresh exception: no provider text, original cause or document reference. */
 export function recordFailure(error: unknown, message: RecordFailure): Error {
   const interruption = error instanceof Error && EXPECTED_NETWORK_ERRORS.some(pattern => pattern.test(error.message));
