@@ -14,7 +14,9 @@
  * Rows marked S62b are PR 1's (US-10 AC12); this file sits on that branch.
  * R6 PR 3 (US-10 AC16) moved these readers to the typed outcome field; rows
  * marked AC16 changed on purpose, for the owner's rulings of 2026-11-25. The
- * field itself, per adapter: storage-outcome-field.test.ts.
+ * field itself, per adapter: storage-outcome-field.test.ts. Rows marked AC17
+ * (R6 PR 3b): a sync conflict storm is now raised `refused`, every attempt's
+ * write refused as a conflict. Failures before the upload: pre-write-outcome-pins.test.ts.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConflictError, LostUpdateError, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
@@ -185,7 +187,7 @@ const ROWS: Row[] = [
   ['dropbox', '401', false, true, 'auth', NOTHING],
   ['dropbox', '403', false, true, 'other', NOTHING],
   ['dropbox', '404', false, true, 'other', SILENT],
-  ['dropbox', '409', false, false, 'other', OWN],
+  ['dropbox', '409', false, true, 'other', OWN], // AC17: was not refused (a storm named no outcome)
   ['dropbox', '412', false, true, 'other', SILENT],
   ['dropbox', '422', false, true, 'other', SILENT],
   ['dropbox', '408', true, false, 'other', LANDED], // AC16: was SILENT
@@ -228,7 +230,7 @@ const ROWS: Row[] = [
   ['drive-check', '400', false, true, 'other', SILENT],
   ['drive-check', '401', false, true, 'auth', NOTHING],
   ['drive-check', '403', false, true, 'other', NOTHING],
-  ['drive-check', '404', false, false, 'other', OWN],
+  ['drive-check', '404', false, true, 'other', OWN], // AC17: was not refused
   ['drive-check', '409', false, true, 'other', SILENT],
   ['drive-check', '412', false, true, 'other', SILENT],
   ['drive-check', '422', false, true, 'other', SILENT],
@@ -243,9 +245,9 @@ const ROWS: Row[] = [
   ['github', '401', false, true, 'auth', NOTHING],
   ['github', '403', false, true, 'other', NOTHING],
   ['github', '404', false, true, 'other', SILENT],
-  ['github', '409', false, false, 'other', OWN],
+  ['github', '409', false, true, 'other', OWN], // AC17: was not refused
   ['github', '412', false, true, 'other', SILENT],
-  ['github', '422', false, false, 'other', OWN],
+  ['github', '422', false, true, 'other', OWN], // AC17: was not refused
   ['github', '408', true, false, 'other', LANDED], // AC16: was SILENT
   ['github', '429', true, false, 'other', LANDED], // AC16: was SILENT
   ['github', '500', true, false, 'other', LANDED], // AC16: was SILENT
@@ -258,7 +260,7 @@ const ROWS: Row[] = [
   ['webdav', '403', false, true, 'other', NOTHING],
   ['webdav', '404', false, true, 'other', SILENT],
   ['webdav', '409', false, true, 'other', SILENT],
-  ['webdav', '412', false, false, 'other', OWN],
+  ['webdav', '412', false, true, 'other', OWN], // AC17: was not refused
   ['webdav', '422', false, true, 'other', SILENT],
   ['webdav', '408', true, false, 'other', LANDED], // AC16: was SILENT
   ['webdav', '429', true, false, 'other', LANDED], // AC16: was SILENT

@@ -30,7 +30,6 @@ import { counterOf, MAX_COUNTER, RecordShapeError, SchemaTooNewError } from './m
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from './roadmap-file';
 import { verifyPersistedFile } from './sync-manager';
-import { uncertainWrite } from './write-refusal';
 
 // --- The health record (US-10 AC4a) -------------------------------------------
 // Drive allows two files with one name, and two first saves can race to make
@@ -46,9 +45,12 @@ const DAMAGED_HINT = 'Your plan loaded from the other copies. Nothing was writte
 
 /** A write that may have landed: keep the provider status, so a 401 still
  *  refreshes the token (iOS) and still reads as "reconnect" (the page), and
- *  its reason; its outcome is may-have-landed whatever the status (write-refusal.ts). */
+ *  its reason; its outcome is may-have-landed whatever the status. */
 const uncertain = (message: string, error: unknown): StorageError =>
-  uncertainWrite(new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined, error instanceof StorageError ? error.reason : undefined));
+  new StorageError(message, LANDED_HINT, error, error instanceof StorageError ? error.status : undefined, error instanceof StorageError ? error.reason : undefined, 'may-have-landed');
+
+/** The record lookup's answer arrived but cannot be used: it sent no write, so nothing landed (US-10 AC16). */
+const unusable = (message: string): StorageError => new StorageError(message, undefined, undefined, undefined, undefined, 'no-answer');
 
 /** A refusal of one of the record's uploads: nothing stored, status and reason kept. */
 const refused = (message: string, error: StorageError): StorageError =>
@@ -91,21 +93,21 @@ async function discoverRecord(token: string, known: Set<string>, signal?: AbortS
     if (!res.ok) await fail('record lookup', res); // sends no write: refused, or no answer (US-10 AC16)
     const result = await jsonBody<{ files?: RecordCopy[]; nextPageToken?: string; incompleteSearch?: boolean }>(res);
     signal?.throwIfAborted();
-    if (result.incompleteSearch || !Array.isArray(result.files)) throw new StorageError(`${PROVIDER} record enumeration is incomplete.`);
+    if (result.incompleteSearch || !Array.isArray(result.files)) throw unusable(`${PROVIDER} record enumeration is incomplete.`);
     for (const copy of result.files) {
       if (!copy.id || typeof copy.id !== 'string' || (copy.createdTime !== undefined && (typeof copy.createdTime !== 'string' || !Number.isFinite(Date.parse(copy.createdTime))))) {
-        throw new StorageError(`${PROVIDER} record metadata is invalid.`);
+        throw unusable(`${PROVIDER} record metadata is invalid.`);
       }
       const prior = copies.get(copy.id);
-      if (prior && prior.createdTime !== copy.createdTime) throw new StorageError(`${PROVIDER} record metadata changed during enumeration.`);
+      if (prior && prior.createdTime !== copy.createdTime) throw unusable(`${PROVIDER} record metadata changed during enumeration.`);
       copies.set(copy.id, copy);
     }
     if (result.nextPageToken !== undefined && (typeof result.nextPageToken !== 'string' || !result.nextPageToken)) {
-      throw new StorageError(`${PROVIDER} record continuation token is invalid.`);
+      throw unusable(`${PROVIDER} record continuation token is invalid.`);
     }
     page = result.nextPageToken;
     if (page) {
-      if (seen.has(page)) throw new StorageError(`${PROVIDER} record enumeration repeated a page token.`);
+      if (seen.has(page)) throw unusable(`${PROVIDER} record enumeration repeated a page token.`);
       seen.add(page);
     }
   } while (page);
@@ -159,7 +161,7 @@ function holdOf(expected: string | null): (Hold & { error: Error }) | null {
   if (hold.refuse === undefined) return null;
   const error = typeof hold.refuse === 'number'
     ? new SchemaTooNewError(hold.refuse, CURRENT_SCHEMA_VERSION)
-    : new StorageError(`A copy of the record in ${PROVIDER} could not be read, so saving is paused.`, DAMAGED_HINT);
+    : new StorageError(`A copy of the record in ${PROVIDER} could not be read, so saving is paused.`, DAMAGED_HINT, undefined, undefined, undefined, 'refused'); // raised before any call
   return { ...(hold as Hold), error };
 }
 
@@ -180,7 +182,7 @@ async function downloadCopy(token: string, id: string, signal?: AbortSignal): Pr
   try {
     body = JSON.parse(text);
   } catch { /* refused below */ }
-  if (body === null) throw new StorageError(`${PROVIDER} read failed: a copy of the record is empty or not valid JSON.`, undefined, new SyntaxError('empty or invalid JSON'));
+  if (body === null) throw new StorageError(`${PROVIDER} read failed: a copy of the record is empty or not valid JSON.`, undefined, new SyntaxError('empty or invalid JSON'), undefined, undefined, 'no-answer');
   return body;
 }
 

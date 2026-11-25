@@ -77,7 +77,7 @@ export function clearLocalNamedFiles(): void {
   } catch (error) {
     // A missing fence could let an old tab write erased content back. Do not
     // report completed cleanup if invalidation could not be stored.
-    throw new StorageError('Could not complete on-device history cleanup.', undefined, error);
+    throw new StorageError('Could not complete on-device history cleanup.', undefined, error, undefined, undefined, 'refused');
   }
 }
 
@@ -95,7 +95,7 @@ function readFrom(fileName: string, getItem: (key: string) => string | null): Re
   try {
     body = JSON.parse(raw);
   } catch (error) {
-    throw new StorageError('Local data is corrupt and could not be read.', undefined, error);
+    throw new StorageError('Local data is corrupt and could not be read.', undefined, error, undefined, undefined, 'no-answer');
   }
   return { body, version: getItem(versionKey(fileName)) ?? '0' };
 }
@@ -169,7 +169,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       localStorage.setItem(fileKey(fileName), written);
     } catch (error) {
       noteRecordSave(fileName, false);
-      throw new StorageError(FULL, undefined, error, undefined, undefined, quotaRefused(error));
+      throw new StorageError(FULL, undefined, error, undefined, undefined, 'refused'); // a setItem that throws stored nothing
     }
     try {
       localStorage.setItem(versionKey(fileName), next);
@@ -184,7 +184,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       noteRecordSave(fileName, safeGetItem(fileKey(fileName)) === written);
       // Not put back, the record may have stored: never a definite refusal (S69).
       throw restored
-        ? new StorageError(FULL, undefined, error, undefined, undefined, quotaRefused(error))
+        ? new StorageError(FULL, undefined, error, undefined, undefined, 'refused')
         : new StorageError(FULL, 'This change may have been stored. Read the record again before trying it a second time.', error, undefined, undefined, 'may-have-landed');
     }
     noteRecordSave(fileName, true);
@@ -220,7 +220,7 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   async readDocument(ref: string): Promise<Blob> {
     const dataUrl = safeGetItem(DOC_KEY_PREFIX + ref);
-    if (dataUrl == null) throw new StorageError(`document not found: ${ref}`);
+    if (dataUrl == null) throw new StorageError(`document not found: ${ref}`, undefined, undefined, undefined, undefined, 'refused');
     return (await fetch(dataUrl)).blob(); // data: URLs are fetchable → preserves mime type
   }
 
@@ -237,18 +237,15 @@ export class LocalStorageAdapter implements StorageAdapter {
         'Could not store the document on this device (local storage is likely full). Connect a cloud backend for documents.',
         undefined,
         error,
+        undefined,
+        undefined,
+        'refused',
       );
     }
   }
 }
 
 export const FULL = 'Could not save on this device (local storage may be full).';
-
-/** A full browser store refused the write, nothing stored. Any other setItem failure is left
- *  unnamed, so a write that threw it counts as may have landed (write-refusal.ts afterWrite). */
-function quotaRefused(error: unknown): 'refused' | undefined {
-  return (error as { name?: unknown } | null)?.name === 'QuotaExceededError' ? 'refused' : undefined;
-}
 
 /** This browser stores a copy of the record (US-09 AC49); unreadable storage stores none. */
 export function deviceRecordStored(): boolean {

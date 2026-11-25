@@ -64,16 +64,16 @@ export class WebDavAdapter implements StorageAdapter {
   /** `connect`, returning true when this adapter saved its own sign-in (US-09 AC45). */
   async signIn(): Promise<boolean> {
     if (!this.config?.url || !this.config.username) {
-      throw new StorageError('Self-host needs a URL, username, and password.');
+      throw new StorageError('Self-host needs a URL, username, and password.', undefined, undefined, undefined, undefined, 'refused');
     }
     const res = await fetchOrFail('Self-host', this.urlFor(''), {
       method: 'PROPFIND',
       headers: { ...this.authHeaders(), Depth: '0' },
     });
-    if (res.status === 401) throw new StorageError('Self-host rejected the credentials.', undefined, undefined, res.status);
+    if (res.status === 401) throw new StorageError('Self-host rejected the credentials.', undefined, undefined, res.status, undefined, 'refused');
     // 207 Multi-Status is the WebDAV success for PROPFIND.
     if (!res.ok && res.status !== 207) {
-      throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`, undefined, undefined, res.status);
+      throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
     }
     return setSignIn(CONFIG_KEY, this.config, this.gen);
   }
@@ -88,14 +88,14 @@ export class WebDavAdapter implements StorageAdapter {
   async read(fileName: string): Promise<ReadResult> {
     const res = await fetchOrFail('Self-host', this.urlFor(fileName), { headers: this.authHeaders() });
     if (res.status === 404) return { body: null, version: null };
-    if (!res.ok) throw new StorageError(`Self-host read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+    if (!res.ok) throw new StorageError(`Self-host read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
     const etag = res.headers.get('etag');
     const text = await res.text();
     let body: unknown;
     try {
       body = text ? (JSON.parse(text)) : null;
     } catch (error) {
-      throw new StorageError('Self-host read failed: file is not valid JSON (possible corruption).', undefined, error);
+      throw new StorageError('Self-host read failed: file is not valid JSON (possible corruption).', undefined, error, undefined, undefined, 'no-answer');
     }
     // Reserve null for a missing resource; '' keeps existing no-ETag files LWW.
     return { body, version: etag ?? '' };
@@ -130,7 +130,7 @@ export class WebDavAdapter implements StorageAdapter {
     let res = await fetchOrFail('Self-host', url, { headers: this.authHeaders(), timeoutMs: TRANSFER_DEADLINE_MS.document });
     const legacy = res.status === 404 ? legacyDocumentUrl(url, this.urlFor(''), ref) : null;
     if (legacy) res = await fetchOrFail('Self-host', legacy, { headers: this.authHeaders(), timeoutMs: TRANSFER_DEADLINE_MS.document });
-    if (!res.ok) throw new StorageError(`Self-host document read failed (${res.status}).`, undefined, undefined, res.status);
+    if (!res.ok) throw new StorageError(`Self-host document read failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
     return res.blob();
   }
 
@@ -156,12 +156,12 @@ export class WebDavAdapter implements StorageAdapter {
   }
 
   private urlFor(path: string): string {
-    if (!this.config) throw new StorageError('Self-host is not connected.');
+    if (!this.config) throw new StorageError('Self-host is not connected.', undefined, undefined, undefined, undefined, 'refused');
     return this.config.url.replace(/\/?$/, '/') + encodeStoragePath(path);
   }
 
   private authHeaders(): Record<string, string> {
-    if (!this.config) throw new StorageError('Self-host is not connected.');
+    if (!this.config) throw new StorageError('Self-host is not connected.', undefined, undefined, undefined, undefined, 'refused');
     return { Authorization: basicAuth(this.config.username, this.config.password) };
   }
 }

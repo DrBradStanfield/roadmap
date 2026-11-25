@@ -126,10 +126,11 @@ export class StorageError extends Error {
 }
 
 /** A document write the provider refused as busy (Dropbox: another write held the folder's lock, or too many
- *  requests): nothing was written, and a later try may land (US-14 AC5). `retryAfterMs`: the wait the provider named, 0 for none. */
+ *  requests): a later try may land (US-14 AC5). `retryAfterMs`: the wait the provider named, 0 for none. Its
+ *  outcome is the upload's by the table: a 409 refused, a 429 may have landed (no provider promise says otherwise). */
 export class BusyError extends StorageError {
   constructor(message: string, readonly retryAfterMs: number, status: number) {
-    super(message, undefined, undefined, status);
+    super(message, undefined, undefined, status, undefined, answerOutcome(status, true));
     this.name = 'BusyError';
   }
 }
