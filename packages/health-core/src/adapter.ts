@@ -64,21 +64,74 @@ export class LostUpdateError extends ConflictError {
  * rejected token (401/403) from an unreachable folder without reading the
  * message text. `reason`, likewise, names a failure a caller acts on (#979):
  * a full store, a document that is not there, or a grant the provider revoked
- * (`reconnect`: only a new sign-in mends it, so a failed save is not retried, US-09 AC30).
+ * (`reconnect`: only a new sign-in mends it, so a failed save is not retried, US-09 AC30),
+ * a token refused (`auth`, a 401), access refused (`forbidden`, a 403 that is not a limit),
+ * or a provider's rate or daily limit (`rate-limited`: it passes, so it is retried).
+ *
+ * `outcome` (root fix R6, US-10 AC16) is what the failure says about a write, set where
+ * it is raised, so no reader decides from a status, a name or the words:
+ * - refused: the provider answered and stored nothing;
+ * - may-have-landed: a write went out, and nothing rules out that it was stored;
+ * - no-answer: no usable answer to a call that sent no write.
+ * Every raise names one (US-10 AC17): the argument is required, so a raise site
+ * that forgets it does not compile. A provider's status picks it only through
+ * `answerOutcome`, which the raise site calls on purpose. A 401 or 403 sets its
+ * reason unless the raiser names its own.
  */
-export type StorageFailureReason = 'storage-full' | 'not-found' | 'reconnect';
+export type StorageFailureReason = 'storage-full' | 'not-found' | 'reconnect' | 'auth' | 'forbidden' | 'rate-limited';
+export type StorageOutcome = 'refused' | 'may-have-landed' | 'no-answer';
+
+/**
+ * HTTP answers that say the provider did not store a write. Every status here
+ * is the provider's answer to the upload itself, or to a call that sent no
+ * write; a status kept on a failure after an upload (Google Drive's verify
+ * read) is raised `may-have-landed` by its adapter.
+ * - 400: the request was rejected as malformed before it was processed (all providers).
+ * - 401, 403: the token or the grant was refused (Dropbox, Drive, GitHub, WebDAV).
+ *   GitHub also answers 403 for a secondary rate limit, refused unprocessed.
+ * - 404: the target (repository, folder, file id) is not there, so nothing was stored.
+ * - 409: Dropbox answers 409 for every UploadError, the write not done
+ *   (dropbox-rest.ts uploadRefusal); GitHub's sha conflict and WebDAV's missing
+ *   parent collection are 409s too.
+ * - 412: a failed precondition (WebDAV If-Match / If-None-Match).
+ * - 413: the body was too large to accept.
+ * - 422: GitHub's sha mismatch or "already exists" on create.
+ * Not here, so an upload that met one may have landed:
+ * - 408: a request timeout, which a proxy can send after it forwarded the body.
+ * - 429: too many requests. No adapter here cites a provider promise that a
+ *   rate-limited upload was never applied, so it is not called a refusal.
+ * - 5xx (507 included): the server failed partway, or a gateway gave up waiting.
+ * Google Drive has its own rules for its record's PATCH (drive-rest-record.ts).
+ */
+const REFUSED_STATUSES: ReadonlySet<number> = new Set([400, 401, 403, 404, 409, 412, 413, 422]);
+
+/** The outcome of a provider's non-ok answer: a refusal by the table above; else
+ *  may have landed for an upload, and no answer for a call that sent no write. */
+export function answerOutcome(status: number, upload = false): StorageOutcome {
+  return REFUSED_STATUSES.has(status) ? 'refused' : upload ? 'may-have-landed' : 'no-answer';
+}
+
 export class StorageError extends Error {
-  constructor(message: string, readonly hint?: string, readonly cause?: unknown, readonly status?: number, readonly reason?: StorageFailureReason) {
+  readonly reason?: StorageFailureReason;
+  /** Set where raised, a required argument: no raiser leaves it unset (US-10 AC17). */
+  readonly outcome: StorageOutcome;
+  /** SyncManager's rewrap after a write that landed with a warning: its hint
+   *  says what landed first (US-31 AC8a), so it is shown as it is. */
+  earlierLanded?: true;
+  constructor(message: string, readonly hint: string | undefined, readonly cause: unknown, readonly status: number | undefined, reason: StorageFailureReason | undefined, outcome: StorageOutcome) {
     super(message);
     this.name = 'StorageError';
+    this.reason = reason ?? (status === 401 ? 'auth' : status === 403 ? 'forbidden' : undefined);
+    this.outcome = outcome;
   }
 }
 
 /** A document write the provider refused as busy (Dropbox: another write held the folder's lock, or too many
- *  requests): nothing was written, and a later try may land (US-14 AC5). `retryAfterMs`: the wait the provider named, 0 for none. */
+ *  requests): a later try may land (US-14 AC5). `retryAfterMs`: the wait the provider named, 0 for none. Its
+ *  outcome is the upload's by the table: a 409 refused, a 429 may have landed (no provider promise says otherwise). */
 export class BusyError extends StorageError {
   constructor(message: string, readonly retryAfterMs: number, status: number) {
-    super(message, undefined, undefined, status);
+    super(message, undefined, undefined, status, undefined, answerOutcome(status, true));
     this.name = 'BusyError';
   }
 }
@@ -98,7 +151,7 @@ export function busyWait(error: unknown): number | null {
  */
 export const UNREACHABLE_HINT = 'Try once more; if it keeps failing, check that the record is reachable.';
 /** A write that went out and got no answer may still have landed (US-09 AC13d). */
-const LANDED_HINT = 'The change may have landed. Read the record again before trying it a second time.';
+export const LANDED_HINT = 'The change may have landed. Read the record again before trying it a second time.';
 /** The hint for a call that got no answer: a write may have landed, a read did not. */
 function unansweredHint(mayHaveWritten?: boolean): string {
   return mayHaveWritten ? LANDED_HINT : UNREACHABLE_HINT;
@@ -144,7 +197,7 @@ export async function fetchOrFail(
     const bytes = await res.arrayBuffer();
     return new Response(bytes.byteLength ? bytes : null, { status: res.status, statusText: res.statusText, headers: res.headers });
   } catch (error) {
-    throw new StorageError(`${provider} did not answer`, unansweredHint(mayHaveWritten), error);
+    throw new StorageError(`${provider} did not answer`, unansweredHint(mayHaveWritten), error, undefined, undefined, mayHaveWritten ? 'may-have-landed' : 'no-answer');
   } finally {
     timeout.clear();
   }
@@ -159,7 +212,7 @@ export async function fetchOrFail(
 export function untilAborted<T>(provider: string, work: Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!signal) return work;
   return new Promise<T>((resolve, reject) => {
-    const stop = () => reject(new StorageError(`${provider} did not answer`, UNREACHABLE_HINT, signal.reason));
+    const stop = () => reject(new StorageError(`${provider} did not answer`, UNREACHABLE_HINT, signal.reason, undefined, undefined, 'no-answer'));
     work.then(resolve, reject).finally(() => signal.removeEventListener('abort', stop));
     if (signal.aborted) stop();
     else signal.addEventListener('abort', stop, { once: true });

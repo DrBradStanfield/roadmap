@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { render, fireEvent, waitFor, act, screen } from '@testing-library/react';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
-import { addMeasurement, deleteUserData, loadAllHistorySync } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, loadAllHistorySync, getShownErase } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { deleteButton } from '../testing/settings';
 import { seedGuest, useHealthToolLifecycle, recordOnDisk } from '../testing/health-tool-harness';
@@ -49,7 +49,7 @@ async function reviewReadThenHidden() {
   await wait(600);
   fireEvent.click((await screen.findAllByRole('button', { name: 'Upload labs' }))[0]);
   // A guest on this device is first offered a place to keep originals.
-  fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
   fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
   await findReviewValue('3.9');
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
@@ -92,7 +92,7 @@ describe('US-16 AC2c: an upload review read before an erase ends with it', () =>
 
   it('a review of this record survives a re-read that brings no erase', async () => {
     await reviewReadThenHidden();
-    await act(async () => { await addMeasurement('weight', 83, '2026-09-02'); });
+    await act(async () => { await addMeasurement('weight', 83, '2026-09-02', getShownErase()); });
     act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await wait(600);
     fireEvent.click(resumeButton()!);

@@ -64,7 +64,7 @@ function devicePage(store: DeviceStore, open: boolean, omitGate = false): Page {
 
 const weight = (id: string) =>
   createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-12', createdAt: new Date(clock).toISOString() });
-const add = (session: RecordSession, id: string) => session.edit((f) => { f.measurements.push(weight(id)); });
+const add = (session: RecordSession, id: string) => session.edit((f) => { f.measurements.push(weight(id)); }, session.shownErase);
 const ids = (file: RoadmapFile) => file.measurements.map((m) => m.id).sort();
 const stored = (store: DeviceStore) => ids(JSON.parse(store.cloud.files.get(ROADMAP_FILE_NAME)!.json));
 

@@ -5,6 +5,9 @@ import type { MetricType } from '@roadmap/health-core/units';
 import { type CellUnit, type Grading, blockBadNumericKeys } from '../lib/blood-test-cell';
 import { NumericInputCell } from './NumericInputCell';
 
+/** What two typed cells for one test on one day say, on both (US-03 AC3). */
+export const SAME_SLOT = 'This test already has a value on that day in another column.';
+
 interface DraftCellProps {
   metric: MetricType;
   display: CellUnit;

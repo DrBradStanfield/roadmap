@@ -28,6 +28,7 @@ type RecordFailure =
   | 'Cloud record could not be loaded'
   | 'Upload processing failed'
   | 'Upload save failed'
+  | 'Page-hide save failed'
   | 'Chat load failed'
   | 'Chat list failed';
 
@@ -37,7 +38,7 @@ type RecordFailure =
  *  a page is never attempted (A15, A19). */
 export class WritesStoppedError extends StorageError {
   constructor() {
-    super('On-device roadmap persistence stopped for logout.');
+    super('On-device roadmap persistence stopped for logout.', undefined, undefined, undefined, undefined, 'refused');
     this.name = 'WritesStoppedError';
   }
 }

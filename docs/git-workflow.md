@@ -349,7 +349,8 @@ Two CI outputs warn before a slow or flaky test turns main red (US-64 AC36). Nei
 ## Exceptions
 
 - **Cloud loops** run in their own throwaway checkout and commit straight to `main` (docs/loops/LOOP.md § Repo
-  rules; Tier 3 code goes by `claude/` branch + PR). The guard skips cloud sessions (`CLAUDE_CODE_REMOTE=true`),
+  rules; Tier 3 code goes by `claude/` branch + PR). They land with `node tools/loop-push.mjs`, never a raw
+  `git push` to main (US-64 AC39). The guard skips cloud sessions (`CLAUDE_CODE_REMOTE=true`),
   and so does the push guard's branch-to-main refusal.
 - **Unattended local jobs** that commit their own files to `main` from the main checkout set
   `CLAUDE_MAIN_CHECKOUT_WRITES=1`. None in this repo today; claude_business's `tools/stock-velocity-run.sh` is

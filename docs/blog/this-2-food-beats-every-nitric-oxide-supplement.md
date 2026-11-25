@@ -12,7 +12,7 @@ topics: ["nitric-oxide-supplements-benefits-forms-dosing-and-side-effects","beet
 
 Nitric oxide levels fall with age — and this decline is linked to an array of age-related problems in areas like heart, brain, reproductive, and muscle health \[1\]\[2\]. Cue predatory supplement brands that try to take your money by spinning a story that their pill will stop this decline.
 
-But there's an alternative. There's a cheap and incredibly effective nitric oxide booster that I take, and it doesn't line the pockets of supplement companies.
+But there's an alternative. There's a cheap and incredibly effective [nitric oxide](/blogs/articles/nitric-oxide-supplements-benefits-forms-dosing-and-side-effects) booster that I take, and it doesn't line the pockets of supplement companies.
 
 ## **Table of Contents**
 
@@ -41,7 +41,7 @@ When you look at nitric oxide supplements — often called "nitric oxide booster
 
 Many human studies have looked at L-arginine supplements \[6\]\[7\]\[8\]. And while L-arginine levels in the blood go up, that hasn't reliably translated to athletic performance improvements or raised nitric oxide levels.
 
-That's where another option, L-citrulline, comes in. It gets converted to L-arginine after ingestion. Research has shown it's actually more effective than L-arginine itself in raising blood levels of L-arginine \[9\]. So maybe L-citrulline would be able to raise nitric oxide levels, where L-arginine failed?
+That's where another option, [L-citrulline](/blogs/articles/l-citrulline-benefits-forms-dosing-and-side-effects), comes in. It gets converted to L-arginine after ingestion. Research has shown it's actually more effective than L-arginine itself in raising blood levels of L-arginine \[9\]. So maybe L-citrulline would be able to raise nitric oxide levels, where L-arginine failed?
 
 Unfortunately, the research has been underwhelming here, too, when it comes to performance. For example, a study last year tested L-citrulline in healthy young adults to see if it would increase time to exhaustion during exercise. It didn't \[10\].
 

@@ -163,6 +163,7 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 - `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; after a frontmatter edit, `npm run rebuild-index` rebuilds `docs/blog/index.json` (CI checks it is in sync).
 - **Customer-service gateway (live):** its OWN Fly app; code only in private claude_business `customer-service-gateway/`. Spec: its `docs/customer-service.md`.
   **Replying to mail sent to brad@microvitamin.com** (the Gmail connector reaches only drstanfield.com): find it with claude_business `node tools/gmail.js search --account microvitamin`, send Brad's approved text in that thread via the gateway's `POST /send-reply` — never a new email from drstanfield.com (Brad 2026-10-16).
+  **An email with a URL the reader must copy or type** goes out as `htmlBody`, never plain-text `body` (it rewrites bare URLs into `google.com/url` wrappers): draft, read back, check the visible URL, then send (docs/gotchas.md, 2026-11-24).
 - **Chatbot docs are private (Brad 2026-10-22):** start at claude_business `docs/chat-start-here.md`; knowledge-pipeline docs in its `docs/roadmap-chat/`. No licensed third-party clinical text, and no account of how the private pipeline uses it, in this public repo.
 
 ## Data Model

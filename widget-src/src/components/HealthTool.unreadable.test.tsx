@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { createEmptyFile, createMeasurement } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { flushRoadmapStore, getUnreadableCount, initRoadmapStore, loadLatestMeasurementsSync, saveChangedMeasurements } from '../lib/roadmap-data';
+import { flushRoadmapStore, getUnreadableCount, initRoadmapStore, loadLatestMeasurementsSync, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -60,7 +60,7 @@ describe('US-65 AC1, AC5: the web opens a record holding an unreadable row', () 
 
   it('a save leaves the unreadable row in measurements, unchanged', async () => {
     expect(getUnreadableCount()).toBe(1);
-    await saveChangedMeasurements({ weightKg: 65 }, { weightKg: 64 });
+    await saveChangedMeasurements({ weightKg: 65 }, { weightKg: 64 }, getShownErase());
     await flushRoadmapStore();
     const stored = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!);
     expect(JSON.stringify(stored.measurements.find((r: { id: string }) => r.id === 'f1'))).toBe(JSON.stringify(FUTURE));

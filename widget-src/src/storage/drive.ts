@@ -24,7 +24,7 @@
  * check-to-upload gap of one PATCH round trip remains; verify-after-write
  * catches a writer who lands inside it.
  */
-import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageError, jsonBody, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
+import { answerOutcome, ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageError, jsonBody, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply, postRefreshGrant } from './drive-token-reply';
@@ -121,7 +121,7 @@ export class DriveGrantRefusedError extends StorageError {
   constructor() {
     super(
       "Google didn't grant this app access to Google Drive, so nothing was connected. " +
-        "Try again and tick the Google Drive box on Google's permission screen.",
+        "Try again and tick the Google Drive box on Google's permission screen.", undefined, undefined, undefined, undefined, 'refused',
     );
     this.name = 'DriveGrantRefusedError';
   }
@@ -179,7 +179,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     try {
       sessionStorage.setItem(PKCE_KEY, pkceEntry(verifier, state, this.gen));
     } catch {
-      throw new StorageError('Cannot start Google sign-in: session storage is blocked.');
+      throw new StorageError('Cannot start Google sign-in: session storage is blocked.', undefined, undefined, undefined, undefined, 'refused');
     }
     const url = new URL(AUTHORIZE_URL);
     url.searchParams.set('client_id', this.config.clientId);
@@ -327,7 +327,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
    */
   async getReminderIdToken(): Promise<string | null> {
     const outcome = await this.refresh();
-    if (outcome === 'transient') throw new StorageError('Google token refresh unavailable — retry later.');
+    if (outcome === 'transient') throw new StorageError('Google token refresh unavailable — retry later.', undefined, undefined, undefined, undefined, 'no-answer');
     return outcome === 'ok' ? this.lastIdToken : null;
   }
 
@@ -390,9 +390,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (expectedVersion !== null) throw new ConflictError(`${this.label} no longer holds that file`);
     // First write — create the file (multipart: metadata + content).
     const res = await driveCreateFile(await this.getToken(), fileName, 'application/json', json, await this.liveFolderId());
-    if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
+    if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
     const created = await jsonBody<{ id?: string; version?: string }>(res);
-    if (!created.id) throw new StorageError('Google Drive create returned no file id.');
+    if (!created.id) throw new StorageError('Google Drive create returned no file id.', undefined, undefined, undefined, undefined, 'may-have-landed');
     this.rememberFileId(fileName, created.id);
     return { version: JSON.stringify([created.id, String(created.version ?? '')]) };
   }
@@ -596,7 +596,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private async getToken(): Promise<string> {
     const refreshed = this.hasValidToken() && !(isSignedOut(this.id) && this.tokens!.refreshToken) ? 'ok' : await this.refresh();
     if (refreshed === 'ok') return this.tokens!.accessToken;
-    throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, refreshed === 'none' ? 'reconnect' : undefined); // US-09 AC30
+    throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, refreshed === 'none' ? 'reconnect' : undefined, refreshed === 'none' ? 'refused' : 'no-answer'); // US-09 AC30; before its call, so nothing sent
   }
 
   /** FALLBACK reconnect: a GIS popup grant (~1 h token, no refresh token), which
@@ -614,7 +614,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
         scope: this.config.scope,
         callback: (r) => {
           if (r.error || !r.access_token) {
-            reject(new StorageError(`Google Drive authorization failed${r.error ? `: ${r.error}` : ''}.`));
+            reject(new StorageError(`Google Drive authorization failed${r.error ? `: ${r.error}` : ''}.`, undefined, undefined, undefined, undefined, 'refused'));
             return;
           }
           if (!grantsDrive(r.scope)) {
@@ -623,7 +623,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
           }
           resolve({ accessToken: r.access_token, expiresAt: expiry(r.expires_in) });
         },
-        error_callback: () => reject(new StorageError('Google Drive sign-in was cancelled or blocked.')),
+        error_callback: () => reject(new StorageError('Google Drive sign-in was cancelled or blocked.', undefined, undefined, undefined, undefined, 'refused')),
       });
       client.requestAccessToken({ prompt: '' });
     });

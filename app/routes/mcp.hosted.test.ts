@@ -1242,7 +1242,7 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
         return result;
       };
       adapter.read = async (...args: Parameters<MemoryAdapter['read']>) => {
-        if (uploaded) throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status);
+        if (uploaded) throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status, undefined, answerOutcome(status));
         return read(...args);
       };
       return adapter;
@@ -1273,7 +1273,7 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
       const { access } = await connect();
       makeAdapter = () => {
         const adapter = new MemoryAdapter(cloud);
-        adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status); };
+        adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status, undefined, answerOutcome(status)); };
         return adapter;
       };
       const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
@@ -1282,6 +1282,60 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
       expect(answer.text).toBe(
         'Dropbox refused this connection’s access to the record. Nothing was read and nothing was written. ' +
           'Ask the user to reconnect the connector, which grants it again.',
+      );
+    });
+  }
+
+  // US-10 AC16: chosen by the typed reason. A Drive rate limit (a 403) passes: it is never refused access.
+  it('a typed rate limit on a read is not told as refused access, nor "reconnect"', async () => {
+    seedRecord();
+    const { access } = await connect();
+    makeAdapter = () => {
+      const adapter = new MemoryAdapter(cloud);
+      adapter.read = async () => { throw new StorageError('Google Drive read failed (403)', undefined, undefined, 403, 'rate-limited', 'refused'); };
+      return adapter;
+    };
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.isError).toBe(true);
+    expect(answer.text).not.toMatch(/refused this connection|reconnect/i);
+    expect(answer.text).toBe('The record in Dropbox did not answer. Nothing was written. Try once more; if it keeps failing, check that the record is reachable.');
+  });
+
+  // A full Drive (a 403) has no true sentence of its own yet: it keeps today's text (listed for the owner).
+  it('a typed full Drive on a read keeps today\'s access text', async () => {
+    seedRecord();
+    const { access } = await connect();
+    makeAdapter = () => {
+      const adapter = new MemoryAdapter(cloud);
+      adapter.read = async () => { throw new StorageError('Google Drive read failed (403)', undefined, undefined, 403, 'storage-full', 'refused'); };
+      return adapter;
+    };
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.text).toBe(
+      'Dropbox refused this connection’s access to the record. Nothing was read and nothing was written. ' +
+        'Ask the user to reconnect the connector, which grants it again.',
+    );
+  });
+
+  // US-10 AC11: the typed mark decides, never the hint's words. A Drive-style
+  // adapter marks a 401 after its upload with a hint that never says "landed".
+  for (const status of [401, 403] as const) {
+    it(`a marked ${status} with reworded hint text still says the change may have landed (US-10 AC11)`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      makeAdapter = () => {
+        const adapter = new MemoryAdapter(cloud);
+        adapter.write = async () => {
+          throw uncertainWrite(new StorageError(`Dropbox record update failed (${status})`, 'Check the record before you try again.', undefined, status, undefined, 'may-have-landed'));
+        };
+        return adapter;
+      };
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      expect(answer.isError).toBe(true);
+      expect(answer.text).not.toMatch(/nothing was written/i);
+      expect(answer.text).toBe(
+        'The record in Dropbox refused this connection’s access after a change was sent. ' +
+          'Reconnect the provider, which grants access again. The change may have landed: read the record again before retrying.',
       );
     });
   }
@@ -1426,7 +1480,8 @@ describe('OpenAI domain verification is gone (its review ended 2026-10-29; Brad 
 import JSZip from 'jszip';
 import { IMPORT_FILES_PER_DAY } from '../lib/mcp-grants.server';
 import { machineFiles } from '../lib/rate-limiter';
-import { StorageError } from '../../packages/health-core/src/adapter';
+import { answerOutcome, StorageError } from '../../packages/health-core/src/adapter';
+import { uncertainWrite } from '../../packages/health-core/src/write-refusal';
 import { recordServerEvent } from '../lib/product-events.server';
 import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab-extraction';
 
@@ -1751,7 +1806,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     stubImport({ 'labs.pdf': PDF_BYTES }, () => labReport());
     makeAdapter = () => {
       const adapter = new MemoryAdapter(cloud);
-      adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401); };
+      adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401, undefined, 'refused'); };
       return adapter;
     };
     const answer = await callTool(access, 'import_documents', {});
@@ -1856,7 +1911,7 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
     seedRecord(withProfile);
     cloud.docs.set('labs.pdf', new Blob([PDF_BYTES as Uint8Array<ArrayBuffer>]));
     const broken = new MemoryAdapter(cloud);
-    broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500); };
+    broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500, undefined, 'no-answer'); };
     makeAdapter = () => broken;
     const { access } = await connect();
     const failed = await callTool(access, 'get_plan', {});

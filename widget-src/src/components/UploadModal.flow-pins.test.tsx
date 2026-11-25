@@ -222,14 +222,14 @@ describe('US-12 AC4: Cancel from review', () => {
   it('US-12 AC4: discards the review, closes, and brings back the connect-first panel in device-only mode', async () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
     render(<Harness />);
-    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
     await ready();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(isOpen()).toBe(false);
     expect(onClose).toHaveBeenCalledOnce();
     expect(indicator()).toBeNull();
     reopen();
-    expect(screen.getByText('Keep your original documents')).toBeTruthy();
+    expect(screen.getByText('Keep the original files too?')).toBeTruthy();
     expect(screen.queryByDisplayValue('3.9')).toBeNull();
     expect(saveUpload).not.toHaveBeenCalled();
   });

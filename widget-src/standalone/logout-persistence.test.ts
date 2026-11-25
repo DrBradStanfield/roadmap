@@ -115,7 +115,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
   it('does not recreate a mirror when an in-flight cloud write fails after logout', async () => {
     const cloud = new ControlledCloud();
     const store = await storage.RoadmapStore.create(cloud);
-    store.addMeasurement('weight', 71, '2026-01-01');
+    store.addMeasurement('weight', 71, '2026-01-01', store.shownErase);
     cloud.gate = deferred();
     cloud.fail = true;
     const saving = store.flush().then(() => true, () => false);
@@ -131,7 +131,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
   it('closes the barrier before awaiting cloud disconnect, not only before reload', async () => {
     const cloud = new ControlledCloud();
     const store = await storage.RoadmapStore.create(cloud);
-    store.addMeasurement('weight', 70, '2026-01-01');
+    store.addMeasurement('weight', 70, '2026-01-01', store.shownErase);
     cloud.gate = deferred();
     cloud.fail = true;
     const saving = store.flush().then(() => true, () => false);
@@ -161,7 +161,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
   it('blocks a mirror already awaiting its local read when logout starts', async () => {
     const cloud = new ControlledCloud();
     const store = await storage.RoadmapStore.create(cloud);
-    store.addMeasurement('weight', 72, '2026-01-01');
+    store.addMeasurement('weight', 72, '2026-01-01', store.shownErase);
     const entered = deferred();
     const gate = deferred();
     const original = local.LocalStorageAdapter.prototype.read;
@@ -183,7 +183,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
   it('blocks an in-flight local save that resumes after the wipe (API-only local logout)', async () => {
     const adapter = new local.LocalStorageAdapter();
     const store = await storage.RoadmapStore.create(adapter);
-    store.addMeasurement('weight', 73, '2026-01-01');
+    store.addMeasurement('weight', 73, '2026-01-01', store.shownErase);
     const entered = deferred();
     const gate = deferred();
     const original = adapter.read.bind(adapter);
@@ -203,7 +203,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
   it('allows an in-flight successful cloud save to finish without deleting remote health', async () => {
     const cloud = new ControlledCloud();
     const store = await storage.RoadmapStore.create(cloud);
-    store.addMeasurement('weight', 74, '2026-01-01');
+    store.addMeasurement('weight', 74, '2026-01-01', store.shownErase);
     cloud.gate = deferred();
     const saving = store.flush();
     await cloud.entered.promise;
@@ -219,7 +219,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
   it('preserves the ordinary offline mirror and pending marker BEFORE logout', async () => {
     const cloud = new ControlledCloud();
     const store = await storage.RoadmapStore.create(cloud);
-    store.addMeasurement('weight', 75, '2026-01-01');
+    store.addMeasurement('weight', 75, '2026-01-01', store.shownErase);
     cloud.fail = true;
     await expect(store.flush()).rejects.toThrow('still on this device');
     expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
@@ -232,7 +232,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
     it(`${event}: failed cloud lifecycle flush cannot recreate the wiped mirror`, async () => {
       const cloud = new ControlledCloud();
       await data.initRoadmapStore(cloud);
-      await data.addMeasurement('weight', 76, '2026-01-01');
+      await data.addMeasurement('weight', 76, '2026-01-01', data.getShownErase());
       cloud.fail = true;
       await installLifecycle(event);
       await connect.logOff('github');
@@ -244,7 +244,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
     it(`${event}: successful cloud lifecycle flush still saves the dirty record`, async () => {
       const cloud = new ControlledCloud();
       await data.initRoadmapStore(cloud);
-      await data.addMeasurement('weight', 77, '2026-01-01');
+      await data.addMeasurement('weight', 77, '2026-01-01', data.getShownErase());
       await installLifecycle(event);
       await connect.logOff('github');
       await settleLifecycle();
@@ -256,7 +256,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
 
     it(`${event}: dirty local lifecycle cannot rewrite the file (API-only local logout)`, async () => {
       await data.initRoadmapStore(new local.LocalStorageAdapter());
-      await data.addMeasurement('weight', 78, '2026-01-01');
+      await data.addMeasurement('weight', 78, '2026-01-01', data.getShownErase());
       await installLifecycle(event);
       await connect.logOff('local');
       await settleLifecycle();
@@ -291,7 +291,7 @@ describe('US-09 AC2c: logout is a barrier to late on-device roadmap persistence'
 
   it('a clean local lifecycle remains empty after logout (negative control)', async () => {
     await data.initRoadmapStore(new local.LocalStorageAdapter());
-    await data.addMeasurement('weight', 79, '2026-01-01');
+    await data.addMeasurement('weight', 79, '2026-01-01', data.getShownErase());
     await data.flushRoadmapStore();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
     await installLifecycle('beforeunload');
@@ -315,7 +315,7 @@ describe('US-09 AC2c: each barrier guard is load-bearing', () => {
   it('a failed cloud save after the barrier does not even try the device mirror', async () => {
     const cloud = new ControlledCloud();
     const store = await storage.RoadmapStore.create(cloud);
-    store.addMeasurement('weight', 80, '2026-01-01');
+    store.addMeasurement('weight', 80, '2026-01-01', store.shownErase);
     const mirrorRead = vi.spyOn(local.LocalStorageAdapter.prototype, 'read');
     local.stopRoadmapLocalWrites();
     cloud.fail = true;
@@ -369,7 +369,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
     expect(Object.keys(localStorage).filter((key) => key.includes('log_off'))).toEqual(['health_roadmap_log_off_id']); // the id stays; no signal does
     // Its failed cloud save does not mirror the record back on-device.
-    store.addMeasurement('weight', 81, '2026-01-01');
+    store.addMeasurement('weight', 81, '2026-01-01', store.shownErase);
     cloud.fail = true;
     await expect(store.flush()).rejects.toThrow();
     expectDeviceWriteRefused(other);
@@ -384,7 +384,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
       return full;
     });
     await data.initRoadmapStore(new local.LocalStorageAdapter());
-    await data.addMeasurement('weight', 79, '2026-01-01');
+    await data.addMeasurement('weight', 79, '2026-01-01', data.getShownErase());
     await data.flushRoadmapStore();
     const other = await otherTab();
     await other.storage.RoadmapStore.create(new ControlledCloud());
@@ -404,7 +404,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
     const mirror = await import('../src/lib/storage');
     // That tab's own StorageError: a class from another module graph is not one to its catch.
     const { StorageError } = await import('@roadmap/health-core/adapter');
-    const outage = new StorageError('synthetic outage', undefined, undefined, 503);
+    const outage = new StorageError('synthetic outage', undefined, undefined, 503, undefined, 'no-answer');
     let store!: Awaited<ReturnType<typeof other.storage.RoadmapStore.create>>;
     await otherConnect.startOnBackend({ adapter: Object.assign(new MemoryAdapter(), { read: async () => { throw outage; } }), backend: 'github' }, async (adapter) => {
       store = await other.storage.RoadmapStore.create(adapter);
@@ -426,7 +426,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
 
     await connect.logOff('local');
     expect(tab.mirror.healthWritesAllowed()).toBe(false);
-    tab.store.addMeasurement('weight', 81, '2026-01-01');
+    tab.store.addMeasurement('weight', 81, '2026-01-01', tab.store.shownErase);
     await tab.store.flush().catch(() => {});
     expectFallbackWroteNothing(tab);
   });
@@ -436,7 +436,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
     const tab = await fallbackTab();
 
     await connect.logOff('local');
-    tab.store.addMeasurement('weight', 81, '2026-01-01');
+    tab.store.addMeasurement('weight', 81, '2026-01-01', tab.store.shownErase);
     await tab.store.flush().catch(() => {});
     expectFallbackWroteNothing(tab);
   });
@@ -449,7 +449,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
 
     await connect.logOff('local');
     expect(other.local.roadmapLocalWritesStopped()).toBe(false);
-    store.addMeasurement('weight', 81, '2026-01-01');
+    store.addMeasurement('weight', 81, '2026-01-01', store.shownErase);
     await store.flush();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
   });
@@ -460,7 +460,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
     window.dispatchEvent(Object.assign(new Event('storage'), { key: null }));
     expect(local.roadmapLocalWritesStopped()).toBe(false);
     const store = await storage.RoadmapStore.create(new local.LocalStorageAdapter());
-    store.addMeasurement('weight', 82, '2026-01-01');
+    store.addMeasurement('weight', 82, '2026-01-01', store.shownErase);
     await store.flush();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
   });

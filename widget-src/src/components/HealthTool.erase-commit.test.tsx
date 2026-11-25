@@ -159,8 +159,8 @@ const rowsNaming = (metric: string) => (file: RoadmapFile) => [...file.measureme
 /** The profile, a weight, and LDL on two days (the latest 2.1 on 2026-08-15). */
 async function seedWithLdl() {
   await seedProfile();
-  await addMeasurement('ldl', 3.9, '2026-01-10');
-  await addMeasurement('ldl', 2.1, '2026-08-15');
+  await addMeasurement('ldl', 3.9, '2026-01-10', getShownErase());
+  await addMeasurement('ldl', 2.1, '2026-08-15', getShownErase());
   await flushRoadmapStore();
 }
 const mdRow = (view: RenderResult, name: string) =>
@@ -174,7 +174,7 @@ const writers: Record<string, Writer> = {
     seed: seedProfile,
     open: async () => {
       fireEvent.click((await screen.findAllByRole('button', { name: 'Upload labs' }))[0]);
-      fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
       fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
       await findReviewValue('3.9'); // opens "Show all": the sure value sits behind it (US-13 AC13)
       // findBy waits with act() off, so React may leave a render in the Scheduler. Run it out
@@ -219,7 +219,7 @@ const writers: Record<string, Writer> = {
     written: file => file.medications.filter(m => m.doseValue === 1.7),
   },
   'a supplement dose, flushed as the page hides': {
-    seed: async () => { await seedProfile(); await saveSupplement('custom_test_supplement', 'Test supplement', 25, 'mg'); await flushRoadmapStore(); },
+    seed: async () => { await seedProfile(); await saveSupplement('custom_test_supplement', 'Test supplement', 25, 'mg', undefined, undefined, getShownErase()); await flushRoadmapStore(); },
     open: async view => { await waitFor(() => expect(view.container.querySelector('.supplement-dose')).not.toBeNull()); },
     onOld: view => view.container.querySelector('.supplement-dose') !== null,
     fire: view => { fireEvent.change(view.container.querySelector('.supplement-dose')!, { target: { value: '50' } }); leave(); },
@@ -372,7 +372,7 @@ describe('US-16 AC2d: a write asked before an erase is shown does not land in th
 
   it('Add a blood test: a Replace offered before the erase closes the form after it, and writes nothing', async () => {
     await seedProfile();
-    await addLabValue({ metricName: 'ferritin', unit: 'µg/L', value: 50, day: localDay(new Date()) });
+    await addLabValue({ metricName: 'ferritin', unit: 'µg/L', value: 50, day: localDay(new Date()) }, getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await act(async () => { await drain(); });
