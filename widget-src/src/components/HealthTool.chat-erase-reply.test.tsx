@@ -466,3 +466,34 @@ describe('US-16 AC2a (A6 Codex R1): a dose changed just before "Delete all my da
     expect(alert.mock.calls.map(([words]) => words)).toEqual([ERASE_UNREACHABLE]);
   });
 });
+
+// Lead H107: the list save comes due while the erase reads, and is refused; the erase then stops short. The page re-reads
+// once for the refusal; its apply runs any list save still waiting whose erase is still shown (useRecordApply, H52).
+describe('US-16 AC5, AC2a (A6, H107): a dose save refused while this tab\'s erase reads, then the erase stops short', () => {
+  it.each([
+    ['nothing else waiting: the refused dose is gone, the screen shows the stored one', null, 10],
+    ['a later dose waiting at the stop: it lands in the re-read, and the screen agrees', '40', 40],
+  ])('%s', async (_name, later, expected) => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await userOnStatin(adapter, () => addMeasurement('ldl', 4.2, '2026-09-01', getShownErase()));
+    const dose = () => view.container.querySelector<HTMLSelectElement>('#statin-dose')!;
+    await waitFor(() => expect(dose()).not.toBeNull());
+    const read = adapter.holdRead(true);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.change(dose(), { target: { value: '20' } }); // saves in 300 ms
+    fireEvent.click(deleteButton()!);
+    await read.reached;
+    await wait(400); // the dose save comes due while the erase reads, and is refused
+    if (later) fireEvent.change(dose(), { target: { value: later } }); // waiting on its timer at the stop
+    read.release();
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
+    await wait(600);
+    const stored = JSON.parse(await cloudMedications(cloud)) as RoadmapFile['medications'];
+    expect(stored.find(m => m.medicationKey === 'statin')?.doseValue).toBe(expected);
+    expect(dose().value).toBe(String(expected));
+    expect(alert.mock.calls.map(([words]) => words)).toEqual([ERASE_UNREACHABLE]);
+  });
+});
