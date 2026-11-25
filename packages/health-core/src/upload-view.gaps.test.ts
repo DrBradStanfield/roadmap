@@ -129,12 +129,14 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     expect(rows(see(next, EMPTY).view)).toMatchObject([{ ticked: false }]);
   });
 
-  it('refusedAfterChange (seed 869): a record change that makes Save refuse leaves Save waiting after the failure, saying why', () => {
+  // US-13 AC27 replaced the wait: the write refuses that row alone, which keeps its words; with nothing else to write,
+  // the retry waits, saying so (owner ruling on PR 2152).
+  it('refusedAfterChange (seed 869): a record change that makes the write refuse a row leaves the row saying why; Save waits on nothing to save', () => {
     // The other writer's diastolic makes the upload's systolic the wrong way up; the app sends the refusal as a failed Save.
     const record = held([{ kind: 'measurement', metricType: 'diastolic_bp', value: 125, recordedAt: DAY, source: 'manual' }]);
     const s: UploadState = { ...open([labRead('f0', { values: [core({ metric: 'systolic_bp', valueSI: 120, displayValue: 120, displayUnit: 'mmHg' })] })]), phase: 'saveFailed', attempt: 1, message: FIX_ERRORS_TEXT };
     const { view } = see(s, record);
-    expect(view.save).toMatchObject({ enabled: false, why: FIX_ERRORS_TEXT });
+    expect(view.save).toMatchObject({ enabled: false, why: UPLOAD_TEXT.saveNothing, blockers: [] });
     expect(rows(view)).toMatchObject([{ ticked: true, error: expect.any(String) }]);
   });
 
@@ -263,13 +265,13 @@ describe('the phone\'s preview of a value not sent', () => {
 // Found by the list-view property on PR 1942 (seed 71), owner ruling 2026-11-21; closed in web list PR 1b, where each row's
 // error comes from its own candidate (upload-candidates.ts). The phone's view is unchanged: its copies still draw none.
 describe('a copy of a refused reading (web list PR 1b)', () => {
-  it('copyBlocksWithoutError, closed: in the web list a copy of a blood pressure the write refuses draws the error it blocks Save for', () => {
+  it('copyBlocksWithoutError, closed: in the web list a copy of a blood pressure the write refuses draws the error it is refused for (US-13 AC27)', () => {
     const turned = [core({ metric: 'systolic_bp', valueSI: 80, displayValue: 80, displayUnit: 'mmHg' }), core({ metric: 'diastolic_bp', valueSI: 120, displayValue: 120, displayUnit: 'mmHg' })];
     const s = open([labRead('f0', { values: [...turned, ...turned] })]);
     const { view, review } = see(s, EMPTY);
-    expect(view.save.blockers).toEqual(['v0', 'v1', 'v2', 'v3'].map((ref) => ({ why: FIX_ERRORS_TEXT, at: `f0:${ref}` })));
+    expect(view.save.blockers).toEqual([]);
     const list = uploadList(s, EMPTY, NOW, review, () => 'si');
-    expect(list.rows.map((r) => [r.ref, r.error, r.status.kind])).toEqual(['v0', 'v1', 'v2', 'v3'].map((ref) => [ref, PRESSURE_ORDER, 'error']));
+    expect(list.rows.map((r) => [r.ref, r.error, r.status.kind])).toEqual(['v0', 'v1', 'v2', 'v3'].map((ref) => [ref, PRESSURE_ORDER, 'refused']));
     // The phone's view, as main drew it.
     expect(rows(view).filter((r) => r.ref === 'v2' || r.ref === 'v3').map((r) => [r.ref, r.error, r.copy])).toEqual([['v2', null, NOT_SAVED_TEXT.sameDay], ['v3', null, NOT_SAVED_TEXT.sameDay]]);
   });

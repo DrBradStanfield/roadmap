@@ -6,9 +6,10 @@
  * core metric this build does not know) carries the review's own refusal.
  *
  * A value is selected when ticked, its conflict not kept unless replacing (US-13 AC5), and it can be saved at all (no own
- * day still to come). It blocks Save when it holds typed text, or when it is a selected core value with a fault, sent or
- * not (a lab's refusal never blocks: it is not saved, and says so). The list
- * (upload-list.ts) and Save's blockers (upload-view.ts `saveBlockers`) both read this. Pure.
+ * day still to come). It blocks Save only while it holds typed text (AC5, AC12). A selected core value with a fault is
+ * `refused`, sent or not: Save writes the rest and refuses it alone, and it stays with its words (US-13 AC27, Brad
+ * 2026-11-26). A lab's refusal is neither: it is not saved, and says so. The list (upload-list.ts) and Save's blockers
+ * (upload-view.ts `saveBlockers`) both read this. Pure.
  */
 import { isCoreRef, offeredValues, type ClassifiedValue, type OfferedValue } from './import-review';
 import { cellRange, isCellMetric } from './cell-unit';
@@ -29,7 +30,7 @@ export interface Candidate {
   ticked: boolean; typed: TypedText | null; edit: number | undefined;
   /** What Save would send: the edit, else the read number (a core value in SI); null while the row holds typed text. */
   candidate: number | null;
-  fault: RowFault | null; selected: boolean; blocks: boolean;
+  fault: RowFault | null; selected: boolean; refused: boolean; blocks: boolean;
 }
 
 /** A conflict whose held value stays: a copy never replaces (Replace lives on the reading that holds the slot). */
@@ -70,9 +71,9 @@ export function candidates(review: UploadReview, s: UploadState): Candidate[] {
       const ticked = lab.ticked.includes(at.ref);
       const fault = faultOf(at, v, typed, candidate);
       const selected = ticked && !keptConflict(review, v) && !undatable(v);
-      // A lab's refusal never blocks Save (main's rule, US-13 AC5: a selected core value): it says why it is not saved.
-      const blocks = !!typed || (selected && fault !== null && isCoreRef(at.ref));
-      return [{ file, fileId: lab.fileId, ref: at.ref, at, v, ticked, typed, edit, candidate, fault, selected, blocks }];
+      // A lab's refusal is not `refused`: it says why it is not saved in the write's words.
+      const refused = !typed && selected && fault !== null && isCoreRef(at.ref);
+      return [{ file, fileId: lab.fileId, ref: at.ref, at, v, ticked, typed, edit, candidate, fault, selected, refused, blocks: !!typed }];
     });
   });
 }

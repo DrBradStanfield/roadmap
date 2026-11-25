@@ -277,7 +277,7 @@ export function measurementValueFault(metricType: string, value: number): EditRe
 }
 
 /** A Map, not an object: a metric named `__proto__` or `toString` must not find a half. */
-const OTHER_HALF = new Map([['systolic_bp', 'diastolic_bp'], ['diastolic_bp', 'systolic_bp']]);
+export const OTHER_HALF = new Map([['systolic_bp', 'diastolic_bp'], ['diastolic_bp', 'systolic_bp']]);
 /** A one-half refusal says how to change both numbers without passing through an inverted pair. */
 export const PRESSURE_ORDER_HALF = `${PRESSURE_ORDER} To change both numbers, change the bottom number first when lowering them, and the top number first when raising them.`;
 

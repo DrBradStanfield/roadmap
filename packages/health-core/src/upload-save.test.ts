@@ -106,18 +106,22 @@ describe('uploadSave: one step for values and rows (US-52 AC8c)', () => {
     expect(out.file.documents.find((d) => d.id === 'old')!.deleted).toBe(true);
   });
 
-  it('a selected value Save would refuse, or a report waiting for its day, refuses with nothing written', async () => {
-    const outOfRange = saving([read('lab', labX({ values: [core({ valueSI: 500, displayValue: 500 })] })), read('letter', letterX)]);
+  it('a report waiting for its day refuses with nothing written', async () => {
     const noDay = saving([read('lab', labX({ reportDate: null })), read('letter', letterX)]);
-    for (const s of [outOfRange, noDay]) {
-      const io = cloud();
-      const out = await uploadSave(s, EMPTY, NOW, true, io);
-      expect(out.ok).toBe(false);
-      if (out.ok) continue;
-      expect(out.reason).toBe('not-ready');
-      expect(out.message).not.toMatch(/\d/); // the view's words; never a value
-      expect(io.stored.size).toBe(0);
-    }
+    const io = cloud();
+    const out = await uploadSave(noDay, EMPTY, NOW, true, io);
+    expect(out).toMatchObject({ ok: false, reason: 'not-ready' });
+    if (!out.ok) expect(out.message).not.toMatch(/\d/); // the view's words; never a value
+    expect(io.stored.size).toBe(0);
+  });
+
+  it('a selected value out of range is refused alone: Save writes the rest (US-13 AC27)', async () => {
+    const outOfRange = saving([read('lab', labX({ values: [core({ valueSI: 500, displayValue: 500 }), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol' })] })), read('letter', letterX)]);
+    const out = await uploadSave(outOfRange, EMPTY, NOW, false, offCloud());
+    if (!out.ok) throw new Error(out.message);
+    const { file, outcome } = out.commit(EMPTY);
+    expect(file.labValues.filter((l) => l.status === 'active').map((l) => l.metricName)).toEqual(['hba1c', 'Ferritin']);
+    expect(outcome).toMatchObject({ values: 2, documents: 1 });
   });
 
   it('refuses a state that is not saving', async () => {

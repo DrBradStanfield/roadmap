@@ -112,7 +112,7 @@ describe('every offered value is a row (US-13 AC26)', () => {
     const s = open([labRead('f0', { values: [core({ valueSI: 500, displayValue: 500 })] })]);
     const review = uploadReview(s, EMPTY, NOW);
     expect(uploadList(s, EMPTY, NOW, review, () => 'conventional').rows[0].error).toBe('Max 498 mg/dL') // the cell's own range, rounded inward (US-35 AC17);
-    expect(uploadList(s, EMPTY, NOW, review, si).rows[0]).toMatchObject({ error: 'Max 12.9 mmol/L', status: { kind: 'error' } });
+    expect(uploadList(s, EMPTY, NOW, review, si).rows[0]).toMatchObject({ error: 'Max 12.9 mmol/L', status: { kind: 'refused' } }); // US-13 AC27
   });
 });
 
@@ -157,10 +157,11 @@ describe('typed text commits (US-13 AC5, AC12; US-02 AC4, AC7)', () => {
 
 describe('owner rulings on PR 1944 (2026-11-21)', () => {
   it('Save\'s blockers: sent rows first, then days, then rows not sent, so the phone\'s `why` stays main\'s', () => {
-    const s = chose(open([
-      labRead('f0', { values: [core({ valueSI: 500, displayValue: 500 })] }), // sent, out of range
-      labRead('f1', { reportDate: null, values: [core({ valueSI: 600, displayValue: 600 })] }), // waits for its day; out of range, not sent
-    ]), 'f1', { typed: 'v0', text: 'abc', unit: 'si' });
+    // Held text blocks; an out-of-range number alone no longer does (US-13 AC27).
+    const s = chose(chose(open([
+      labRead('f0', { values: [core({})] }), // sent, held text
+      labRead('f1', { reportDate: null, values: [core({ valueSI: 600, displayValue: 600 })] }), // waits for its day; held text, not sent
+    ]), 'f1', { typed: 'v0', text: 'abc', unit: 'si' }), 'f0', { typed: 'v0', text: 'abc', unit: 'si' });
     const { view } = see(s, EMPTY);
     expect(view.save.blockers).toEqual([
       { why: FIX_ERRORS_TEXT, at: 'f0:v0' },

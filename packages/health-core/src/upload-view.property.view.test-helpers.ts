@@ -3,7 +3,7 @@
  * list: upload-view.property.test-helpers.ts.
  */
 import type { BulkRow } from './record-edits';
-import { rangeFault, reportedToCanonical, UNIT_DEFS, type MetricType } from './units';
+import { reportedToCanonical, type MetricType } from './units';
 import type { RoadmapFile } from './roadmap-file';
 import type { ChoiceChange } from './upload-choices';
 import { inFlight, transition, type UploadState } from './upload-flow';
@@ -16,7 +16,7 @@ import { checkDayWords, checkLetters, checkSaveBar, checkUnits } from './upload-
 import { uploadListPage, type ListPage } from './upload-list-page';
 import { FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
 import { IMPORT_REVIEW_TEXT, isOfferedRef, offeredValues } from './import-review';
-import { cellLabel, cellRange, cellToSI } from './cell-unit';
+import { cellLabel, cellToSI } from './cell-unit';
 import type { UnitSystem } from './units';
 import { NOW, PICKED_DAY, EARLY, type Setup, rowsOf, key, shownWritable, allRows, written, fail, type Note, sourceKey, refusedAnyDay, checkOracles, checkDays, expectedDay, columnFixes, unitsOf } from './upload-view.property.base.test-helpers';
 
@@ -201,8 +201,8 @@ function checkShown(k: string, row: ValueRow, bulk: BulkRow, system: UnitSystem)
 /**
  * B: Save's blockers, from the extraction, the choices and the units table (and, for a kept conflict or a blood pressure
  * pair, the review): a ticked value with no day waits at its source's control (the test's and a dated column's never for
- * a value the write refuses on any day); a row blocks at itself when it holds text, or is ticked, selected and faulty
- * (L4's fault, sent or not). Each names a row or a day control the list draws, once. Save is enabled only with none, and
+ * a value the write refuses on any day); a row blocks at itself only when it holds text: a ticked, selected, faulty value
+ * is refused alone and blocks nothing (US-13 AC27; mutation: the old whole-review block). Each names a row or a day control the list draws, once. Save is enabled only with none, and
  * says the first. Mutations that fail it: the test-day blocker keyed at the previous column's control; the column blocker
  * kept for a value refused on any day.
  */
@@ -211,23 +211,14 @@ function checkBlockers(s: UploadState, view: UploadView, review: UploadReview, l
   if (s.phase !== 'open' && s.phase !== 'saveFailed') { if (blockers.length) fail('B', `${blockers.length} blockers while ${s.phase}`); return; }
   const days = new Set<string>();
   const fixes = new Set<string>();
-  const classified = new Map(review.classification.values.map((v) => [`${review.labFiles[v.file].fileId}:${v.ref}`, v]));
   for (const f of s.files) {
     if (f.status.s !== 'read' || f.status.extraction.classification !== 'lab_report') continue;
     const st = f.status;
     for (const at of offeredValues(st.extraction)) {
       const { ref } = at;
       const ticked = st.choices.ticks[ref] ?? true;
-      const v = classified.get(`${f.id}:${ref}`)!;
       const typed = st.choices.typed?.[ref] !== undefined;
-      const metric = at.kind === 'core' && Object.prototype.hasOwnProperty.call(UNIT_DEFS, at.value.metric) ? at.value.metric as MetricType : null;
-      const pairOrUnknown = at.kind === 'core' && !metric;
-      const candidate = st.choices.edits[ref] ?? (at.kind === 'core' ? at.value.valueSI : at.value.value);
-      const pair = v.sent && !v.writes && v.group === 'unsure' && v.reasons.includes('outOfRange');
-      const fault = (!!metric && (!!rangeFault(cellRange(metric, 'si'), candidate) || pair)) || (pairOrUnknown && pair);
-      const kept = v.group === 'unsure' && v.reasons.includes('conflict') && (!!v.copy || !review.labFiles.find((l) => l.fileId === f.id)!.replacing.includes(ref));
-      const future = v.group === 'notSaved' && (v.reason === 'futureDay' || v.reason === 'futureCoreDay');
-      if (typed || (ticked && fault && !kept && !future)) fixes.add(`${f.id}:${ref}`);
+      if (typed) fixes.add(`${f.id}:${ref}`);
       if (!ticked || expectedDay(st, ref).day !== null) continue;
       // The undated previous column waits for any ticked value (main's rule); the test's and a dated column's never for a
       // value the write refuses whatever its day (it sits under Not saved).

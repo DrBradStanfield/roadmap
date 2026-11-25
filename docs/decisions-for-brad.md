@@ -56,10 +56,6 @@ issue, and nothing private.
   "Unsaved values: review" cue does not name the value; and the PDF box's note about a blocked window names a button
   not on screen. Options: new words for each; or close the first two and hide the note until its button shows.
   Recommendation: the second, which needs no new words.
-- **One bad value blocks the whole web upload.** Issue: on the web, one out-of-range value blocks Save for the whole
-  upload; the iPhone saves the rest and refuses that row. Options: the web refuses per row, like the iPhone; the
-  iPhone blocks like the web; leave. Recommendation: per-row refusal in the shared engine for both, with the refused
-  row shown.
 - **"Sync now" inside the five-second pause.** Issue: pressed within five seconds of the last read, Sync now reads
   nothing and still says "Synced". Options: Sync now skips the pause; it says nothing new; leave. Recommendation:
   skip the pause; no new words.
@@ -190,6 +186,11 @@ issue, and nothing private.
   below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
   birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
   screening questions apply at your age and sex yet." (US-62 AC41).
+- An out-of-range number in an upload is refused alone, on both clients: "per-row refusal in the shared engine for
+  both, with the refused row shown". Before, both clients blocked the whole Save (the shared engine did), so this is
+  new on both. Save writes the rest; the row keeps the words it already showed, and the done screen names it. Held
+  text still blocks Save (US-13 AC27). The owner's rulings on review: a blood pressure half refused takes its other
+  half from the same report and day with it. New sentence: "not saved without its other blood pressure number".
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

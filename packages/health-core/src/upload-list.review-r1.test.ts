@@ -42,8 +42,9 @@ describe('F1: a core metric the app does not know (Codex, round one)', () => {
       const s = open([labRead('f0', { values: [unknown, HBA1C] })], platform);
       const { review, view, list } = see(s, EMPTY);
       expect(review.classification.values.find((v) => v.ref === 'v0')).toMatchObject({ group: 'unsure', reasons: ['outOfRange'] });
-      expect(view.save.blockers).toEqual([{ why: FIX_ERRORS_TEXT, at: 'f0:v0' }]); // main's rule: a selected core value the write refuses
-      expect(list.rows[0]).toMatchObject({ key: 'f0:v0', error: 'Unknown core metric', status: { kind: 'error' }, shown: { number: '12', unit: 'zz/L', current: 12 } });
+      // US-13 AC27: the write refuses that row alone; Save writes the other.
+      expect(view.save).toMatchObject({ enabled: true, blockers: [], label: IMPORT_REVIEW_TEXT.save(1) });
+      expect(list.rows[0]).toMatchObject({ key: 'f0:v0', error: 'Unknown core metric', status: { kind: 'refused' }, shown: { number: '12', unit: 'zz/L', current: 12 } });
       expect(review.classification.rows).toHaveLength(1);
       const cleared = chose(s, 'f0', { tick: 'v0', on: false });
       expect(see(cleared, EMPTY).view.save).toMatchObject({ enabled: true, label: IMPORT_REVIEW_TEXT.save(1) });
@@ -111,8 +112,8 @@ describe('F4: typed text on a letter\'s values (adversary R3, round one)', () =>
 });
 
 describe('F5: the phone\'s blocker list (adversary R4, round one)', () => {
-  it('an undated report with LDL 500: the day first, then the row; `why` and `enabled` as main', () => {
+  it('an undated report with LDL 500: the day alone; the row blocks nothing (US-13 AC27)', () => {
     const { view } = see(open([labRead('f0', { reportDate: null, values: [core({ valueSI: 500, displayValue: 500 })] })], 'phone'), EMPTY);
-    expect(view.save).toMatchObject({ enabled: false, why: UPLOAD_TEXT.chooseDay, blockers: [{ why: UPLOAD_TEXT.chooseDay, at: 'f0|test' }, { why: FIX_ERRORS_TEXT, at: 'f0:v0' }] });
+    expect(view.save).toMatchObject({ enabled: false, why: UPLOAD_TEXT.chooseDay, blockers: [{ why: UPLOAD_TEXT.chooseDay, at: 'f0|test' }] });
   });
 });

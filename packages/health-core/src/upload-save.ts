@@ -13,7 +13,7 @@
  *
  * A repeat on the record it saved writes nothing (commit answers the same file): saved values are
  * classified saved, and saveDocuments skips bytes the record already holds. It refuses, writing
- * nothing, while the view would: a selected value the write refuses, or a report waiting for its day
+ * nothing, while the view would: a value holding typed text, or a report waiting for its day
  * (`saveBlocked`). Pure but for `io`: the bytes and the cloud writes are the caller's.
  *
  * A letter's ticked, dated screening box (web only, `person` given; upload-screening.ts, US-13 AC6) writes its
@@ -36,6 +36,7 @@ import type { RefusedCode, SaveOutcome, UploadState } from './upload-flow';
 import { storedHashes, uploadSavePlan } from './upload-plan';
 import { reviewedWrites, uploadReview } from './upload-review';
 import { isScreeningDateKey, writeScreeningDates, type ScreeningPerson } from './upload-screening';
+import { candidates } from './upload-candidates';
 import { measurementRefusalText } from './upload-text';
 import { saveBlocked } from './upload-view';
 
@@ -97,6 +98,8 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
   const blocked = saveBlocked(review, s);
   if (blocked) return { ok: false, reason: 'not-ready', message: blocked };
   const plan = uploadSavePlan(s, record, now, review, cloudConnected, person);
+  // The rows the list showed refused (US-13 AC27): named on the done screen as a value the commit refuses is (below).
+  const listRefused = candidates(review, s).flatMap((c) => (c.refused && c.v.refusal && 'measurement' in c.v.refusal ? [c.v.refusal.measurement] : []));
 
   // Each row's value as `file:ref`, in plan order: by file, each file's in the order `rowsByFile` took them.
   const writes = reviewedWrites(review);
@@ -179,10 +182,13 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       // say), is named, never dropped silently (US-13 AC17): a lab in the review's not-saved words, a core value
       // in the web's own refusal line. A core value out of range has no line without the cell's unit: it reads
       // as misread, as the review names a misread number (it cannot newly arise at commit: the range is the value's own).
+      // The rows the list refused are named the same way (owner ruling on PR 2152).
       const refused = [
         ...written.refused.map((r) => ({ label: labTestLabel(r.key), reason: labReason(r) })),
-        ...written.measurementRefusals.map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
+        ...[...listRefused, ...written.measurementRefusals].map((r) => { const line = measurementRefusalText(r); return line !== null ? { line } : { label: METRIC_LABELS[r.metricType] ?? labTestLabel(r.metricType), reason: 'misread' as const }; }),
       ];
+      // Codes for the commit's own refusals only: the list's were never sent (US-12 AC6).
+      const codes = refusalCodes(written);
       const filed = values || docs.saved.length ? committedFile(written.file, docs) : file;
       // Each ticked, dated box the page shows; of one type the latest date is written, and only when it is later than
       // the record's (Brad 2026-11-23).
@@ -193,7 +199,7 @@ export async function uploadSave<F>(s: UploadState, record: RoadmapFile, now: st
       // untried write, the app not holding it), judged at commit so another writer's copy counts as kept.
       const stored = storedHashes(out);
       const unstored = [...nominated].filter((h) => !stored.has(h)).length;
-      return { file: out, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused, refusedCodes: refusalCodes(written) } : {}), ...(screenings ? { screenings } : {}) } };
+      return { file: out, outcome: { values, documents, archived, unstored, ...(sv ? { skippedValues: sv } : {}), ...(sl ? { skippedLabValues: sl } : {}), ...(refused.length ? { refused } : {}), ...(codes.length ? { refusedCodes: codes } : {}), ...(screenings ? { screenings } : {}) } };
     },
   };
 }

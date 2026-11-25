@@ -26,7 +26,19 @@
  * the reader's answer in the upload state, never from a row the record holds for its bytes. The test names its seeds from
  * the inputs alone (the record holds the metadata-only letter row `held-doc` for `h-f1`, and f1 is a read letter), asserts
  * the changed seeds are exactly those and the classes above, and that with the held row's title and date put back where
- * the person made no fix (in the plan and in the view's documents row) each hashes to main's answer. Synthetic values only.
+ * the person made no fix (in the plan and in the view's documents row) each hashes to main's answer.
+ *
+ * US-13 AC27 (Brad 2026-11-26) changes, on purpose, Save's `enabled` and `why` wherever a selected core value has a fault:
+ * Save refuses that row alone and no longer waits on it. Undone for every seed in `parts`, after checking no blocker
+ * names such a row: Save off, saying main's first reason (the fix line when one such row is sent, else the first day
+ * blocker, else the fix line). After a failed Save, Save now stays off while the plan writes nothing (owner ruling on
+ * PR 2152); undone there too, after checking it.
+ *
+ * The owner's ruling on PR 2152 (US-13 AC27) changes, on purpose, one more class: a blood pressure half the write refuses
+ * takes its other half from the same report and day with it. The test names its seeds (`pairSeed`: the review refuses a
+ * value in the pair's words), asserts the changed seeds are exactly those and the classes above, and checks each such
+ * seed's partner is refused and unwritten; the other classes' undo is checked on the seeds this class leaves alone.
+ * Synthetic values only.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -35,11 +47,13 @@ import { describe, expect, it } from 'vitest';
 import { UNDATED_PREVIOUS, type AdditionalLabValue, type ExtractedValue, type UnifiedExtractionResult } from './lab-extraction';
 import { bulkAppendValues, type BulkRow } from './record-edits';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
+import { candidates } from './upload-candidates';
 import { NO_CHOICES, type FileChoices } from './upload-choices';
 import type { UploadFile, UploadState } from './upload-flow';
 import { labReadFound, planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
-import { FILE_NOTICE_TEXT, UPLOAD_TEXT } from './upload-text';
+import { FILE_NOTICE_TEXT, FIX_ERRORS_TEXT, UPLOAD_TEXT } from './upload-text';
+import { PRESSURE_PAIR } from './import-review';
 import { documentDateLine, uploadView } from './upload-view';
 
 const GOLDEN = join(__dirname, '__fixtures__', 'upload-pr0-golden.json');
@@ -185,7 +199,8 @@ function parts(c: Case, previewEdits = true) {
   // US-12 AC6 (2026-11-23): Save says "Saving..." while it saves, on both platforms, on purpose. Undone here for every
   // saving seed, after checking it: the label main drew then, the plan's words.
   if (c.state.phase === 'saving') expect(drawn.save.label).toBe(UPLOAD_TEXT.saving);
-  const view = c.state.phase === 'saving' ? { ...drawn, save: { ...drawn.save, label: mainLabel(plan.counts) } } : drawn;
+  const view = c.state.phase === 'saving' ? { ...drawn, save: { ...drawn.save, label: mainLabel(plan.counts) } }
+    : { ...drawn, save: mainSave(drawn.save, c.state, review) };
   const labFiles = review.labFiles.map((l) => {
     const { needsColumnDay, waits, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; days?: unknown };
     expect(needsColumnDay ?? false).toBe(false);
@@ -195,6 +210,27 @@ function parts(c: Case, previewEdits = true) {
   return { review: { ...review, labFiles }, plan, view: mainView(view, c.state) };
 }
 const answer = (c: Case): string => canonical(parts(c));
+
+/** The owner's ruling on PR 2152: the values the review refuses with their other blood pressure half. */
+const pairRefused = (c: Case) => uploadReview(c.state, c.record, NOW).classification.values
+  .filter((v) => v.refusal && 'measurement' in v.refusal && v.refusal.measurement.message === PRESSURE_PAIR);
+
+/** The selected core values with a fault (US-13 AC27), while Save could be pressed: main blocked Save on them. */
+const refusedOpen = (s: UploadState, review: ReturnType<typeof uploadReview>) =>
+  (s.phase === 'open' || s.phase === 'saveFailed' ? candidates(review, s).filter((x) => x.refused) : []);
+
+/** Save as main's rule drew it: off, at the first of main's blockers, while a selected core value has a fault; after a
+ *  failed Save, on with nothing to write (the owner's ruling on PR 2152 now keeps it off, saying so: checked, then undone). */
+function mainSave(save: ReturnType<typeof uploadView>['save'], s: UploadState, review: ReturnType<typeof uploadReview>) {
+  const refused = refusedOpen(s, review);
+  if (!refused.length && s.phase === 'saveFailed' && save.why === UPLOAD_TEXT.saveNothing) {
+    expect(save).toMatchObject({ enabled: false, blockers: [] });
+    return { ...save, enabled: true, why: null };
+  }
+  if (!refused.length) return save;
+  expect(save.blockers.filter((b) => refused.some((r) => b.at === `${r.fileId}:${r.ref}`))).toEqual([]);
+  return { ...save, enabled: false, why: refused.some((r) => r.v.sent) ? FIX_ERRORS_TEXT : save.blockers[0]?.why ?? FIX_ERRORS_TEXT };
+}
 
 /**
  * US-14 AC11's reports in a case, from the inputs alone: with a cloud, a read lab report with nothing ticked in
@@ -321,7 +357,14 @@ describe('US-13 AC24: PR 0 is inert with none of its choices set', () => {
       return editPreviewCandidate(c) && hash(canonical(parts(c, false))) !== now[seed];
     });
     const held = Object.keys(now).filter((seed) => heldLetter(genCase(Number(seed))) !== null);
-    expect(changed).toEqual(Object.keys(now).filter((seed) => ac11.includes(seed) || previewed.includes(seed) || held.includes(seed)));
+    const pair = Object.keys(now).filter((seed) => pairRefused(genCase(Number(seed))).length > 0);
+    expect(changed).toEqual(Object.keys(now).filter((seed) => ac11.includes(seed) || previewed.includes(seed) || held.includes(seed) || pair.includes(seed)));
+    // And how: each partner is refused, never written, and shown in the pair's words.
+    expect(pair.length).toBeGreaterThan(0);
+    for (const seed of pair) {
+      const c = genCase(Number(seed));
+      for (const v of pairRefused(c)) expect(v, seed).toMatchObject({ sent: true, writes: false, group: 'unsure' });
+    }
     expect(ac11).toHaveLength(AC11_SEEDS);
     expect(previewed.filter((seed) => !ac11.includes(seed))).toHaveLength(EDIT_PREVIEW_SEEDS);
     // The read-letter class shares no seed with the others, so each is undone alone.
@@ -329,14 +372,14 @@ describe('US-13 AC24: PR 0 is inert with none of its choices set', () => {
     expect(held).toHaveLength(HELD_LETTER_SEEDS);
     expect(new Set(held.map((seed) => genCase(Number(seed)).state.platform))).toEqual(new Set(['web', 'phone']));
     // And how: with the held row's title and date put back where the person made no fix, each answers as main did.
-    for (const seed of held) {
+    for (const seed of held.filter((x) => !pair.includes(x))) {
       const c = genCase(Number(seed));
       expect(hash(asMainHeld(c, heldLetter(c)!)), seed).toBe(golden[seed]);
     }
     // And how: with the edit's preview undone, each answers as main did.
-    for (const seed of previewed.filter((x) => !ac11.includes(x))) expect(hash(canonical(parts(genCase(Number(seed)), false))), seed).toBe(golden[seed]);
+    for (const seed of previewed.filter((x) => !ac11.includes(x) && !pair.includes(x))) expect(hash(canonical(parts(genCase(Number(seed)), false))), seed).toBe(golden[seed]);
     // And how: each kept report is one new `labArchives` entry, `originals` counts it, the label says so; undone, main's answer.
-    for (const seed of ac11) {
+    for (const seed of ac11.filter((x) => !pair.includes(x))) {
       const c = genCase(Number(seed));
       const kept = keptAlone(c);
       const { plan, view } = parts(c);
@@ -344,6 +387,9 @@ describe('US-13 AC24: PR 0 is inert with none of its choices set', () => {
       if (!plan.counts.values && !plan.counts.documents) expect(view.save.label, seed).toBe(UPLOAD_TEXT.saveOriginals(plan.counts.originals));
       expect(hash(asMain(c, kept)), seed).toBe(golden[seed]);
     }
+    // US-13 AC27 is reached on both platforms, and undone in `parts` for every seed.
+    const refusing = Object.keys(now).map((seed) => genCase(Number(seed))).filter((c) => refusedOpen(c.state, uploadReview(c.state, c.record, NOW)).length);
+    expect(new Set(refusing.map((c) => c.state.platform))).toEqual(new Set(['web', 'phone']));
     // Both platforms and every phase are covered.
     const cases = Object.keys(now).map((seed) => genCase(Number(seed)).state);
     expect(new Set(cases.map((s) => ('platform' in s ? s.platform : '')))).toEqual(new Set(['web', 'phone']));
