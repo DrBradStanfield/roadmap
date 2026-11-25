@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-S-11,S2 server,MCP HTML views move out of the route file,not started,app/routes/mcp.$.tsx:112 keeps its own escapeHtml and the page views; no mcp-pages.server.ts,,,yes
+S-11,S2 server,MCP HTML views move out of the route file,done,"app/lib/mcp-pages.server.ts (243 lines) holds escapeHtml, NO_STORE, html, page, htmlError, providerMark, hostOf, clientSource, reviewerBox and consentPage, moved unchanged; app/routes/mcp.$.tsx 724 to 485. Pinned first: mcp.pages-snapshot.test.ts renders all 12 views with status and headers, snapshot written on main (US-64)",,the file-size ratchet (scripts/file-size-ratchet.test.ts),no (owner ruled 2026-11-25)
