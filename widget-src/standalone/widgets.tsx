@@ -16,6 +16,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initRoadmapStore } from '../src/lib/roadmap-data';
+import { FollowErase } from '../src/widgets/FollowErase';
 import { widgetFor } from '../src/widgets/router';
 import { boot } from './boot';
 import { LoadFailurePanel } from './load-failure';
@@ -50,7 +51,7 @@ export async function startWidgets(doc: Document = document): Promise<void> {
     root.render(
       <React.StrictMode>
         <ErrorBoundary feature="single-topic-widget" fallback={failure(new Error('render'))}>
-          <Widget nextUrl={el.dataset.nextUrl} nextLabel={el.dataset.nextLabel} />
+          <FollowErase><Widget nextUrl={el.dataset.nextUrl} nextLabel={el.dataset.nextLabel} /></FollowErase>
         </ErrorBoundary>
       </React.StrictMode>,
     );

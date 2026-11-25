@@ -619,6 +619,9 @@ describe('US-75 AC8: the saves state, event by event', () => {
     ['typing after a drop claims the erase shown now', settled(2, 0, 2), { type: 'typed', erase: 'B' }, typing(3, 0, 2, 'B')],
     ['typing after a keep claims the erase shown now', settled(2, 2, 0), { type: 'typed', erase: 'B' }, typing(3, 2, 0, 'B')],
     ['a late answer never moves a count back', settled(4, 4, 3), { type: 'kept', seq: 2 }, settled(4, 4, 3)],
+    ['a drop answered while settled stays settled', settled(3, 1, 0), { type: 'dropped', seq: 3 }, settled(3, 1, 3)],
+    ['an older edit kept once a newer one is dropped: settled', typing(3, 0, 3, 'A'), { type: 'kept', seq: 2 }, settled(3, 2, 3)],
+    ['typing after a drop, with an earlier edit kept, claims the erase shown now', settled(3, 1, 3), { type: 'typed', erase: 'B' }, typing(4, 1, 3, 'B')],
   ];
   it.each(table)('%s', (_, from, event, to) => {
     expect(transition(from, event)).toEqual(to);
