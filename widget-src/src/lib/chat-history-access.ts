@@ -27,20 +27,24 @@ import { recordFailure } from './error-diagnostics';
  * older attempt changes nothing. One open is in flight at a time and an open
  * session is replaced only by a reset, so the page never holds two sessions
  * (US-11 AC2g): a second one would not wait for the first one's saves.
- * `opening.at` and `open.readAt`: the erase identity the session's copy was
- * read at, for what a send takes at once (AC2h).
+ * `served` is what callers get: the open, or a re-read of its copy (null: it
+ * failed). `readAt` is the erase identity that read is for (null: read again).
+ * A re-read in flight is `opening` again, so `open` means the copy was read at
+ * `readAt` and a send may take its marks at once (AC2h).
  */
+type Served = Promise<ChatHistoryStore | null>;
 export type ChatHistoryOpen =
   | { phase: 'closed'; attempt: number }
-  | { phase: 'opening'; attempt: number; pending: Promise<ChatHistoryStore>; at: string }
-  | { phase: 'open'; attempt: number; pending: Promise<ChatHistoryStore>; store: ChatHistoryStore; readAt: string }
+  | { phase: 'opening'; attempt: number; pending: Promise<ChatHistoryStore>; served: Served; readAt: string | null }
+  | { phase: 'open'; attempt: number; pending: Promise<ChatHistoryStore>; served: Served; readAt: string; store: ChatHistoryStore }
   | { phase: 'failed'; attempt: number };
 
 export type ChatHistoryOpenEvent =
-  | { type: 'open-began'; pending: Promise<ChatHistoryStore>; at: string }
-  | { type: 'opened'; attempt: number; store: ChatHistoryStore }
+  | { type: 'open-began'; pending: Promise<ChatHistoryStore>; served: Served; at: string }
+  | { type: 'reread-began'; attempt: number; served: Served; at: string }
+  | { type: 'opened'; attempt: number; store: ChatHistoryStore; at: string }
   | { type: 'open-failed'; attempt: number }
-  | { type: 'reread'; attempt: number; at: string }
+  | { type: 'reread-failed'; attempt: number; at: string }
   | { type: 'reset' };
 
 export function transition(s: ChatHistoryOpen, e: ChatHistoryOpenEvent): ChatHistoryOpen {
@@ -48,31 +52,33 @@ export function transition(s: ChatHistoryOpen, e: ChatHistoryOpenEvent): ChatHis
     case 'reset':
       return { phase: 'closed', attempt: s.attempt + 1 };
     case 'open-began':
-      return s.phase === 'closed' || s.phase === 'failed' ? { phase: 'opening', attempt: s.attempt + 1, pending: e.pending, at: e.at } : s;
+      return s.phase === 'closed' || s.phase === 'failed'
+        ? { phase: 'opening', attempt: s.attempt + 1, pending: e.pending, served: e.served, readAt: e.at }
+        : s;
+    case 'reread-began':
+      return (s.phase === 'opening' || s.phase === 'open') && s.attempt === e.attempt
+        ? { phase: 'opening', attempt: s.attempt, pending: s.pending, served: e.served, readAt: e.at }
+        : s;
     case 'opened':
-      return s.phase === 'opening' && s.attempt === e.attempt
-        ? { phase: 'open', attempt: s.attempt, pending: s.pending, store: e.store, readAt: s.at }
+      return s.phase === 'opening' && s.attempt === e.attempt && s.readAt === e.at
+        ? { phase: 'open', attempt: s.attempt, pending: s.pending, served: s.served, readAt: e.at, store: e.store }
         : s;
     case 'open-failed':
       return s.phase === 'opening' && s.attempt === e.attempt ? { phase: 'failed', attempt: s.attempt } : s;
-    case 'reread':
-      return s.phase === 'open' && s.attempt === e.attempt ? { ...s, readAt: e.at } : s;
+    case 'reread-failed':
+      return s.phase === 'opening' && s.attempt === e.attempt && s.readAt === e.at ? { ...s, readAt: null } : s;
   }
 }
 
 let factory: (() => Promise<ChatHistoryStore>) | null = null;
 let state: ChatHistoryOpen = { phase: 'closed', attempt: 0 };
 const send = (e: ChatHistoryOpenEvent): void => { state = transition(state, e); };
-/** What callers are served: the session, or its re-read (null: it failed). */
-let store: Promise<ChatHistoryStore | null> | null = null;
-/** The record's erase identity, and the one the store was read at (null: read again). */
+/** The record's erase identity. */
 let eraseIdentity = (): string => '';
-let readAt: string | null = '';
 
 export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | null, identity = (): string => ''): void {
   factory = f;
   send({ type: 'reset' });
-  store = null;
   eraseIdentity = identity;
 }
 
@@ -81,7 +87,7 @@ export function hasChatHistoryLayer(): boolean {
   return factory !== null;
 }
 
-type Session = { attempt: number; pending: Promise<ChatHistoryStore> };
+type Session = Extract<ChatHistoryOpen, { phase: 'opening' | 'open' }>;
 const live = (): Session | null => (state.phase === 'opening' || state.phase === 'open' ? state : null);
 
 /** The open in flight or done, or a new one when there is none (closed, or the last one failed). */
@@ -90,12 +96,10 @@ function session(): Session {
   if (held) return held;
   const pending = factory!();
   const at = eraseIdentity();
-  send({ type: 'open-began', pending, at });
+  send({ type: 'open-began', pending, served: pending.catch(() => null), at });
   const { attempt } = state;
-  pending.then((s) => send({ type: 'opened', attempt, store: s }), () => send({ type: 'open-failed', attempt }));
-  store = pending.catch(() => null);
-  readAt = at;
-  return { attempt, pending };
+  pending.then((s) => send({ type: 'opened', attempt, store: s, at }), () => send({ type: 'open-failed', attempt }));
+  return live()!;
 }
 
 /**
@@ -105,19 +109,19 @@ function session(): Session {
  * from before the erase is served, but it is not kept: the next caller reads
  * again.
  */
-function cached({ attempt, pending }: Session): Promise<ChatHistoryStore | null> {
+function cached(held: Session): Served {
   const now = eraseIdentity();
-  if (now !== readAt) {
-    store = pending.then((s) => s.reload().then(() => {
-      send({ type: 'reread', attempt, at: now });
-      return s;
-    }, () => {
-      if (live()?.attempt === attempt) readAt = null;
-      return null;
-    }), () => null);
-  }
-  readAt = now;
-  return store!;
+  if (now === held.readAt) return held.served;
+  const { attempt, pending } = held;
+  const served = pending.then((s) => s.reload().then(() => {
+    send({ type: 'opened', attempt, store: s, at: now });
+    return s;
+  }, () => {
+    send({ type: 'reread-failed', attempt, at: now });
+    return null;
+  }), () => null);
+  send({ type: 'reread-began', attempt, served, at: now });
+  return served;
 }
 
 /** The cloud chat-history store, or null (production build, no data layer, or

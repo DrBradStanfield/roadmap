@@ -41,29 +41,51 @@ const answer = () => new Response(JSON.stringify({ success: true, conversationId
 
 describe('US-15 AC69: the chat-history open transition', () => {
   const pending = Promise.resolve(asStore(fakeStore()));
+  const served = Promise.resolve(null);
+  const reread = Promise.resolve(null);
   const store = asStore(fakeStore());
   const closed: ChatHistoryOpen = { phase: 'closed', attempt: 0 };
-  const opening: ChatHistoryOpen = { phase: 'opening', attempt: 2, pending, at: 'e1' };
-  const open: ChatHistoryOpen = { phase: 'open', attempt: 2, pending, store, readAt: 'e1' };
+  const opening: ChatHistoryOpen = { phase: 'opening', attempt: 2, pending, served, readAt: 'e1' };
+  const open: ChatHistoryOpen = { phase: 'open', attempt: 2, pending, served, readAt: 'e1', store };
   const failed: ChatHistoryOpen = { phase: 'failed', attempt: 2 };
-  const began: ChatHistoryOpenEvent = { type: 'open-began', pending, at: 'e2' };
+  const began: ChatHistoryOpenEvent = { type: 'open-began', pending, served, at: 'e2' };
+  const rereadOwn: ChatHistoryOpenEvent = { type: 'reread-began', attempt: 2, served: reread, at: 'e3' };
+  const rereadOlder: ChatHistoryOpenEvent = { type: 'reread-began', attempt: 1, served: reread, at: 'e3' };
+  const rereading: ChatHistoryOpen = { phase: 'opening', attempt: 2, pending, served: reread, readAt: 'e3' };
 
+  // Every state x event pair has a row; the attempt-carrying events also have an older-attempt row.
   const rows: Array<[string, ChatHistoryOpen, ChatHistoryOpenEvent, ChatHistoryOpen]> = [
-    ['closed + open-began opens attempt 1', closed, began, { phase: 'opening', attempt: 1, pending, at: 'e2' }],
-    ['failed + open-began opens the next attempt', failed, began, { phase: 'opening', attempt: 3, pending, at: 'e2' }],
+    ['closed + open-began opens attempt 1', closed, began, { phase: 'opening', attempt: 1, pending, served, readAt: 'e2' }],
+    ['failed + open-began opens the next attempt', failed, began, { phase: 'opening', attempt: 3, pending, served, readAt: 'e2' }],
     ['opening + open-began keeps the one in flight', opening, began, opening],
     ['open + open-began keeps the open session', open, began, open],
-    ['opening + opened of its attempt is open', opening, { type: 'opened', attempt: 2, store }, open],
-    ['opening + opened of an older attempt changes nothing', opening, { type: 'opened', attempt: 1, store }, opening],
+    ['closed + reread-began changes nothing', closed, rereadOwn, closed],
+    ['failed + reread-began changes nothing', failed, rereadOwn, failed],
+    ['opening + reread-began of its attempt reads at the new identity', opening, rereadOwn, rereading],
+    ['opening + reread-began of an older attempt changes nothing', opening, rereadOlder, opening],
+    ['open + reread-began of its attempt is opening again until the re-read lands', open, rereadOwn, rereading],
+    ['open + reread-began of an older attempt changes nothing', open, rereadOlder, open],
+    ['opening + opened of its attempt and identity is open', opening, { type: 'opened', attempt: 2, store, at: 'e1' }, open],
+    ['opening + opened for an identity it no longer reads at changes nothing', rereading, { type: 'opened', attempt: 2, store, at: 'e1' }, rereading],
+    ['opening + opened of a re-read is open at its identity', rereading, { type: 'opened', attempt: 2, store, at: 'e3' }, { ...rereading, phase: 'open', readAt: 'e3', store }],
+    ['opening + opened of an older attempt changes nothing', opening, { type: 'opened', attempt: 1, store, at: 'e1' }, opening],
+    ['open + opened of its attempt changes nothing', open, { type: 'opened', attempt: 2, store: asStore(fakeStore()), at: 'e1' }, open],
+    ['open + opened of an older attempt changes nothing', open, { type: 'opened', attempt: 1, store: asStore(fakeStore()), at: 'e1' }, open],
+    ['failed + opened of an older attempt changes nothing', failed, { type: 'opened', attempt: 1, store, at: 'e1' }, failed],
+    ['closed + opened changes nothing', closed, { type: 'opened', attempt: 0, store, at: 'e1' }, closed],
     ['opening + open-failed of its attempt is failed', opening, { type: 'open-failed', attempt: 2 }, failed],
     ['opening + open-failed of an older attempt changes nothing', opening, { type: 'open-failed', attempt: 1 }, opening],
-    ['open + opened of an older attempt changes nothing', open, { type: 'opened', attempt: 1, store: asStore(fakeStore()) }, open],
+    ['open + open-failed of its attempt changes nothing', open, { type: 'open-failed', attempt: 2 }, open],
     ['open + open-failed of an older attempt changes nothing', open, { type: 'open-failed', attempt: 1 }, open],
-    ['failed + opened of an older attempt changes nothing', failed, { type: 'opened', attempt: 1, store }, failed],
-    ['closed + opened changes nothing', closed, { type: 'opened', attempt: 0, store }, closed],
-    ['open + reread of its attempt moves readAt', open, { type: 'reread', attempt: 2, at: 'e3' }, { ...open, readAt: 'e3' }],
-    ['open + reread of an older attempt changes nothing', open, { type: 'reread', attempt: 1, at: 'e3' }, open],
-    ['opening + reread changes nothing', opening, { type: 'reread', attempt: 2, at: 'e3' }, opening],
+    ['closed + open-failed changes nothing', closed, { type: 'open-failed', attempt: 0 }, closed],
+    ['failed + open-failed of its attempt changes nothing', failed, { type: 'open-failed', attempt: 2 }, failed],
+    ['opening + reread-failed of its re-read reads again next time', rereading, { type: 'reread-failed', attempt: 2, at: 'e3' }, { ...rereading, readAt: null }],
+    ['opening + reread-failed of an older re-read changes nothing', rereading, { type: 'reread-failed', attempt: 2, at: 'e1' }, rereading],
+    ['opening + reread-failed of an older attempt changes nothing', rereading, { type: 'reread-failed', attempt: 1, at: 'e3' }, rereading],
+    ['open + reread-failed changes nothing', open, { type: 'reread-failed', attempt: 2, at: 'e1' }, open],
+    ['closed + reread-failed changes nothing', closed, { type: 'reread-failed', attempt: 0, at: 'e1' }, closed],
+    ['failed + reread-failed changes nothing', failed, { type: 'reread-failed', attempt: 2, at: 'e1' }, failed],
+    ['closed + reset is closed, past every attempt so far', closed, { type: 'reset' }, { phase: 'closed', attempt: 1 }],
     ['open + reset is closed, past every attempt so far', open, { type: 'reset' }, { phase: 'closed', attempt: 3 }],
     ['opening + reset is closed, past every attempt so far', opening, { type: 'reset' }, { phase: 'closed', attempt: 3 }],
     ['failed + reset is closed', failed, { type: 'reset' }, { phase: 'closed', attempt: 3 }],
