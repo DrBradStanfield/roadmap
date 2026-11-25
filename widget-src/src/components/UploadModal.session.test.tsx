@@ -41,6 +41,7 @@ function Harness({ onStart, refresh, rereadThrows }: { onStart?: () => Promise<v
       onComplete();
       if (rereadThrows) throw new Error('synthetic re-read throw');
       if (refresh) return refresh;
+      return undefined;
     }}
   /></>;
 }
