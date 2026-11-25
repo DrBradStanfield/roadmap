@@ -168,16 +168,18 @@ export function ValuePage({ subject, history, labValues, ctx, tiles, onSave, onC
                     onSave={onSave} say={say} onDone={() => setCorrecting(null)} dirtyRef={dirtyRef} onWeightAnswered={onWeightAnswered}/>}
 
       <h4 className="md-page-subtitle">History</h4>
+      {/* A reading's day is named from the text that shows it, never an attribute (US-09 AC7l). */}
+      {subject.kind === 'bp' && <span id={`${titleId}correct`} hidden>Correct the reading of</span>}
       {readings.length === 0 ? <p className="md-page-empty">No values yet.</p> : (
         <ul className="md-history">
-          {readings.map(r => (
+          {readings.map((r, i) => (
             <li key={r.id} className="md-history-row">
-              <span className="md-history-day">{formatShortDate(r.day)}</span>
+              <span id={`${titleId}day${i}`} className="md-history-day">{formatShortDate(r.day)}</span>
               {subject.kind === 'bp' ? (
                 <span className="md-history-bp">
                   <PressureValue reading={r} ctx={ctx}/>
                   <button type="button" className="md-history-correct" onClick={() => setCorrecting(r)}
-                          aria-label={`Correct the reading of ${formatShortDate(r.day)}`}>Correct</button>
+                          aria-labelledby={`${titleId}correct ${titleId}day${i}`}>Correct</button>
                 </span>
               ) : metric ? (
                 <CoreValue metric={metric} unit={unit} reading={r} ctx={ctx} onCorrect={onCorrect} say={say}/>

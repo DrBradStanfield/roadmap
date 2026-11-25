@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 /**
  * US-09 AC7l, across the whole widget: text from the person's record is shown as text, never
- * copied into an attribute. A record whose every free-text field holds its own made-up word is
- * rendered through the real HealthTool and store, and each main screen is walked: My data (rows,
- * a value page with its chart, the grids), My health with its documents and a document opened,
- * Settings, the chat column's thread list, the history lightbox and each phone tab. The medication's
- * free text is in the record though no screen shows it (a drug off the list is named by its class).
- * Synthetic record; the chat's network is stubbed.
+ * copied into an attribute. A record whose every free-text field holds its own made-up word, and
+ * whose every core metric holds an unusual number, is rendered through the real HealthTool and
+ * store, and each main screen is walked: My data (rows, each value's page with its chart, the
+ * grids), My health with its documents and a document opened, Settings, the chat column's thread
+ * list and a thread opened, the history lightbox, each phone tab, the reminders line and the upload
+ * review. The medication's free text and the document's metadata are in the record though no
+ * screen shows them. Synthetic record; the chat's and the upload's network is stubbed.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -14,18 +15,40 @@ import { customSupplementAdd } from '@roadmap/health-core/input-form';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement, bulkSaveDocuments, bulkSaveLabValues, flushRoadmapStore, initRoadmapStore, openHistoryLightbox, saveChangedMeasurements, saveMedication, saveSupplement,
+  setReminderOptIn,
 } from '../lib/roadmap-data';
+import { formatShortDate } from '../lib/constants';
 import { recordTextInAttributes } from '../testing/no-record-text-in-attributes';
+import { UPLOAD_ENGINE } from '../testing/upload-engine';
 
 const SENTINEL = {
   supplement: 'Vexbramble',
   lab: 'Quillmarrow',
+  labUnit: 'Glimmerunits',
   documentTitle: 'Tansyloft',
   fileName: 'Corvinashe',
+  documentText: 'Halvorpine',
+  documentMetadata: 'Mistlebrook',
   medication: 'Plumquist',
   chat: 'Brindlewick',
+  chatAsked: 'Sorrelgate',
+  chatAnswered: 'Fennimoor',
+  email: 'wexmoth',
+  uploadLab: 'Drovenquill',
+  uploadUnit: 'Peltherunits',
 } as const;
 const WORDS = Object.values(SENTINEL);
+
+/** The day of the pressure readings, an unusual one: its shown form is looked for too. */
+const BP_DAY = '2025-02-17T00:00:00.000Z';
+/** Each core metric's typed value, unusual but in range, by the text the screens show for it (SI). */
+const CORE: ReadonlyArray<[metric: string, value: number, shown: string]> = [
+  ['weight', 138.6, '138.6'], ['waist', 163, '163'], ['hba1c', 109, '109'], ['ldl', 11.8, '11.8'],
+  ['hdl', 4.87, '4.87'], ['total_cholesterol', 13.6, '13.6'], ['triglycerides', 17.3, '17.3'],
+  ['apob', 1.83, '1.83'], ['creatinine', 1234, '1234'], ['psa', 836.4, '836.4'], ['lpa', 613, '613'],
+];
+const VALUES = [...CORE.map(([, , shown]) => shown), '187', '117', '191', formatShortDate(BP_DAY)];
+const LOOKED_FOR = [...WORDS, ...VALUES];
 
 vi.mock('chart.js', () => {
   class Chart { static register() {} destroy() {} update() {} }
@@ -42,16 +65,23 @@ vi.mock('../lib/server-api', async original => ({
 vi.mock('../lib/chat-api', () => ({
   getChatGate: () => null,
   listConversations: vi.fn(async () => ({ conversations: [{ id: 'c1', title: 'Brindlewick question', updatedAt: '2026-10-20T00:00:00.000Z' }] })),
-  loadConversation: vi.fn(async () => []), sendMessage: vi.fn(() => new Promise(() => {})), deleteConversation: vi.fn(),
+  loadConversation: vi.fn(async () => [
+    { id: 'm1', role: 'user', content: 'What about Sorrelgate?', createdAt: '2026-10-20T00:00:00.000Z' },
+    { id: 'm2', role: 'assistant', content: 'Fennimoor is **worth** asking about.', createdAt: '2026-10-20T00:00:01.000Z' },
+  ]),
+  sendMessage: vi.fn(() => new Promise(() => {})), deleteConversation: vi.fn(),
 }));
 vi.mock('../lib/chat-sync', () => ({ postSync: vi.fn(), postInputSync: vi.fn(), subscribeSync: () => () => {}, generateInstanceId: () => 'test' }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 
 import { HealthTool } from './HealthTool';
 import { HistoryLightboxHost } from '../../standalone/history-lightbox';
+import { RemindersControl } from '../../standalone/reminders-control';
 // Loaded up front, so the lightbox's lazy import resolves without a bundler.
 import './HistoryPanel';
 import { trackLiveRefresh, stopLiveRefresh, showTables } from '../testing/health-tool-harness';
 import { openSettings } from '../testing/settings';
+import { checkLabImportQuota, labImport } from '../lib/upload-api';
 
 configure({ asyncUtilTimeout: 5000 });
 
@@ -79,62 +109,90 @@ afterEach(async () => {
   vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 
-/** Every free-text field of the record holds its own sentinel. */
+/** Every free-text field of the record holds its own sentinel, every core metric an unusual value. */
 async function seed() {
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-  await addMeasurement('ldl', 3.4, '2026-10-12T00:00:00.000Z');
-  await addMeasurement('ldl', 2.9, '2026-04-02T00:00:00.000Z');
+  await saveChangedMeasurements({ sex: 'male', heightCm: 191, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+  for (const [metric, value] of CORE) {
+    await addMeasurement(metric, value, '2026-10-12T00:00:00.000Z');
+    await addMeasurement(metric, value * 0.9, '2026-04-02T00:00:00.000Z');
+  }
+  await addMeasurement('systolic_bp', 187, BP_DAY);
+  await addMeasurement('diastolic_bp', 117, BP_DAY);
   await bulkSaveLabValues([
-    { metricName: SENTINEL.lab, value: 4.2, unit: 'U/L', recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
-    { metricName: SENTINEL.lab, value: 3.9, unit: 'U/L', recordedAt: '2026-04-02T00:00:00.000Z', source: 'manual' },
+    { metricName: SENTINEL.lab, value: 4.2, unit: SENTINEL.labUnit, recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
+    { metricName: SENTINEL.lab, value: 3.9, unit: SENTINEL.labUnit, recordedAt: '2026-04-02T00:00:00.000Z', source: 'manual' },
   ]);
   const custom = customSupplementAdd(SENTINEL.supplement, []);
   await saveSupplement(custom.supplementKey, custom.supplementName, 5, 'mg');
   await saveMedication('statin', SENTINEL.medication, 20, 'mg');
   await bulkSaveDocuments([{
-    documentType: 'clinic_letter', title: SENTINEL.documentTitle, documentDate: '2026-10-01', contentMd: 'Plan', metadata: {},
-    sourceFileName: `${SENTINEL.fileName}.pdf`,
+    documentType: 'clinic_letter', title: SENTINEL.documentTitle, documentDate: '2026-10-01',
+    // The letter's own link: its href is the person's own text, in their own document (exempt below).
+    contentMd: `## ${SENTINEL.documentText}\n\nSee [the ${SENTINEL.documentText} notes](https://example.org/${SENTINEL.documentText}).`,
+    metadata: { clinic: SENTINEL.documentMetadata }, sourceFileName: `${SENTINEL.fileName}.pdf`,
   }]);
   await flushRoadmapStore();
 }
 
-const leaks = () => recordTextInAttributes(document.body, WORDS);
+/** A link in a document's own text keeps its href: the person's link in their own document (US-09 AC7l). */
+const DOCUMENT_LINKS = ['.doc-lightbox-content a[href]'];
+const leaks = () => recordTextInAttributes(document.body, LOOKED_FOR, DOCUMENT_LINKS);
 const shown = (word: string) => expect(document.body.textContent).toContain(word);
+const settle = (ms = 20) => act(async () => { await new Promise(r => setTimeout(r, ms)); });
 
 describe('US-09 AC7l: the record\'s own text sits in no attribute on any main screen', () => {
-  it('desktop: My data rows and grids, a value page, My health, a document, Settings and the chat History', async () => {
+  it('desktop: My data rows and grids, every value page, My health, a document, Settings and the chat', async () => {
     phone = false;
     await seed();
     render(<HealthTool />);
     await waitFor(() => expect(document.querySelector('.md-row')).not.toBeNull());
     await waitFor(() => shown(SENTINEL.supplement));
     shown(SENTINEL.lab);
+    shown('138.6');
     expect(leaks()).toEqual([]);
 
-    // The test the catalogue does not know, on its own page: its chart is named after it.
-    const labRow = [...document.querySelectorAll<HTMLButtonElement>('.md-row')].find(b => b.textContent?.includes(SENTINEL.lab))!;
-    fireEvent.click(labRow);
-    await waitFor(() => expect(document.querySelector('.md-page canvas')).not.toBeNull());
-    expect(leaks()).toEqual([]);
-    await act(async () => { history.back(); await new Promise(r => setTimeout(r, 20)); });
+    // Each row's own page: its chart, latest value and history (a test the catalogue does not know among them).
+    const rowNames = [...document.querySelectorAll<HTMLButtonElement>('.md-row')].map(b => b.textContent ?? '');
+    let pressureSeen = false;
+    for (const name of rowNames) {
+      const rowButton = [...document.querySelectorAll<HTMLButtonElement>('.md-row')].find(b => b.textContent === name);
+      if (!rowButton) continue;
+      fireEvent.click(rowButton);
+      await waitFor(() => expect(document.querySelector('.md-page')).not.toBeNull());
+      await settle();
+      expect({ page: name, leaks: leaks() }).toEqual({ page: name, leaks: [] });
+      // A pressure's Correct is named after its reading's day, in the same words as before.
+      if (document.querySelector('.md-history-bp')) {
+        expect(screen.getByRole('button', { name: `Correct the reading of ${formatShortDate(BP_DAY)}` })).toBeTruthy();
+        pressureSeen = true;
+      }
+      await act(async () => { history.back(); await new Promise(r => setTimeout(r, 20)); });
+    }
+    expect(pressureSeen).toBe(true);
 
     showTables();
     expect(leaks()).toEqual([]);
 
-    // My health's documents, and one opened.
+    // My health's documents, and one opened: its text shown, its own link kept.
     await waitFor(() => shown(SENTINEL.documentTitle));
     expect(leaks()).toEqual([]);
     const doc = [...document.querySelectorAll<HTMLButtonElement>('.health-record-item')].find(b => b.textContent?.includes(SENTINEL.documentTitle))!;
     fireEvent.click(doc);
     await waitFor(() => shown(SENTINEL.fileName));
+    shown(SENTINEL.documentText);
+    expect(document.querySelector('.doc-lightbox-content a')?.getAttribute('href')).toContain(SENTINEL.documentText);
     expect(leaks()).toEqual([]);
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
     openSettings();
     expect(leaks()).toEqual([]);
 
-    // The chat column's thread list names the thread by its title.
+    // The chat column's thread list names the thread by its title; the thread opened shows both turns.
     await waitFor(() => shown(SENTINEL.chat));
+    expect(leaks()).toEqual([]);
+    fireEvent.click([...document.querySelectorAll<HTMLElement>('.chat-thread-item')].find(t => t.textContent?.includes(SENTINEL.chat))!);
+    await waitFor(() => shown(SENTINEL.chatAnswered));
+    shown(SENTINEL.chatAsked);
     expect(leaks()).toEqual([]);
   });
 
@@ -158,8 +216,40 @@ describe('US-09 AC7l: the record\'s own text sits in no attribute on any main sc
     await waitFor(() => expect(document.querySelector('.md-row')).not.toBeNull());
     for (const tab of screen.getAllByRole('tab')) {
       fireEvent.click(tab);
-      await act(async () => { await new Promise(r => setTimeout(r, 20)); });
+      await settle();
       expect({ tab: tab.textContent, leaks: leaks() }).toEqual({ tab: tab.textContent, leaks: [] });
     }
+  });
+
+  it('the reminders line names the address they go to, in no attribute', async () => {
+    setReminderOptIn({ status: 'active', token: 'test-token-good', email: `${SENTINEL.email}@example.org`, provider: 'dropbox' });
+    render(<RemindersControl backend="dropbox" />);
+    shown(SENTINEL.email);
+    expect(leaks()).toEqual([]);
+  });
+
+  it('the upload review: a read test the catalogue does not know, its unit and the core values', async () => {
+    await seed();
+    vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
+    vi.mocked(labImport).mockResolvedValue({ result: {
+      classification: 'lab_report', document: null, reportDate: '2026-11-03',
+      values: [{ metric: 'lpa', valueSI: 613, displayValue: 613, displayUnit: 'nmol/L', confidence: 'high' }],
+      additionalValues: [{ name: SENTINEL.uploadLab, value: 4.4, unit: SENTINEL.uploadUnit }],
+    } } as Awaited<ReturnType<typeof labImport>>);
+    vi.stubGlobal('HealthUpload', { ...UPLOAD_ENGINE,
+      extractFromPdf: vi.fn(async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false })),
+      isPdf: () => true, isZip: () => false, isImage: () => false,
+    });
+    render(<HealthTool />);
+    await waitFor(() => expect(document.querySelector('.md-row')).not.toBeNull());
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Upload labs' }))[0]);
+    const keepless = screen.queryByRole('button', { name: /Continue without keeping the files/ });
+    if (keepless) fireEvent.click(keepless);
+    fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], `${SENTINEL.fileName}.pdf`, { type: 'application/pdf' })] } });
+    await waitFor(() => shown(SENTINEL.uploadLab), { timeout: 10_000 });
+    const showAll = screen.queryByRole('button', { name: /^Show all/ });
+    if (showAll) fireEvent.click(showAll);
+    shown(SENTINEL.uploadUnit);
+    expect(leaks()).toEqual([]);
   });
 });
