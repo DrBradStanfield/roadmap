@@ -119,6 +119,18 @@ describe('cloud sync in the engine (US-25 AC11)', () => {
     expect(days(JSON.parse((JSON.parse(payload) as { record: string }).record) as RoadmapFile)).toContain('2026-10-05');
   });
 
+  it('H31 (Brad 2026-11-26): Sync now pressed inside the five-second pause still reads, and takes the change in', async () => {
+    const dropbox = new FakeDropbox();
+    dropbox.put(await recordWith(['2026-10-01'], 'web'));
+    const { engine, state } = await phone(dropbox);
+    await engine.cloudOpen('dropbox', 'ios-1', false, false);
+    await engine.cloudRefresh(); // a read: the pause starts here
+    dropbox.put(await recordWith(['2026-10-01', '2026-10-07'], 'web'));
+    expect(await engine.cloudRefresh()).toBe('changed'); // milliseconds later, inside the pause
+    const [, payload] = state.events.filter(([event]) => event === 'changed').at(-1)!;
+    expect(days(JSON.parse((JSON.parse(payload) as { record: string }).record) as RoadmapFile)).toContain('2026-10-07');
+  });
+
   it('AC11c: an erase made on another device is taken in, and a write made for the old screen is refused', async () => {
     const dropbox = new FakeDropbox();
     const before = await recordWith(['2026-10-01'], 'web');

@@ -238,7 +238,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     const hook = vi.fn(async () => null);
     data.setPreEraseHook(hook);
 
-    expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });
+    expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chat: null });
     expect(hook).not.toHaveBeenCalled();
     expect(localStorage.getItem('health_roadmap_file_v2')).toBe(before);
     expect((await data.loadAllHistory()).map((m) => m.value)).toEqual([80]);

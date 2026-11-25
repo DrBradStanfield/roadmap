@@ -16,37 +16,6 @@ issue, and nothing private.
 
 ## Open
 
-- **What a screen reader calls each value on the web's new upload list.** Issue: you approved the pattern
-  "<test> value from <column>, another reading" (2026-11-21). A list has no columns, so the engine (PR 1949)
-  fills that slot with the file's name and the day the value saves on: "LDL Cholesterol value from
-  report.pdf, 1 Nov 2026", and "LDL Cholesterol value from report.pdf, 1 Nov 2026, another reading" for a
-  second LDL from that report on that day. That filling is new composition from existing words, not yet
-  yours. The day controls are named the same way: their label, then the day a previous column printed when
-  it has one, then the file's name ("Choose the date of the previous results, 15 Sep 2026, report.pdf").
-  Options: (1) this composition: every value is told apart, but for a third reading of one test in one file
-  on one day, and two files with one name; (2) test and day only ("LDL Cholesterol value from 1 Nov 2026"):
-  shorter, but two reports from the same day read the same, so a screen-reader user cannot tell which file a
-  value came from. Recommendation (the owner's): option 1, because it is the only composition from existing
-  words that tells files apart. Brad chose option 1 on 2026-11-23 (US-13 AC10). It no longer waits on a privacy
-  check: PR 2072, now on main, made record text and values never go into an attribute (US-09 AC7l), so these names
-  are built from labelled-by references to the text on screen. What remains: the owner's check, then turning the
-  names on. Nothing draws them yet.
-- **Should the erase confirm mention files saved offline on another device?** Issue: originals are to be stored
-  in the background after Save (design parked) ([drafts/background-originals.md](drafts/background-originals.md), section 6). An
-  erase removes every document it saw, and the files waiting for it. A document saved on a device that was offline,
-  and synced only after an erase made elsewhere, was never seen by that erase: it stays, as any such row does
-  today, and its original is then stored. Options: (1) leave the confirm as it is: it stays short, and the case
-  matches what the app already does for every value saved offline; (2) add a line naming the case: more exact,
-  longer, about a rare case. Recommendation: option 1, because the confirm already promises only what the erase
-  saw, and the rule is the same for every kind of row.
-
-- **Older app versions and the new background storing.** Issue: storing originals after Save adds a new kind of
-  document row ([drafts/background-originals.md](drafts/background-originals.md), open problem (b)). An app version
-  from before the change would read that row wrongly, so the record will be marked so that older versions refuse
-  it. Once a phone stores an original this way, an app version from before the change cannot open that record until
-  it is updated. Options: (a) accept, and ship the reader change one app version before the writer, so almost nobody
-  is caught; (b) do not build background storing, and Save keeps waiting for the files. Recommendation: (a), because
-  the wait at Save is what you asked to remove, and one version's head start leaves only people who skip updates.
 
 ### Words that need your yes (raised 2026-11-25)
 
@@ -56,14 +25,6 @@ issue, and nothing private.
   The owner proposed "Chat history unavailable" for the first; no line exists for the second. Options: (1) approve
   "Chat history unavailable", and have a line drafted for an unsaved turn; (2) leave both silent. Recommendation:
   option 1, because a person who returns to a conversation that was never saved has no way to know why it is missing.
-- **An erase message needs a truer sentence.** Issue: when an erase partly fails, the iPhone can show an empty or
-  wrong reason, and the web says nothing about the chat step. Draft lines exist for each case. Options: approve the
-  drafts as one set; approve some; keep today's words. Recommendation: approve the set, because today's words can be
-  wrong about what was deleted.
-- **A screen that still offers Delete and Log off after a crash.** Issue: when the web page crashes, or the iPhone
-  app cannot start, the fallback screen hides "Delete all my data" and "Log off". A fallback with those two buttons
-  needs one sentence. Options: approve a sentence and build it; leave. Recommendation: yes, because deleting your data
-  should always be within reach.
 - **Three failure lines.** Issue: three failures say nothing. Drafts: "Your value could not be saved. Try again." (a
   value page's Add that fails); "Your history could not be shown. Reload the page to try again." (a failed history
   read); and a "cannot reach your record" line for a second refused save that now loses the typed text silently.
@@ -72,31 +33,15 @@ issue, and nothing private.
   upload; the iPhone saves the rest and refuses that row. Options: the web refuses per row, like the iPhone; the
   iPhone blocks like the web; leave. Recommendation: per-row refusal in the shared engine for both, with the refused
   row shown.
-- **"Sync now" inside the five-second pause.** Issue: pressed within five seconds of the last read, Sync now reads
-  nothing and still says "Synced". Options: Sync now skips the pause; it says nothing new; leave. Recommendation:
-  skip the pause; no new words.
 - **One copy of the plan-page wording.** Issue: the iPhone's alcohol question adds a sentence the web does not, and
   the plan page's order, colours and urgent banner are hand copies on each app. Options: one wording in the shared
   engine, chosen by you; leave two copies. Recommendation: one wording, with you choosing it; the display rules move
   only after your yes.
-- **The pause before an agent files feedback.** Issue: report_feedback, the agent tool that files feedback, makes
-  the agent wait 10 seconds before the second, confirming call. The one session last week that tried it filed nothing
-  after four tries. Options: keep the pause; say how many seconds are left; reword the line when the time runs out.
-  Recommendation: keep the pause and say the seconds left.
-- **Two server items to close.** Issue: slow lab-import warnings cannot be tied to a deploy, and a server image
-  without the chat prompt file could still deploy. Both need workflow or setting changes. Options: build both; close
-  both. Recommendation: close both, because the chat already refuses and alerts when the prompt is missing.
-- **Files lost when a lab batch times out (self-hosted build).** Issue: on the GitHub Pages build, a batch that times
-  out throws away files already read on the person's own key. Options: keep them; close. Recommendation: close: it
-  touches only that build, and it is rare.
 - **A "Not saved" marker on chat replies with edits.** Issue: a reply that lands after the person left its thread
   saves nothing, but reads as saved when they reopen the thread (design: [drafts/c22-c26-design.md](drafts/c22-c26-design.md)).
   Options: (A) store a "Not saved" marker on every such reply (new words, a new stored field, iPhone too); (B) only on
   replies that carried edits; (C) wait for the iPhone chat work. Recommendation: B, reusing the existing banner
   words, since a reply with no edits had nothing to lose.
-- **The reminders switch when iPhone permission was already decided.** Issue: if the person already answered iOS's
-  notification question, the reminders switch does nothing and says nothing. Options: show the existing Settings row
-  then; new words; leave. Recommendation: show the existing row (no new words), if you accept its line in this case.
 - **Restore " It will upload automatically."** Issue: Settings' waiting line on the web ("Some data in this browser
   is still waiting to sync…") dropped this clause on 14 Nov until you approve it. The retry it describes already
   runs. Options: approve it; leave it out. Recommendation: approve: it is true, and tells the person they need do
@@ -104,17 +49,6 @@ issue, and nothing private.
 
 ### Product and code decisions (raised 2026-11-25)
 
-- **Chat wording and counting differ between the chat panel and the pop-up.** Issue: PR 2093 (on main) found that
-  the pop-up chat picks doctor or brand wording by store, but the panel beside the tool always uses the doctor
-  wording ("Health by Dr Brad Chat"). Also, "chat opened" is counted for the pop-up only, so the count misses the
-  panel, the phone's Chat tab and the storefront embed. Options: give the panel the pop-up's wording rule, or keep
-  it; count a panel shown, or keep counting the pop-up only. Recommendation: the same wording rule for both, so one
-  store reads one way; count a panel shown under its own event name, so the pop-up's trend stays comparable.
-- **The storefront chat embed's one event.** Issue: PR 2079 (held) turns on product events for the chat embed
-  block on the storefronts. Its only event is "thinking opened", sent when someone opens a reply's reasoning. Today
-  the embed sends nothing; an older test comment called counting it an open product decision. Options: merge, so the
-  embed's use is counted like the tool's; close, and the embed stays uncounted. Recommendation: merge: it runs only
-  on your stores, and the event carries its name alone.
 - **Message packs that nothing reads.** Issue: a paid order still adds chat message credits to an account, but
   nothing reads those credits any more. Options: remove the step and its order webhook (a deploy of the app's
   settings); keep it. Recommendation: remove it, once you confirm no message pack is still on sale.
@@ -128,13 +62,6 @@ issue, and nothing private.
   script written inline in the deploy workflow; and the test shard split could be weighted. Workflow files are yours
   to change. Options: one PR with a shared typecheck script, the smoke check moved into tools, and the shard weights;
   leave. Recommendation: one PR, so you review one workflow change.
-- **A stated age near New Year.** Issue: contributor PR 1899 makes every screening gate read age at the UTC month.
-  A person who states an age (not a birth date) to the command-line plan tool or the self-hosted chat gets a January
-  birth year from the local year, so in the hours between the local and the UTC New Year the screening cards read
-  one year away from that age: one card can appear or vanish. The hosted plan and chat run in UTC and do not change.
-  Options: (1) keep the stated age as given: the record must mark a birth year as stated, which it does not store
-  today; (2) accept. Recommendation: accept: a few hours a year, only for a stated age, and the fix needs a new stored
-  field.
 - **The story file every PR edits.** Issue: docs/user-stories.md is one file every PR appends to. PRs that add to
   the same story conflict, and a conflicting PR gets no CI run; on 25 Nov six PRs needed a rebase for this alone.
   Options: one file per story section, built into the page by the existing Pages step; keep one file.
@@ -180,6 +107,12 @@ issue, and nothing private.
 ## Decided
 
 2026-11-26, Brad's words in quotes:
+- The storefront chat embed's events: merged (PR 2079), as recommended, so the embed's use is counted like the
+  tool's. It sends "thinking opened", and since US-15 AC77 also `chat_panel_shown` when the panel comes into view;
+  both carry their names alone.
+- "Sync now" inside the five-second pause: Sync now skips the pause, with no new words; the pause stays for
+  automatic re-reads (option (a): shared engine rule plus the iPhone engine's Sync now door, which reaches phones
+  with the next engine release).
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
@@ -193,6 +126,22 @@ issue, and nothing private.
 - A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
   same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
   probably use the same code". No new words.
+- The pause before an agent files feedback stays, and an early confirm now says the seconds left ("go with your
+  recommendations"): "That confirm receipt is not valid yet: it can be used in 7 seconds (from <time>), after the user
+  has answered. Do not retry before then; end your turn. Nothing was written." (US-36 AC14).
+- "Two server items to close" are closed with no change ("go with your recommendations"): slow lab-import warnings stay
+  without a deploy tag, and no deploy gate is added for the chat prompt file, since chat already refuses and alerts
+  when it is missing (leads C8, H67).
+- "Files lost when a lab batch times out (self-hosted build)" is closed with no change ("go with your
+  recommendations"): it touches only the GitHub Pages build and is rare (lead H132).
+- The erase confirm does not mention files saved offline on another device: "do this for now. it's simpler". The
+  confirm stays as it is.
+- Older app versions and background storing: option (a), "the existing iOS app, virtually no one is using". The
+  reader ships one app version before the writer.
+- A stated age near New Year is accepted as it is ("go with your recommendations"): a few hours a year, only for a
+  stated age.
+- The reminders switch when iPhone permission was already decided shows the existing Settings row, with no new words
+  ("go with your recommendations"). It waits for the next iPhone build (lead S33).
 - Web sync lines, all three: "use your judgement for the sentences. must be succinct, and I approve whatever sentences
   you suggest". Now said: "Sign-in did not finish because this browser was logged off. Please try again." (a sign-in a log-off cut short);
   "This browser was logged off in another tab. Your latest changes show here but are not saved." (a cloud page whose
@@ -205,6 +154,21 @@ issue, and nothing private.
   below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
   birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
   screening questions apply at your age and sex yet." (US-62 AC41).
+- Chat wording and counting differ between the chat panel and the pop-up: the recommendation. The panel takes the
+  pop-up's words by the same rule, from one table; a panel shown is counted as `chat_panel_shown`, and the pop-up's
+  `chat_opened` is unchanged. No new sentences (US-15 AC77).
+- An erase message says what each step did, from one table in the shared engine (US-11 AC13): "this. and use your
+  judement for the sentences. must be succinct, and I approve whatever sentences you suggest". The web uses it now; the
+  iPhone with its next engine release. A record not erased: "Your health record was not deleted: the erase could not be
+  saved.", then "Your chat history was deleted." or "Your chat history could not be reached just now.", then "Try again."
+- After a web page crash, the fallback keeps "Delete all my data" and "Log off this device" (US-11 AC14; Brad
+  took the recommendation: "yes"), above them: "Something went wrong. Reload the page to try again. You can still delete your
+  data or log off." Where the picker offers no log-off (a guest, or a sign-in that ended), the sentence ends "You can still delete your data."
+  The iPhone's cannot-start screen follows after App Store review.
+- What a screen reader calls each value on the web's upload list: option 1, chosen 2026-11-23; the owner's check is
+  done and the names are on (US-13 AC28). "LDL Cholesterol value from report.pdf, 1 Nov 2026", with ", another
+  reading" for a second reading there; a day control says its label, a column's printed day, then the file's name.
+  Built from references to text on screen only. No new sentences.
 - Cues for a value not yet saved, "the second, which needs no new words": the Waist row's "Add" and the "Unsaved
   values: review" cue stay as they are; the PDF box's blocked-window note shows only beside the Save as PDF it names.
 

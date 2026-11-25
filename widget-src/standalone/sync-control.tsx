@@ -118,7 +118,7 @@ const deviceHolds = ({ status, pendingSync }: SaveFacts): boolean =>
   pendingSync && status === 'not-saved-on-device';
 
 /** The page's one sign-in state (US-09 AC48), seeded at boot and raised when a sign-in ends. */
-const useSignIn = (): SignIn => useSyncExternalStore(subscribeSignIn, currentSignIn, currentSignIn);
+export const useSignIn = (): SignIn => useSyncExternalStore(subscribeSignIn, currentSignIn, currentSignIn);
 
 /** US-09 AC48: the bar's words for a Drive or Dropbox sign-in that ended. */
 const SIGN_IN_AGAIN = { 'google-drive': 'Sign in to Google again', dropbox: 'Sign in to Dropbox again' } as const;

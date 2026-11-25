@@ -39,6 +39,10 @@ export const PRODUCT_EVENT_NAMES = [
   // were invisible until the first real one (2026-08-28) surfaced the gap.
   'reminder_sent',
   'chat_opened',
+  // US-15 AC77: the inline chat panel came into view (beside the tool, the
+  // phone's Chat tab, the storefront embed). Its own name, so chat_opened stays
+  // the pop-up's alone and its trend comparable. Name only.
+  'chat_panel_shown',
   // US-15 AC17: the "Show how I approached this" toggle was opened. Name only,
   // fired once per answer (the client throttle then keeps one per tab session).
   'chat_thinking_opened',

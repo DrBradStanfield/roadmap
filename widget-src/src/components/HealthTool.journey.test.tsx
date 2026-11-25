@@ -90,7 +90,7 @@ vi.mock('./UploadModal', () => ({
 }));
 
 import { HealthTool } from './HealthTool';
-import { ERASE_DONE } from '../lib/erase-copy';
+import { eraseDone } from '../lib/erase-copy';
 import { deleteButton, openSettings } from '../testing/settings';
 import { seedOpenLabValues } from '../testing/seed-record';
 
@@ -1787,7 +1787,7 @@ describe('US-11: an erase made here', () => {
     try {
       vi.spyOn(window, 'alert').mockImplementation(() => {});
       fireEvent.click(deleteButton());
-      await waitFor(() => expect(window.alert).toHaveBeenCalledWith(ERASE_DONE));
+      await waitFor(() => expect(window.alert).toHaveBeenCalledWith(eraseDone('erased')));
       expect(await loadAllHistory()).toEqual([]);
     } finally {
       setPreEraseHook(async () => null);
