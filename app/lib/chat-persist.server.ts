@@ -9,7 +9,7 @@ import { cutText } from '../../packages/health-core/src/chat-history';
 // The router columns of a chat_match_events row. When the router did not run
 // (r is null) every column is null, router_version included, so a row is only
 // tagged with a router version the router produced (US-15 AC37a).
-export function routerColumns(r: RouterResult | null | undefined) {
+function routerColumns(r: RouterResult | null | undefined) {
   return {
     router_version: r ? ROUTER_VERSION : null,
     router_latency_ms: r?.latencyMs ?? null,

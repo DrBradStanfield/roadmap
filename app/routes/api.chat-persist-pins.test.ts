@@ -45,6 +45,7 @@ vi.mock('../lib/chat-classifier.server', () => ({
 
 import { action } from './api.chat';
 import { matchEventRow } from '../lib/chat-persist.server';
+import { redactForWidget } from '../lib/chat-router.server';
 
 const id = '12345678-1234-4234-8234-123456789abc';
 const guest = '87654321-4321-4321-8321-cba987654321';
@@ -156,8 +157,10 @@ describe('US-15 AC70: every write a web chat turn makes', () => {
     const written = mocks.writes.find((w) => w.op === 'insert' && w.table === 'chat_match_events') as { row: unknown };
     expect(written.row).toBe(vi.mocked(matchEventRow).mock.results[0].value);
     vi.mocked(matchEventRow).mockClear();
+    mocks.writes = [];
     await post({ message: 'hello', localFirst: true });
     expect(matchEventRow).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(matchEventRow).mock.calls[0][0]).toMatchObject({ platform: 'shopify', messageId: null, question: 'hello' });
+    const built = vi.mocked(matchEventRow).mock.results[0].value;
+    expect(mocks.writes).toEqual([{ op: 'insert', table: 'chat_match_events', row: redactForWidget(built) }]);
   });
 });
