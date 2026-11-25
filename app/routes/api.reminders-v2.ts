@@ -1,7 +1,8 @@
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as z from '../../packages/health-core/src/zod';
 import { createRateLimiter, DAY_MS } from '../lib/rate-limiter';
-import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { ALLOWED_ORIGINS, BODY_TOO_LARGE, corsHeaders, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { clientKey, hashedKey, type IpKey, type PlainKey } from '../lib/ip-key.server';
 import {
   buildUnsubscribeUrl,
   cancelByToken,
@@ -50,12 +51,12 @@ import { recordServerEvent } from '../lib/product-events.server';
  */
 
 // Opt-ins and schedule pushes are rare per user; this mostly slows abuse.
-const allowRequest = createRateLimiter(20, 60_000, 10 * 60_000, { name: 'reminders requests per IP' });
+const allowRequest = createRateLimiter<IpKey>(20, 60_000, 10 * 60_000, { name: 'reminders requests per IP' });
 // An address-only optin names someone ELSE'S inbox for free, so it carries
 // the capture route's bounds (US-23 AC8): 5/day per email, 20/hour per IP.
 // Keyed on the hashed IP — the raw address never sits in process memory.
-const allowOptinEmail = createRateLimiter(5, DAY_MS, 30 * 60_000, { name: 'reminders opt-in per email' });
-const allowOptinIp = createRateLimiter(20, 60 * 60_000, 30 * 60_000, { name: 'reminders opt-in per IP' });
+const allowOptinEmail = createRateLimiter<PlainKey>(5, DAY_MS, 30 * 60_000, { name: 'reminders opt-in per email' });
+const allowOptinIp = createRateLimiter<IpKey>(20, 60 * 60_000, 30 * 60_000, { name: 'reminders opt-in per IP' });
 
 const bodySchema = z.union([
   // Optional TYPED marketing opt-in on both optin shapes (§10: a deliberate
@@ -103,7 +104,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
   }
 
-  const ipHash = hashClientIp(getClientIp(request, 'fly'));
+  const ipHash = hashedKey(clientKey(request, 'fly'), hashClientIp);
   if (!allowRequest(ipHash)) {
     return Response.json({ error: 'Too many requests' }, { status: 429, headers });
   }

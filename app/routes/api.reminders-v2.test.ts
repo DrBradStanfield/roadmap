@@ -12,7 +12,7 @@
  *  - cancel tombstones on a bare token and passes a verified email through
  *    only when the ID token checks out.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const enrolByEmail = vi.fn<(email: string, provider: string, s: unknown) => Promise<{ token: string; isNew: true } | { isNew: false }>>();
 const upsertVerifiedOptin = vi.fn<(email: string, s: unknown) => Promise<{ token: string; isNew: boolean }>>();
@@ -43,6 +43,7 @@ vi.mock('../lib/product-events.server', async (importOriginal) => ({
 import { action } from './api.reminders-v2';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { streamingPost } from '../lib/capped-body.test-helpers';
+import { ipKeyedLimitCases } from '../lib/ip-key.test-helpers';
 
 const SCHEDULE = [{ category: 'blood_test_lipids', label: 'Lipid panel blood test', dueAt: '2027-05-12' }];
 let ipCounter = 0;
@@ -200,5 +201,26 @@ describe('api.reminders-v2 body cap (US-09 AC25)', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe('https://drstanfield.com');
     expect(pulled.bytes).toBeLessThanOrEqual(SMALL_BODY_CAP + 2 * 16 * 1024);
     expect(enrolByEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-52 AC4k: the reminders requests limit per IP keys on the one per-IP bucket', () => {
+  ipKeyedLimitCases({
+    limit: 20, windowMs: 60_000, v6: '2001:db8:21', v4: '100.76',
+    allowed: async (ip) => (await action({ request: post({ op: 'cancel', token: 'cap-token' }, ip) } as never)).status !== 429,
+  });
+});
+
+describe('US-52 AC4k: the reminders opt-in limit per IP keys on the one per-IP bucket', () => {
+  // A minute between opt-ins, so the 20-a-minute requests limit never decides: only the 20-an-hour opt-in one.
+  beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'], now: Date.UTC(2026, 10, 25, 12) }); });
+  afterEach(() => { vi.useRealTimers(); });
+  ipKeyedLimitCases({
+    limit: 20, windowMs: 60 * 60_000, v6: '2001:db8:22', v4: '100.77',
+    allowed: async (ip) => {
+      const res = await action({ request: post({ op: 'optin', provider: 'typed', email: freshEmail(), schedule: SCHEDULE }, ip) } as never);
+      vi.setSystemTime(Date.now() + 61_000);
+      return res.status !== 429;
+    },
   });
 });
