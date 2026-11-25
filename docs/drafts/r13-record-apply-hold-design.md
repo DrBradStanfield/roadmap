@@ -39,9 +39,14 @@ a table test. Three rules follow:
 
 - **A (chosen): keep the hold, as one union.** Small, and US-34 AC4 keeps its meaning.
 - **B: drop the hold.** Apply every remote change at once and let every dirty field ride through. It deletes `held`,
-  `saved()`, `profileClean` and `profileDirty` from the read path. But US-34 AC4 must be rewritten, and per-field
-  ride-through can pair a local birth year with a remote birth month (the US-54 AC5b pair rule), which the hold
-  avoids.
+  `saved()`, `profileClean` and `profileDirty` from the read path. But US-34 AC4 must be rewritten, and every edit
+  would ride through every remote change, not only the next save's.
+
+The chosen option can still show a local birth year beside a remote birth month: a refused year rides through the
+re-read (HealthTool.profile-persistence.test.tsx pins year `197` typed here beside month `6` from the other device).
+Nothing saves that pair unseen. The out-of-range year is refused at every save; fixing the year saves it with the
+month that is on screen (the US-54 AC5b pair rule). On main the same fix saved the same pair without showing the
+month first.
 
 ## PR split
 
@@ -74,3 +79,5 @@ after that.
 
 - Option A: keep the hold. The relay union is the one hold state, behind a pure `transition`.
 - Status: PR 1 merged (#2084); PR 2 (H14) in flight.
+- 2026-11-25: a remote change that arrives after a refused save is held again until the next profile save; telling a
+  refused value apart from a half-typed one needs its own state in the union and is left for a follow-up.

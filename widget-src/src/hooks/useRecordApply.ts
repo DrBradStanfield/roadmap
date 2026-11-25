@@ -150,6 +150,7 @@ export function useRecordApply(args: {
       const sameRecord = erase === machine.getSnapshot().shown;
       // This tab's unit switch, still unsaved, rides through too: the save then writes it (US-34 AC7a, H2).
       const switched = units.pending();
+      // Keep the read from `settled` to here free of real async waits: a valid value typed during one would be replaced below.
       showRecord(result, prev => {
         if (!sameRecord) return result.inputs;
         const next: Partial<HealthInputs> = typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
