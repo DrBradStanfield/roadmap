@@ -32,7 +32,6 @@ import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
 import { activeCellIn } from './NumericInputCell';
 import { inPsaRow } from './ScreeningQuestions';
-import { clearLocalStorage } from '../lib/storage';
 import { NO_RECORD, writeMirror } from '../lib/chat-mirror';
 import {
   loadLatestMeasurements,
@@ -457,8 +456,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // check's answers too: a failed write's store holds the erased copy. Stored
   // originals go by the session's rule, never by the page (US-11 AC6).
   const forgetRecord = useCallback(() => {
-    clearLocalStorage();
-    clearOffFileAfterErase(); // the second DRAFTS_CLEARED when the write lands; kept, since on a failed write the session clears nothing
+    clearOffFileAfterErase(); // the legacy blob, then the second DRAFTS_CLEARED when the write lands; kept, since on a failed write the session clears nothing
     setInputs({});
     clearForErase();
     cancelPendingSave();

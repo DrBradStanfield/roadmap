@@ -82,10 +82,6 @@ issue, and nothing private.
   message; a cloud page whose sign-in ended after a log-off in another tab says only "Not synced yet." and loses edits
   on reload; switching clouds does not say the old cloud keeps its copy, which the iPhone does say. Options: approve
   lines for all three; for some; leave. Recommendation: the second first, since edits are lost there.
-- **A screen that still offers Delete and Log off after a crash.** Issue: when the web page crashes, or the iPhone
-  app cannot start, the fallback screen hides "Delete all my data" and "Log off". A fallback with those two buttons
-  needs one sentence. Options: approve a sentence and build it; leave. Recommendation: yes, because deleting your data
-  should always be within reach.
 - **Three failure lines.** Issue: three failures say nothing. Drafts: "Your value could not be saved. Try again." (a
   value page's Add that fails); "Your history could not be shown. Reload the page to try again." (a failed history
   read); and a "cannot reach your record" line for a second refused save that now loses the typed text silently.
@@ -216,6 +212,12 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- After a web page crash, the fallback keeps "Delete all my data" and "Log off this device" (US-11 AC14; Brad
+  took the recommendation: "yes"), above them: "Something went wrong. Reload the page to try again. You can still delete your
+  data or log off." Where the picker offers no log-off (a guest), the sentence ends "You can still delete your data."
+  The iPhone's cannot-start screen follows after App Store review.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

@@ -117,6 +117,26 @@ const OPTIONS: Option[] = [
 export const PICKER_GUEST_LEAD =
   'Saved your record to Dropbox, Google Drive or GitHub before? Open it here. If not, it is in this browser, and you can choose a home for it now.';
 
+/** "Log off this device?" and its button: the picker's step, and the crash screen's (US-11 AC14). One move at a time (AC45). */
+export function LogOffConfirm({ current }: { current: Exclude<Backend, 'local'> }) {
+  const busy = useSwitchFlow().kind !== 'idle';
+  return (
+    <>
+      <h2>Log off this device?</h2>
+      <p className="hr-modal-sub">
+        Your data stays safe in your {PROVIDERS[current].label}. This just signs you out and
+        clears your health record from this browser. Sign back in with the same account to
+        restore everything.
+      </p>
+      <div className="hr-sync-form">
+        <button className="hr-sync-btn" disabled={busy} onClick={() => void runMove({ type: 'logOff' }, () => logOff(current))}>
+          {busy ? 'Logging off…' : 'Log off'}
+        </button>
+      </div>
+    </>
+  );
+}
+
 export function BackendPickerModal({ current, unreachable = false, onClose }: {
   current: Backend;
   /** `current` could not be read this session (US-09 AC13): it is still the
@@ -246,17 +266,7 @@ export function BackendPickerModal({ current, unreachable = false, onClose }: {
         {step === 'log-off' && current !== 'local' && (
           <>
             <button className="hr-modal-back" onClick={() => setStep('list')}>← Back</button>
-            <h2>Log off this device?</h2>
-            <p className="hr-modal-sub">
-              Your data stays safe in your {PROVIDERS[current].label}. This just signs you out and
-              clears your health record from this browser. Sign back in with the same account to
-              restore everything.
-            </p>
-            <div className="hr-sync-form">
-              <button className="hr-sync-btn" disabled={busy} onClick={() => void runMove({ type: 'logOff' }, () => logOff(current))}>
-                {busy ? 'Logging off…' : 'Log off'}
-              </button>
-            </div>
+            <LogOffConfirm current={current} />
           </>
         )}
 
