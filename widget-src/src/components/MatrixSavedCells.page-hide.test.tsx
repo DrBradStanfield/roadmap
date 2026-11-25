@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import { ValueCell } from './MatrixSavedCells';
 import { hidePage, showPage } from '../testing/matrix-gestures';
+import { registerPageDeparture } from '../../standalone/page-departure';
 
 const flush = vi.hoisted(() => vi.fn());
 const shown = vi.hoisted(() => ({ erase: 'erase-shown' }));
@@ -65,6 +66,32 @@ describe('US-04 AC1 — the page going away during a click-away save', () => {
     expect(onCorrect).toHaveBeenCalledWith('r1', 3.4, 'erase-shown');
     expect(flush).toHaveBeenCalled();
     expect(onCorrect.mock.invocationCallOrder[0]).toBeLessThan(flush.mock.invocationCallOrder[0]);
+  });
+
+  // US-10 AC14 (H92): the cell is a stage on the one hide path, which writes once.
+  it('a hide with the entrypoint on the path flushes the record once: the cell does not flush it itself', async () => {
+    const stop = registerPageDeparture(() => {});
+    try {
+      const { onCorrect, input } = editor();
+      fireEvent.change(input, { target: { value: '3.4' } });
+      fireEvent.blur(input);
+      flush.mockClear();
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+      act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+      expect(onCorrect).toHaveBeenCalledTimes(1);
+      expect(flush).toHaveBeenCalledTimes(1);
+    } finally { stop(); }
+  });
+
+  it('an editor that unmounts leaves the hide path: a later hide runs no save of its own', async () => {
+    const { view, onCorrect, input } = editor();
+    fireEvent.change(input, { target: { value: '3.4' } });
+    fireEvent.blur(input);
+    view.unmount();
+    flush.mockClear();
+    hidePage();
+    expect(onCorrect).not.toHaveBeenCalled();
+    expect(flush).not.toHaveBeenCalled(); // nothing is left on the path
   });
 
   // Owner ruling F1: a tab or app switch blurs the editor before the hide,

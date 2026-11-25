@@ -42,7 +42,6 @@ import {
   getInitialInputsSync,
   getEraseIdentity,
   clearOffFileAfterErase,
-  flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
   loadDerivedSeries,
   moveBloodTest,
@@ -52,6 +51,7 @@ import {
 } from '../lib/roadmap-data';
 import { trackABImpression, trackProductEvent } from '../lib/server-api';
 import { observeVisibility } from '../lib/observe-visibility';
+import { onPageHide } from '../lib/page-hide';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { Grading } from '../lib/blood-test-cell';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
@@ -305,40 +305,25 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     flushPendingProfileSave: flushProfile, typedIn,
     firstSave: previousMeasurements.length === 0, // read once: a record holding a measurement at load sends no conversion (US-01 AC7)
   });
-  // Stage only queued edits, with the erase they were made against, then flush
-  // synchronously: the entrypoint's earlier listener may have flushed first.
-  // A matrix's draft stays on the device instead (US-03 AC5). A closing tab
-  // fires no blur, so focus still in the PSA row is moved out first: the
-  // row's blur commits it, with its own checks. The fields' waiting save and
-  // a committed PSA are then written at once, not on the timer or a promise,
-  // which would run after the flush (US-06 AC15; Brad 2026-11-03: weight,
-  // waist or BP save on tab close). iOS kills a hidden tab, so hiding stages
-  // the same, but leaves an unfinished PSA row alone: it waits for its date
-  // (Brad 2026-11-03, "Wait for the date").
-  useEffect(() => {
-    const stage = (closing: boolean) => {
-      const focused = document.activeElement;
-      if (closing && focused instanceof HTMLElement && inPsaRow(focused)) focused.blur();
-      profileTimer.flush();
-      stagePendingSave();
-      // The waiting medication, screening and supplement saves, each with the
-      // erase it was made against, so the write below holds them (US-06 AC13).
-      flushListSaves();
-      flushRoadmapStoreSync();
-    };
-    const onUnload = () => stage(true);
-    const onHidden = () => {
-      if (document.visibilityState === 'hidden') stage(false);
-    };
-    window.addEventListener('beforeunload', onUnload);
-    window.addEventListener('pagehide', onUnload);
-    document.addEventListener('visibilitychange', onHidden);
-    return () => {
-      window.removeEventListener('beforeunload', onUnload);
-      window.removeEventListener('pagehide', onUnload);
-      document.removeEventListener('visibilitychange', onHidden);
-    };
-  }, [stagePendingSave, profileTimer]);
+  // The page's stage on the one hide path (lib/page-hide.ts), which writes once
+  // after every stage: only queued edits, with the erase they were made
+  // against. A matrix's draft stays on the device instead (US-03 AC5). A
+  // closing tab fires no blur, so focus still in the PSA row is moved out
+  // first: the row's blur commits it, with its own checks. The fields' waiting
+  // save and a committed PSA are then staged at once, not on the timer or a
+  // promise, which would run after the write (US-06 AC15; Brad 2026-11-03:
+  // weight, waist or BP save on tab close). iOS kills a hidden tab, so hiding
+  // stages the same, but leaves an unfinished PSA row alone: it waits for its
+  // date (Brad 2026-11-03, "Wait for the date").
+  useEffect(() => onPageHide(closing => {
+    const focused = document.activeElement;
+    if (closing && focused instanceof HTMLElement && inPsaRow(focused)) focused.blur();
+    profileTimer.flush();
+    stagePendingSave();
+    // The waiting medication, screening and supplement saves, each with the
+    // erase it was made against, so the write holds them (US-06 AC13).
+    flushListSaves();
+  }), [stagePendingSave, profileTimer]);
 
   // A lab upload starts: both matrices commit their drafts, then the fields
   // save (US-03 AC5), before any file is read.
