@@ -22,14 +22,12 @@ export {
   getABTestById,
   createABTest,
   updateABTestStatus,
-  recordABEvent,
   aggregateABCounts,
   getABTestResults,
 } from './supabase-ab.server';
 export type {
   ABTestStatus,
   ABTestTarget,
-  ABEventType,
   ABVariant,
   ABTest,
   ABTestResults,

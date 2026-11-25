@@ -56,6 +56,10 @@ exports[`US-35 / US-36 pins — import_documents and file_results answer byte fo
    "addedAt": "2026-09-01T09:00:00Z",
    "metadata": {
     "labArchive": true,
+    "rows": [
+     "<uuid-2>",
+     "<uuid-3>"
+    ],
     "importedVia": "connector"
    },
    "sourceFileName": "bundle.zip/inner/labs.pdf"
@@ -243,6 +247,10 @@ exports[`US-35 / US-36 pins — import_documents and file_results answer byte fo
    "addedAt": "2026-09-01T09:00:00Z",
    "metadata": {
     "labArchive": true,
+    "rows": [
+     "<uuid-2>",
+     "<uuid-3>"
+    ],
     "importedVia": "connector"
    },
    "sourceFileName": "labs.pdf"
@@ -312,6 +320,10 @@ exports[`US-35 / US-36 pins — import_documents and file_results answer byte fo
    "addedAt": "2026-09-01T09:00:00Z",
    "metadata": {
     "labArchive": true,
+    "rows": [
+     "<uuid-1>",
+     "<uuid-2>"
+    ],
     "importedVia": "connector"
    },
    "sourceFileName": "labs.pdf"
@@ -409,6 +421,11 @@ exports[`US-35 / US-36 pins — import_documents and file_results answer byte fo
    "addedAt": "2026-09-01T09:00:00Z",
    "metadata": {
     "labArchive": true,
+    "rows": [
+     "<uuid-2>",
+     "<uuid-3>",
+     "<uuid-4>"
+    ],
     "importedVia": "assistant",
     "client": "ChatGPT"
    },
@@ -454,6 +471,9 @@ exports[`US-35 / US-36 pins — import_documents and file_results answer byte fo
    "addedAt": "2026-09-01T09:00:00Z",
    "metadata": {
     "labArchive": true,
+    "rows": [
+     "<uuid-2>"
+    ],
     "importedVia": "connector"
    },
    "sourceFileName": "units.pdf"
@@ -499,6 +519,9 @@ exports[`US-35 / US-36 pins — import_documents and file_results answer byte fo
    "addedAt": "2026-09-01T09:00:00Z",
    "metadata": {
     "labArchive": true,
+    "rows": [
+     "<uuid-2>"
+    ],
     "importedVia": "connector"
    },
    "sourceFileName": "given.pdf"
@@ -595,6 +618,9 @@ exports[`US-35 / US-36 pins — import_documents and file_results answer byte fo
    "addedAt": "2026-09-01T09:00:00Z",
    "metadata": {
     "labArchive": true,
+    "rows": [
+     "<uuid-2>"
+    ],
     "importedVia": "connector"
    },
    "sourceFileName": "other.pdf"

@@ -151,7 +151,7 @@ describe('US-07 AC7: which eGFR the plan reads', () => {
     expect(lab?.about).not.toMatch(/creatinine/);
     const calc = statTiles(plan(fileWith({ creatinine: [{ value: 80, day: '2026-07-01' }] })).results, { unitSystem: 'si', sex: 'female' })
       .find((t) => t.key === 'egfr');
-    expect(calc?.about).toBe(STAT_TILE_ABOUT.egfr);
+    expect(calc?.about).toBe(`${STAT_TILE_ABOUT.egfr} A range is not a diagnosis. Your doctor confirms one.`); // US-07 AC17
   });
 
   it('with a lab eGFR, creatinine is not a missing input', () => {

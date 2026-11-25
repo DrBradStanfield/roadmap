@@ -52,6 +52,9 @@ function bg(kind: string, cmd: string[], extra: Record<string, string> = {}) {
   const done = track(p);
   return { p, done, err: () => err };
 }
+/** How long "at once" or "promptly" may take (lead TA-3). Each takes well under a second (0.2 s polls), but a loaded
+ *  machine can stall a process for seconds; the faults these tests catch wait out a 30 s sleep or never end. */
+const PROMPT_MS = 10_000;
 async function until(f: () => boolean, ms = 15000) {
   const end = Date.now() + ms;
   while (!f()) {
@@ -236,8 +239,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     await a.done;
     const t = Date.now();
     await until(() => /codex: 0\/1 held/.test(
-      spawnSync('sh', [SCRIPT, 'status'], { env: env(extra), encoding: 'utf8' }).stdout), 5000);
-    expect(Date.now() - t).toBeLessThan(5000);
+      spawnSync('sh', [SCRIPT, 'status'], { env: env(extra), encoding: 'utf8' }).stdout), PROMPT_MS);
+    expect(Date.now() - t).toBeLessThan(PROMPT_MS);
     expect(started('a')).toBe(false);
   });
 
@@ -248,7 +251,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     const t = Date.now();
     a.p.kill('SIGTERM');
     expect(await a.done).toBe(143);
-    expect(Date.now() - t).toBeLessThan(3000);
+    expect(Date.now() - t).toBeLessThan(PROMPT_MS);
     expect(started('a')).toBe(false);
   });
 
@@ -262,7 +265,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     const t = Date.now();
     w.p.kill('SIGTERM');
     expect(await w.done).toBe(143);
-    expect(Date.now() - t).toBeLessThan(1000);
+    expect(Date.now() - t).toBeLessThan(PROMPT_MS);
     expect(marker(w.p.pid)).toEqual([]);
     expect(started('b')).toBe(false);
   });
@@ -306,7 +309,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     const t = Date.now();
     w.p.kill('SIGINT');
     expect(await w.done).toBe(130);
-    expect(Date.now() - t).toBeLessThan(1000);
+    expect(Date.now() - t).toBeLessThan(PROMPT_MS);
     expect(marker(w.p.pid)).toEqual([]);
     expect(started('b')).toBe(false);
   });
@@ -347,7 +350,7 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
 
   // R2: a waiter tries every slot on each retry, so a slot freeing while another stays held is taken within ~0.2 s.
   // The slot released is the one the old code's waiter did not watch (pid mod N + 1), so the pin is deterministic.
-  it('with 2 slots, a waiter takes a freed slot within 1 s while the other stays held', async () => {
+  it('with 2 slots, a waiter takes a freed slot promptly while the other stays held', async () => {
     const extra = { MAC_SLOT_POLL_SECONDS: '30', MAC_SLOT_CODEX_MAX: '2' };
     bg('codex', hold('a'), extra);
     await until(() => started('a'));
@@ -358,8 +361,8 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     const watched = ((w.p.pid ?? 0) % 2) + 1;
     release(watched === 1 ? 'b' : 'a'); // a holds slot 1, b slot 2
     const t = Date.now();
-    await until(() => started('c'), 5000);
-    expect(Date.now() - t).toBeLessThan(1000);
+    await until(() => started('c'), PROMPT_MS);
+    expect(Date.now() - t).toBeLessThan(PROMPT_MS);
   }, 20000);
 
   // Lead T17: under a decimal-comma locale sysctl prints "6,44", which read as unreadable and failed open. This
@@ -385,9 +388,9 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     mkdirSync(home, { recursive: true });
     writeFileSync(join(home, `waiting.codex.${Date.now() - 60000}.${sleeper()}`), 'left behind\n');
     const t = Date.now();
-    const s = spawnSync('sh', [SCRIPT, 'codex', '--', 'true'], { env: env(), encoding: 'utf8', timeout: 5000 });
+    const s = spawnSync('sh', [SCRIPT, 'codex', '--', 'true'], { env: env(), encoding: 'utf8', timeout: 15_000 });
     expect(s.status).toBe(0);
-    expect(Date.now() - t).toBeLessThan(2000);
+    expect(Date.now() - t).toBeLessThan(PROMPT_MS);
     expect(s.stderr).not.toMatch(/waiting for a codex slot/);
     expect(waiting('codex')).toEqual([]);
   });
@@ -415,9 +418,9 @@ describe.skipIf(process.platform !== 'darwin')('US-71 AC9 mac-slot.sh (macOS: lo
     await w.done;
     release('a');
     const t = Date.now();
-    const s = spawnSync('sh', [SCRIPT, 'codex', '--', 'true'], { env: env(extra), encoding: 'utf8', timeout: 5000 });
+    const s = spawnSync('sh', [SCRIPT, 'codex', '--', 'true'], { env: env(extra), encoding: 'utf8', timeout: 15_000 });
     expect(s.status).toBe(0);
-    expect(Date.now() - t).toBeLessThan(2000);
+    expect(Date.now() - t).toBeLessThan(PROMPT_MS);
     expect(started('b')).toBe(false);
     expect(waiting('codex')).toEqual([]);
   });

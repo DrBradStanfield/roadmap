@@ -14,7 +14,7 @@ import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import {
-  addMeasurement, currentSaveStatus, deleteUserData, flushRoadmapStore, getEraseIdentity, getReminderOptIn, initRoadmapStore, setPreEraseHook, setReminderOptIn,
+  addMeasurement, currentSaveStatus, deleteUserData, flushRoadmapStore, getEraseIdentity, getReminderOptIn, initRoadmapStore, setPreEraseHook, setReminderOptIn, getShownErase,
 } from '../lib/roadmap-data';
 import { cancelRemindersForErase } from '../../standalone/reminders';
 import { LocalStorageAdapter } from './local-storage-adapter';
@@ -29,7 +29,7 @@ class FailingCloud extends MemoryAdapter {
   failWrites = false;
   async write(...args: Parameters<MemoryAdapter['write']>) {
     // A definite refusal (a revoked grant): nothing was stored (write-refusal.ts).
-    if (this.failWrites) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403);
+    if (this.failWrites) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403, undefined, 'refused');
     return super.write(...args);
   }
 }
@@ -50,12 +50,12 @@ describe('Delete all my data when neither the cloud nor this browser takes it (l
   it('keeps the record as it was in memory, in the cloud and in this browser, and the next good save erases nothing', async () => {
     const cloud = new FailingCloud();
     const store = await RoadmapStore.create(cloud);
-    store.addMeasurement('weight', 82, '2026-09-01');
-    store.setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' });
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
+    store.setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' }, store.shownErase);
     await store.flush();
     // An edit the cloud has not taken: its failed save is held in this browser.
     cloud.failWrites = true;
-    store.addMeasurement('weight', 81, '2026-09-02');
+    store.addMeasurement('weight', 81, '2026-09-02', store.shownErase);
     await expect(store.flush()).rejects.toThrow();
     expect(days(deviceFile())).toEqual(['2026-09-01', '2026-09-02']);
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
@@ -98,7 +98,7 @@ describe('S69, US-11 AC4c: on "This device", an erase the browser refused cancel
     localStorage.removeItem(BACKEND_KEY);
     await initRoadmapStore(new LocalStorageAdapter());
     setPreEraseHook(cancelRemindersForErase); // as standalone/app.tsx registers it
-    expect(setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' })).toBe(true);
+    expect(setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' }, getShownErase())).toBe(true);
     await flushRoadmapStore();
     const posts: string[] = [];
     vi.stubGlobal('fetch', vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
@@ -152,7 +152,7 @@ describe('S69 R2, US-11 AC4c: a cloud erase is kept, and the cancel sent, only w
     const cloud = new FailingCloud();
     await initRoadmapStore(cloud);
     setPreEraseHook(cancelRemindersForErase); // as standalone/app.tsx registers it
-    expect(setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' })).toBe(true);
+    expect(setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' }, getShownErase())).toBe(true);
     await flushRoadmapStore();
     const posts: string[] = [];
     vi.stubGlobal('fetch', vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
@@ -161,7 +161,7 @@ describe('S69 R2, US-11 AC4c: a cloud erase is kept, and the cancel sent, only w
     }));
     cloud.failWrites = true; // the cloud refuses outright (403)
     // A failed save first, so the device copy exists: its old record is the one a put-back restores.
-    await addMeasurement('weight', 81, '2026-09-02');
+    await addMeasurement('weight', 81, '2026-09-02', getShownErase());
     await expect(flushRoadmapStore()).rejects.toThrow();
     expect(deviceFile().meta.eraseEpoch ?? 0).toBe(0);
     return posts;
@@ -331,7 +331,7 @@ describe('S69 R2, US-11 AC4c: a cloud erase is kept, and the cancel sent, only w
 
   it('US-09 AC30: outside an erase, another tab moving the revision while this save stored nothing never says the changes are on this device', async () => {
     await cloudWithOptIn();
-    await addMeasurement('weight', 80, '2026-09-03');
+    await addMeasurement('weight', 80, '2026-09-03', getShownErase());
     const setItem = Storage.prototype.setItem;
     let otherTabWrote = false;
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {

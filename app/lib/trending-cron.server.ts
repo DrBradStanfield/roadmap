@@ -13,7 +13,7 @@
  * Runs on the shared daily runner (daily-cron.server.ts): hourly tick, first
  * tick ≥ TARGET_HOUR_NZ, distributed lock via Supabase.
  */
-import { unauthenticated } from '../shopify.server';
+import { unauthenticated, type AdminApiContext } from '../shopify.server';
 import type { CronLockName } from './supabase-cron-lock.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';
@@ -93,13 +93,13 @@ interface UrlViewRow {
 /** Throw if the Shopify admin GraphQL response carries top-level `errors`.
  *  Without this, response shapes like `{ errors: [...], data: null }` slip
  *  past userErrors checks and the cron silently no-ops. */
-function assertNoTopLevelErrors(body: any, context: string): void {
+function assertNoTopLevelErrors(body: { data?: unknown; errors?: unknown }, context: string): void {
   if (Array.isArray(body?.errors) && body.errors.length > 0) {
     throw new Error(`${context}: top-level GraphQL errors: ${JSON.stringify(body.errors)}`);
   }
 }
 
-async function runShopifyQL(admin: any, query: string): Promise<UrlViewRow[]> {
+async function runShopifyQL(admin: AdminApiContext, query: string): Promise<UrlViewRow[]> {
   const result = await admin.graphql(
     `query RunShopifyQL($query: String!) {
       shopifyqlQuery(query: $query) {
@@ -141,15 +141,15 @@ async function runShopifyQL(admin: any, query: string): Promise<UrlViewRow[]> {
   if (Array.isArray(rawRows)) {
     for (const row of rawRows) {
       if (!row || typeof row !== 'object') continue;
-      const url = String((row as any).landing_page_path ?? '');
-      const views = Number((row as any).sessions ?? 0);
+      const url = String((row as Record<string, unknown>).landing_page_path ?? '');
+      const views = Number((row as Record<string, unknown>).sessions ?? 0);
       if (url && Number.isFinite(views)) rows.push({ url, views });
     }
   }
   return rows;
 }
 
-async function getShopId(admin: any): Promise<string> {
+async function getShopId(admin: AdminApiContext): Promise<string> {
   const result = await admin.graphql(`query { shop { id } }`);
   const body = await result.json();
   assertNoTopLevelErrors(body, 'getShopId');
@@ -160,7 +160,7 @@ async function getShopId(admin: any): Promise<string> {
 
 /** Exported for unit tests. */
 export async function writeTrendingMetafield(
-  admin: any,
+  admin: AdminApiContext,
   shopId: string,
   entries: { handle: string; score: number }[],
 ): Promise<void> {

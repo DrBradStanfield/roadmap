@@ -26,22 +26,24 @@ const HBA1C_PRE = PCT(5.7);
 const HBA1C_DIA = PCT(6.5);
 const hba1cGrade = (v: number) => (v >= HBA1C_DIA ? 'diabetic' : v >= HBA1C_PRE ? 'prediabetic' : 'normal');
 const lpaGrade = (v: number) => (v >= 125 ? 'elevated' : v >= 75 ? 'borderline' : 'normal');
-const TILE = { normal: 'Normal', prediabetic: 'Prediabetic', diabetic: 'Diabetic', borderline: 'Borderline', elevated: 'Elevated' } as const;
+const TILE = { normal: 'Normal', prediabetic: 'Prediabetes range', diabetic: 'Diabetes range', borderline: 'Borderline', elevated: 'Elevated' } as const;
+// US-07 AC18 (Brad 2026-11-23): a normal grade has no card; its tile prints the number.
+const cardOf = (metric: string, grade: string) => (grade === 'normal' ? undefined : `${metric}-${grade}`);
 
 function hba1cView(hba1c: number, unitSystem: UnitSystem, overrides?: Partial<Record<MetricType, UnitSystem>>) {
   const r = calculateHealthResults({ ...base, hba1c }, unitSystem, undefined, undefined, overrides, NOW);
-  const card = r.suggestions.find((s) => s.id.startsWith('hba1c-'))!;
+  const card = r.suggestions.find((s) => s.id.startsWith('hba1c-'));
   const tile = statTiles(r, { unitSystem, unitOverrides: overrides, sex: 'male' }).find((t) => t.key === 'hba1c')!;
-  const printed = /Your HbA1c of (\S+) /.exec(card.description)![1];
-  return { id: card.id, text: card.description, printed, tile: tile.value, unit: tile.unit, status: tile.status?.label };
+  const printed = card ? /Your HbA1c of (\S+) /.exec(card.description)![1] : tile.value;
+  return { id: card?.id, text: card?.description, printed, tile: tile.value, unit: tile.unit, status: tile.status?.label };
 }
 
 function lpaView(lpa: number, extra: Partial<HealthInputs> = {}) {
   const r = calculateHealthResults({ ...base, lpa, ...extra }, 'si', undefined, undefined, undefined, NOW);
-  const card = r.suggestions.find((s) => s.id.startsWith('lpa-'))!;
+  const card = r.suggestions.find((s) => s.id.startsWith('lpa-'));
   const tile = statTiles(r, { unitSystem: 'si', sex: 'male' }).find((t) => t.key === 'lpa')!;
-  const printed = /: (\S+) nmol\/L$/.exec(card.title)![1];
-  return { id: card.id, title: card.title, text: card.description, printed, tile: tile.value, status: tile.status?.label };
+  const printed = card ? /: (\S+) nmol\/L$/.exec(card.title)![1] : tile.value;
+  return { id: card?.id, title: card?.title, text: card?.description, printed, tile: tile.value, status: tile.status?.label };
 }
 
 function currentValue(metricType: string, value: number, unitSystem: UnitSystem) {
@@ -57,8 +59,8 @@ describe('US-07 AC15: HbA1c prints on the side of 5.7 % and 6.5 % its grade is o
   it('47 mmol/mol in % reads 6.45 %, prediabetic (it read 6.5 %, the diabetes line)', () => {
     const v = hba1cView(47, 'conventional');
     expect(v.id).toBe('hba1c-prediabetic');
-    expect(v.text).toContain('Your HbA1c of 6.45 % is in the prediabetic range.');
-    expect([v.tile, v.unit, v.status]).toEqual(['6.45', '%', 'Prediabetic']);
+    expect(v.text).toContain('Your HbA1c of 6.45 % is in the range the ADA calls prediabetes.');
+    expect([v.tile, v.unit, v.status]).toEqual(['6.45', '%', 'Prediabetes range']);
   });
 
   it('the same with the per-field % toggle on an mmol/mol profile (US-05)', () => {
@@ -67,10 +69,9 @@ describe('US-07 AC15: HbA1c prints on the side of 5.7 % and 6.5 % its grade is o
     expect(v.tile).toBe('6.45');
   });
 
-  it('38.7 mmol/mol in % reads 5.69 %, normal (it read 5.7 %, the prediabetes line)', () => {
+  it('38.7 mmol/mol in % reads 5.69 %, normal (it read 5.7 %, the prediabetes line); no card (AC18)', () => {
     const v = hba1cView(38.7, 'conventional');
-    expect(v.id).toBe('hba1c-normal');
-    expect(v.printed).toBe('5.69');
+    expect(v.id).toBeUndefined();
     expect([v.tile, v.status]).toEqual(['5.69', 'Normal']);
   });
 
@@ -87,7 +88,7 @@ describe('US-07 AC15: HbA1c prints on the side of 5.7 % and 6.5 % its grade is o
     expect(hba1cView(PCT(6.4), 'conventional')).toMatchObject({ id: 'hba1c-prediabetic', printed: '6.4' });
     expect(hba1cView(PCT(5.7), 'conventional')).toMatchObject({ id: 'hba1c-prediabetic', printed: '5.7' });
     expect(hba1cView(47, 'si')).toMatchObject({ id: 'hba1c-prediabetic', printed: '47', tile: '47' });
-    expect(hba1cView(42, 'si')).toMatchObject({ printed: '42', tile: '42' });
+    expect(hba1cView(42, 'si')).toMatchObject({ tile: '42' });
   });
 
   it('the elevated-Lp(a) checklist prints the HbA1c on the side of its <5.7 % target', () => {
@@ -97,7 +98,6 @@ describe('US-07 AC15: HbA1c prints on the side of 5.7 % and 6.5 % its grade is o
   });
 
   it('the strings Brad approved on 2026-11-03 print exactly', () => {
-    expect(hba1cView(38.7, 'conventional').text).toContain('Your HbA1c of 5.69 % is in the normal range.');
     const r = calculateHealthResults({ ...base, lpa: 150, hba1c: 47 }, 'conventional', undefined, undefined, undefined, NOW);
     const line = r.suggestions.find((s) => s.id === 'lpa-elevated')!.description.split('\n').find((l) => l.includes('HbA1c'));
     expect(line).toContain('HbA1c: 6.45 % \u2014 target <5.7 %');
@@ -112,17 +112,15 @@ describe('US-07 AC15: HbA1c prints on the side of 5.7 % and 6.5 % its grade is o
 });
 
 describe('US-07 AC15: Lp(a) prints on the side of 75 and 125 nmol/L its grade is on', () => {
-  it('74.5 nmol/L (29.8 mg/dL typed) reads 74.5 beside "<75", normal (it read 75)', () => {
+  it('74.5 nmol/L (29.8 mg/dL typed) reads 74.5 beside "<75", normal (it read 75); no card (AC18)', () => {
     const v = lpaView(toCanonicalValue('lpa', 29.8, 'conventional'));
-    expect(v.id).toBe('lpa-normal');
-    expect(v.title).toBe('Lp(a): 74.5 nmol/L');
-    expect(v.text).toContain('normal range (<75 nmol/L)');
+    expect(v.id).toBeUndefined();
     expect([v.tile, v.status]).toEqual(['74.5', 'Normal']);
   });
 
   it('74.75 nmol/L (29.9 mg/dL) reads 74.7, one more decimal rounded down', () => {
     const v = lpaView(toCanonicalValue('lpa', 29.9, 'conventional'));
-    expect([v.id, v.printed, v.tile]).toEqual(['lpa-normal', '74.7', '74.7']);
+    expect([v.id, v.tile]).toEqual([undefined, '74.7']);
   });
 
   it('124.6 nmol/L reads 124.6, borderline (it read 125, the elevated line)', () => {
@@ -135,7 +133,7 @@ describe('US-07 AC15: Lp(a) prints on the side of 75 and 125 nmol/L its grade is
     expect(lpaView(75)).toMatchObject({ id: 'lpa-borderline', printed: '75', tile: '75', status: 'Borderline' });
     expect(lpaView(125)).toMatchObject({ id: 'lpa-elevated', printed: '125', tile: '125', status: 'Elevated' });
     expect(lpaView(130.4)).toMatchObject({ title: 'Elevated Lp(a): 130 nmol/L', tile: '130' });
-    expect(lpaView(60.6)).toMatchObject({ printed: '61', tile: '61' });
+    expect(lpaView(60.6)).toMatchObject({ tile: '61' });
   });
 
   it("get_plan's currentValues: nmol/L, and mg/dL for a US profile", () => {
@@ -158,13 +156,13 @@ describe('US-07 AC15: across the lines, grades are unchanged and the number agre
     for (const v of HBA1C_VALUES) {
       for (const u of UNITS) {
         const view = hba1cView(v, u);
-        expect(view.id, `${v} ${u}`).toBe(`hba1c-${hba1cGrade(v)}`);
+        expect(view.id, `${v} ${u}`).toBe(cardOf('hba1c', hba1cGrade(v)));
         expect(view.status, `${v} ${u}`).toBe(TILE[hba1cGrade(v)]);
       }
     }
     for (const v of LPA_VALUES) {
       const view = lpaView(v);
-      expect(view.id, `${v}`).toBe(`lpa-${lpaGrade(v)}`);
+      expect(view.id, `${v}`).toBe(cardOf('lpa', lpaGrade(v)));
       expect(view.status, `${v}`).toBe(TILE[lpaGrade(v)]);
     }
   });
@@ -175,7 +173,7 @@ describe('US-07 AC15: across the lines, grades are unchanged and the number agre
     for (const v of HBA1C_VALUES) {
       for (const u of UNITS) {
         const view = hba1cView(v, u);
-        expect(view.tile, `${v} ${u}`).toBe(view.printed);
+        if (view.id) expect(view.tile, `${v} ${u}`).toBe(view.printed); // a normal value has no card (AC18)
         const n = Number(view.printed);
         const [pre, dia] = lines[u];
         const side = n >= dia ? 'diabetic' : n >= pre ? 'prediabetic' : 'normal';
@@ -187,7 +185,7 @@ describe('US-07 AC15: across the lines, grades are unchanged and the number agre
   it('Lp(a) 60 to 140 nmol/L: the tile and card print one number, on its grade\'s side', () => {
     for (const v of LPA_VALUES) {
       const view = lpaView(v);
-      expect(view.tile, `${v}`).toBe(view.printed);
+      if (view.id) expect(view.tile, `${v}`).toBe(view.printed); // a normal value has no card (AC18)
       const n = Number(view.printed);
       expect(n >= 125 ? 'elevated' : n >= 75 ? 'borderline' : 'normal', `${v} printed ${view.printed}`).toBe(lpaGrade(v));
     }
@@ -208,12 +206,11 @@ describe('US-07 AC15 with US-12 AC20: a result saved as a limit prints as the li
     return { plan, payload: planPayload(plan), tile: (key: string) => tiles.find((t) => t.key === key)?.value };
   }
 
-  it('HbA1c "< 30" mmol/mol and Lp(a) "< 10" nmol/L: tile, card and currentValues show the limit', () => {
+  it('HbA1c "< 30" mmol/mol and Lp(a) "< 10" nmol/L: tile and currentValues show the limit; normal, so no card (AC18)', () => {
     const { payload, tile } = limitPlan([{ metricType: 'hba1c', value: 30 }, { metricType: 'lpa', value: 10 }]);
     expect(tile('hba1c')).toBe('< 30');
     expect(tile('lpa')).toBe('< 10');
-    expect(payload.suggestions.find((s) => s.id === 'hba1c-normal')?.description).toContain('Your HbA1c of < 30 mmol/mol');
-    expect(payload.suggestions.find((s) => s.id === 'lpa-normal')?.title).toBe('Lp(a): < 10 nmol/L');
+    expect(payload.suggestions.filter((s) => /^(hba1c|lpa)-/.test(s.id))).toEqual([]);
     expect(payload.currentValues.find((v) => v.metric === 'hba1c')?.value).toBe('< 30');
     expect(payload.currentValues.find((v) => v.metric === 'lpa')?.value).toBe('< 10');
   });

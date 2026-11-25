@@ -17,6 +17,8 @@ import { sha256Blob } from '../lib/archive-payloads';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from './roadmap-store';
 import { BACKEND_KEY } from './web-record-host';
+import { seedDocuments } from '../testing/seed-record';
+import { uploadThrough } from '../testing/upload-save-kit';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -45,11 +47,11 @@ class HeldCloud extends MemoryAdapter {
 /** A store holding one of everything a write below can touch. */
 async function seeded(adapter: MemoryAdapter) {
   const store = await RoadmapStore.create(adapter);
-  store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
-  const weight = store.addMeasurement('weight', 82, '2026-09-01');
-  store.saveMedication('statin', 'rosuvastatin', 10, 'mg');
-  store.saveSupplement('omega3', 'Omega-3', 1, 'g');
-  const { saved } = await store.bulkSaveDocuments([{
+  store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {}, store.shownErase);
+  const weight = store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
+  store.saveMedication('statin', 'rosuvastatin', 10, 'mg', store.shownErase);
+  store.saveSupplement('omega3', 'Omega-3', 1, 'g', undefined, undefined, store.shownErase);
+  const saved = await seedDocuments(store, [{
     documentType: 'lab_report', title: 'Synthetic report', documentDate: '2026-09-01',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic.pdf',
   }]);
@@ -58,26 +60,28 @@ async function seeded(adapter: MemoryAdapter) {
   return { store, weightId: weight.row.id, documentId: saved[0].id };
 }
 
+const ERASED = { ok: false, reason: 'erased', message: 'Failed to save. Please try again.' };
 /** Every write the page reaches, each with the answer a refusal gives. */
 const WRITES: Array<[string, (s: RoadmapStore, ids: { weightId: string; documentId: string }) => unknown | Promise<unknown>, unknown]> = [
-  ['addMeasurement', (s) => s.addMeasurement('waist', 90, '2026-09-02'), { status: 'error' }],
-  ['correctValue', (s, ids) => s.correctValue(ids.weightId, 81), 'error'],
-  ['moveBloodTest', (s) => s.moveBloodTest('2026-09-01', '2026-08-30', [], {}), { status: 'error' }],
-  ['saveChangedMeasurements', (s) => s.saveChangedMeasurements({ heightCm: 181 }, { heightCm: 178 }), { ok: false }],
-  ['saveMedication', (s) => s.saveMedication('statin', 'atorvastatin', 20, 'mg'), false],
-  ['saveSupplement', (s) => s.saveSupplement('vitd', 'Vitamin D', 25, 'mcg'), false],
-  ['deleteSupplementApi', (s) => s.deleteSupplementApi('omega3'), false],
-  ['saveScreening', (s) => s.saveScreening('colorectal_method', 'fit'), false],
-  ['bulkSaveMeasurements', (s) => s.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-09-02', source: 'manual' }]), { saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] }],
-  ['bulkSaveLabValues', (s) => s.bulkSaveLabValues([{ metricName: 'Ferritin', value: 75, unit: 'µg/L', recordedAt: '2026-09-01' }]), { saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] }],
-  ['bulkSaveDocuments', (s) => s.bulkSaveDocuments([{
-    documentType: 'lab_report', title: 'Another report', documentDate: '2026-09-02',
+  ['addMeasurement', (s) => s.addMeasurement('waist', 90, '2026-09-02', s.shownErase), { status: 'error' }],
+  ['correctValue', (s, ids) => s.correctValue(ids.weightId, 81, s.shownErase), 'error'],
+  ['moveBloodTest', (s) => s.moveBloodTest('2026-09-01', '2026-08-30', [], {}, s.shownErase), { status: 'error' }],
+  ['saveChangedMeasurements', (s) => s.saveChangedMeasurements({ heightCm: 181 }, { heightCm: 178 }, s.shownErase), { ok: false }],
+  ['saveMedication', (s) => s.saveMedication('statin', 'atorvastatin', 20, 'mg', s.shownErase), false],
+  ['saveSupplement', (s) => s.saveSupplement('vitd', 'Vitamin D', 25, 'mcg', undefined, undefined, s.shownErase), false],
+  ['deleteSupplementApi', (s) => s.deleteSupplementApi('omega3', s.shownErase), false],
+  ['saveScreening', (s) => s.saveScreening('colorectal_method', 'fit', s.shownErase), false],
+  ['bulkSaveMeasurements', (s) => s.bulkSaveMeasurements([{ metricType: 'waist', value: 90, recordedAt: '2026-09-02', source: 'manual' }], s.shownErase), { saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] }],
+  // The two upload writers, now the upload's one Save (storage/upload-save-store.ts): its values, then its document.
+  ['bulkSaveLabValues (the upload Save)', (s) => uploadThrough(s, [{ report: 'ferritin.pdf', reportDate: '2026-09-01', values: [{ name: 'Ferritin', value: 75, unit: 'µg/L' }] }]), ERASED],
+  ['bulkSaveDocuments (the upload Save)', (s) => uploadThrough(s, [{
+    documentType: 'clinic_letter', title: 'Another letter', documentDate: '2026-09-02',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'another.pdf',
-  }]), { saved: [], errorCount: 1 }],
-  ['deleteDocument', (s, ids) => s.deleteDocument(ids.documentId), false],
-  ['setLpaUnit', (s) => s.setLpaUnit('mg/dL'), false],
-  ['markReportEmailCaptured', (s) => s.markReportEmailCaptured(), false],
-  ['setReminderOptIn', (s) => s.setReminderOptIn({ status: 'active', token: 't', email: 'a@example.com', provider: 'dropbox' }), false],
+  }]), ERASED],
+  ['deleteDocument', (s, ids) => s.deleteDocument(ids.documentId, s.shownErase), false],
+  ['setLpaUnit', (s) => s.setLpaUnit('mg/dL', s.shownErase), false],
+  ['markReportEmailCaptured', (s) => s.markReportEmailCaptured(s.shownErase), false],
+  ['setReminderOptIn', (s) => s.setReminderOptIn({ status: 'active', token: 't', email: 'a@example.com', provider: 'dropbox' }, s.shownErase), false],
 ];
 
 beforeEach(() => {
@@ -119,9 +123,9 @@ describe('US-16 AC2a: the store refuses a write made against an erase it no long
     const cloud = new MemoryCloud();
     const { store } = await seeded(new MemoryAdapter(cloud));
     expect((await store.deleteAllData()).success).toBe(true);
-    expect(store.addMeasurement('waist', 90, '2026-09-02').status).toBe('inserted');
+    expect(store.addMeasurement('waist', 90, '2026-09-02', store.shownErase).status).toBe('inserted');
     store.showErase(store.eraseIdentity); // the page shows the erased record
-    expect(store.saveMedication('statin', 'atorvastatin', 20, 'mg')).toBe(true);
+    expect(store.saveMedication('statin', 'atorvastatin', 20, 'mg', store.shownErase)).toBe(true);
   });
 });
 
@@ -176,7 +180,7 @@ describe('US-16 AC2a: a document upload refused at its commit', () => {
     }
   }
   const upload = (bytes: Blob) => [{
-    documentType: 'lab_report', title: 'Held report', documentDate: '2026-09-03',
+    documentType: 'pathology_report', title: 'Held report', documentDate: '2026-09-03',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'held.pdf', file: bytes,
   }];
 
@@ -185,11 +189,11 @@ describe('US-16 AC2a: a document upload refused at its commit', () => {
     const adapter = new HeldBlobs(cloud);
     const { store } = await seeded(adapter);
     const held = adapter.hold();
-    const pending = store.bulkSaveDocuments(upload(new Blob(['held bytes'], { type: 'application/pdf' })));
+    const pending = uploadThrough(store, upload(new Blob(['held bytes'], { type: 'application/pdf' })));
     await held.reached;
     expect((await store.deleteAllData()).success).toBe(true);
     held.release();
-    expect(await pending).toEqual({ saved: [], errorCount: 1 });
+    expect(await pending).toEqual(ERASED);
     expect(fileOf(store).documents).toEqual([]);
     await store.flush();
     expect(cloudFile(cloud).documents).toEqual([]);
@@ -207,12 +211,12 @@ describe('US-16 AC2a: a document upload refused at its commit', () => {
     };
     fileOf(store).documents.push(row); // never seen by the other device, so its erase does not list it
     const held = adapter.hold();
-    const pending = store.bulkSaveDocuments(upload(bytes));
+    const pending = uploadThrough(store, upload(bytes));
     await held.reached;
     await otherDeviceErases(cloud);
     expect(await store.refreshFromRemote()).toBe(true);
     held.release();
-    expect(await pending).toEqual({ saved: [], errorCount: 1 });
+    expect(await pending).toEqual(ERASED);
     const kept = fileOf(store).documents.filter((d) => d.id === 'connector-row');
     expect(kept).toHaveLength(1);
     expect(kept[0].deleted).toBeFalsy();
@@ -237,11 +241,11 @@ describe('US-34 AC1: a save that folds a remote change in announces it even when
   it('fires the remote-change event when the second pass throws', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     // Another device saves a waist.
     const other = await RoadmapStore.create(new MemoryAdapter(cloud));
-    other.addMeasurement('waist', 90, '2026-09-01');
+    other.addMeasurement('waist', 90, '2026-09-01', other.shownErase);
     await other.flush();
     // This copy saves; while its first write is in flight it changes again,
     // so the save goes round, and that second write fails.
@@ -250,7 +254,7 @@ describe('US-34 AC1: a save that folds a remote change in announces it even when
     vi.spyOn(MemoryAdapter.prototype, 'write').mockImplementation(async function (this: MemoryAdapter, ...args) {
       writes += 1;
       if (writes === 1) {
-        store.addMeasurement('weight', 83, '2026-09-02');
+        store.addMeasurement('weight', 83, '2026-09-02', store.shownErase);
         return write.apply(this, args);
       }
       throw new Error('cloud did not answer');
@@ -258,7 +262,7 @@ describe('US-34 AC1: a save that folds a remote change in announces it even when
     const heard = vi.fn();
     window.addEventListener(REMOTE_CHANGED_EVENT, heard);
     try {
-      store.addMeasurement('ldl', 3.1, '2026-09-01');
+      store.addMeasurement('ldl', 3.1, '2026-09-01', store.shownErase);
       await expect(store.flush()).rejects.toThrow();
     } finally {
       window.removeEventListener(REMOTE_CHANGED_EVENT, heard);

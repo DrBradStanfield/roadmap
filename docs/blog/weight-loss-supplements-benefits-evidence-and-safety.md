@@ -269,7 +269,7 @@ A 2013 systematic review of 3 trials reported that the extract causes statistica
 
 A 2020 meta-analysis of 5 trials found pooled falls in weight, body fat and waist size, but only one trial had a low risk of bias, and it found no significant difference [251].
 
-**Safety:** Appears well tolerated. No adverse effects in rats at doses up to 2,500 mg/kg/day [20]. Mild human adverse effects: headache, difficulty sleeping, flatulence, and gas [19]. One case of renal failure was associated with African mango in a patient with pre-existing chronic kidney disease [21].
+**Safety:** Appears well tolerated. No adverse effects in rats at doses up to 2,500 mg/kg/day [20]. Mild human adverse effects: headache, difficulty sleeping, flatulence, and gas [19]. One case of renal failure was associated with [African mango](/blogs/articles/african-mango-benefits-forms-dosing-and-side-effects) in a patient with pre-existing chronic kidney disease [21].
 
 ### Raspberry Ketone
 
@@ -393,7 +393,7 @@ Green (unroasted) coffee beans contain higher levels of chlorogenic acid than ro
 
 **Clinical evidence:**
 
-A meta-analysis of 3 small trials found green coffee bean extract (180-200 mg/day for 4-12 weeks) produced a 2.47 kg mean weight loss versus placebo, but all trials were of poor methodological quality [151]. A separate trial claiming benefits was strongly criticized by the FTC for critical flaws in design; two of three study authors subsequently retracted the publication [153-155].
+A meta-analysis of 3 small trials found [green coffee bean extract](/blogs/articles/green-coffee-bean-extract-benefits-forms-dosing-and-side-effects) (180-200 mg/day for 4-12 weeks) produced a 2.47 kg mean weight loss versus placebo, but all trials were of poor methodological quality [151]. A separate trial claiming benefits was strongly criticized by the FTC for critical flaws in design; two of three study authors subsequently retracted the publication [153-155].
 
 **Safety:** Generally well tolerated. Adverse effects: headaches and urinary tract infections [151]. Its caffeine can cause side effects, depending on the dose and whether it is combined with other stimulants [243]. Long-term safety not established.
 

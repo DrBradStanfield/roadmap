@@ -33,7 +33,7 @@ vi.mock('./byok-anthropic', () => ({
 
 import { buildChatContextJson, MINOR_CHAT_RULE } from '@roadmap/health-core/chat-context';
 import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
-import { sendMessage } from './byok-chat';
+import { listConversations, sendMessage } from './byok-chat';
 import * as Sentry from '@sentry/react';
 import { StorageError } from '@roadmap/health-core/adapter';
 
@@ -332,8 +332,7 @@ describe('US-15 AC34: a Pages chat reply cut off before any text is an error, no
 });
 
 // US-15 AC47a: getChatHistory() resolves null when the history file could not
-// be opened, and keeps that null for later chat sends unless an erase opens the
-// file again. The Pages chat read a follow-up's earlier turns only from the
+// be opened (since AC69 the next call opens it again). The Pages chat read a follow-up's earlier turns only from the
 // store, so every follow-up then went to the model alone, while the thread on
 // screen carried on.
 describe('US-15 AC47a: a Pages chat follow-up keeps its conversation when the history file is not open', () => {
@@ -350,6 +349,10 @@ describe('US-15 AC47a: a Pages chat follow-up keeps its conversation when the hi
     });
     state.bodies = [];
     state.store = null;
+  });
+
+  it('US-15 AC69: the History list is a failed read, never an empty list, so the next open reads it again', async () => {
+    await expect(listConversations()).resolves.toBeNull();
   });
 
   it('sends the turns the chat shows when no store is open', async () => {
@@ -399,7 +402,7 @@ describe('US-09 AC2c: a Pages chat answer whose history save the device refuses 
     state.replies = [{ text: 'Synthetic answer', blocks: [] }];
     state.store = {
       getMessages: () => [],
-      recordExchange: vi.fn(() => Promise.reject(new StorageError('Synthetic device refusal'))),
+      recordExchange: vi.fn(() => Promise.reject(new StorageError('Synthetic device refusal', undefined, undefined, undefined, undefined, 'refused'))),
       eraseMarks: () => [],
     };
   });

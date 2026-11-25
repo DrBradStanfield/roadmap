@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../src/storage/roadmap-store';
-import { addMeasurement, initRoadmapStore } from '../src/lib/roadmap-data';
+import { addMeasurement, initRoadmapStore, getShownErase } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
 import { OPEN_PICKER_EVENT } from '../src/lib/storage-notice';
 import { EmailLandingNotice, emailLandingApplies, takeEmailFlag } from './email-landing';
@@ -84,7 +84,7 @@ describe('emailLandingApplies (US-22 AC13)', () => {
   });
 
   it('a guest whose browser still holds a plan sees nothing', async () => {
-    await addMeasurement('ldl', 3.1, '2026-09-01');
+    await addMeasurement('ldl', 3.1, '2026-09-01', getShownErase());
     expect(await emailLandingApplies(true, 'guest')).toBe(false);
     expect(trackProductEvent).not.toHaveBeenCalled();
   });

@@ -1,6 +1,6 @@
 // Cancer screening's questions, one section of the form (moved out of InputPanel).
 import { CommitTickButton } from './CommitTickButton';
-import { interceptHistory, optionElements, type FormKit } from './form-kit';
+import { errorAria, interceptHistory, optionElements, type FormKit } from './form-kit';
 import type { Placement } from './MyHealth';
 import type { ReactNode } from 'react';
 import type { ScreeningInputs } from '@roadmap/health-core/types';
@@ -22,7 +22,7 @@ interface ScreeningQuestionsProps {
   onPsaDateChange: (day: string) => void;
   onPsaCommit: (now: boolean) => void;
   bloodTestHistory: ApiMeasurement[];
-  /** The plan's age, from the validated birth year (January when no month). */
+  /** The age the screening cards read (screeningAge, at the UTC month; January when no month; US-23 AC6c). */
   age: number;
   /** Sends one screening answer and the clears it implies. */
   writeScreening: (scr: ScreeningInputs, key: string, value: string) => void;
@@ -238,6 +238,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
                 <input
                   type="number"
                   id="lung-pack-years"
+                  {...errorAria('lung-pack-years-error', [unreadable.lung_pack_years])}
                   onKeyDown={blockNonIntegerKeys}
                   onWheel={blurOnWheel}
                   value={scr.lungPackYears ?? ''}
@@ -247,7 +248,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
                   max="200"
                   step="1"
                 />
-                {unreadable.lung_pack_years && <span className="field-error">Enter a number</span>}
+                {unreadable.lung_pack_years && <span className="field-error" id="lung-pack-years-error">Enter a number</span>}
                 <span className="field-hint">{SCREENING_TEXT.packYearsHint}</span>
               </div>
 
@@ -327,6 +328,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
                       <input
                         type="number"
                         id="psa-input"
+                        {...errorAria('psa-error', [unreadable.psa, errors.psa])}
                         onWheel={blurOnWheel}
                         value={rawInputs.psa ?? (inputs.psa !== undefined ? String(inputs.psa) : '')}
                         onChange={(e) => {
@@ -364,7 +366,7 @@ export function ScreeningQuestions(props: ScreeningQuestionsProps) {
                         <CommitTickButton ariaLabel="Save PSA" onClick={() => onPsaCommit(true)}/>
                       )}
                     </div>
-                    {(unreadable.psa || errors.psa || psaDayError) && <span className="field-error">{unreadable.psa ? 'Enter a number' : errors.psa ?? psaDayError}</span>}
+                    {(unreadable.psa || errors.psa || psaDayError) && <span className="field-error" id="psa-error">{unreadable.psa ? 'Enter a number' : errors.psa ?? psaDayError}</span>}
                     <div className="field-meta">
                       <span className="field-hint">{SCREENING_TEXT.psaHint}</span>
                       {psaPreviousLabel && (

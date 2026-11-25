@@ -2,9 +2,10 @@
 // review matrix. Anything that touches React state stays in the consuming
 // components; everything here is data → data.
 
-import { commaQuestion, parseLocalisedNumber } from '@roadmap/health-core/parseNumber';
+import { commaQuestion } from '@roadmap/health-core/parseNumber';
 import { rangeFault, type MetricType, type ValidationRange } from '@roadmap/health-core/units';
 import { rangeMessage, cellRange, cellToSI, limitCellText, type CellUnit } from '@roadmap/health-core/cell-unit';
+import { ENTER_A_NUMBER, hasNumericSyntax, NUMERIC_SYNTAX_GUIDANCE, readTypedValue } from '@roadmap/health-core/cell-input';
 import { statusOf, type GradeStatus } from '@roadmap/health-core/row-grade';
 import { trendRange } from '@roadmap/health-core/recent-trend';
 
@@ -58,6 +59,15 @@ export function bpSysAdvance(typed: string): BpAdvance {
   return 'stay';
 }
 
+/** Diastolic → the next box (US-75 AC2): a complete diastolic, two digits 40–99 (no third digit
+ *  stays in range) or three digits 100–150, moves on at once; anything else stays. */
+export function bpDiaAdvance(typed: string): Exclude<BpAdvance, 'defer'> {
+  const t = typed.trim();
+  if (!/^\d{2,3}$/.test(t)) return 'stay';
+  const n = Number(t);
+  return n >= 40 && n <= 150 ? 'advance' : 'stay';
+}
+
 /**
  * A trend's shape, for the grid's sparkline and the phone rows' trend: each
  * point's spot in a `width` x `height` box (2px padding), the line through the
@@ -83,36 +93,8 @@ export function trendGeometry(points: number[], limits: boolean[] | undefined, w
 /** A saved core value as its cell shows it: a limit with its symbol, "> 1.55" (US-12 AC20). */
 export const savedCellText = limitCellText;
 
-/**
- * A typed value that changes nothing, so saving it writes nothing (US-03
- * AC3): the number the user saw, typed again in any spelling ("3.20", "3,2"),
- * or the stored value itself once converted. `typed` is in the unit it was
- * typed in and `shown` is the saved value as displayed in that unit;
- * `candidate` and `stored` are in the unit the record keeps. The typed
- * number is never rounded: 3.24 over a shown 3.2 is a change.
- */
-export function sameAsSaved(typed: number, shown: string, candidate: number, stored: number): boolean {
-  const seen = parseLocalisedNumber(shown);
-  return (seen !== undefined && closeTo(typed, seen)) || closeTo(candidate, stored);
-}
-
-/** Equal up to float noise (1e-9 relative), which is all a unit round trip leaves. */
-function closeTo(a: number, b: number): boolean {
-  return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
-}
-
-/** Numeric cells accept unsigned plain decimals, not signs or exponent syntax.
- * Keep this UI contract separate from the shared record/clinical parser. */
-export const NUMERIC_SYNTAX_GUIDANCE = 'Type one decimal number, without signs, < > or spaces';
-
-export function hasNumericSyntax(text: string): boolean {
-  return /^[0-9.,]+$/.test(text);
-}
-
-/** Free-form rows have no metric range for resolving grouped commas. */
-export function readNumericCell(text: string): number | undefined {
-  return hasNumericSyntax(text) ? parseLocalisedNumber(text) : undefined;
-}
+// Reading typed text lives in health-core (cell-input.ts), which the shared upload reads too.
+export { sameAsSaved, hasNumericSyntax, readNumericCell, readTypedValue, NUMERIC_SYNTAX_GUIDANCE } from '@roadmap/health-core/cell-input';
 
 /** Text kept for refusal because stripping it could change the number
  *  (US-02 AC4). Lab flag arrows and a unit's own superscript ('5.2 ↑',
@@ -125,21 +107,17 @@ const CHANGES_THE_NUMBER = [
   /[0-9.,][eE]/, // exponent notation: '1e1'
 ];
 
+/** Text inputs remove line breaks. Keep a visible separator in state too,
+ *  so DOM selection offsets and replacement pastes address the same text. */
+export const lineBreaksAsSpaces = (text: string): string => text.replace(/\r\n|[\r\n]/g, ' ');
+
 /** Strip decorations only around a single numeric token (US-02 AC4).
  * Keep ambiguous text so validation and every save caller can refuse it. */
 export function numericCellText(text: string): string {
-  // Text inputs remove line breaks. Keep a visible separator in state too,
-  // so DOM selection offsets and replacement pastes address the same text.
-  text = text.replace(/\r\n|[\r\n]/g, ' ');
+  text = lineBreaksAsSpaces(text);
   if (CHANGES_THE_NUMBER.some((pattern) => pattern.test(text))) return text;
   const token = text.match(/^[^0-9.,]*([0-9.,]+)[^0-9.,]*$/);
   return token ? token[1] : /[0-9.,]/.test(text) ? text : '';
-}
-
-/** A typed number in the unit it was typed in: "1,234" is the one reading
- *  inside the metric's input range there, else undefined (US-02 AC7). */
-export function readTypedValue(metric: MetricType, typed: string, display: CellUnit): number | undefined {
-  return hasNumericSyntax(typed) ? parseLocalisedNumber(typed, cellRange(metric, display)) : undefined;
 }
 
 /** Whether a whole number still being typed could reach the range with more
@@ -165,7 +143,7 @@ export function validateTypedValue(
   if (typed === '') return { error: null, range };
   if (!hasNumericSyntax(typed)) return { error: NUMERIC_SYNTAX_GUIDANCE, range };
   const n = readTypedValue(metric, typed, display);
-  if (n === undefined) return { error: commaQuestion(typed) ?? 'Enter a number', range };
+  if (n === undefined) return { error: commaQuestion(typed) ?? ENTER_A_NUMBER, range };
   // Include the display unit in min/max errors so a user who typed (e.g.)
   // a mg/dL number into an mmol/L field can see the unit mismatch instead
   // of a bare "Max 22.6".

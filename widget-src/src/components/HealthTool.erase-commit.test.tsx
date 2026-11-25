@@ -18,6 +18,7 @@
  * Whole widget over a REAL RoadmapStore on jsdom's localStorage. Synthetic data only.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { flushSync } from 'react-dom';
 import { render, fireEvent, waitFor, act, screen, within, type RenderResult } from '@testing-library/react';
 import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
@@ -38,8 +39,6 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMe
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
   trackProductEvent: vi.fn(),
-  trackABImpression: vi.fn(),
-  trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/roadmap-data', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/roadmap-data')>()),
@@ -48,9 +47,10 @@ vi.mock('../lib/roadmap-data', async (importOriginal) => ({
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
-vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn(), labImportBatch: vi.fn(), pollBatchStatus: vi.fn() }));
+vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 
 import { HealthTool } from './HealthTool';
+import { findReviewValue } from '../testing/import-review';
 
 /** A synthetic report: one LDL, a value the record does not hold. */
 const extraction = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } };
@@ -119,7 +119,7 @@ beforeEach(() => {
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
   vi.mocked(sendGuestReport).mockResolvedValue({ success: true });
   vi.spyOn(window, 'open').mockReturnValue(null);
-  vi.stubGlobal('HealthUpload', {
+  vi.stubGlobal('HealthUpload', { ...UPLOAD_ENGINE,
     extractFromPdf: vi.fn(async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false })),
     isPdf: () => true, isZip: () => false, isImage: () => false,
   });
@@ -157,8 +157,8 @@ const rowsNaming = (metric: string) => (file: RoadmapFile) => [...file.measureme
 /** The profile, a weight, and LDL on two days (the latest 2.1 on 2026-08-15). */
 async function seedWithLdl() {
   await seedProfile();
-  await addMeasurement('ldl', 3.9, '2026-01-10');
-  await addMeasurement('ldl', 2.1, '2026-08-15');
+  await addMeasurement('ldl', 3.9, '2026-01-10', getShownErase());
+  await addMeasurement('ldl', 2.1, '2026-08-15', getShownErase());
   await flushRoadmapStore();
 }
 const mdRow = (view: RenderResult, name: string) =>
@@ -171,16 +171,16 @@ const writers: Record<string, Writer> = {
   'the upload review\'s Save': {
     seed: seedProfile,
     open: async () => {
-      fireEvent.click(await screen.findByRole('button', { name: 'Upload lab results' }));
-      fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+      fireEvent.click((await screen.findAllByRole('button', { name: 'Upload labs' }))[0]);
+      fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
       fireEvent.change(document.querySelector('input[type=file]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } });
-      await screen.findByDisplayValue('3.9');
+      await findReviewValue('3.9'); // opens "Show all": the sure value sits behind it (US-13 AC13)
       // findBy waits with act() off, so React may leave a render in the Scheduler. Run it out
       // here, inside act: left over, it commits the new tree inside the gap (H51).
       await act(async () => { await drain(); });
     },
     onOld: () => screen.queryByDisplayValue('3.9') !== null,
-    fire: () => { fireEvent.click(screen.getByRole('button', { name: /^Save 1 Value/ })); },
+    fire: () => { fireEvent.click(screen.getByRole('button', { name: /^Save 1 value/ })); },
     written: rowsNaming('ldl'),
   },
   // Passes on main too: a keystroke in a controlled field makes React flush its pending work to
@@ -217,7 +217,7 @@ const writers: Record<string, Writer> = {
     written: file => file.medications.filter(m => m.doseValue === 1.7),
   },
   'a supplement dose, flushed as the page hides': {
-    seed: async () => { await seedProfile(); await saveSupplement('custom_test_supplement', 'Test supplement', 25, 'mg'); await flushRoadmapStore(); },
+    seed: async () => { await seedProfile(); await saveSupplement('custom_test_supplement', 'Test supplement', 25, 'mg', undefined, undefined, getShownErase()); await flushRoadmapStore(); },
     open: async view => { await waitFor(() => expect(view.container.querySelector('.supplement-dose')).not.toBeNull()); },
     onOld: view => view.container.querySelector('.supplement-dose') !== null,
     fire: view => { fireEvent.change(view.container.querySelector('.supplement-dose')!, { target: { value: '50' } }); leave(); },
@@ -370,7 +370,7 @@ describe('US-16 AC2d: a write asked before an erase is shown does not land in th
 
   it('Add a blood test: a Replace offered before the erase closes the form after it, and writes nothing', async () => {
     await seedProfile();
-    await addLabValue({ metricName: 'ferritin', unit: 'µg/L', value: 50, day: localDay(new Date()) });
+    await addLabValue({ metricName: 'ferritin', unit: 'µg/L', value: 50, day: localDay(new Date()) }, getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await act(async () => { await drain(); });

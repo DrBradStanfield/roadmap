@@ -42,7 +42,9 @@ Every Sunday job now runs steps 1 to 6 under the $2 cap.
    sent against chars available). Stop and name it if the estimate passes $2.
 4. `npx tsx tools/knowledge-lint-compare.ts --run
    --max-calls 60 --max-usd 2` with `ANTHROPIC_TEST_API_KEY`. Paste its
-   `Cost:`, `Findings:`, `Fix queue:`, `PARKED` and `State` lines. It records
+   `Cost:`, `Findings:`, `Fix queue:`, `PARKED` and `State` lines. `Findings:`
+   counts kept, rejected and withdrawn (a fix opening "No change needed": dropped,
+   never queued, the comparison answered). It records
    every attempt in `lint-state.json`: an answer that is missing, refused,
    truncated or unparseable marks the comparison retry, and three in a row
    park it (listed, no longer blocking). The cursor and hashes move only when

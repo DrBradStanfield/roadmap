@@ -13,24 +13,13 @@ import type { HealthInputs } from '@roadmap/health-core/types';
 import type { DocumentType } from '@roadmap/health-core/validation';
 import type { ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core/mappings';
 import type { MedicationChange } from '@roadmap/health-core/medication-annotations';
-import type { LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/record-edits';
+import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import type { RefusedLabValue, UnreadLabValue } from '@roadmap/health-core/lab-extraction';
 import type { ExtractionStopCode } from '@roadmap/health-core/models';
 
 export interface ApiReminderPreference {
   reminderCategory: string;
   enabled: boolean;
-}
-
-/** Snapshot of the user's saved data needed by the upload review modal
- *  for dedup badges + matrix context columns. One object, not three
- *  separate props, so call sites don't grow with each new history
- *  dimension. */
-export interface UploadHistory {
-  /** Every active measurement: the review seeds blood tests and BP (US-12 AC11). */
-  measurements: ApiMeasurement[];
-  labValues: ApiLabValue[];
-  documents: ApiDocument[];
 }
 
 /** Result from loading latest measurements: pre-fill inputs + raw measurements for "Previous:" labels. */
@@ -180,22 +169,10 @@ export type QuotaCheck =
   | { allowed: true; remaining: number }
   | { allowed: false; remaining: number; reason: 'quota' | 'no-key'; message?: string };
 
-/** `key_refused` and `no_credit` come only from the Pages build's own key (byok-upload).
+/** `key_refused`, `no_credit` and `key_rate_limit` (that key's per-minute limit) come only from the Pages build's own key (byok-upload).
  *  `refused` and `too_long` mark one file Claude declined or stopped short on (US-15 AC34).
- *  `busy`: the server refused a batch as busy, not the daily limit (US-12 AC9). */
-export type UploadErrorCode = 'rate_limit' | 'busy' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
-
-export interface BatchPollResponse {
-  /** `error`: this poll failed but a later one may not; the caller polls on (US-12 AC24). */
-  status: 'processing' | 'ended' | 'error';
-  completed: number;
-  total: number;
-  /** Each result carries the position of the file it answers in the batch
-   *  request; `errorCode` marks a file that was not read. */
-  results?: Array<{ index: number } & (LabImportResult | { errorCode: UploadErrorCode })>;
-  error?: string;
-  errorCode?: UploadErrorCode;
-}
+ *  `busy`: the server was busy, not the daily limit (US-12 AC9). `no_files`: no picked file gave pages. */
+export type UploadErrorCode = 'rate_limit' | 'key_rate_limit' | 'busy' | 'no_files' | 'server_error' | 'network' | 'key_refused' | 'no_credit' | ExtractionStopCode;
 
 export interface BulkSaveResult {
   saved: ApiMeasurement[];
@@ -205,16 +182,7 @@ export interface BulkSaveResult {
   errorCount: number;
   /** Rows refused for their metric or number — never silently dropped. */
   refused: MeasurementRefusal[];
+  /** Each submitted row's written lab value row id, by index (health-core `writtenLabRows`): a file's archive row lists them (US-14 AC10). */
+  labRows?: Array<string | null>;
 }
 
-export interface BulkLabValuesResult {
-  saved: ApiLabValue[];
-  /** How many rows were already present (active) at this (user, metric_name, recorded_at). */
-  skippedDuplicates: number;
-  /** How many rows hit a server error. */
-  errorCount: number;
-  /** Rows refused for their unit — never silently dropped. */
-  refused: LabUnitRefusal[];
-  /** Core values (a core test's name, US-66 AC6) refused for their number — shown, never dropped. */
-  measurementRefusals?: MeasurementRefusal[];
-}

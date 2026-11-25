@@ -446,7 +446,7 @@ final class RecordStore {
 
     /// A document save's record, onto the phone's file: written only over the record the
     /// save began from (`before`), never over an edit made while it ran. False when refused.
-    /// Runs inside a chained change (saveDocument); never chain it, or it waits on itself.
+    /// Runs inside a chained change (saveUpload); never chain it, or it waits on itself.
     func commitPhoneDocument(_ next: String, over before: String) async throws -> Bool {
         guard cloudErase == nil, recordJSON == before else { return false }
         if next != recordJSON {

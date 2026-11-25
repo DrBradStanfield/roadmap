@@ -45,7 +45,7 @@ struct RemindersSection: View {
             Button("Open Settings") { openSettings() }
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Allow notifications for Health Roadmap in Settings to get reminders.")
+            Text("Allow notifications for Dr Brad in Settings to get reminders.")
         }
     }
 

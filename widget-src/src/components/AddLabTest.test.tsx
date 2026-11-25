@@ -7,7 +7,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { addLabValue as addRecordLabValue } from '@roadmap/health-core/record-edits';
+import { addLabValue as addRecordLabValue, correctValue } from '@roadmap/health-core/record-edits';
 import { createEmptyFile, type FileLabValue } from '@roadmap/health-core/roadmap-file';
 import { labUnitRefusalLine } from '@roadmap/health-core/lab-series';
 
@@ -224,7 +224,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
   // sees the assistant's copy of it.
   describe('US-21 AC15 — a refused unit under "Other" shows the person’s wording', () => {
     async function saveOther(name: string, unit: string, value: string, refused: { key: string; unit: string; message: string; fault?: 'decimal' | 'scale' }) {
-      // The refusal the record would give, in health-core's words (labUnitRefusalLine, tested in lab-value-labels.test.ts).
+      // The refusal the record would give, in health-core's words (labUnitRefusalLine, tested in lab-series-labels.test.ts).
       addLabValue.mockResolvedValue({ ok: false, reason: 'unknown-unit', message: labUnitRefusalLine(refused.key, refused.unit, refused.fault), refused });
       const utils = openForm();
       fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
@@ -235,14 +235,26 @@ describe('US-21 phase 2 — AddLabTest', () => {
       return utils;
     }
 
-    it('US-21 AC15 — Lymphocytes in % shows the % note, never the assistant’s instruction', async () => {
-      const { findByText } = await saveOther('Lymphocytes', '%', '30', {
-        key: 'lymphocytes', unit: '%',
-        message: 'Lymphocytes is stored in ×10⁹/L; this record takes ×10⁹/L, not "%". A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report. Do not work the count out from the percentage',
-      });
-      const notice = await findByText(/^Lymphocytes: unit not recognised \(%\)\. It was not saved\. This test takes ×10⁹\/L\. A percentage is a share/);
-      expect(notice.textContent).toContain('A percentage is a share of the white count, not a count: this record keeps the absolute count (×10⁹/L or cells/µL), so look for that line on the same report.');
-      expect(notice.textContent).not.toContain('Do not work the count out');
+    // US-21 AC28 (Brad 2026-11-15): Lymphocytes in % is its own test, saved through the real rule.
+    it('US-21 AC28 — Lymphocytes in % under "Other" saves as Lymphocytes (%), not refused', async () => {
+      const utils = openForm();
+      fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+      fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'Lymphocytes' } });
+      fireEvent.change(utils.getByLabelText('Unit'), { target: { value: '%' } });
+      fireEvent.change(utils.getByLabelText('Value'), { target: { value: '30' } });
+      fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+      await waitFor(() => expect(utils.onAdded).toHaveBeenCalled());
+      const saved = await addLabValue.mock.results[0].value;
+      expect(saved).toMatchObject({ ok: true, row: { metricName: 'lymphocytes_pct', value: 30, unit: '%' } });
+      expect(utils.queryByText(/unit not recognised/)).toBeNull();
+    });
+
+    it('US-21 AC28 — the test picker lists the eight shares from the catalogue', () => {
+      const utils = openForm();
+      const labels = [...(utils.getByLabelText('Test') as HTMLSelectElement).options].map((o) => o.textContent);
+      for (const label of ['Neutrophils (%)', 'Lymphocytes (%)', 'Monocytes (%)', 'Eosinophils (%)', 'Basophils (%)', 'Immature granulocytes (%)', 'Reticulocytes (%)', 'NRBC (per 100 WBC)']) {
+        expect(labels, label).toContain(label);
+      }
     });
 
     it('US-21 AC15 — a unit the test does not take names the units it does, with no em dash', async () => {
@@ -567,5 +579,47 @@ describe('US-21 AC27: a save never leaves the form stuck, and a late answer chan
     await settle();
     expect((utils.getByLabelText('Value') as HTMLInputElement).value).toBe('31');
     expect((utils.getByRole('button', { name: /^save$/i }) as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+// US-21 AC28 (review round 3): the web form is a door too. It keys a % by the share's test,
+// as the record files it, both on a value page and under "Other test".
+describe('US-21 AC28: the add form routes a % to its share', () => {
+  const day = () => `${todayIso()}T00:00:00.000Z`;
+  const row = (r: Record<string, unknown>) => ({ referenceLow: null, referenceHigh: null, source: 'lab_import', createdAt: '2026-01-01T00:00:00.000Z', ...r });
+
+  it('"+ Add a value" on a legacy count series in % (lowercase canonical name) writes the share, never a count', async () => {
+    holding(row({ id: 'n1', metricName: 'neutrophils', value: 54, unit: '%', recordedAt: '2026-01-01T00:00:00.000Z' }));
+    const onAdded = vi.fn();
+    const { getByText, getByLabelText } = render(<AddLabTest onAdded={onAdded} labValues={[]} coreValues={[]} preset={{ metricName: 'neutrophils', unit: '%' }} />);
+    fireEvent.click(getByText('+ Add a value'));
+    fireEvent.change(getByLabelText(/value/i), { target: { value: '56' } });
+    fireEvent.click(getByText(/^save$/i));
+    await waitFor(() => expect(onAdded).toHaveBeenCalled());
+    expect(addLabValue).toHaveBeenCalledWith({ metricName: 'neutrophils', unit: '%', value: 56, day: todayIso(), existingSeries: true }, 'erase-1');
+    expect(await addLabValue.mock.results[0].value).toMatchObject({ ok: true, row: { metricName: 'neutrophils_pct', value: 56, unit: '%' } });
+  });
+
+  it('Replace under "Other test" (NRBC in % over a held 0.4 /100 WBC) writes the correction', async () => {
+    const there = row({ id: 'r1', metricName: 'nrbc_per_100_wbc', value: 0.4, unit: '/100 WBC', recordedAt: day() });
+    holding(there);
+    // The record the correction lands in: the real correctValue, as the cell editor's would.
+    let corrected: ReturnType<typeof correctValue> | undefined;
+    const onCorrect = vi.fn(async (id: string, value: number) => {
+      corrected = correctValue({ ...createEmptyFile({ deviceId: 'test', now: new Date().toISOString() }), labValues: held }, { id, newValue: value, now: new Date().toISOString() });
+      return corrected.ok ? 'ok' as const : 'error' as const;
+    });
+    const utils = render(<AddLabTest onAdded={vi.fn()} labValues={held} onCorrect={onCorrect} />);
+    fireEvent.click(utils.getByRole('button', { name: /add a blood test/i }));
+    fireEvent.change(utils.getByLabelText('Test'), { target: { value: 'custom' } });
+    fireEvent.change(utils.getByLabelText('Test name'), { target: { value: 'NRBC' } });
+    fireEvent.change(utils.getByLabelText('Unit'), { target: { value: '%' } });
+    fireEvent.change(utils.getByLabelText('Value'), { target: { value: '0.5' } });
+    fireEvent.click(utils.getByRole('button', { name: /^save$/i }));
+    fireEvent.click(await utils.findByRole('button', { name: /^Replace 0\.4/ }));
+    await waitFor(() => expect(onCorrect).toHaveBeenCalledWith('r1', 0.5, 'erase-1'));
+    expect(corrected).toMatchObject({ ok: true, row: { metricName: 'nrbc_per_100_wbc', value: 0.5, correctsId: 'r1' } });
+    const file = (corrected as { file: { labValues: Array<{ id: string; status: string }> } }).file;
+    expect(file.labValues.find((l) => l.id === 'r1')?.status).toBe('entered-in-error');
   });
 });

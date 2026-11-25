@@ -825,8 +825,8 @@ describe('US-21 phase 3 — every catalogued lab value is stored in SI', () => {
 });
 
 // ---------------------------------------------------------------------------
-// US-21 AC15 — a count per µL converts at every write door; a decimal one and
-// a differential in % are refused in words that say what to look for.
+// US-21 AC15 — a count per µL converts at every write door; a decimal one is
+// refused in words that say what to look for (a differential in % is stored, AC28).
 // ---------------------------------------------------------------------------
 describe('US-21 AC15 — cells/µL at the write doors', () => {
   it('US-21 AC15 — an append converts a whole count per µL, range and all', () => {
@@ -924,13 +924,15 @@ describe('US-21 AC15 — cells/µL at the write doors', () => {
       .toMatchObject({ value: 6, unit: '×10⁹/L', correctsId: id });
   });
 
-  it('US-21 AC15 — a differential in % is refused, and the refusal points at the absolute count', () => {
-    const result = appendLabValue(base(), { metricName: 'Lymphocytes', value: 30, unit: '%', recordedAt: '2026-08-14', now: NOW });
-    expect(result.ok).toBe(false);
+  // US-21 AC28: a differential in % is its own test at the append (wbc-percent.test.ts). A
+  // correction keeps its row's test, so a count row corrected in % is still refused, in plain words.
+  it('US-21 AC28 — a count row corrected in % is refused plainly, never moved to the share', () => {
+    const file = ok(appendLabValue(base(), { metricName: 'Lymphocytes', value: 1.8, unit: '×10⁹/L', recordedAt: '2026-08-14', now: NOW })).file;
+    const id = file.labValues.find((l) => l.metricName === 'lymphocytes')!.id;
+    const result = correctValue(file, { id, newValue: 30, unit: '%', now: NOW });
+    expect(result).toMatchObject({ ok: false, reason: 'unknown-unit' });
     if (result.ok) return;
-    expect(result.reason).toBe('unknown-unit');
-    expect(result.message).toContain('not "%"');
-    expect(result.message).toContain('absolute count (×10⁹/L or cells/µL)');
+    expect(result.message).toBe('Lymphocytes is stored in ×10⁹/L; this record takes ×10⁹/L, ×10³/µl, k/µl, thou/µl, thousand/µl, g/l, cells/µl, not "%"');
   });
 });
 
@@ -996,5 +998,29 @@ describe('US-03 AC7 — the record refuses 0 for lipids and ApoB, and takes it f
 
   it('a tiny positive LDL still saves', () => {
     expect(ok(appendMeasurement(base(), { metricType: 'ldl', value: 0.2, recordedAt: '2026-08-01', now: NOW })).row.value).toBe(0.2);
+  });
+});
+
+// Mount 3a (US-29 AC4a): a bare day and ISO midnight name one slot, so an append in one form onto an active row held in
+// the other is skipped as the same slot, for a core value and for another lab, both ways.
+describe('bulkAppendValues: a bare day and ISO midnight are one slot', () => {
+  const ISO = '2025-09-02T00:00:00.000Z';
+  const DAY = '2025-09-02';
+  it.each([
+    ['a core value, ISO held, bare day appended', 'measurement', ISO, DAY],
+    ['a core value, bare day held, ISO appended', 'measurement', DAY, ISO],
+    ['another lab, ISO held, bare day appended', 'lab', ISO, DAY],
+    ['another lab, bare day held, ISO appended', 'lab', DAY, ISO],
+  ] as const)('%s: skipped, no second active row', (_case, kind, held, appended) => {
+    const row = (recordedAt: string, value: number) => (kind === 'measurement'
+      ? { kind, metricType: 'ldl', value, recordedAt, source: 'lab_import' as const }
+      : { kind, metricName: 'ferritin', value, unit: 'µg/L', recordedAt, source: 'lab_import' as const });
+    const first = bulkAppendValues(base(), [row(held, 2.8)], NOW);
+    expect(first.saved).toHaveLength(1);
+    const second = bulkAppendValues(first.file, [row(appended, 3.1)], NOW);
+    expect(second.saved).toEqual([]);
+    expect(second.skippedDuplicates).toBe(1);
+    const name = kind === 'measurement' ? 'ldl' : 'ferritin';
+    expect(second.file.labValues.filter((l) => l.metricName === name && l.status === 'active' && l.recordedAt.startsWith(DAY))).toHaveLength(1);
   });
 });

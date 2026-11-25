@@ -13,7 +13,7 @@ import {
 } from '../../packages/health-core/src/input-form';
 import { lipidMarkerFor, medicinesShown, weightMedicationTrigger } from '../../packages/health-core/src/suggestions';
 import { SUPPLEMENT_OPTIONS, type HealthInputs } from '../../packages/health-core/src/types';
-import { SCREENING_KEYS, screeningSchema } from '../../packages/health-core/src/validation';
+import { SCREENING_KEYS, screeningSchema, supplementSchema } from '../../packages/health-core/src/validation';
 import { setScreening } from '../../packages/health-core/src/state-edits';
 import { localDay } from '../../packages/health-core/src/merge';
 import { METRIC_LABELS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
@@ -30,6 +30,7 @@ import { groupLabValues, labValueLabel, mixedUnitsNote, savedLabText } from '../
 import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from '../../packages/health-core/src/lab-catalog';
 import { limitUngraded, pressureStatus, valueStatus, type GradeContext, type PressureReading } from '../../packages/health-core/src/row-grade';
 import { knownMinorOf } from '../../packages/health-core/src/calculations';
+import { screeningAge } from '../../packages/health-core/src/screening-rules';
 import { medicationAnnotations, medicationChanges } from '../../packages/health-core/src/medication-annotations';
 
 /** A supplement as the tab lists it. */
@@ -135,8 +136,8 @@ export function planOf(file: RoadmapFile, now: string, choices: UnitChoices): Pl
   }
 }
 
-/** What the medication and screening questions read: the plan's age, BMI, trigger and lipid marker, as the web's PlanBasis.
- *  `plan`: the record's plan (`planOf`); null gives no age and no cascades (the web's planBasis null). */
+/** What the medication and screening questions read: the age the screening cards read (US-23 AC6c), the plan's BMI,
+ *  trigger and lipid marker, as the web's PlanBasis. `plan`: the record's plan (`planOf`); null gives no age and no cascades. */
 function basisOf(file: RoadmapFile, choices: UnitChoices, plan: Plan | null) {
   const derived = derivePlanInputs(file);
   const raw = derived.inputs;
@@ -145,7 +146,7 @@ function basisOf(file: RoadmapFile, choices: UnitChoices, plan: Plan | null) {
   const results = plan?.results;
   const medicines = !!results && medicinesShown(results);
   return {
-    derived, age: results?.age, sex: raw.sex,
+    derived, age: plan ? screeningAge(plan.inputs, new Date(plan.generatedAt)) : undefined, sex: raw.sex,
     medication: {
       lipidMarker: medicines ? lipidMarkerFor(plan!.inputs as HealthInputs, results!) : null,
       weightMedTrigger: medicines ? weightMedicationTrigger(plan!.inputs as HealthInputs, results!) : { on: false, reasons: [] },
@@ -266,6 +267,17 @@ function offered(field: FormField, value: string, months: FormsView['months']): 
 
 type Outcome = { ok: true; file: RoadmapFile } | Extract<EditOutcome, { ok: false }>;
 type Save = (file: RoadmapFile, edit: { kind: 'medication'; medicationKey: string; drugName: string; doseValue: number | null; doseUnit: string | null }) => Outcome;
+
+/**
+ * The check a supplement edit passes. A key the record holds passes as it is: older browser records hold
+ * custom keys over the 100 characters a new key may have (US-06 AC1a). So does the name stored under that
+ * key, and only that name: the web form saves names the name pattern refuses (US-06 AC1d).
+ */
+export function supplementCheck(held: { supplementName: string } | undefined, name: string) {
+  if (!held) return supplementSchema;
+  const keyed = supplementSchema.omit({ supplementKey: true });
+  return held.supplementName === name ? keyed.omit({ supplementName: true }) : keyed;
+}
 
 /**
  * One form answer. Only a question the form shows now can be answered, and

@@ -180,7 +180,7 @@ final class ReminderSchedulerTests: XCTestCase {
     func testTheLockScreenSaysOnlyThatACheckUpIsDue() throws {
         let request = ReminderScheduler.request(for: .init(id: "reminder.2027-03-01", fireDay: "2027-03-01", categories: ["screening_colorectal"]))
         XCTAssertEqual(request.identifier, "reminder.2027-03-01")
-        XCTAssertEqual(request.content.title, "Health Roadmap")
+        XCTAssertEqual(request.content.title, "Dr Brad")
         XCTAssertEqual(request.content.body, "A check-up is due. Open the app to see which.")
         let trigger = try XCTUnwrap(request.trigger as? UNCalendarNotificationTrigger)
         XCTAssertFalse(trigger.repeats)

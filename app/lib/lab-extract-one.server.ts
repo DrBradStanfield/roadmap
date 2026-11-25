@@ -8,7 +8,6 @@ import * as Sentry from '@sentry/react-router';
 import type { LabImportRequest } from '../../packages/health-core/src/validation';
 import { UNDATED_PREVIOUS } from '../../packages/health-core/src/lab-extraction';
 import { extractOrClassify, ExtractionStopError, reportExtractionStop } from './anthropic.server';
-import type { DayFlags } from './lab-batches.server';
 import { safeErrorFields } from './safe-error-fields.server';
 
 /** The app route's timeout answer, which its slow-import report reads (US-52 AC7c, AC7d). */
@@ -28,8 +27,9 @@ export async function extractOneFile(
     // One deadline for the file's calls: a malformed answer's re-send gets what
     // is left. A timed-out HTTP attempt is still retried once in a fresh window
     // (fetchAnthropicRaw), kept for capacity blips; ~46 s answers make it rare (US-15 AC34).
-    // Not on the app's route (US-52 AC7c).
-    const result = await extractOrClassify(pages, { timeoutMs: 60_000, ...opts });
+    // Not on the app's route (US-52 AC7c). Both routes retry an Anthropic 429
+    // once inside the deadline (US-12 AC1a); never our own daily-limit 429.
+    const result = await extractOrClassify(pages, { purpose: 'LABS', timeoutMs: 60_000, retryRateLimit: true, ...opts });
     return Response.json({ success: true, data: forWidget(result, data),...extra() });
   } catch (error) {
     // Declined or cut off: its own answer, so the widget does not say "try
@@ -56,6 +56,9 @@ export function reportLabImportError(error: unknown, { errorName }: { errorName?
     ? { tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' } }
     : { tags: { feature: 'lab_import_v2' } });
 }
+
+/** The flags a widget sends to say which own days it reads. */
+export type DayFlags = { ownDates?: true; undatedPrev?: true };
 
 /**
  * One result as the widget or app that asked can read it, by the flags it
