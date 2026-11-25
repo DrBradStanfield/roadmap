@@ -47,6 +47,17 @@ const [EMAIL_LABEL, PHONE_NAME] = quotes(specLine('**Reminders.**', '**Reminders
 // Change 3's card, with the sentence that "ships with Change 4" (spec line 94).
 const ELEVATED_LINE = specLine('**Elevated PSA card**', '- After:', CHANGE_3);
 const ELEVATED = quotes(ELEVATED_LINE.slice(ELEVATED_LINE.indexOf('After:')))[0];
+// The six algorithm-doc sentences PR 1604 proposed for old PSA answers (US-06 AC14, AC21), before and after;
+// Brad accepted them as proposed on 2026-11-26 ("do your recommendations"). They amend the spec lines above.
+const AMEND_26: ReadonlyArray<readonly [string, string]> = [
+  ['| `will_screen`, PSA 2.5 to < 4.0, or no PSA value | 12 |', '| `will_screen`, PSA 2.5 to < 4.0, or no PSA value (unless the 3-month rule holds) | 12 |'],
+  ['so does the 3-month rule held through a vague newer PSA (US-06 AC21 item 6, below).', 'so does the 3-month rule held through a vague newer PSA or a newer old answer with a date and no usable value (US-06 AC21, below).'],
+  ['A man who declined screening sees `screening-prostate-repeat` ("Repeat PSA test") in place of the overdue card.', 'A man who declined screening, has not yet decided (`not_yet`) or recorded no answer sees `screening-prostate-repeat` ("Repeat PSA test") in place of the overdue card; for `not_yet` or no answer its first sentence is left out (Brad 2026-11-13).'],
+  ['A newer PSA printed as a limit that does not decide against 4.0 ("< 5", "<= 4.0") keeps the 3-month rule (Brad 2026-11-13): it holds while the newest PSA that decides is 4.0 or above, and the next PSA is due 3 months after the newest test.', 'A newer PSA printed as a limit that does not decide against 4.0 ("< 5", "<= 4.0"), or a newer old answer with a date and no usable value (none, or one outside the PSA range), keeps the 3-month rule (Brad 2026-11-13): it holds while the newest PSA that decides is 4.0 or above, and the next PSA is due 3 months after the newest test, the answer\'s date included. Only a newer value in range and below 4.0 ends it.'],
+  ['an answer that gives only a month loses to a row from that month. The web plan', 'an answer that gives only a month loses to a row from that month. An answer whose value is outside the PSA range keeps its date and has no value (Brad 2026-11-13); a newer answer with no value keeps the 3-month rule (above). The web plan'],
+  ['or the 3-month rule holds through a vague newer PSA, `screening-prostate-upcoming`', 'or the 3-month rule holds through a vague newer PSA or a newer dated answer with no usable value, `screening-prostate-upcoming`'],
+];
+const amend26 = (s: string) => AMEND_26.reduce((t, [before, after]) => t.replace(before, after), s);
 
 const NOW = new Date('2026-11-12T12:00:00Z');
 
@@ -247,9 +258,16 @@ describe('US-06 AC21: the three files (spec lines 150-171)', () => {
     expect(ALGO).not.toContain(before);
     const rows = SECTION.slice(SECTION.findIndex((l) => l.startsWith(header))).filter((l) => l.startsWith('- "| ')).map((l) => quotes(l)[0]);
     expect(rows).toHaveLength(3);
-    expect(ALGO).toContain(`\n${rows.join('\n')}\n`);
+    expect(ALGO).toContain(`\n${amend26(rows.join('\n'))}\n`);
     expect(ALGO).not.toContain(outerQuote(specLine('And under Prostate-Specific', 'And under Prostate-Specific')));
-    expect(ALGO).toContain(`\n- ${outerQuote(specLine('And under Prostate-Specific', 'And under Prostate-Specific', AMENDED))}\n`);
+    expect(ALGO).toContain(`\n- ${amend26(outerQuote(specLine('And under Prostate-Specific', 'And under Prostate-Specific', AMENDED)))}\n`);
+  });
+
+  it('the algorithm doc: the six sentences for old PSA answers (Brad 2026-11-26, AC14, AC21)', () => {
+    for (const [before, after] of AMEND_26) {
+      expect(ALGO).toContain(after);
+      expect(ALGO).not.toContain(before);
+    }
   });
 
   it('the page paragraph and the Changelog line', () => {
@@ -382,6 +400,6 @@ describe('US-06 AC21 item 6 (Brad 2026-11-13): a newer PSA that does not decide 
   });
 
   it('the algorithm doc states the rule', () => {
-    expect(ALGO).toContain(`\n- ${outerQuote(specLine('Item 6, under Prostate-Specific', 'Item 6, under Prostate-Specific'))}\n`);
+    expect(ALGO).toContain(`\n- ${amend26(outerQuote(specLine('Item 6, under Prostate-Specific', 'Item 6, under Prostate-Specific')))}\n`);
   });
 });
