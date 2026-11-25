@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +21,14 @@ const hdl = (mgdl: number) => toCanonicalValue('hdl', mgdl, 'conventional');
 const trig = (mgdl: number) => toCanonicalValue('triglycerides', mgdl, 'conventional');
 const totalChol = (mgdl: number) => toCanonicalValue('total_cholesterol', mgdl, 'conventional');
 const apoB = (mgdl: number) => toCanonicalValue('apob', mgdl, 'conventional');
+
+/** The screening cases pass a birth year and the age it gives in 2026. The screening cards read the age at the
+ *  plan's clock (US-23 AC6c), so these cases run at one 2026 instant, as US-07 AC6's NOW does below. */
+const SCREENING_NOW = new Date(Date.UTC(2026, 9, 14, 12));
+function pinScreeningClock(): void {
+  beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'], now: SCREENING_NOW }); });
+  afterEach(() => { vi.useRealTimers(); });
+}
 
 // Helper to create base inputs and results
 function createTestData(
@@ -1438,6 +1446,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('Cancer screening suggestions', () => {
+    pinScreeningClock();
     // Colorectal
     it('suggests colorectal screening for age 35+ with no method selected', () => {
       const { inputs, results } = createTestData({ birthYear: 1985, birthMonth: 1 }, { age: 41 });
@@ -1674,6 +1683,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('Screening follow-up pathways', () => {
+    pinScreeningClock();
     // --- Colorectal ---
     it('shows urgent follow-up when colorectal result is abnormal and no follow-up organized', () => {
       const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
@@ -2710,6 +2720,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('DEXA bone density screening suggestions', () => {
+    pinScreeningClock();
     it('suggests DEXA for female age 50+', () => {
       const { inputs, results } = createTestData({ sex: 'female', birthYear: 1975, birthMonth: 1 }, { age: 51 });
       const scr: ScreeningInputs = {};
@@ -3372,7 +3383,7 @@ describe('Evidence attachment', () => {
       { bmi: 22, age: 56 },
     );
     const screenings: ScreeningInputs = { colorectalMethod: 'not_yet_started' };
-    const suggestions = generateSuggestions(inputs, results, 'si', undefined, screenings);
+    const suggestions = generateSuggestions(inputs, results, 'si', undefined, screenings, undefined, SCREENING_NOW);
     const colorectal = suggestions.find(s => s.id.startsWith('screening-colorectal'));
     expect(colorectal).toBeDefined();
     expect(colorectal!.reason).toBeDefined();
