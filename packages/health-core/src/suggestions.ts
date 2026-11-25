@@ -3,7 +3,7 @@ import { SUGGESTION_EVIDENCE } from './evidence';
 import { BP_TIER_LABEL, bpTier, isBpRaised } from './bp-tier';
 import { BMI_THRESHOLDS, BMI_WEIGHT_MEDICINE_ALONE } from './bmi-thresholds';
 import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_DRUGS, shouldSuggestSwitch } from './types';
-import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningFollowupInfo, type CardText, type FollowupInfo, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningAge, screeningFollowupInfo, type CardText, type FollowupInfo, type ScreeningRule } from './screening-rules';
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
 import { psaNextDue, psaRaised, psaRuleHolds, raisedPsaCards } from './psa-schedule';
 import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
@@ -798,7 +798,7 @@ export function generateSuggestions(
   // === Cancer screening suggestions ===
   // Ages, "not started" answers, follow-up triggers and card text are the table's (screening-rules.ts).
   if (screenings && results.age !== undefined) {
-    const age = results.age;
+    const age = screeningAge(inputs, now, results.age); // the reminders' age (US-23 AC6c)
     const sex = inputs.sex;
     const [COLORECTAL, BREAST, CERVICAL, LUNG, PROSTATE, ENDOMETRIAL, DEXA] =
       (['colorectal', 'breast', 'cervical', 'lung', 'prostate', 'endometrial', 'dexa'] as const).map(ruleOf);
