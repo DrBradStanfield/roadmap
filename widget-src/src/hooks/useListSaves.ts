@@ -34,7 +34,7 @@ type RecordPatches = Pick<ReturnType<typeof useRecordState>, 'patchMedication' |
  *  The PSA flag is worked out again from them (US-34 AC11). */
 async function mirrorSavedLists(): Promise<void> {
   const result = await loadLatestMeasurements();
-  if (result) writeMirror({ medications: result.medications, screenings: result.screenings });
+  if (result) writeMirror({ medications: result.medications, screenings: result.screenings, latest: result.previousMeasurements });
 }
 export function useListSaves(record: RecordPatches, writeRefused: (erase?: string) => void) {
   const { patchMedication, patchScreening, patchSupplement, stopSupplement } = record;
