@@ -261,13 +261,20 @@ const highlightClass = (id: string, { highlighted, fadingOut }: Highlights) =>
   fadingOut.has(id) ? ' suggestion-highlight suggestion-fade-out' : highlighted.has(id) ? ' suggestion-highlight' : '';
 export const NO_HIGHLIGHTS: Set<string> = new Set();
 
-/** One topic's cards, each with its DOM id; a grouped card as one card (US-62 AC18). */
-export function PlanCardList({ cards, plan }: { cards: ReadonlyArray<TopicCard<UsSuggestion>>; plan: PlanView }) {
+/** The DOM id of a list's card `i` (US-09 AC7d). One missing is a bug: development throws; production falls back to its place in the list. */
+export function cardIdAt(ids: readonly string[], i: number): string {
+  if (ids[i] !== undefined) return ids[i];
+  if (import.meta.env.DEV) throw new Error(`PlanCardList: no DOM id for card ${i} of ${ids.length}`);
+  return `mh-card-at-${i}`;
+}
+
+/** One topic's cards, each with its DOM id (`ids`, in the same order); a grouped card as one card (US-62 AC18). */
+export function PlanCardList({ cards, ids, plan }: { cards: ReadonlyArray<TopicCard<UsSuggestion>>; ids: readonly string[]; plan: PlanView }) {
   const { highlighted, fadingOut } = plan.highlights;
   return (
     <>
-      {cards.map((card) => {
-        const id = plan.cardIds.get(card)!;
+      {cards.map((card, i) => {
+        const id = cardIdAt(ids, i);
         const s = card.suggestions[0];
         return (
           <div key={id} id={id} tabIndex={-1} className="mh-card">
