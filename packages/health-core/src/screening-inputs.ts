@@ -5,7 +5,7 @@
  * added the colonoscopy report's follow-up time; a new screening key lands here
  * (CLAUDE.md "Adding New Screening Types", step 2).
  */
-import { UNIT_DEFS } from './units';
+import { rangeFault, UNIT_DEFS } from './units';
 import { parseLocalisedNumber } from './parseNumber';
 import { followupIntervalYears } from './colonoscopy-schedule';
 
@@ -66,6 +66,12 @@ export const SCREENING_RANGES = {
 /** A screening key's input range, or undefined for a text answer. */
 export function screeningRange(key: string): { min: number; max: number } | undefined {
   return Object.prototype.hasOwnProperty.call(SCREENING_RANGES, key) ? SCREENING_RANGES[key as keyof typeof SCREENING_RANGES] : undefined;
+}
+
+/** A numeric screening answer as the plan and the chat both read it (US-06 AC14): trimmed, parsed against its range, and inside it; else undefined. */
+export function screeningNumber(key: string, value: string): number | undefined {
+  const range = screeningRange(key), n = range ? parseLocalisedNumber(value, range) : undefined;
+  return range && n !== undefined && !rangeFault(range, n) ? n : undefined;
 }
 
 /**
@@ -151,7 +157,7 @@ export function screeningsToInputs(
         inputs.prostateDiscussion = castEnum(s.value, PROSTATE_DISCUSSIONS);
         break;
       case 'prostate_psa_value':
-        inputs.prostatePsaValue = parseLocalisedNumber(s.value, SCREENING_RANGES.prostate_psa_value);
+        inputs.prostatePsaValue = screeningNumber(s.screeningKey, s.value);
         break;
       case 'prostate_last_date':
         inputs.prostateLastDate = screeningDate(s.value, now);
