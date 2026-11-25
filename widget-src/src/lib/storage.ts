@@ -129,6 +129,8 @@ export function pageOnChosenRecord(): boolean {
     : healthWrites.mode === 'cloud' ? healthWrites.storeId : null;
   return record !== null && ownsOffFileData(record);
 }
+/** The cloud whose record this page read from that cloud, while this browser still owns it; null on a fallback or a load. */
+export const cloudRecordHere = (): string | null => (healthWrites.mode === 'cloud' && ownsOffFileData(healthWrites.storeId) ? healthWrites.storeId : null);
 
 interface StoredData {
   inputs: Partial<HealthInputs>;

@@ -38,7 +38,7 @@ import {
 } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
 import { eraseCancelState, stepEraseCancel, toCancel } from './reminders-erase-cancel';
-import { stepOwnEnrolment } from './reminders-own-enrolment';
+import { landedHere, noteEnrolled } from './reminders-own-enrolment';
 import { ERASE_IN_PROGRESS, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
@@ -251,7 +251,7 @@ export async function optInToReminders(
     }
     throw new Error('Reminder enrolment superseded by a decision made meanwhile.');
   }
-  stepOwnEnrolment({ type: 'enrolled', token: reply.token, erase }); // settled by a later erase (US-11 AC4c)
+  noteEnrolled(reply.token, erase); // settled by a later erase (US-11 AC4c)
   await flushRoadmapStore(); // the token must reach the cloud file
   // reminder_optin is counted by the SERVER when the row lands (every lane) —
   // only it knows the enrolment happened, and abuse enrolments count too.
@@ -398,11 +398,10 @@ export async function cancelRemindersForErase(): Promise<() => Promise<void>> {
     safeRemoveItem(SWITCH_CANCELLED_KEY);
     const held = eraseCancelState();
     const cancels = toCancel(held, getReminderOptIn());
-    // This device's own row among them: nothing of it is owed later (lead H126).
-    stepOwnEnrolment({ type: 'erased-here', tokens: cancels.map((c) => c.token) });
     stepEraseCancel({ type: 'committed' });
+    // A landed cancel settles this device's own row of it; a failed one stays owed (lead H126).
     const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(cancels.map(
-      ({ token, idToken }) => postCancel(token, idToken, true).then((res) => (res.ok ? null : String(res.status)), () => 'unsent'),
+      ({ token, idToken }) => postCancel(token, idToken, true).then((res) => (res.ok ? landedHere(token) : String(res.status)), () => 'unsent'),
     ));
     for (const status of failed) {
       if (status) Sentry.captureException(new Error(`Reminder row delete failed (${status}).`), { tags: { area: 'reminders', op: 'erase-cancel' } });
@@ -436,7 +435,7 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
   if (!stillShown(erase)) throw new Error(refusedWhy(erase));
   const res = await postCancel(optIn.token, idToken, keepalive);
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
-  stepOwnEnrolment({ type: 'turned-off', token: optIn.token });
+  landedHere(optIn.token);
   // The opt-in changed while the cancel was out (another device's Turn on or
   // off, an erase): that later decision stands, and nothing is counted (US-17 AC17).
   if (!sameOptIn(getReminderOptIn(), optIn)) return;
