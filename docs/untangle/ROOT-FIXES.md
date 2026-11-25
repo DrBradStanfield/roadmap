@@ -95,7 +95,7 @@ an engine release, so it cannot land on CI alone.
 
 ## Status, 26 Nov 2026
 
-Checked against `main` at `d3165dd00` and each PR's state.
+Checked against `main` at `b2548fe3d` and each PR's state.
 
 - **R25** closed: PR 1846 removed the batch poll it named before the triage; lead C18 closed (PR 2121).
 - **R24** chat docs load as one state (PR 2124); lead T28 partial.
@@ -104,7 +104,7 @@ Checked against `main` at `d3165dd00` and each PR's state.
 - **R20** web half merged (PR 2130); the phone half is left.
 - **S-24** one-use sets are bounded (PR 2131).
 - **H302** merged (PR 2133).
-- **R3** step 1a is open (PR 2134); steps 1b, 2 and 3 are left.
+- **R3** step 1a merged (PR 2134); steps 1b, 2 and 3 are left.
 - **R6** PR 5 (S57c) merged (PR 2136).
 - **S-1** step 1 merged (PR 2135).
 - **H406** chat mirror with one writer: open (PR 2132).
