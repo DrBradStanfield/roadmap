@@ -436,13 +436,13 @@ export class RecordSession {
         // The pass and its claim end together, before adopt() or a listener
         // can ask for a save: that save starts its own pass, never joins this one.
         if (next === null && owns()) this.running = null;
+        if (next === null) this.saveLanded(); // the final pass landed: before adopt() or a listener can throw
         // Fold remote changes back in without dropping edits made during the
         // await; merge is the source of truth for combining the two.
         remoteFolded = laterChange(remoteFolded, this.adopt(mergeFiles(this.current, result.file, this.ctx())));
         pass = next;
       }
       announce(this.host, remoteFolded);
-      this.saveLanded();
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
       if (this.host.tier === 'cloud' && !this.mirrorSkipped) this.releaseMarker(this.host.mirror);
