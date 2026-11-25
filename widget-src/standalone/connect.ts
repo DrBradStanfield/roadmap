@@ -67,11 +67,16 @@ function lostAtLoad(provider: CloudBackend, error?: unknown): LostSignIn {
 /** A Google grant refused at connect (US-09 AC15), or a sign-in that is not
  *  this browser's account (AC55), is the user's move, not a defect: counted
  *  here, once, wherever it is caught, with the provider only, and never sent to
- *  Sentry. The message is what to show; null for any other error. */
+ *  Sentry. An account the provider could not name is refused the same way but
+ *  is a fault: also reported once, with the provider only. The message is what
+ *  to show; null for any other error. */
 export function connectRefusal(error: unknown): string | null {
   const provider = error instanceof DriveGrantRefusedError ? 'google-drive' : error instanceof AccountRefusedError ? providerOf(error.provider)?.event : undefined;
   if (!provider) return null;
   trackProductEvent('cloud_connect_refused', { provider });
+  if (error instanceof AccountRefusedError && error.unread) {
+    Sentry.captureException(recordFailure(error, 'Cloud connect failed'), { tags: { area: 'cloud-connect', backend: error.provider } });
+  }
   return (error as Error).message;
 }
 

@@ -1,6 +1,6 @@
 /**
  * A cloud sign-in stays with the account this browser connected; another
- * account is refused (US-09 AC54). The pin names the owner of this device's
+ * account is refused (US-09 AC55). The pin names the owner of this device's
  * copy of the record: the provider and an opaque account id the provider names
  * at sign-in, never an email. The host keeps it on the device only; it is
  * never logged, sent in an event or put in a URL. The iPhone keeps the same
@@ -50,15 +50,17 @@ const answered = (value: unknown): boolean =>
 
 /**
  * A device copy with nothing in it: no stored body, or a record with no row,
- * no erase listed and no answer kept (profile, screenings, reminder choices,
- * the reminder opt-in, plan snapshots). Anything else, a body this cannot read
- * included, is not empty.
+ * no erase history (no erase epoch, no erase list, even an empty one: lifted,
+ * it would erase there) and no answer kept (profile, screenings, reminder
+ * choices, the reminder opt-in, plan snapshots). Anything else, a body this
+ * cannot read included, is not empty.
  */
 export function deviceCopyEmpty(body: unknown): boolean {
   if (body === null || body === undefined) return true;
   if (typeof body !== 'object') return false;
   const record = body as Record<string, unknown>;
-  return recordRowIds(body).length === 0
+  const epoch = (record.meta as { eraseEpoch?: unknown } | undefined)?.eraseEpoch;
+  return recordRowIds(body).length === 0 && !record.erasedRows && !(typeof epoch === 'number' && epoch > 0)
     && !answered(record.profile) && !answered(record.screenings) && !record.reminderOptIn
     && listOf(body, 'reminderPreferences').length === 0 && listOf(body, 'recommendationSnapshots').length === 0;
 }

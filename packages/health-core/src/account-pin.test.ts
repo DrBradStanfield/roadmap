@@ -4,6 +4,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { deviceCopyEmpty, parsePin, pinVerdict, proofVerdict, reconnectVerdict, recordRowIds, type AccountPin, type OwnerProof, type PinVerdict } from './account-pin';
+import { buildErasedFile } from './erase';
+import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 
 const A: AccountPin = { provider: 'google-drive', account: 'id-a' };
 const B: AccountPin = { provider: 'google-drive', account: 'id-b' };
@@ -66,6 +68,13 @@ describe('US-09 AC55: recordRowIds', () => {
   });
 });
 
+/** What an erase leaves of a record holding a profile answer only: its erase history must travel with it. */
+function erasedProfileOnly(): RoadmapFile {
+  const own = createEmptyFile({ deviceId: 'd', now: '2026-11-01T00:00:00.000Z' });
+  own.profile = { ...own.profile, birthYear: 1970 };
+  return buildErasedFile({ stored: null, own, device: null, ctx: { deviceId: 'd', now: '2026-11-25T00:00:00.000Z' } });
+}
+
 describe('US-09 AC55: deviceCopyEmpty', () => {
   const stamp = { updatedAt: '2026-11-25T00:00:00Z', lamport: 0 };
   const empty = { schemaVersion: 3, meta: { ...stamp }, profile: { ...stamp }, screenings: { ...stamp, fieldStamps: {} }, measurements: [], reminderPreferences: [], recommendationSnapshots: [] };
@@ -78,6 +87,9 @@ describe('US-09 AC55: deviceCopyEmpty', () => {
     ['a reminder choice only', { ...empty, reminderPreferences: [{ ...stamp, category: 'x', enabled: false }] }, false],
     ['a reminder opt-in only', { ...empty, reminderOptIn: { ...stamp, status: 'cancelled' } }, false],
     ['an erase list only', { ...empty, erasedRows: { fromEpoch: 1, ids: ['m1'] } }, false],
+    ['an empty erase list', { ...empty, erasedRows: { fromEpoch: 1, ids: [] } }, false],
+    ['an erase epoch only', { ...empty, meta: { ...stamp, eraseEpoch: 1 } }, false],
+    ['a profile-only record once erased', erasedProfileOnly(), false],
     ['one row', { ...empty, measurements: [{ id: 'm1' }] }, false],
     ['a body that is not a record', 'unreadable', false],
   ];

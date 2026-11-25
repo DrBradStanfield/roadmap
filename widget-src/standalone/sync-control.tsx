@@ -14,7 +14,7 @@
  */
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, savePopupGrant, SYNC_PENDING_EVENT } from '../src/storage';
-import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
+import { currentRetryDue, currentSaveStatus, recordFileSync } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, exitChoice, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
@@ -177,7 +177,8 @@ function useReconnect(lost?: LostSignIn) {
       const token = await new GoogleDriveAdapter(googleDriveConfig(), gen).acquireViaPopup()
         .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
       if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
-      const saved = await savePopupGrant(token, gen, () => isCurrentRun(run)) // another account keeps nothing (US-09 AC55)
+      // Decided against the record open here before the grant is kept, flushed or lifted: another account keeps nothing (US-09 AC55)
+      const saved = await savePopupGrant(token, gen, () => isCurrentRun(run), recordFileSync)
         .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
       if (rememberSignIn(saved, 'google-drive', gen)) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone

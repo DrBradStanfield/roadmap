@@ -22,9 +22,9 @@ export function notConnected(label: string): string {
   return `${label} did not connect, so nothing changed. Please try again.`;
 }
 
-/** A sign-in that is not this browser's account, or whose account could not be read. */
+/** A sign-in that is not this browser's account, or whose account could not be read (`unread`: a fault to report). */
 export class AccountRefusedError extends StorageError {
-  constructor(readonly provider: string, label: string) {
+  constructor(readonly provider: string, label: string, readonly unread = false) {
     super(notConnected(label));
     this.name = 'AccountRefusedError';
   }
@@ -47,7 +47,7 @@ export interface PinDecision {
 /** A fresh connect: the account it signed in with, or refused when that cannot be read. */
 export async function freshDecision(provider: StorageAdapter['id'], label: string, account: () => Promise<string>): Promise<PinDecision> {
   const id = await account().catch(() => '');
-  if (!id) throw new AccountRefusedError(provider, label);
+  if (!id) throw new AccountRefusedError(provider, label, true);
   return { pin: { provider, account: id }, label };
 }
 
@@ -62,24 +62,28 @@ export interface ReconnectCheck {
   cachedFileVisible?: () => Promise<boolean>;
   /** The record the new sign-in reaches, read only; null when there is none. */
   cloudRecord(): Promise<unknown>;
+  /** The working record open on this page, if any: a later save mirrors it to the device and the lift sends it, so it is judged too. */
+  live?: () => unknown;
 }
 
 /** The positive proofs, stopping at the first that decides. Any read that fails proves nothing. */
-async function proofFor(check: ReconnectCheck, device: unknown): Promise<OwnerProof> {
+async function proofFor(check: ReconnectCheck, copies: unknown[]): Promise<OwnerProof> {
   const earlierAccount = check.earlierAccount ? await check.earlierAccount().catch(() => null) : null;
   if (earlierAccount) return { earlierAccount };
   if (check.cachedFileVisible && (await check.cachedFileVisible().catch(() => false))) return { cachedFileVisible: true };
-  const here = new Set(recordRowIds(device));
+  const here = new Set(copies.flatMap(recordRowIds));
   return { sharesRow: await check.cloudRecord().then((cloud) => recordRowIds(cloud).some((id) => here.has(id)), () => false) };
 }
 
-/** A sign-in coming back to the remembered backend: kept for the pinned account, or with no pin on proof; refused otherwise. */
+/** A sign-in coming back to the remembered backend: kept for the pinned account, or with no pin on proof; refused otherwise.
+ *  Without a pin, the copy is empty only when both the stored body and the page's open record are. */
 export async function reconnectDecision(check: ReconnectCheck): Promise<PinDecision> {
   const { pin } = await freshDecision(check.provider, check.label, () => check.account());
   const against = readPin();
   const device = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME).then((r) => r.body, () => 'unreadable');
-  const empty = deviceCopyEmpty(device);
-  const proof = against || empty ? {} : await proofFor(check, device);
+  const copies = [device, check.live?.() ?? null];
+  const empty = copies.every(deviceCopyEmpty);
+  const proof = against || empty ? {} : await proofFor(check, copies);
   if (reconnectVerdict(against, pin, empty, proof) === 'refuse') throw new AccountRefusedError(check.provider, check.label);
   return { pin, label: check.label, against };
 }

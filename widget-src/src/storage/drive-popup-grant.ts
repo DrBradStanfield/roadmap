@@ -6,7 +6,8 @@
  * stays (setSignIns). Nothing is saved once this device's chosen home is no
  * longer Google Drive (another tab moved it): the reconnect then reloads onto
  * that choice. Nothing is saved either once `current` says the reconnect
- * stopped during the account check. A sign-in that is not this browser's
+ * stopped during the account check. `live` hands in the record open on the
+ * page, judged with the device copy before anything is kept. A sign-in that is not this browser's
  * account throws AccountRefusedError before anything is kept (US-09 AC55).
  */
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
@@ -17,7 +18,7 @@ import { CONFIG_KEY, TOKENS_KEY } from './drive';
 
 type Token = { accessToken: string; expiresAt: number };
 
-export async function savePopupGrant(token: Token, gen: LogOffId, current: () => boolean = () => true): Promise<boolean> {
+export async function savePopupGrant(token: Token, gen: LogOffId, current: () => boolean = () => true, live?: () => unknown): Promise<boolean> {
   const homeIsDrive = () => safeGetItem(BACKEND_KEY) === 'google-drive';
   if (!homeIsDrive()) return false;
   const stored = getSignIn<{ fileId?: string; fileIds?: Record<string, string> }>(CONFIG_KEY);
@@ -31,6 +32,7 @@ export async function savePopupGrant(token: Token, gen: LogOffId, current: () =>
     earlierAccount: earlierToken ? () => driveAccountOf(earlierToken) : undefined,
     cachedFileVisible: fileId ? async () => (await driveFileVersion(token.accessToken, fileId)) !== null : undefined,
     cloudRecord: async () => (await readDriveRecord(token.accessToken, new Set())).body,
+    live,
   });
   if (!current() || !homeIsDrive()) return false;
   return keepWithPin({ [TOKENS_KEY]: token, [CONFIG_KEY]: getSignIn<object>(CONFIG_KEY) ?? {} }, decision, gen);

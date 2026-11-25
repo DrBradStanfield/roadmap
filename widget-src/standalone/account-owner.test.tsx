@@ -17,9 +17,17 @@ import { render, fireEvent, cleanup, act } from '@testing-library/react';
 const lift = vi.hoisted(() => vi.fn(async () => {}));
 const capture = vi.hoisted(() => vi.fn());
 const track = vi.hoisted(() => vi.fn());
+/** The working record open on the page (null: none), and what a failed save of it does: mirror it to this device. */
+const session = vi.hoisted(() => ({ live: null as object | null }));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: capture } }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: track }));
-vi.mock('../src/lib/roadmap-data', () => ({ currentSaveStatus: () => 'saved', flushRoadmapStore: async () => undefined, copyRecordToDevice: async () => undefined, getBackendKind: () => 'cloud' }));
+vi.mock('../src/lib/roadmap-data', () => ({
+  currentSaveStatus: () => 'saved',
+  flushRoadmapStore: async () => { if (session.live) localStorage.setItem('health_roadmap_file_v2', JSON.stringify(session.live)); },
+  copyRecordToDevice: async () => undefined,
+  getBackendKind: () => 'cloud',
+  recordFileSync: () => session.live,
+}));
 vi.mock('./reminders', () => ({ remindersSupported: () => false, clearAutoEnrolBlock: vi.fn() }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
 // Every connect's lift reaches liftDeviceCopy; the copy-down is copyCloudDown.
@@ -99,6 +107,7 @@ beforeEach(() => {
   cloud = { driveFiles: {}, dropbox: null };
   calls = [];
   meanwhile = null;
+  session.live = null;
   gisAnswer = null;
   gisOverrides = [];
   lift.mockClear();
@@ -139,7 +148,7 @@ function returnedFrom(provider: 'dropbox' | 'google-drive'): void {
 }
 
 /** Nothing of a refused sign-in was kept, lifted or written; this browser's copy is byte-identical. */
-function expectNothingKept(keys: string[], device = DEVICE_COPY): void {
+function expectNothingKept(keys: string[], device: string | null = DEVICE_COPY): void {
   for (const key of keys) expect(localStorage.getItem(key)).toBeNull();
   expect(lift).not.toHaveBeenCalled();
   expect(cloudWrites()).toEqual([]);
@@ -210,6 +219,38 @@ describe('US-09 AC55: the Drive popup reconnect', () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
+  it('no pin and no stored copy: the record open on the page, unsaved edit included, is what is judged, so another account is refused', async () => {
+    localStorage.removeItem(DEVICE_KEY);
+    session.live = record('row-a1', 'row-a2', 'row-a3-unsaved');
+    cloud.driveFiles = { 'file-b': record('row-b1') };
+    await popupReconnectAs(ID.driveB);
+    expectNothingKept([DRIVE_TOKENS, PIN_KEY], null);
+    expect(document.querySelector('.hr-sync-error')?.textContent).toBe(REFUSED('Google Drive'));
+  });
+
+  it('no pin and no stored copy: the open record\'s own cloud still keeps the sign-in', async () => {
+    localStorage.removeItem(DEVICE_KEY);
+    session.live = record('row-a1', 'row-a3-unsaved');
+    cloud.driveFiles = { 'file-a': record('row-a1') };
+    await popupReconnectAs(ID.driveA);
+    expect(pinned()).toEqual({ provider: 'google-drive', account: ID.driveA });
+    expect(lift).toHaveBeenCalledTimes(1);
+  });
+
+  it('an account Google cannot name is refused, counted, and reported once with the provider only', async () => {
+    pin('google-drive', ID.driveA);
+    await popupReconnectAs('');
+    expect(localStorage.getItem(DRIVE_TOKENS)).toBeNull();
+    expect(lift).not.toHaveBeenCalled();
+    expect(cloudWrites()).toEqual([]);
+    expect(document.querySelector('.hr-sync-error')?.textContent).toBe(REFUSED('Google Drive'));
+    expect(track).toHaveBeenCalledWith('cloud_connect_refused', { provider: 'google-drive' });
+    expect(capture).toHaveBeenCalledTimes(1);
+    const [error, context] = capture.mock.calls[0] as [Error, { tags: object }];
+    expect(error.message).toBe('Cloud connect failed');
+    expect(context).toEqual({ tags: { area: 'cloud-connect', backend: 'google-drive' } });
+  });
+
   it('a pin another tab writes between the decision and the write is refused', async () => {
     localStorage.setItem(DRIVE_CONFIG, A_CONFIG);
     cloud.driveFiles = { 'file-a': record('row-a1') }; // the proof this tab decides on
@@ -262,6 +303,17 @@ describe('US-09 AC55: the Dropbox reconnect return', () => {
     expect((await (await page()).resolve.resolveBackend()).refused).toBeUndefined();
     expect(pinned()).toEqual({ provider: 'dropbox', account: ID.dropboxA });
   });
+
+  it('no pin and a copy holding only an erase: its erase history needs proof too, so refused and nothing lifted', async () => {
+    const erased = JSON.stringify({ schemaVersion: 3, meta: { ...STAMP, eraseEpoch: 1 }, erasedRows: { fromEpoch: 1, ids: [] }, measurements: [] });
+    localStorage.setItem(DEVICE_KEY, erased);
+    signedOut();
+    signedInAs.dropbox = ID.dropboxB;
+    cloud.dropbox = record('row-b1');
+    returnedFrom('dropbox');
+    expect((await (await page()).resolve.resolveBackend()).refused).toBe(REFUSED('Dropbox'));
+    expectNothingKept([DROPBOX_TOKENS, PIN_KEY], erased);
+  });
 });
 
 describe('US-09 AC55: a guest\'s first connect is not checked', () => {
@@ -276,7 +328,10 @@ describe('US-09 AC55: a guest\'s first connect is not checked', () => {
     expect(pinned()).toEqual({ provider: 'dropbox', account: ID.dropboxB });
   });
 
-  it('a switch cancelled at the provider leaves a guest page whose retry connects', async () => {
+  it.each([
+    ['another Google account', ID.driveB],
+    ['the same person\'s own Google account', ID.driveA],
+  ])('a switch cancelled at the provider leaves a guest page whose retry as %s connects', async (_name, account) => {
     localStorage.setItem(BACKEND_KEY, 'dropbox');
     localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ accessToken: 'test-token-old', refreshToken: 'test-refresh-old', expiresAt: Date.now() + 3_600_000, gen: null }));
     pin('dropbox', ID.dropboxA);
@@ -285,13 +340,13 @@ describe('US-09 AC55: a guest\'s first connect is not checked', () => {
     // Cancelled at Google: the next load is a guest page on this browser's copy.
     expect((await (await page()).resolve.resolveBackend()).resolved.backend).toBe('local');
 
-    signedInAs.drive = ID.driveB;
+    signedInAs.drive = account;
     returnedFrom('google-drive');
     const { resolved, refused } = await (await page()).resolve.resolveBackend();
     expect(refused).toBeUndefined();
     expect(resolved.backend).toBe('google-drive');
     expect(lift).toHaveBeenCalledTimes(1);
-    expect(pinned()).toEqual({ provider: 'google-drive', account: ID.driveB });
+    expect(pinned()).toEqual({ provider: 'google-drive', account });
   });
 });
 
