@@ -9,7 +9,8 @@ import { formatLabValue, savedLabText } from '@roadmap/health-core/lab-series';
 import { type GradeStatus, limitUngraded } from '@roadmap/health-core/row-grade';
 import { MONTHS_SHORT } from '../lib/constants';
 import type { CorrectFn } from '../lib/matrix-save';
-import { flushRoadmapStoreSync, getShownErase } from '../lib/roadmap-data';
+import { getShownErase } from '../lib/roadmap-data';
+import { onPageHide } from '../lib/page-hide';
 import { CLOSED, WAIT_MS, type ValueCellEvent, type ValueCellState, type Verdict, isOpen, messageOf, transition } from '../lib/value-cell-state';
 import {
   type CellUnit,
@@ -180,21 +181,15 @@ export function ValueCell({
       if (down.size === 0) send({ type: 'released' });
     };
     // A click-away save already asked for runs as the page goes away (it
-    // never comes due in a hidden tab), and is written at once: the page's
-    // own flush ran before this listener (Codex R1). Text left in an open
-    // editor is not saved (US-04 AC1).
-    // An ordering patch until one hide path stages every cell, then flushes once (H92).
-    const hidden = () => { sendLeave('hidden'); flushRoadmapStoreSync(); };
-    const onHide = () => { if (document.visibilityState === 'hidden') hidden(); };
-    const onPageHide = hidden;
+    // never comes due in a hidden tab): a stage on the one hide path, which
+    // writes once after every stage (H92). Text left in an open editor is not
+    // saved (US-04 AC1).
+    const leaveHidePath = onPageHide(() => sendLeave('hidden'));
     const listeners = [['pointerdown', onDown], ['pointerup', onUp], ['pointercancel', onUp]] as const;
     for (const [type, listener] of listeners) document.addEventListener(type, listener, true);
-    document.addEventListener('visibilitychange', onHide);
-    window.addEventListener('pagehide', onPageHide);
     return () => {
       for (const [type, listener] of listeners) document.removeEventListener(type, listener, true);
-      document.removeEventListener('visibilitychange', onHide);
-      window.removeEventListener('pagehide', onPageHide);
+      leaveHidePath();
       onDeactivate?.();
     };
   }, [open]);
