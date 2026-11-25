@@ -123,7 +123,7 @@ untracking the built storefront bundles, splitting the story file, and one workf
 ## Status, 26 Nov 2026 (third run)
 
 Brad settled the rest of the open list ([decisions-for-brad.md](../decisions-for-brad.md), Decided, 2026-11-26).
-Merged: PRs 1805, 1806, 1607, 2082 (per-address limits, raised for IPv6 keys; lead S-21 partial), 2173, 2175 and
-2176. Open: PR 1604 (old PSA answers) and PR 1610 (prostate words). Closed as superseded: PR 1601. Decided and not built: the
+Merged: PRs 1604 (old PSA answers), 1610 (prostate words), 1805, 1806, 1607, 2082 (per-address limits, raised
+for IPv6 keys; lead S-21 partial), 2173, 2175 and 2176. Closed as superseded: PR 1601. Decided and not built: the
 Apple Health malformed-date skip (next iPhone build), the prostate stop age and flag line, and the 45 to 49 card,
 which waits for Brad's look.

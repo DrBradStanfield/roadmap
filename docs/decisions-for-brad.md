@@ -21,8 +21,9 @@ issue, and nothing private.
 
 - **A lung pack-years answer over 200.** Issue: the plan reads the pack-years answer with no upper bound, while the
   chat's copy of the plan checks it against 0 to 200, so an answer over 200 counts in one and not the other (lead
-  H87, raised in the review of PR 1604). Options: check the range in the plan too, so an answer over 200 stops
-  counting; or lift the chat's check, so it counts in both. Either changes a clinical gate. Recommendation: none
+  H87, [untangle/state-leads/H87.csv](untangle/state-leads/H87.csv), raised in the review of PR 1604). Options:
+  check the range in the plan too, so an answer over 200 stops counting; or lift the chat's check, so it counts in
+  both. Either changes a clinical gate. Recommendation: none
   yet; the lead and PR 1604 leave the choice to you.
 - **The 45 to 49 prostate card.** Issue: you kept this card ("KEEP the 45-49 card", 14 Nov) and asked to look again
   before it is built. What to look at: its sentence, drafted in
@@ -67,8 +68,8 @@ issue, and nothing private.
 - An Apple Health lab result with a malformed date (same words): skip the result and tell the person, with "Some
   results could not be read."; iPhone only; not built. It ships with the next iPhone build; until then such a
   result is still dated by its report's issue day.
-- Prostate (same words): PR 1610 (open), the words for no rectal exam and the Society's position on 45 to 49,
-  option (a); the 45 to 49 card is a later change that waits for Brad's look. PR 1604 (open), old PSA answers by the
+- Prostate (same words): PR 1610 (merged), the words for no rectal exam and the Society's position on 45 to 49,
+  option (a); the 45 to 49 card is a later change that waits for Brad's look. PR 1604 (merged), old PSA answers by the
   rules decided on 13 Nov, with six sentences in the algorithm document. PR 1607 (merged), the design note for the
   stop age and the flag line, complete: routine cards to 79, everything ends at 80, the line 3.0 under 70 and 6.5
   from 70, graded by age on the test day. PR 1601 closed as superseded. Not built yet: the stop age, the flag line,
