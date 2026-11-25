@@ -24,7 +24,6 @@
     "app/lib/mcp-import.server.ts": 599,
     "packages/health-core/src/chat-edits.ts": 586,
     "packages/health-core/src/input-form.ts": 582,
-    "widget-src/src/storage/roadmap-store.ts": 567,
     "packages/health-core/src/mcp-tools.ts": 559,
     "ios/engine/my-data.ts": 556,
     "widget-src/src/components/StartingInfoVitals.tsx": 555,

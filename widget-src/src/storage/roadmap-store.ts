@@ -26,7 +26,6 @@
 import { type AddLabValueRequest, type AddLabValueResult, addLabValue as addRecordLabValue, bulkAppendValues, placeMeasurement, type MoveKeep, type MoveRejection, type MovePlan, correctValue as correctRecordValue, moveBloodTest as moveRecordBloodTest, planBloodTestMove } from '@roadmap/health-core/record-edits';
 import { LiveRefresh } from '@roadmap/health-core/live-refresh';
 import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
-import { birthInFuture, type MeasurementSource, inputRangeFault } from '@roadmap/health-core/validation';
 import { documentView, writtenLabRows } from '@roadmap/health-core/document-save';
 import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
 import { medicationChanges } from '@roadmap/health-core/medication-annotations';
@@ -35,15 +34,14 @@ import { diffInputsToMeasurements, measurementsToInputs, PREFILL_FIELDS, type Ap
 import { fileProfileToApi, fileScreeningRows } from '@roadmap/health-core/file-inputs';
 import { isClinicalDay, latestActivePerMetric } from '@roadmap/health-core/measurement-history';
 import { localDay } from '@roadmap/health-core/merge';
-import type { FileDocument, FileReminderOptIn, FileSupplement, RoadmapFile, RoadmapProfile, FileLabValue, FileMeasurement } from '@roadmap/health-core/roadmap-file';
+import type { FileDocument, FileReminderOptIn, FileSupplement, RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { type HealthInputs, isAlcoholAnswer } from '@roadmap/health-core/types';
 import type { LpaUnit } from '@roadmap/health-core/units';
-import type { Comparator } from '@roadmap/health-core/lab-limits';
-import { bloodTableReport, isCoreRow, currentValueRows } from '@roadmap/health-core/blood-tests';
+import { isCoreRow, currentValueRows } from '@roadmap/health-core/blood-tests';
 import { egfrSeries, whtrSeries, type EgfrPoint, type WhtrPoint } from '@roadmap/health-core/plan';
 import { isReadableRow, readableView } from '@roadmap/health-core/readable-rows';
 import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
-import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
+import type { StorageAdapter } from '@roadmap/health-core/adapter';
 
 /** The worked-out series My health's rows read (US-62 AC21). */
 export interface DerivedSeries { whtr: WhtrPoint[]; egfr: EgfrPoint[] }
@@ -67,72 +65,17 @@ export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 
 // App-facing view shapes: one home, lib/api-types.ts (untangle W2-4).
 import type { AddMeasurementResult, ApiLabValue, ApiMedicationHistory, ApiSupplement, BulkSaveResult, LatestMeasurementsResult } from '../lib/api-types';
-/** How a correction ended. `changed`: the value named is not there any
- *  more, or another row has replaced it (another device, a connector).
- *  `invalid`: the record does not take that number (outside the metric's
- *  range). `refused`: a lab value past its plausible range, in the engine's
- *  words, which the page shows as the iPhone and MCP do (US-21 AC26).
- *  `error`: no record is open. */
-export type CorrectStatus = 'ok' | 'changed' | 'invalid' | 'error' | { refused: string };
-/** How a blood test move ended (US-04 AC5), as a correction does. `changed`:
- *  the test on that day is not what the page showed. `invalid` carries the
- *  record's refusal, for the page to say. */
-export type MoveOutcome = { status: Exclude<Extract<CorrectStatus, string>, 'invalid'> } | { status: 'invalid'; refusal: MoveRejection };
-/** A birth month in the future that a save refused (US-54 AC5b): the pair judged. */
-export interface BirthRefusal { birthYear: number; birthMonth: number | undefined }
-/** A profile save: refused by the erase, or saved with any birth month it refused. */
-/** A profile value outside its range, by field, with why (US-02 AC5): never written. */
-export type ProfileRangeRefusal = Partial<Record<keyof HealthInputs, string>>;
-/** `added`: the rows the save inserted as new, never a correction or a refused number (US-07 AC11's usage signal). */
-export type ProfileSave = { ok: false } | { ok: true; birthRefused: BirthRefusal | null; added: ApiMeasurement[]; refused?: ProfileRangeRefusal };
-/** One reviewed upload row. `correctsId` is set only when the reviewer ticked
- *  "Replace" on a slot another writer (a connector, another device) already
- *  holds — it turns the write into a FHIR correction instead of a skip. */
-/** `comparator`: a result printed as a limit, saved as printed (US-12 AC20). */
-export interface BulkMeasurementInput {
-  metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string; comparator?: Comparator;
-}
-
-/** What first opening a record in the old shape moved, for `blood_tests_unified` (US-66 AC13): counts only. */
-export type BloodTableReport = ReturnType<typeof bloodTableReport>;
+import type { BirthRefusal, CorrectStatus, MoveOutcome, ProfileRangeRefusal, ProfileSave, BulkMeasurementInput } from './store-value-saves';
+import { applyProfileChanges, valueView } from './store-value-saves';
+import { tapFirstRead, writeMovedRecord, type BloodTableReport } from './store-open-migration';
+/** Moved by workflow (US-64); re-exported for the modules that import them from the store. */
+export type { BirthRefusal, CorrectStatus, MoveOutcome, ProfileRangeRefusal, ProfileSave, BulkMeasurementInput } from './store-value-saves';
+export type { BloodTableReport } from './store-open-migration';
 
 // --- small pure helpers ---
 
 function activeOnly<T extends { status: string }>(rows: T[]): T[] {
   return rows.filter((r) => r.status === 'active');
-}
-
-/** A saved row as the screens read a value: a core lab row under its key as
- *  `metricType`, as a measurement reads (US-66 AC7). Vitals pass as they are. */
-function valueView(row: FileMeasurement | FileLabValue): ApiMeasurement {
-  if (!('metricName' in row)) return row as ApiMeasurement;
-  const { metricName, unit: _unit, referenceLow: _low, referenceHigh: _high, core: _core, ...rest } = row;
-  return { ...rest, metricType: metricName } as ApiMeasurement;
-}
-
-/** `adapter`, with its first read of the record handed to `seen`: the stored
- *  bytes the open migrates (US-66 AC14). Every other call passes through. */
-function tapFirstRead(adapter: StorageAdapter, seen: (body: unknown) => void): StorageAdapter {
-  let first = true;
-  return new Proxy(adapter, {
-    get(target, prop) {
-      if (prop === 'read') {
-        return async (fileName: string, signal?: AbortSignal) => {
-          const result = await target.read(fileName, signal);
-          if (first && fileName === ROADMAP_FILE_NAME) { first = false; seen(result.body); }
-          return result;
-        };
-      }
-      const value = Reflect.get(target, prop, target);
-      return typeof value === 'function' ? value.bind(target) : value;
-    },
-  });
-}
-
-/** A stored body's rows, junk left out, as `bloodTableReport` reads them. */
-function storedRows<T>(body: Record<string, unknown>, key: string): T[] {
-  const rows = body[key];
-  return Array.isArray(rows) ? rows.filter((row): row is T => typeof row === 'object' && row !== null) : [];
 }
 
 export class RoadmapStore {
@@ -158,20 +101,9 @@ export class RoadmapStore {
    *  null when it moved nothing or the write failed (US-66 AC13). */
   bloodTablesUnified: Promise<BloodTableReport | null> = Promise.resolve(null);
 
-  /**
-   * US-66 AC14: the open moved blood tests out of `measurements`, or folded
-   * old lab rows named like a core test, compared with the stored bytes:
-   * write the record once, through the normal save. A moved record has
-   * nothing left to move, so the next open writes nothing.
-   */
+  /** US-66 AC14's one write after the open (store-open-migration.ts). */
   private writeMovedRecord(stored: unknown): Promise<BloodTableReport | null> {
-    if (typeof stored !== 'object' || stored === null) return Promise.resolve(null);
-    const body = stored as Record<string, unknown>;
-    const report = bloodTableReport({ measurements: storedRows(body, 'measurements'), labValues: storedRows(body, 'labValues') }, this.file);
-    if (!report.moved && !report.folded) return Promise.resolve(null);
-    // Under the erase the open read, as the engine's move (ios/engine/cloud.ts): no press starts it.
-    this.session.edit(() => {}, this.session.eraseIdentity);
-    return this.session.flush().then(() => report, () => null);
+    return writeMovedRecord(this.session, stored);
   }
 
   /** The working copy, read-only: every change goes through `session.edit`. The upload reads it for known files. */
@@ -533,35 +465,9 @@ export class RoadmapStore {
 
   // =================================================================== private
 
+  /** The profile write every web profile save enters (store-value-saves.ts). */
   private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>, erase?: string, outOfRange: ProfileRangeRefusal = {}): BirthRefusal | null {
-    const changes: Record<string, unknown> = {};
-    for (const field of [...PREFILL_FIELDS, 'unitSystem'] as const) {
-      // A cleared form field is absent from current, but is still a write.
-      // Keep its key as null so the field stamp carries the clear (US-10 AC9).
-      if (current[field] !== previous[field]) changes[field] = current[field] ?? null;
-      // US-02 AC5: a value outside its range never reaches the file, whatever
-      // the caller ("19" on the way to 190, left or not); the rest still write.
-      const fault = inputRangeFault(field, changes[field]);
-      if (fault) { delete changes[field]; outOfRange[field] = fault; }
-    }
-    // US-54 AC5b: a birth month after this one writes neither changed half, as
-    // update_profile refuses it; a year alone is judged with January. Judged as
-    // typed and as it would be stored, over a half another device changed.
-    const future = (p: { birthYear?: number | null; birthMonth?: number | null }): BirthRefusal | null =>
-      p.birthYear != null && birthInFuture(p.birthYear, p.birthMonth ?? 1, new Date())
-        ? { birthYear: p.birthYear, birthMonth: p.birthMonth ?? undefined }
-        : null;
-    const refused = 'birthYear' in changes || 'birthMonth' in changes
-      ? future(current) ?? future({ ...this.view.profile, ...changes })
-      : null;
-    if (refused) { delete changes.birthYear; delete changes.birthMonth; }
-    if (Object.keys(changes).length === 0) return refused;
-    // Only the fields changed take a new stamp (US-10 AC6). And an edit, which
-    // schedules a save, as every other mutation is: a profile-only edit (sex,
-    // height, birth date — no measurement changed with it) once scheduled no
-    // save at all, so it sat in memory until the next unrelated edit carried it up.
-    this.session.edit((file) => stampProfile(file, changes as Partial<RoadmapProfile>, new Date().toISOString()), erase);
-    return refused;
+    return applyProfileChanges(this.session, current, previous, erase, outOfRange);
   }
 }
 
