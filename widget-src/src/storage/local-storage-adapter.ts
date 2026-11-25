@@ -12,7 +12,6 @@ import {
   DOC_KEY_PREFIX, healthWritesAllowed, newLogOffId, noteLogOffHeard, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { refusedWrite } from '@roadmap/health-core/write-refusal';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 
 // The roadmap file keeps its ORIGINAL keys (existing users' device data lives
@@ -148,7 +147,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     // written here holds health data (the record, the chat history), so a new
     // file is refused by default. A guest page that opened with no log-off on
     // this device since it loaded always may write.
-    if (roadmapLocalWritesStopped()) throw refusedWrite(new WritesStoppedError());
+    if (roadmapLocalWritesStopped()) throw new WritesStoppedError(); // raised refused by its constructor
     // `?? '0'` is defensive: localStorage is externally mutable, so tolerate a
     // present file with a missing version key (treat it as version 0).
     const current = safeGetItem(fileKey(fileName)) == null ? null : safeGetItem(versionKey(fileName)) ?? '0';
@@ -227,7 +226,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const dataUrl = await blobToDataUrl(bytes);
     // The record's write rule (US-09 AC2c): every device document's bytes pass here.
-    if (roadmapLocalWritesStopped()) throw refusedWrite(new WritesStoppedError());
+    if (roadmapLocalWritesStopped()) throw new WritesStoppedError(); // raised refused by its constructor
     try {
       // Direct setItem (not safeSetItem) so a quota overflow surfaces instead of
       // silently dropping the document — no silent data loss.

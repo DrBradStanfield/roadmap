@@ -5,7 +5,7 @@
 // (write-refusal.ts afterWrite). Read through SyncManager.save, as the session's save and erase
 // read it: `mayHaveLanded` is what decides whether a failed erase is put back.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ROADMAP_FILE_NAME, StorageError } from '../../packages/health-core/src/adapter';
+import { StorageError } from '../../packages/health-core/src/adapter';
 import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 import { SyncManager } from '../../packages/health-core/src/sync-manager';
 import { mayHaveLanded } from '../../packages/health-core/src/write-refusal';
@@ -49,11 +49,10 @@ describe('US-10 AC17: the iPhone adapters name their outcome', () => {
     expect({ outcome: (error as StorageError).outcome, landed: mayHaveLanded(error), uploads }).toEqual({ outcome: 'no-answer', landed: false, uploads: 0 });
   });
 
-  it('a phone file write Swift refused: refused, not landed, the file unchanged (was landed)', async () => {
+  it('a phone file write Swift refused: refused, not landed (was landed); the file left whole is Swift\'s atomic write, not checked here', async () => {
     natives({ phoneWrite: () => 'The disk is full.' });
     const error = await saveError(new PhoneFileAdapter());
     expect(error).toBeInstanceOf(StorageError);
     expect({ outcome: (error as StorageError).outcome, landed: mayHaveLanded(error) }).toEqual({ outcome: 'refused', landed: false });
-    expect(JSON.parse(await new PhoneFileAdapter().read(ROADMAP_FILE_NAME).then((r) => JSON.stringify(r.body)))).toEqual(JSON.parse(record));
   });
 });

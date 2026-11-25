@@ -25,11 +25,6 @@ export function uncertainWrite<E extends object>(error: E): E {
   return mark(error, 'may-have-landed');
 }
 
-/** Marks `error` as a write the store refused, nothing stored, and returns it. */
-export function refusedWrite<E extends object>(error: E): E {
-  return mark(error, 'refused');
-}
-
 /** True for a failure whose outcome is may-have-landed, and for a thrown value that is not an
  *  object: it cannot carry the field, and an unknown failure is never a refusal. */
 export function mayHaveLanded(error: unknown): boolean {

@@ -112,7 +112,7 @@ export function answerOutcome(status: number, upload = false): StorageOutcome {
 
 export class StorageError extends Error {
   readonly reason?: StorageFailureReason;
-  /** Mutable: `uncertainWrite` (write-refusal.ts) marks a failure met after a write. */
+  /** Set where raised; `afterWrite` (write-refusal.ts) fills one a raiser left unset. */
   outcome?: StorageOutcome;
   /** SyncManager's rewrap after a write that landed with a warning: its hint
    *  says what landed first (US-31 AC8a), so it is shown as it is. */
