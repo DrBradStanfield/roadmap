@@ -20,6 +20,7 @@ import { eraseRunsHere, getEraseIdentity, getReminderOptIn } from '../src/lib/ro
 import { REMOTE_CHANGED_EVENT } from '../src/storage/roadmap-store';
 import { safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
 import { Sentry } from '../src/lib/sentry';
+import { randomId } from '../src/lib/random-id';
 
 export const OWN_ENROLMENT_KEY = 'hr_reminders_own_enrolment';
 /** How long one cancel holds its claim: another tab, or the next load, takes
@@ -101,16 +102,14 @@ export function stepOwnEnrolment(event: OwnEnrolmentEvent): OwnEnrolmentEffect[]
 export type SendCancel = (token: string) => Promise<Response>;
 
 function settle(send: SendCancel): void {
-  const attempt = Math.random().toString(36).slice(2);
   const effects = stepOwnEnrolment({
-    type: 'settle', record: getEraseIdentity(), standing: getReminderOptIn(), running: eraseRunsHere(), now: Date.now(), attempt,
+    type: 'settle', record: getEraseIdentity(), standing: getReminderOptIn(), running: eraseRunsHere(), now: Date.now(), attempt: randomId(),
   });
   for (const effect of effects) {
-    void send(effect.token).then((res) => res.status, () => 0).then((status) => {
-      const landed = status >= 200 && status < 300;
-      stepOwnEnrolment({ type: 'answered', attempt: effect.attempt, landed });
+    void send(effect.token).then((res) => (res.ok ? null : String(res.status)), () => 'unsent').then((failed) => {
+      stepOwnEnrolment({ type: 'answered', attempt: effect.attempt, landed: failed === null });
       // The status code only (CLAUDE.md telemetry rule).
-      if (!landed) Sentry.captureException(new Error(`Own reminder row cancel failed (${status || 'unsent'}).`), { tags: { area: 'reminders', op: 'own-enrolment-cancel' } });
+      if (failed) Sentry.captureException(new Error(`Own reminder row cancel failed (${failed}).`), { tags: { area: 'reminders', op: 'own-enrolment-cancel' } });
     });
   }
 }

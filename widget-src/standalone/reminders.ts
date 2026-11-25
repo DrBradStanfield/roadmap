@@ -397,8 +397,11 @@ export async function cancelRemindersForErase(): Promise<() => Promise<void>> {
     // An erase leaves no reminder token on the device, not even a cancelled one.
     safeRemoveItem(SWITCH_CANCELLED_KEY);
     const held = eraseCancelState();
+    const cancels = toCancel(held, getReminderOptIn());
+    // This device's own row among them: nothing of it is owed later (lead H126).
+    stepOwnEnrolment({ type: 'erased-here', tokens: cancels.map((c) => c.token) });
     stepEraseCancel({ type: 'committed' });
-    const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(toCancel(held, getReminderOptIn()).map(
+    const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(cancels.map(
       ({ token, idToken }) => postCancel(token, idToken, true).then((res) => (res.ok ? null : String(res.status)), () => 'unsent'),
     ));
     for (const status of failed) {
