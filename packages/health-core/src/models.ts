@@ -16,14 +16,14 @@
 /** Main chat answer on the web and Discord. */
 export const CHAT_MODEL = 'claude-sonnet-5-5';
 /**
- * The YouTube bot's main answer (US-15 AC77). Haiku 5.5 since 2026-11-26 (Brad), to cut
- * cost: the bot was about $8 a day, near half of all API spend. Same system blocks,
- * effort and classifier; the router stays on ROUTER_MODEL. Haiku's prompt cache is
- * its own, so YouTube turns no longer warm the web chat's Sonnet cache (accepted).
+ * The YouTube bot's main answer and router (US-15 AC77); its classifier is CLASSIFIER_MODEL,
+ * also Haiku. Haiku 5.5 since 2026-11-26 (Brad), to cut cost: the bot was about $8 a day,
+ * near half of all API spend. Same prompts, effort and caps as the web. Haiku's prompt cache
+ * is its own, so YouTube turns no longer warm the web chat's Sonnet caches (accepted).
  */
-export const YOUTUBE_ANSWER_MODEL = 'claude-haiku-5-5';
+export const YOUTUBE_MODEL = 'claude-haiku-5-5';
 /**
- * Retrieval router: a handle list, thinking off (modelParams' default).
+ * Retrieval router on the web and Discord: a handle list, thinking off (modelParams' default).
  * Sonnet 5.5 since 2026-09-29: 297/304 on tools/test-queries.json (Haiku 281/304 on the
  * audit-day prompt, 276/304 on this one),
  * at about 3x the cost (~$15.3 vs ~$5.1 per 1000 calls, warm cache).

@@ -3,7 +3,7 @@
  * the real runPipeline and getChatCompletion ends in an api-error fallback, and
  * persistYouTubeTurn stores the web chat's assistant fallback row for it. Only
  * the classifier, the database, the retry sleep and the network are stubbed.
- * US-15 AC77: the same path asks YOUTUBE_ANSWER_MODEL (Haiku) for the answer, and
+ * US-15 AC77: the same path asks YOUTUBE_MODEL (Haiku) for the answer, and
  * the stored row names that model, on success and on a fallback.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -43,7 +43,7 @@ process.env.ANTHROPIC_API_KEY ??= 'sk-test-dummy';
 import { runPipeline, shouldUnclaim } from './youtube-bot.server';
 import { persistYouTubeTurn } from './youtube-bot-store.server';
 import { FALLBACK_RESPONSE } from './chat.server';
-import { YOUTUBE_ANSWER_MODEL } from '../../packages/health-core/src/models';
+import { YOUTUBE_MODEL } from '../../packages/health-core/src/models';
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
@@ -68,7 +68,7 @@ describe('US-15 AC52: a 529 on YouTube stores the assistant fallback row', () =>
     await persistYouTubeTurn({ thread, outcome, postedYoutubeId: null });
     const asst = supa.inserts.find((i) => i.table === 'chat_messages' && i.row.role === 'assistant')?.row;
     expect(asst).toMatchObject({
-      content: FALLBACK_RESPONSE, model: YOUTUBE_ANSWER_MODEL, is_fallback: true, failure_mode: 'api-error',
+      content: FALLBACK_RESPONSE, model: YOUTUBE_MODEL, is_fallback: true, failure_mode: 'api-error',
       error_detail: expect.stringContaining('529'),
     });
     expect(supa.inserts.find((i) => i.table === 'chat_match_events')?.row)

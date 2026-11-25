@@ -8,7 +8,7 @@ import * as Sentry from '@sentry/react-router';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
 import type { RouterResult } from './chat-router.server';
 import { routerTurn, runRouter } from './chat-router-stage.server';
-import { SILENT_ON_YOUTUBE, YOUTUBE_ANSWER_MODEL } from '../../packages/health-core/src/models';
+import { SILENT_ON_YOUTUBE, YOUTUBE_MODEL } from '../../packages/health-core/src/models';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { preferMasters } from './router-view';
 import { loadBlogArticle } from './matched-content';
@@ -324,7 +324,7 @@ export async function runPipeline(
   let routerResult: RouterResult | null = null;
   const routerSkipped = !shouldFireRouter(classifierResult);
   if (!routerSkipped) {
-    routerResult = await runRouter(routerInput, 'YOUTUBE', countTickRouterFailure);
+    routerResult = await runRouter(routerInput, 'YOUTUBE', countTickRouterFailure, YOUTUBE_MODEL);
     routerHandles = routerResult.handles;
   }
 
@@ -340,8 +340,8 @@ export async function runPipeline(
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(YOUTUBE_SAVED_CHAT), blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);
   const tBeforeLlm = Date.now();
-  // No form here to apply an edit to, so no tools (US-15 AC19). Haiku answers, for cost (AC77).
-  const completion = await getChatCompletion(systemBlocks, conversationMessages, false, undefined, { purpose: 'YOUTUBE', model: YOUTUBE_ANSWER_MODEL });
+  // No form here to apply an edit to, so no tools (US-15 AC19). Haiku answers, as it routes (AC77).
+  const completion = await getChatCompletion(systemBlocks, conversationMessages, false, undefined, { purpose: 'YOUTUBE', model: YOUTUBE_MODEL });
 
   return {
     classification: classifierResult.classification,

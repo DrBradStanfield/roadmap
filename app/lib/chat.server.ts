@@ -27,7 +27,7 @@ import { CHAT_PROMPT } from './chat-system-prompt.server';
 // ---------------------------------------------------------------------------
 
 // The main answer runs on Sonnet 5.5 (CHAT_MODEL, pinned in health-core models.ts with
-// every other hop; YouTube's passes YOUTUBE_ANSWER_MODEL, Haiku 5.5, as `opts.model`);
+// every other hop; YouTube's passes YOUTUBE_MODEL, Haiku 5.5, as `opts.model`);
 // the router is Sonnet 5.5 with thinking off, the classifier Haiku 5.5 with thinking off.
 // The 2026-08-06 audit's failures were self-check failures in the ANSWER
 // (fabricated citation ids), so the answer is the hop worth the better model;
