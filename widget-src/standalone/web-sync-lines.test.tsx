@@ -96,6 +96,7 @@ describe('US-09 AC60: the picker says the old cloud keeps its copy', () => {
     ['dropbox', 'Your record in Dropbox stays there as it is.'],
     ['google-drive', 'Your record in Google Drive stays there as it is.'],
     ['github', 'Your record in GitHub stays there as it is.'],
+    ['self-host', 'Your record on your own server stays there as it is.'],
   ] as const)('from %s', async (current, line) => {
     const { BackendPickerModal } = await import('./backend-picker');
     render(<BackendPickerModal current={current} onClose={() => {}} />);

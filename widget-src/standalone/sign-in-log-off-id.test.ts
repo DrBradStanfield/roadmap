@@ -16,7 +16,7 @@ vi.mock('../src/lib/sentry', () => ({ initSentry: vi.fn(), Sentry: { captureExce
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 
 const BACKEND_KEY = 'health_roadmap_backend';
-const SIGN_IN_UNFINISHED = 'Sign-in did not finish. Your data stays in this browser.';
+const SIGN_IN_UNFINISHED = 'Sign-in did not finish because this browser was logged off. Please try again.';
 const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
 const EMAIL = 'person@example.test';
 const DRIVE_SCOPE = 'openid email https://www.googleapis.com/auth/drive.file';

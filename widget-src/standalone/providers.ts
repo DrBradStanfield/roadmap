@@ -44,7 +44,7 @@ export function safeWhere(backend: CloudBackend): string {
 /** Said where a switch starts: a switch copies the record down and never touches the old cloud's file
  *  (US-09 AC13). The iPhone's words (SyncStatusText.switchMessage, US-25 AC11n), lead A12. */
 export function recordStays(backend: CloudBackend): string {
-  return `Your record in ${PROVIDERS[backend].label} stays there as it is.`;
+  return `Your record ${backend === 'self-host' ? 'on your own server' : `in ${PROVIDERS[backend].label}`} stays there as it is.`; // as safeWhere places it
 }
 
 /** US-09 AC49: asked before "Use this browser only" starts an empty record. */

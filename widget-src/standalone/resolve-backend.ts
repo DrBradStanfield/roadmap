@@ -21,7 +21,7 @@ import { SIGN_IN_KEYS } from './providers';
 
 /** A sign-in that began before a log-off on this device opens as a guest (US-09 AC45), and says so
  *  (lead C29; words Brad 2026-11-26). Not a defect, so not reported. */
-export const SIGN_IN_UNFINISHED = 'Sign-in did not finish. Your data stays in this browser.';
+export const SIGN_IN_UNFINISHED = 'Sign-in did not finish because this browser was logged off. Please try again.';
 
 /** The line a redirect return that failed shows: one sentence per cause. */
 function returnFailure(error: unknown, backend: 'dropbox' | 'google-drive'): string {

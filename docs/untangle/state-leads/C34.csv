@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C34,web sync,Unfinished sign-in: tell a refused entry write apart from a log-off,gap,not started,"SignInUnfinishedError (widget-src/src/storage/pkce.ts) is raised wherever setSignIns refuses the exchange's entries, a log-off or another refused write such as a full device store, and the line names a log-off. resolveBackend (widget-src/standalone/resolve-backend.ts) shows no line when rememberSignIn refuses after a saved exchange. Both are US-09 AC60 limits; a separate cause would need its own words.",,yes
