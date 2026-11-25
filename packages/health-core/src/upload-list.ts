@@ -197,7 +197,8 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
     const shown = shownValue(c.at, c.edit, c.at.kind === 'core' && isCellMetric(c.at.value.metric) ? unitOf(c.at.value.metric) : 'si', choices.editUnits?.[c.ref]);
     const error = errorWords(c.fault, unitOf);
     const replaces = c.v.copy ? null : review.held.get(`${c.file}:${c.ref}`) ?? null;
-    const on = savesOn(lab.days[c.ref], lab.day, now);
+    // A row is named with the day its control shows; one under no control (a column printed on a day still to come) with none.
+    const on = days.has(section) ? savesOn(lab.days[c.ref], lab.day, now) : null;
     const dayLine = on && (longDate(on) ?? on);
     const from = [lab.name, dayLine].filter(Boolean).join(', ');
     const again = named.has(`${c.v.label}\n${from}`);

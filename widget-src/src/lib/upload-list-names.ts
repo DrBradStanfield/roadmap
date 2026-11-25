@@ -10,5 +10,8 @@ import type { ListRow } from '@roadmap/health-core/upload-list';
 export interface ListNameIds { valueFrom: string; commas: readonly [string, string]; again: string; file: (fileId: string) => string; day: (section: string) => string }
 
 /** A row's `aria-labelledby`: its test (`labelId`), "value from", its file, then its day while it has one, then ", another reading". */
-export const rowLabelledBy = (row: Pick<ListRow, 'fileId' | 'section' | 'dayLine' | 'again'>, labelId: string, ids: ListNameIds) =>
-  [labelId, ids.valueFrom, ids.file(row.fileId), ...(row.dayLine ? [ids.commas[0], ids.day(row.section)] : []), ...(row.again ? [ids.again] : [])].join(' ');
+export const rowLabelledBy = (row: Pick<ListRow, 'fileId' | 'section' | 'dayLine' | 'again'>, labelId: string, ids: ListNameIds) => {
+  // An id the list does not draw is never referred to, nor the comma before it.
+  const day = row.dayLine ? ids.day(row.section) : '';
+  return [labelId, ids.valueFrom, ids.file(row.fileId), ...(day ? [ids.commas[0], day] : []), ...(row.again ? [ids.again] : [])].filter(Boolean).join(' ');
+};

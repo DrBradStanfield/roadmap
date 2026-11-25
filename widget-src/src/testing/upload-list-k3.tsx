@@ -28,8 +28,9 @@
  *   K3j the list's announcement changes only on a person's step where a row has an error text it did not have (from the
  *       engine's rows), never on an engine step; a step of one choice says each such text; no row is an alert (S7, T2, T3);
  *   K3k each row's input and tick, and each day control's button, is named the engine's `name` (US-13 AC28), read from the
- *       accessibility tree, each comma after a space as the name algorithm joins references. Mutation: a row's day
- *       referred to while it has none fails it on the first undated report.
+ *       accessibility tree, each comma after a space as the name algorithm joins references. Mutations: a row's day
+ *       referred to while it has none fails it on the first undated report; a day named on a row under no day control (a
+ *       column printed on a day still to come) fails it on seed 1.
  * Mutations it was shown failing on (PR body): M1 commit skipped on focus moving to another row; M2 the input's value
  * read from a stale local copy; M3 day groups keyed by index; M4 a letter's title draft never sent; M5 the draft's unit
  * re-read from the row at commit; M6 a row hidden whatever its draft or focus; M7 held text labelled by the row's unit now;
@@ -71,8 +72,10 @@ type File = Open['files'][number];
 const COLUMN = '2026-09-15';
 const X0: UnifiedExtractionResult = {
   classification: 'lab_report', reportDate: DAY, unrecognized: [], document: null,
-  // Lp(a) out of range: f0 lands with an error, an engine step that must say nothing (T3).
-  values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', question: 'Is this HbA1c?', unitGuessed: true }), core({ metric: 'lpa', valueSI: 9000, displayValue: 9000, displayUnit: 'nmol/L' })], additionalValues: [extra()],
+  // Lp(a) out of range: f0 lands with an error, an engine step that must say nothing (T3). A previous column printed on a
+  // day still to come has no day control, so its row is named with no day (K3k, PR 2161 review).
+  values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', question: 'Is this HbA1c?', unitGuessed: true }), core({ metric: 'lpa', valueSI: 9000, displayValue: 9000, displayUnit: 'nmol/L' }),
+    core({ metric: 'hba1c', valueSI: 41, displayValue: 41, displayUnit: 'mmol/mol', recordedAt: '2026-12-01' })], additionalValues: [extra()],
 };
 const X1: UnifiedExtractionResult = {
   classification: 'lab_report', reportDate: null, unrecognized: [], document: null,

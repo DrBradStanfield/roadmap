@@ -50,6 +50,17 @@ describe('US-13 AC28: each value and day control is named from text on screen', 
     expect(within(row(r.key)).getByRole('textbox', { name: spoken(r.name) })).toBeTruthy();
   });
 
+  it('a value whose previous column printed a day still to come has no day control: test and file alone, no dangling comma', () => {
+    const host = mount(open([labRead('f0', 'report.pdf', { values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', recordedAt: '2026-12-01' })] })]));
+    const { list } = host.see();
+    const r = list.rows[1];
+    expect(list.days.some((d) => d.key === r.section)).toBe(false);
+    expect(r).toMatchObject({ dayLine: null, name: 'HbA1c value from report.pdf' });
+    expect(within(row(r.key)).getByRole('checkbox', { name: 'HbA1c value from report.pdf' })).toBeTruthy();
+    const refs = within(row(r.key)).getByRole('checkbox').getAttribute('aria-labelledby')!.split(' ');
+    expect(refs.every((id) => id && document.getElementById(id))).toBe(true);
+  });
+
   it('a day control: its label, the previous column\'s printed day, then the file\'s name', () => {
     const host = mount(open([labRead('f0', 'report.pdf', { values: [core({}), core({ metric: 'hba1c', valueSI: 40, displayValue: 40, displayUnit: 'mmol/mol', recordedAt: '2026-09-15' })] })]));
     const days = host.see().list.days;
