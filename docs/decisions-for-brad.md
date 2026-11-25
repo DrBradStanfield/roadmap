@@ -67,10 +67,6 @@ issue, and nothing private.
   the plan page's order, colours and urgent banner are hand copies on each app. Options: one wording in the shared
   engine, chosen by you; leave two copies. Recommendation: one wording, with you choosing it; the display rules move
   only after your yes.
-- **The pause before an agent files feedback.** Issue: report_feedback, the agent tool that files feedback, makes
-  the agent wait 10 seconds before the second, confirming call. The one session last week that tried it filed nothing
-  after four tries. Options: keep the pause; say how many seconds are left; reword the line when the time runs out.
-  Recommendation: keep the pause and say the seconds left.
 - **A "Not saved" marker on chat replies with edits.** Issue: a reply that lands after the person left its thread
   saves nothing, but reads as saved when they reopen the thread (design: [drafts/c22-c26-design.md](drafts/c22-c26-design.md)).
   Options: (A) store a "Not saved" marker on every such reply (new words, a new stored field, iPhone too); (B) only on
@@ -165,6 +161,9 @@ issue, and nothing private.
 - A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
   same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
   probably use the same code". No new words.
+- The pause before an agent files feedback stays, and an early confirm now says the seconds left ("go with your
+  recommendations"): "That confirm receipt is not valid yet: it can be used in 7 seconds (from <time>), after the user
+  has answered. Do not retry before then; end your turn. Nothing was written." (US-36 AC14).
 - "Two server items to close" are closed with no change ("go with your recommendations"): slow lab-import warnings stay
   without a deploy tag, and no deploy gate is added for the chat prompt file, since chat already refuses and alerts
   when it is missing (leads C8, H67).
