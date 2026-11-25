@@ -3,12 +3,15 @@
  * US-10 AC17 (root fix R6, PR 3b): failures raised inside a record save but
  * before its upload went out now name `no-answer` or `refused` where they are
  * raised. Before, they named no outcome, so SyncManager marked them may have
- * landed (write-refusal.ts afterWrite): the save state kept the landed mark,
- * an erase that failed so was kept in memory, and the user read "may have
- * landed". Each row runs the real adapter under SyncManager.save, and an erase
- * under RecordSession with a device copy that refuses too, against synthetic
- * HTTP; read through public behaviour, never hint words. Every row here
- * changed on purpose: each was landed, kept, and told LANDED before.
+ * landed (write-refusal.ts afterWrite): the save state kept the landed mark
+ * and an erase that failed so was kept in memory. Each row runs the real
+ * adapter under SyncManager.save, and an erase under RecordSession with a
+ * device copy that refuses too, against synthetic HTTP; read through public
+ * behaviour, never hint words: the outcome, the landed mark, the save cause,
+ * the erase. Every row changed on purpose: each was landed and kept before.
+ * The `describeStorageFailure` sentence is pinned only for health-core's Drive
+ * adapter, whose surfaces draw it (the hosted MCP and the iPhone); the web
+ * page never calls it, so the web adapters' rows pin no sentence.
  * After an upload, nothing here is `refused` unless it is that upload's own
  * refusal: these rows fail before any upload is sent (the stubs count them).
  */
@@ -25,6 +28,7 @@ import { mayHaveLanded } from '@roadmap/health-core/write-refusal';
 import { DropboxAdapter as WebDropboxAdapter } from './dropbox';
 import { GitHubAdapter } from './github';
 import { LocalStorageAdapter } from './local-storage-adapter';
+import { saveCauseOf } from '../testing/save-cause';
 
 const NOW = '2026-11-25T10:00:00.000Z';
 const ctx = { deviceId: 'phone', now: NOW };
@@ -147,7 +151,9 @@ async function outcomeOf(c: Case) {
   const error = await sync.save(ROADMAP_DOC.migrate(JSON.parse(json), ctx)).then(() => null, (e: unknown) => e);
   expect(error).toBeInstanceOf(StorageError);
   expect(uploads).toBe(0);
-  const outcome = { landed: mayHaveLanded(error), outcome: (error as StorageError).outcome, told: toldOf(error) };
+  // The sentence only where a surface draws it: health-core's Drive adapter (the hosted MCP, the iPhone).
+  const told = c.startsWith('drive') ? { told: toldOf(error) } : {};
+  const outcome = { landed: mayHaveLanded(error), outcome: (error as StorageError).outcome, cause: await saveCauseOf(error), ...told };
   vi.unstubAllGlobals();
   localStorage.clear();
   return { ...outcome, erase: await eraseOutcome(c) };
@@ -159,7 +165,7 @@ afterEach(() => {
   localStorage.clear();
 });
 
-/** [case, outcome]. Every row: not landed, told SILENT, the erase put back. Was: landed, LANDED, kept. */
+/** [case, outcome]. Every row: not landed, the save cause 'other' (retried), the erase put back; Drive's rows told SILENT. Was: landed, kept, Drive told LANDED. */
 const ROWS: Array<[Case, 'no-answer' | 'refused']> = [
   // GitHub's private-repository check before the first write (github.ts assertPrivate).
   ['github repo check 500', 'no-answer'],
@@ -179,8 +185,8 @@ const ROWS: Array<[Case, 'no-answer' | 'refused']> = [
 ];
 
 describe('US-10 AC17: a record save that fails before its upload stored nothing', () => {
-  it.each(ROWS)('%s: %s, not landed, told nothing written, the erase put back', async (c, outcome) => {
-    expect(await outcomeOf(c)).toEqual({ landed: false, outcome, told: SILENT, erase: 'put back' });
+  it.each(ROWS)('%s: %s, not landed, retried, the erase put back', async (c, outcome) => {
+    expect(await outcomeOf(c)).toEqual({ landed: false, outcome, cause: 'other', ...(c.startsWith('drive') ? { told: SILENT } : {}), erase: 'put back' });
   });
 });
 
@@ -193,6 +199,6 @@ describe('US-10 AC17: the device tier (LocalStorageAdapter) when setItem fails f
       setItem.call(this, key, value);
     });
     const error = await sync.save(ROADMAP_DOC.migrate(JSON.parse(json), ctx)).then(() => null, (e: unknown) => e);
-    expect({ landed: mayHaveLanded(error), outcome: (error as StorageError).outcome, told: toldOf(error) }).toEqual({ landed: false, outcome: 'refused', told: SILENT });
+    expect({ landed: mayHaveLanded(error), outcome: (error as StorageError).outcome, cause: await saveCauseOf(error) }).toEqual({ landed: false, outcome: 'refused', cause: 'other' });
   });
 });

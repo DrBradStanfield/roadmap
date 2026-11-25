@@ -16,7 +16,7 @@ import { createMeasurement, type RoadmapFile } from './roadmap-file';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { transition, writtenNowhere, type SaveState } from './save-state';
 import { SyncManager } from './sync-manager';
-import { mayHaveLanded, refusedWrite, uncertainWrite } from './write-refusal';
+import { mayHaveLanded, uncertainWrite } from './write-refusal';
 
 /** A memory store whose writes can be made to fail, or land and then fail the re-read after them. */
 class FailingStore extends MemoryAdapter {
@@ -283,7 +283,7 @@ describe('US-10 AC16, AC17: the outcome a failure is raised with (owner ruling A
   const status = (n: number, upload = false) => new StorageError(`write failed (${n})`, undefined, undefined, n, undefined, answerOutcome(n, upload));
   const rows: Array<[string, unknown, string]> = [
     ['a full provider (reason storage-full)', new StorageError('Dropbox is full', 'Nothing was written.', undefined, 409, 'storage-full', 'refused'), 'refused'],
-    ['a page whose device writes stopped (refusedWrite)', refusedWrite(Object.assign(new Error('stopped'), { name: 'WritesStoppedError' })), 'refused'],
+    ['a page whose device writes stopped (WritesStoppedError, raised refused)', Object.assign(new StorageError('stopped', undefined, undefined, undefined, undefined, 'refused'), { name: 'WritesStoppedError' }), 'refused'],
     ...[400, 401, 403, 404, 409, 412, 413, 422].map((n): [string, unknown, string] => [`HTTP ${n} to an upload`, status(n, true), 'refused']),
     ...[408, 429, 500, 502, 503, 504, 507].map((n): [string, unknown, string] => [`HTTP ${n} to a call that sent no write`, status(n), 'no-answer']),
     ...[408, 429, 500, 502, 503, 504, 507].map((n): [string, unknown, string] => [`HTTP ${n} to an upload`, status(n, true), 'may-have-landed']),
@@ -383,7 +383,7 @@ const quota = () => Object.assign(new Error('full'), { name: 'QuotaExceededError
 const FULL = 'Could not save on this device (local storage may be full).';
 const deviceFailures: Array<[string, () => Error]> = [
   ['the record write is full (nothing stored)', () => new StorageError(FULL, undefined, quota(), undefined, undefined, 'refused')],
-  ['writes stopped by a log-off (WritesStoppedError)', () => refusedWrite(Object.assign(new Error('stopped'), { name: 'WritesStoppedError' }))],
+  ['writes stopped by a log-off (WritesStoppedError)', () => Object.assign(new Error('stopped'), { name: 'WritesStoppedError', outcome: 'refused' })],
 ];
 
 describe('S69, US-11 AC4c: an erase the device tier refused outright is put back', () => {

@@ -2,13 +2,24 @@
  * US-10 AC13 (root fix R6, PR 2): what the callers conclude from a failed
  * save to the local file (FileAdapter, the CLI and the stdio MCP). Real
  * FileAdapter under SyncManager on a temp folder; read through public
- * behaviour, never hint words. Every failure here comes before the atomic
- * replace or is the replace itself, which leaves the old file whole ("Your
- * record was not changed"). R6 PR 3b (US-10 AC17) names them `refused` where
- * they are raised; before, the adapter named none and SyncManager marked them
- * may-have-landed (H127). Rows changed on purpose: was landed, not refused.
+ * behaviour, never hint words. Every failure but the rename comes before the
+ * rename that replaces the record ("Your record was not changed"). R6 PR 3b
+ * (US-10 AC17) names them `refused` where they are raised; before, the adapter
+ * named none and SyncManager marked them may-have-landed (H127). Rows changed
+ * on purpose: was landed, not refused. The rename itself reporting a failure
+ * stays may-have-landed: on a network filesystem it can land and still report one.
  */
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+
+/** The rename that replaces the record, made to report a failure while `renameFails` is set. */
+let renameFails = false;
+vi.mock('node:fs', async (original) => {
+  const real = await original<typeof import('node:fs')>();
+  return { ...real, renameSync: (...args: Parameters<typeof real.renameSync>) => {
+    if (renameFails) throw Object.assign(new Error('synthetic rename failure'), { code: 'EIO' });
+    return real.renameSync(...args);
+  } };
+});
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -36,7 +47,7 @@ function record(): string {
   return path;
 }
 
-type Shape = 'unwritable folder' | 'held lock' | 'backup' | 'replace';
+type Shape = 'unwritable folder' | 'held lock' | 'backup' | 'temp create' | 'rename';
 
 /** The adapter, failing the way `shape` names once `arm` runs. */
 function failing(path: string, shape: Shape): { adapter: FileAdapter; arm: () => void } {
@@ -46,7 +57,8 @@ function failing(path: string, shape: Shape): { adapter: FileAdapter; arm: () =>
     if (shape === 'unwritable folder') chmodSync(dir, 0o500);
     if (shape === 'held lock') writeFileSync(`${path}.lock`, '');
     if (shape === 'backup') vi.spyOn(seams, 'backupPath').mockReturnValue(join(dir, 'missing', 'x.bak'));
-    if (shape === 'replace') vi.spyOn(seams, 'tempPath').mockReturnValue(join(dir, 'missing', 'x.tmp'));
+    if (shape === 'temp create') vi.spyOn(seams, 'tempPath').mockReturnValue(join(dir, 'missing', 'x.tmp'));
+    if (shape === 'rename') renameFails = true;
   };
   return { adapter, arm };
 }
@@ -94,11 +106,12 @@ async function eraseOutcome(shape: Shape): Promise<{ erase: 'put back' | 'kept';
 
 afterEach(() => {
   vi.restoreAllMocks();
+  renameFails = false;
   chmodSync(dir, 0o700);
   rmSync(dir, { recursive: true, force: true });
 });
 
-const SHAPES: Shape[] = ['unwritable folder', 'held lock', 'backup', 'replace'];
+const SHAPES: Shape[] = ['unwritable folder', 'held lock', 'backup', 'temp create'];
 
 describe('US-10 AC13, AC17: a failed save to the local file is refused, nothing stored', () => {
   it.each(SHAPES)('%s: not landed, refused (AC17: was landed)', async (shape) => {
@@ -109,4 +122,14 @@ describe('US-10 AC13, AC17: a failed save to the local file is refused, nothing 
   it.each(SHAPES.filter((s) => s !== 'backup'))('%s: an erase that fails so is put back, and the file is unchanged (AC17)', async (shape) => {
     expect(await eraseOutcome(shape)).toEqual({ erase: 'put back', file: 'unchanged' });
   }, 15_000);
+});
+
+describe('US-10 AC17: the rename that replaces the record reports a failure', () => {
+  it('may have landed, not refused (unchanged from main): a rename can land and still report one', async () => {
+    expect(await outcomeOf('rename')).toEqual({ landed: true, refused: false, cause: 'other' });
+  });
+
+  it('an erase that fails so is kept, not put back (the safe side); here the rename did not land', async () => {
+    expect(await eraseOutcome('rename')).toEqual({ erase: 'kept', file: 'unchanged' });
+  });
 });

@@ -20,7 +20,7 @@
 import { chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
-import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
+import { ConflictError, LANDED_HINT, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
 import { RecordShapeError } from './migrate';
 
 /** How many `.bak-` siblings to keep beside the record. */
@@ -108,8 +108,7 @@ function lockAge(lockPath: string): string {
   return `The lock file ${name} is about ${n} ${units[i][0]}${n === 1 ? '' : 's'} old.`;
 }
 
-/** A failure this adapter decided itself, before or instead of the atomic replace: the record was not
- *  changed (a rename that fails leaves the old file whole), so it is refused (US-10 AC16). */
+/** A failure this adapter met before the rename that replaces the record: nothing was changed, so refused (US-10 AC17). */
 const refusal = (message: string, hint?: string): StorageError => new StorageError(message, hint, undefined, undefined, undefined, 'refused');
 
 export class FileAdapter implements StorageAdapter {
@@ -469,19 +468,21 @@ export class FileAdapter implements StorageAdapter {
    */
   private replace(text: string, mode: number): void {
     const temp = this.tempPath();
+    const clear = () => {
+      try { rmSync(temp, { force: true }); } catch { /* a leftover `.tmp-` is harmless; the failure below is what matters */ }
+    };
     try {
       create(temp, text, mode);
+    } catch {
+      clear();
+      throw refusal(`Cannot write ${basename(this.path)}`, 'Check the file and its folder are writable. Your record was not changed.');
+    }
+    try {
       renameSync(temp, this.path);
     } catch {
-      try {
-        rmSync(temp, { force: true });
-      } catch {
-        // A leftover `.tmp-` is harmless; the failure below is what matters.
-      }
-      throw refusal(
-        `Cannot write ${basename(this.path)}`,
-        'Check the file and its folder are writable. Your record was not changed.',
-      );
+      clear();
+      // A rename that reports a failure can still have landed (a network filesystem): the safe side.
+      throw new StorageError(`Cannot write ${basename(this.path)}`, LANDED_HINT, undefined, undefined, undefined, 'may-have-landed');
     }
   }
 
