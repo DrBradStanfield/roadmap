@@ -13,6 +13,7 @@ import { CANONICAL_UNITS, rangeFault, UNIT_DEFS, type MetricType, type Validatio
 import type { ApiScreening } from './screening-inputs';
 import { birthKept } from './validation';
 import { comparatorOf, limitOf, limitRepresentative, withRowValue } from './lab-limits';
+import { CORE_BLOOD_UNITS } from './roadmap-file';
 
 /**
  * Maps HealthInputs field names to metric_type values for storage in the
@@ -159,10 +160,9 @@ export function mergeLongitudinalInputs(
 /**
  * Metric types for blood test results (as opposed to body measurements).
  * Used to determine which measurements should use the user-selected blood test date.
+ * The core blood tests' keys, in their order: the matrix draws its rows in it.
  */
-export const BLOOD_TEST_METRICS: ReadonlyArray<string> = [
-  'hba1c', 'creatinine', 'psa', 'apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa',
-];
+export const BLOOD_TEST_METRICS: ReadonlyArray<string> = Object.keys(CORE_BLOOD_UNITS);
 
 /** Metric types for the vitals (the body measurements the vitals matrix shows). */
 export const VITAL_METRICS: ReadonlyArray<string> = ['weight', 'waist', 'systolic_bp', 'diastolic_bp'];
