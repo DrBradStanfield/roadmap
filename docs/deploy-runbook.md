@@ -266,8 +266,8 @@ to both — deploy twice, see "Shopify app configs".**)
   **Chat surface (2026-09-29):** the site-chat FAB's title, subtitle and empty state come from a
   second shop metafield, `health_roadmap.chat_surface` (`doctor` default | `brand`), emitted as
   `data-surface` by `chat-embed.liquid` and read by `resolveChatSurface` in `assistant-config.ts`.
-  The inline chat panel (`ChatEmbed`) takes the same words from the same table (`chat-copy.ts`,
-  US-15 AC77); the tool page and the chatbot embed block emit no `data-surface`, so they read as `doctor`.
+  Since US-15 AC77 `app-block.liquid` and `chatbot-embed.liquid` emit it too, and every chat (the pop-up, the
+  inline panel, the embed) takes its words from one table (`chat-copy.ts`), so one store reads one way.
   `microvitamin.com` is set to `brand` ("Ask MicroVitamin", products copy); `drstanfield.com` is
   unset. Same `metafieldsSet` call as the name; no redeploy needed after the extension is live.
 

@@ -15,7 +15,7 @@ import { HealthTool } from '../src/components/HealthTool';
 import { GuestContext } from '../src/lib/storage-notice';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initRoadmapStore, setPreEraseHook } from '../src/lib/roadmap-data';
-import { resolveAssistantName, setAssistantName, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
+import { resolveAssistantName, setAssistantName, resolveChatSurface, setChatSurface, resolveSkipEmailGate, setSkipEmailGate } from '../src/lib/assistant-config';
 import { resolveMarketCountry, setMarketCountry } from '../src/lib/market-country';
 import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
 import { RemindersEnrolledNotice } from './reminders-control';
@@ -45,6 +45,8 @@ async function main() {
   }
   // Per-store chatbot display name (default "Brad AI"; overridable per store).
   setAssistantName(resolveAssistantName(container));
+  // US-15 AC77: the store's chat words (doctor or brand), by the site chat's rule.
+  setChatSurface(resolveChatSurface(container));
   // US-44: the funnel page's block shows Save as PDF without the email box.
   setSkipEmailGate(resolveSkipEmailGate(container));
   // US-61: the market country, for the US product blocks (Shopify build only).

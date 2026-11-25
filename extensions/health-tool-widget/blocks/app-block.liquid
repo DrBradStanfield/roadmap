@@ -41,6 +41,8 @@
   data-clarity-mask="true"
   data-upload-url="{{ 'health-upload.js' | asset_url }}"
   data-assistant-name="{{ shop.metafields.health_roadmap.chat_assistant_name | default: 'Brad AI' | escape }}"
+  {% comment %} US-15 AC77: the store's chat posture (doctor | brand), as chat-embed.liquid emits it. {% endcomment %}
+  data-surface="{{ shop.metafields.health_roadmap.chat_surface | default: 'doctor' | escape }}"
   {% comment %} US-44: on a funnel page (/pages/start) the visitor already gave
        their email, so "Save as PDF" shows without the email box. Off by default;
        the homepage and /pages/roadmap blocks carry no settings and stay gated.
