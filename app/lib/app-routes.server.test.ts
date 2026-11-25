@@ -593,6 +593,15 @@ describe('US-52 AC4f: the gate with its limit maps full of other callers', () =>
     expect((await replay.json()).reason).toBe('key_exists');
     expect(store.rows.size).toBe(1);
   });
+
+  it('a forgotten challenge used again with a key not registered takes the ordinary registration path (US-52 AC1a limit, AC16)', async () => {
+    const spent = await fresh();
+    expect((await reg(spent, 'AA==', '198.51.100.40')).status).toBe(401); // spends it
+    fill(appLimits.challenges); // at the bound: `spent`, the oldest entry, is forgotten
+    const again = await reg(spent, device.attest(spent).toString('base64'), '198.51.100.41');
+    expect(again.status).toBe(200); // checked and registered as any new key
+    expect(store.rows.has(device.keyId)).toBe(true);
+  });
 });
 
 describe('US-52 AC5: the chat turn', () => {
