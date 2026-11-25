@@ -22,6 +22,7 @@ import {
   readNumericCell,
   sameAsSaved,
   savedCellText,
+  trendGeometry,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { NumericInputCell } from './NumericInputCell';
@@ -324,5 +325,30 @@ export function ValueCell({
     >
       {shown}
     </button>
+  );
+}
+
+/** A small trend line. A point printed as a limit (`limits[i]`) is a hollow
+ *  dot at its bound, left out of the line (US-12 AC20). */
+export function Sparkline({ points, limits, width = 44, height = 18 }: { points: number[]; limits?: boolean[]; width?: number; height?: number }) {
+  if (points.length < 2) {
+    return (
+      <svg width={width} height={height} style={{ display: 'block' }}>
+        <line x1="0" y1={height / 2} x2={width} y2={height / 2}
+              stroke="var(--bt-ink-200)" strokeDasharray="2 3" strokeWidth="1"/>
+      </svg>
+    );
+  }
+  // Area path: line + drop down to baseline + back to its start, closed.
+  const { coords, exact, line: d, area: areaD } = trendGeometry(points, limits, width, height, height - 2);
+  return (
+    <svg width={width} height={height} style={{ display: 'block' }}>
+      {areaD && <path d={areaD} fill="var(--bt-ink-100)" opacity="0.7"/>}
+      {areaD && <path d={d} fill="none" stroke="var(--bt-ink-700)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>}
+      {exact.length === 1 && <circle cx={exact[0][0]} cy={exact[0][1]} r="1.75" fill="var(--bt-ink-700)"/>}
+      {coords.map(([x, y], i) => limits?.[i] && (
+        <circle key={i} className="bt-spark-limit" cx={x} cy={y} r="1.75" fill="none" stroke="var(--bt-ink-700)" strokeWidth="1"/>
+      ))}
+    </svg>
   );
 }

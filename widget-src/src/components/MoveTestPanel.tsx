@@ -15,7 +15,7 @@ import { cellLabel, savedCellText, type CellUnit } from '../lib/blood-test-cell'
 import { lpaRowsToCheck, useLpaKept, useLpaUnit } from '../lib/lpa-unit';
 import type { MoveOutcome } from '../storage/roadmap-store';
 import { getShownErase } from '../lib/roadmap-data';
-import { SAVE_ERRORS, headerDay, useLiveRegion } from './BloodTestTimeline';
+import { SAVE_ERRORS, headerDay, useLiveRegion } from './MatrixSavedCells';
 
 type Row = FileMeasurement | FileLabValue;
 

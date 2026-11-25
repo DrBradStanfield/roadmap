@@ -27,7 +27,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { scrollToTop } from '../lib/reveal';
 import { useIsMobile } from '../lib/useIsMobile';
 import { useAutoAdvance } from '../lib/useAutoAdvance';
-import { ValueCell, useLiveRegion } from './BloodTestTimeline';
+import { ValueCell, useLiveRegion } from './MatrixSavedCells';
 import { AddLabTest } from './AddLabTest';
 import { LAB_EGFR, isLabEgfr, pressureText, subjectKey, tintOf, type RowContext, type ValueSubject } from './MyDataRows';
 import { PlanTile } from './PlanCards';
