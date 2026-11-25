@@ -46,7 +46,7 @@ issue, and nothing private.
 ## Decided
 
 2026-11-26, Brad's words in quotes:
-- Per-address limits (PR 2082, open): "Recommendation: raise the two, then merge." "do it". For a key that is an
+- Per-address limits (PR 2082, merged): "Recommendation: raise the two, then merge." "do it". For a key that is an
   IPv6 /64, feedback allows 10 an hour and new guest chats 30 an hour; every other limit and every IPv4 key is
   unchanged. The guard now requires every limiter to state its key type. For later: many phones behind one carrier
   IPv4 address share the IPv4 numbers, as they did before.
