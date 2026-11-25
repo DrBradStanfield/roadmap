@@ -229,7 +229,7 @@ const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOp
   }, []);
   return (
     <li>
-      <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)} data-row={row.key ?? subjectKey(row.subject)}>
+      <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)}>
         <span className="md-row-name" ref={name}>
           <span className="md-row-label">{row.label}</span>
           {(row.target || date) && (
