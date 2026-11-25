@@ -26,6 +26,8 @@ let fetchCalls: string[];
 let reload: ReturnType<typeof vi.fn>;
 /** Dropbox reads wait here until the test answers them. */
 let heldReads: { reject: (e: Error) => void }[];
+/** A fetch that fails is the unreachable cause (US-09 AC56). */
+const DROPBOX_UNREACHABLE = 'Dropbox could not be reached, so your record there could not be copied to this browser. Try again once it answers.';
 
 function fakeFetch(input: RequestInfo | URL): Promise<Response> {
   const url = String(input instanceof Request ? input.url : input);
@@ -42,11 +44,12 @@ beforeAll(() => {
 });
 
 beforeEach(async () => {
+  // Storage first: a page loaded on the last test's logged-off storage would read as logged off (US-09 AC56).
+  localStorage.clear();
   vi.resetModules();
   ({ BackendPickerModal } = await import('./backend-picker'));
   trackProductEvent = (await import('../src/lib/server-api')).trackProductEvent as unknown as ReturnType<typeof vi.fn>;
   trackProductEvent.mockClear();
-  localStorage.clear();
   localStorage.setItem('health_roadmap_backend', 'dropbox');
   localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({
     accessToken: 'sl.SYNTHETIC_ACCESS', refreshToken: 'SYNTHETIC_REFRESH', expiresAt: Date.now() + 3_600_000,
@@ -90,7 +93,7 @@ describe('US-09: while a connect or log-off runs, the picker shows it on one mou
     expect(logOffLink()?.disabled).toBe(true);
 
     await failHeldReads();
-    await vi.waitFor(() => expect(errorText()).toMatch(/Dropbox could not be reached/));
+    await vi.waitFor(() => expect(errorText()).toBe(DROPBOX_UNREACHABLE));
     expect(optionButtons().every((b) => !b.disabled)).toBe(true);
     expect(logOffLink()?.disabled).toBe(false);
 
@@ -123,7 +126,7 @@ describe('US-09: while a connect or log-off runs, the picker shows it on one mou
     expect(connect.disabled).toBe(true);
 
     await failHeldReads();
-    await vi.waitFor(() => expect(errorText()).toMatch(/Dropbox could not be reached/));
+    await vi.waitFor(() => expect(errorText()).toBe(DROPBOX_UNREACHABLE));
     expect(connect.textContent).toBe('Connect GitHub');
     expect(connect.disabled).toBe(false);
     expect(localStorage.getItem(GITHUB_CONFIG)).toBeNull();

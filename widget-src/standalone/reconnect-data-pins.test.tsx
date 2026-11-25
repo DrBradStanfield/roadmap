@@ -421,7 +421,8 @@ describe('US-09 AC48 (Q6 pins), lead A3: exit (b) the picker\'s move to another 
   async function moveDriveToGitHub(): Promise<Record<string, number>> {
     await chooseGitHub();
     await until(() => !!document.querySelector('dialog .hr-sync-error'), 'the refused move');
-    expect(document.querySelector('dialog .hr-sync-error')?.textContent).toMatch(/Google Drive could not be reached/);
+    // Its sign-in was refused, so the stop names that cause (US-09 AC56).
+    expect(document.querySelector('dialog .hr-sync-error')?.textContent).toBe('Google Drive did not connect, so nothing changed. Please try again.');
     expect(page!.switchFlow.getSwitchFlow().kind).toBe('idle');
     expect(reload).not.toHaveBeenCalled();
     expect(githubFile).toBeNull();
