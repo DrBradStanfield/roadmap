@@ -7,10 +7,9 @@ import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUni
 import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
 import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, weightStepOpen, METRIC_TO_FIELD, withPsaMeasurement } from '@roadmap/health-core/mappings';
+import { LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, weightStepOpen, withPsaMeasurement } from '@roadmap/health-core/mappings';
 import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import { statTiles } from '@roadmap/health-core/stat-tiles';
-import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
 import { localDay, dayOf } from '@roadmap/health-core/merge';
 import { planPsa } from '@roadmap/health-core/measurement-history';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
@@ -23,6 +22,7 @@ import { OpenEvidenceContext } from './PlanCards';
 import { PersonButton } from './SettingsSheet';
 import { MyHealth, type FormSlots } from './MyHealth';
 import { revealAndFocus } from '../lib/reveal';
+import { medicineInputs, planForms } from '../lib/plan-forms';
 import { CHAT_BUBBLES } from './icons';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -535,23 +535,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     });
   }, [selectTab]);
 
-  // The form's medicine and screening questions, as health-core builds them
-  // (the InputPanel parity test pins the two together): a suggestion sits on
-  // the question that asks it (US-62 AC20).
-  const e = effectiveInputs;
-  const hasLipidInput = e.apoB !== undefined || e.ldlC !== undefined || e.totalCholesterol !== undefined || e.hdlC !== undefined;
-  const hasWeightInput = e.hba1c !== undefined || e.triglycerides !== undefined || (e.weightKg !== undefined && e.heightCm !== undefined);
-  const forms = useMemo(() => ({
-    medications: medicationForm(medicationsToInputs(medications), {
-      lipidMarker: planBasis?.lipidMarker ?? null,
-      weightMedTrigger: planBasis?.weightMedTrigger ?? { on: false, reasons: [] },
-      bmi: planBasis?.bmi,
-      hasLipidInput,
-      hasWeightInput,
-      unitFor: (metric) => unitOverrides[METRIC_TO_FIELD[metric]] ?? unitSystem,
-    }),
-    screenings: screeningForm(planBasis?.age, inputs.sex, screeningsToInputs(screenings)),
-  }), [hasLipidInput, hasWeightInput, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
+  // The form's medicine and screening questions (lib/plan-forms.ts): a suggestion sits on the question that asks it (US-62 AC20).
+  const { hasLipidInput, hasWeightInput } = medicineInputs(effectiveInputs);
+  const forms = useMemo(() => planForms({ hasLipidInput, hasWeightInput, medications, screenings, planBasis, sex: inputs.sex, unitOverrides, unitSystem }),
+    [hasLipidInput, hasWeightInput, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
 
   const plan = usePlanView({
     results, shownErase, isValid, tiles, forms, cardsShown: fullForm, // US-07 AC3: MyHealth draws the cards only then
