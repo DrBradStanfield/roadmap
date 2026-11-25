@@ -591,8 +591,7 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
 
       const stashed = await surface.stash({ ...PAYLOAD, route }, deadline());
       if ('refusal' in stashed) throw new Error(stashed.refusal);
-      // The sweep runs after the hand-back, unawaited (AC19).
-      await vi.waitFor(() => expect(cloud.files.has('imports/pending-abandoned.json'), route).toBe(false));
+      expect(cloud.files.has('imports/pending-abandoned.json'), route).toBe(false);
       expect(cloud.files.has('imports/pending-recent.json'), route).toBe(true);
       expect(cloud.files.has('imports/notes.json'), route).toBe(true);
       expect(pendingIn(cloud), route).toContain(`imports/pending-${PAYLOAD.id}.json`);
@@ -624,8 +623,8 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
 
     const stashed = await surface.stash(PAYLOAD, deadline());
     expect(stashed).toHaveProperty('receipt', PAYLOAD.id);
-    await vi.waitFor(() => expect(order).toEqual(['write', 'list', 'remove']));
-    await vi.waitFor(() => expect(cloud.files.has('imports/pending-abandoned.json')).toBe(false));
+    expect(order).toEqual(['write', 'list', 'remove']);
+    expect(cloud.files.has('imports/pending-abandoned.json')).toBe(false);
 
     // A park the provider refuses: the refusal stands, and Sentry hears status and class only.
     vi.mocked(Sentry.captureMessage).mockClear();
@@ -637,29 +636,6 @@ describe('US-35 AC7 — a consumed pending file is deleted at once, and a delete
       level: 'warning', tags: { feature: 'mcp_import', errorClass: 'StorageError', httpStatus: 429 },
     });
     expect(JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls)).not.toMatch(new RegExp(`${PAYLOAD.id}|imports/`));
-  });
-
-  it('US-35 AC19: a sweep slower than the pause does not hold the hand-back, so a commit the moment the receipt returns is early', async () => {
-    const cloud = new MemoryCloud();
-    cloud.files.set('imports/pending-abandoned.json', { json: '{}', version: 1, modified: '2026-09-02T07:30:00.000Z' });
-    const adapter = new MemoryAdapter(cloud);
-    let t = Date.parse(NOW);
-    const list = adapter.list.bind(adapter);
-    // A fast park, then a sweep whose listing takes 15 s on the request's clock.
-    adapter.list = async (...args) => {
-      await new Promise((r) => setTimeout(r, 1));
-      t += 15_000;
-      return list(...args);
-    };
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90, clock: () => t });
-    const stashed = await surface.stash(PAYLOAD, deadline());
-    if ('refusal' in stashed) throw new Error(stashed.refusal);
-    const handBack = new Date(t).toISOString();
-    expect(handBack).toBe(NOW); // returned before the sweep's 15 s
-    const commit = (at: string) => surface.open({ receipt: stashed.receipt, accept: [], replace: [], approval: APPROVED }, createEmptyFile({ deviceId: 'test', now: NOW }), at, deadline());
-    expect(await commit(handBack)).toEqual({ refusal: expect.stringMatching(/^That confirm receipt is not valid yet: it can be used from 2026-09-02T10:00:10\.000Z/) });
-    await vi.waitFor(() => expect(cloud.files.has('imports/pending-abandoned.json')).toBe(false));
-    expect(await commit('2026-09-02T10:00:10.000Z')).toEqual(PAYLOAD);
   });
 
   it('a delete that fails does not fail the call — it is one count, naming no file', async () => {

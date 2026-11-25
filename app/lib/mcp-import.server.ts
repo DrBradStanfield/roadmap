@@ -529,12 +529,12 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       const { mac, issued } = signStep('import', macFields(payload.id, payload), conn, audience, clock());
       const pending: PendingFile = { v: 2, payload, issued, mac };
       // Park first, sweep after: deletes racing the park drew a Dropbox 429 that refused it (AC18).
-      // A refused park skips the sweep, and the next stash sweeps. The receipt never waits for it (AC19): it runs to the deadline unawaited and never throws.
+      // A refused park skips the sweep: the provider just pushed back, and the next stash sweeps.
       const parked = await adapter.write(pendingName(payload.id), pending, null, signal).then(() => true, countParkFailure);
       if (!parked) {
         return { refusal: 'The candidates could not be parked in the user’s folder, so there is nothing to commit. Try the import again.' };
       }
-      void sweepStale(Date.parse(payload.createdAt), signal);
+      await sweepStale(Date.parse(payload.createdAt), signal);
       return { receipt: payload.id, expiresAt: new Date((issued + RECEIPT_LIFETIME_SECONDS) * 1000).toISOString() };
     },
 
