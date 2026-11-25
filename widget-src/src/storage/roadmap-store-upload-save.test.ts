@@ -14,6 +14,7 @@ import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
 import type { UploadFile, UploadState } from '@roadmap/health-core/upload-flow';
 import { reviewedWrites, uploadReview } from '@roadmap/health-core/upload-review';
 import { uploadSave } from '@roadmap/health-core/upload-save';
+import type { RecordSession } from '@roadmap/health-core/record-session';
 import { Sentry } from '../lib/sentry';
 import { emptyHeld, type Held } from '../lib/upload-read';
 import { webUploadIO } from '../lib/upload-save-io';
@@ -153,6 +154,19 @@ describe('US-16 AC2a: the Save writes under the erase its state carries', () => 
     const answer = await store.saveUpload(ENGINE, stamped({ ...s, erase: store.shownErase } as UploadState, store.shownErase), NOW, true, io(), PERSON);
     expect(answer).toMatchObject({ ok: true, outcome: { values: 2, documents: 1 } });
     expect(rowsOf(store)).toMatchObject({ labs: 2, documents: 2 });
+  });
+
+  // Lead H109: the store's own check, pinned apart from the session's. With the session's edit made to accept any
+  // erase, a Save pressed before the erase is still refused by the store, before any original is written.
+  it('US-16 AC5 (H109): pressed before an erase, the session\'s edit refusal bypassed: the store refuses it on its own', async () => {
+    const { adapter, store, s } = await erasedAfterThePress();
+    const session = (store as unknown as { session: RecordSession }).session;
+    const edit = session.edit.bind(session);
+    vi.spyOn(session, 'edit').mockImplementation((change) => edit(change, session.eraseIdentity));
+    const before = JSON.stringify(store.file);
+    expect(await store.saveUpload(ENGINE, stamped(s, store.shownErase), NOW, true, io(), PERSON)).toEqual({ ok: false, reason: 'erased', message: 'Failed to save. Please try again.' });
+    expect(adapter.writes).toEqual([]);
+    expect(JSON.stringify(store.file)).toBe(before);
   });
 });
 

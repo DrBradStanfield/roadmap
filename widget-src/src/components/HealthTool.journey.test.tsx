@@ -855,6 +855,11 @@ describe('US-03 AC6, US-16 AC1 (Brad 2026-11-13): only a saved value drives the 
     await wait(1000);
     expect([chat.context?.systolicBp, chat.context?.diastolicBp]).toEqual([130, 85]);
     expect(await activeOn('systolic_bp')).toEqual([[130, '2026-09-01']]);
+
+    typeInto(bpHalf(vitalsMatrix(view.container), 'Diastolic'), '95'); // the pair whole
+    leaveVitals(view.container); // the grid saves: the pair now drives both
+    await waitFor(async () => expect(await activeOn('systolic_bp')).toEqual([[130, '2026-09-01'], [150, localToday()]]));
+    await waitFor(() => expect([chat.context?.systolicBp, chat.context?.diastolicBp]).toEqual([150, 95]));
   });
 
   it('US-16 AC1: a chat LDL handed to the blood-test grid drives nothing until the person confirms it; the Unsaved values cue shows', async () => {
@@ -1232,6 +1237,10 @@ describe('leftover form state never writes a value', () => {
     await uploadStarts();
     await wait(1000);
     expect([...await rowsOf('systolic_bp'), ...await rowsOf('diastolic_bp')]).toEqual([]);
+
+    typeInto(bpHalf(vitalsMatrix(view.container), 'Diastolic'), '95'); // the pair whole
+    leaveVitals(view.container); // the grid saves: the pair now drives the chat
+    await waitFor(() => expect([chat.context?.systolicBp, chat.context?.diastolicBp]).toEqual([150, 95]));
   });
 });
 
@@ -1583,6 +1592,11 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     expect(draftInput(bloodMatrix(view.container), 'LDL Cholesterol').value).toBe('2.0');
     expect(ldlTile(view.container)).toBeUndefined();
     expect(chat.context?.ldlC).toBeUndefined();
+
+    const cell = draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
+    press(cell);
+    fireEvent.keyDown(cell, { key: 'Enter' }); // the person confirms it: now it drives the chat
+    await waitFor(() => expect(chat.context?.ldlC).toBe(2));
   });
 
   // Round 5 (scoped back from round 4): what an earlier load of the page left
@@ -1610,6 +1624,12 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     expect(draftInput(bloodMatrix(view.container), 'LDL Cholesterol').value).toBe('2.1');
     expect(ldlTile(view.container)).toBe('3.9 mmol/L');
     expect(chat.context?.ldlC).toBe(3.9);
+
+    const cell = draftInput(bloodMatrix(view.container), 'LDL Cholesterol');
+    press(cell);
+    fireEvent.keyDown(cell, { key: 'Enter' }); // the person confirms it: now it drives the plan and the chat
+    await waitFor(() => expect(ldlTile(view.container)).toBe('2.1 mmol/L'));
+    expect(chat.context?.ldlC).toBe(2.1);
   });
 
   it('a vitals draft restored as the page loads, and typed into, leaves the plan and the chat to the record', async () => {
@@ -1626,6 +1646,9 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     typeInto(draftInput(vitalsMatrix(view.container), 'Weight'), '84.5');
     await wait(200);
     expect(chat.context?.weightKg).toBe(82);
+
+    leaveVitals(view.container); // the grid saves: now it drives the chat
+    await waitFor(() => expect(chat.context?.weightKg).toBe(84.5));
   });
 
   // Brad, 2026-09-25: a draft typed on this page is still on screen after the
@@ -1641,6 +1664,11 @@ describe('US-03: what the plan and the chat read of a draft', () => {
     expect(ldl().value).toBe('3');
     expect(ldlTile(view.container)).toBe('4.0 mmol/L');
     expect(chat.context?.ldlC).toBe(4);
+
+    press(ldl());
+    fireEvent.keyDown(ldl(), { key: 'Enter' }); // the person confirms it: now it drives the plan and the chat
+    await waitFor(() => expect(ldlTile(view.container)).toBe('3.0 mmol/L'));
+    expect(chat.context?.ldlC).toBe(3);
   });
 
   it('US-03 AC6: a draft typed on this page drives the plan and the chat once an upload\'s start saves it', async () => {
