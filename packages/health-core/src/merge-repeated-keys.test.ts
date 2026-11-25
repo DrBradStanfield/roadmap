@@ -70,6 +70,57 @@ describe('US-10 AC15: the latest row by clock wins among rows that share a key i
   });
 });
 
+describe('US-10 AC15: across the erase gate, with nothing rescued, the winning copy also keeps one row per key', () => {
+  const later = med('m1', 'rosuvastatin', '2026-05-01T08:00:00Z', 1);
+  const earlier = med('m2', 'atorvastatin', '2026-05-01T07:00:00Z', 1);
+  const supp = (id: string, updatedAt: string): FileSupplement => ({
+    id, supplementKey: 'omega3', supplementName: id, doseValue: 1, doseUnit: 'g', status: 'active', startedAt: '2026-01-01', updatedAt,
+  });
+  const pref = (enabled: boolean, updatedAt: string): FileReminderPreference => ({ category: 'blood_test', enabled, updatedAt });
+  const snap = (n: number): RecommendationSnapshot => ({
+    date: '2026-05-01', suggestions: Array.from({ length: n }, () => ({ id: 's1' }) as unknown as Suggestion),
+  });
+  /** A copy past one more erase than `loser`, holding two rows for every key. */
+  function erasedWinner(): RoadmapFile {
+    const w = file();
+    w.meta.eraseEpoch = 1;
+    w.medications = [earlier, later];
+    w.supplements = [supp('s_new', '2026-05-01T08:00:00Z'), supp('s_old', '2026-05-01T07:00:00Z')];
+    w.reminderPreferences = [pref(false, '2026-05-01T07:00:00Z'), pref(true, '2026-05-01T08:00:00Z')];
+    w.recommendationSnapshots = [snap(2), snap(1)];
+    return w;
+  }
+  const loser = () => ({ ...file(), medications: [med('m9', 'simvastatin', '2026-05-02T00:00:00Z', 9)] });
+
+  it('keeps the latest by clock for each key, in both merge orders', () => {
+    for (const merged of [mergeFiles(erasedWinner(), loser(), OPTS), mergeFiles(loser(), erasedWinner(), OPTS)]) {
+      expect(merged.meta.eraseEpoch).toBe(1);
+      expect(merged.medications).toEqual([later]);
+      expect(merged.supplements.map((s) => s.id)).toEqual(['s_new']);
+      expect(merged.reminderPreferences.map((p) => p.enabled)).toEqual([true]);
+      expect(merged.recommendationSnapshots.map((s) => s.suggestions.length)).toEqual([2]);
+    }
+    expect(keyed(mergeFiles(erasedWinner(), loser(), OPTS))).toBe(keyed(mergeFiles(loser(), erasedWinner(), OPTS)));
+  });
+
+  it('is idempotent: the result merged with itself changes nothing more', () => {
+    const once = mergeFiles(erasedWinner(), loser(), OPTS);
+    expect(keyed(mergeFiles(once, once, OPTS))).toBe(keyed(once));
+  });
+
+  it('a winner with unique keys, in key order as every merge writes them, comes out as it went in', () => {
+    const w = file();
+    w.meta.eraseEpoch = 1;
+    w.medications = [{ ...earlier, medicationKey: 'ezetimibe' }, later];
+    w.supplements = [supp('s_new', '2026-05-01T08:00:00Z')];
+    w.reminderPreferences = [{ ...pref(true, '2026-05-01T08:00:00Z'), category: 'blood_pressure' }, pref(true, '2026-05-01T08:00:00Z')];
+    w.recommendationSnapshots = [snap(2), { ...snap(1), date: '2026-05-02' }];
+    for (const merged of [mergeFiles(w, loser(), OPTS), mergeFiles(loser(), w, OPTS)]) {
+      expect(keyed(merged)).toBe(keyed(w));
+    }
+  });
+});
+
 /** mulberry32: a small seeded generator, so every run draws the same records. */
 function rng(seed: number): () => number {
   let a = seed >>> 0;
@@ -94,6 +145,9 @@ function keyedFile(r: () => number, side: string): RoadmapFile {
   const stamp = () => ({ updatedAt: pick(STAMPS), ...(r() < 0.8 ? { lamport: n(2) } : null) });
   const f = file();
   f.meta.lastDeviceId = `dev_${side}`;
+  // Copies past different erases meet at the gate; none lists ids or keeps an
+  // erase time, so the higher epoch's copy wins whole.
+  f.meta.eraseEpoch = pick([0, 0, 1]);
   f.medications = Array.from({ length: n(4) }, (): FileMedication => ({
     id: `m_${n(3)}`, medicationKey: pick(['statin', 'ezetimibe']), drugName: pick(['a', 'b']),
     doseValue: n(2), doseUnit: 'mg', ...stamp(),
@@ -176,7 +230,9 @@ describe('US-10 AC15: the keyed lists merge as a join, repeated keys included (5
         supplements: latestByKey([...f.supplements, ...g.supplements], (x) => x.supplementKey),
         reminderPreferences: latestByKey([...f.reminderPreferences, ...g.reminderPreferences], (x) => x.category),
       });
-      const want = all(a, b);
+      // Past the erase gate only the copy at the higher epoch counts.
+      const [ea, eb] = [a.meta.eraseEpoch ?? 0, b.meta.eraseEpoch ?? 0];
+      const want = all(ea >= eb ? a : b, ea === eb ? b : file());
       for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS), mergeFiles(a2, b, OPTS), mergeFiles(b, a2, OPTS)]) {
         expect({ medications: merged.medications, supplements: merged.supplements, reminderPreferences: merged.reminderPreferences }).toEqual(want);
       }

@@ -694,6 +694,8 @@ export function mergeFiles(
     }
     return {
       ...winner,
+      // One row per key here too, as in any merge (US-10 AC15).
+      ...mergeKeyed(winner, NO_KEYED),
       meta: {
         ...winner.meta,
         updatedAt,
@@ -742,29 +744,23 @@ export function mergeFiles(
     ),
     labValues: mergeSlotted<FileLabValue>(local.labValues, remote.labValues, labRowSlot, isFoldRow),
 
-    medications: mergeByKey<FileMedication>(
-      local.medications,
-      remote.medications,
-      (r) => r.medicationKey,
-    ),
-    supplements: mergeByKey<FileSupplement>(
-      local.supplements,
-      remote.supplements,
-      (r) => r.supplementKey,
-    ),
-    reminderPreferences: mergeByKey<FileReminderPreference>(
-      local.reminderPreferences,
-      remote.reminderPreferences,
-      (r) => r.category,
-    ),
+    ...mergeKeyed(local, remote),
 
     medicationHistory: unionLog<FileMedication>(local.medicationHistory, remote.medicationHistory),
     supplementHistory: unionLog<FileSupplement>(local.supplementHistory, remote.supplementHistory),
     documents: mergeDocuments(local.documents, remote.documents),
-
-    recommendationSnapshots: mergeSnapshots(
-      local.recommendationSnapshots,
-      remote.recommendationSnapshots,
-    ),
   } as RoadmapFile;
+}
+
+type KeyedLists = Pick<RoadmapFile, 'medications' | 'supplements' | 'reminderPreferences' | 'recommendationSnapshots'>;
+const NO_KEYED: KeyedLists = { medications: [], supplements: [], reminderPreferences: [], recommendationSnapshots: [] };
+
+/** The lists that keep one row per key, within a copy as across (US-10 AC15). */
+function mergeKeyed(local: KeyedLists, remote: KeyedLists): KeyedLists {
+  return {
+    medications: mergeByKey<FileMedication>(local.medications, remote.medications, (r) => r.medicationKey),
+    supplements: mergeByKey<FileSupplement>(local.supplements, remote.supplements, (r) => r.supplementKey),
+    reminderPreferences: mergeByKey<FileReminderPreference>(local.reminderPreferences, remote.reminderPreferences, (r) => r.category),
+    recommendationSnapshots: mergeSnapshots(local.recommendationSnapshots, remote.recommendationSnapshots),
+  };
 }
