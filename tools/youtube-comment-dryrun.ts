@@ -41,7 +41,7 @@ import { routerView, routerIndexBlock, preferMasters } from '../app/lib/router-v
 import { stripFrontmatter } from '../app/lib/frontmatter';
 import { isUnreadableAnswer } from '../app/lib/chat-classifier.server';
 import {
-  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification, SILENT_ON_YOUTUBE, type Classification,
+  CHAT_EFFORT, CHAT_MAX_TOKENS, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, YOUTUBE_ANSWER_MODEL, getArg as getArgOf, modelParams, parseClassification, SILENT_ON_YOUTUBE, type Classification,
 } from '../packages/health-core/src/models';
 import { extractVideoId, filterComment, type BlogPost, type DryRunResult, type YouTubeComment } from './youtube-comment-dryrun-rules';
 
@@ -234,7 +234,8 @@ async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: 
   }
 
   const body = {
-    ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
+    // The bot's own answer model, so a dry run matches production (US-15 AC77).
+    ...modelParams(YOUTUBE_ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: [...cachedBlocks, ...perRequestBlocks],
     messages: [{ role: 'user', content: comment }],
   };
@@ -404,7 +405,7 @@ function renderHTML(results: DryRunResult[], blogPost: BlogPost): string {
 </style>
 </head><body>
 <h1>YouTube comment dry-run</h1>
-<div class="subtitle">Video: <a href="https://youtu.be/${VIDEO_ID}">${escapeHtml(blogPost.title)}</a> · Blog: <code>${escapeHtml(blogPost.slug)}.md</code> · Model: ${CHAT_MODEL}</div>
+<div class="subtitle">Video: <a href="https://youtu.be/${VIDEO_ID}">${escapeHtml(blogPost.title)}</a> · Blog: <code>${escapeHtml(blogPost.slug)}.md</code> · Model: ${YOUTUBE_ANSWER_MODEL}</div>
 
 <div class="summary">
   <strong>Summary</strong>

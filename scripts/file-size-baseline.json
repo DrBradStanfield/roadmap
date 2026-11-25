@@ -18,7 +18,7 @@
     "app/routes/api.chat.ts": 693,
     "packages/health-core/src/types.ts": 656,
     "widget-src/src/storage/drive.ts": 631,
-    "app/lib/chat.server.ts": 610,
+    "app/lib/chat.server.ts": 609,
     "app/lib/mcp-import.server.ts": 599,
     "packages/health-core/src/chat-edits.ts": 586,
     "packages/health-core/src/input-form.ts": 582,

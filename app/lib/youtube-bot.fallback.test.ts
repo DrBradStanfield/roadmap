@@ -3,6 +3,8 @@
  * the real runPipeline and getChatCompletion ends in an api-error fallback, and
  * persistYouTubeTurn stores the web chat's assistant fallback row for it. Only
  * the classifier, the database, the retry sleep and the network are stubbed.
+ * US-15 AC77: the same path asks YOUTUBE_ANSWER_MODEL (Haiku) for the answer, and
+ * the stored row names that model, on success and on a fallback.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
@@ -40,7 +42,8 @@ process.env.ANTHROPIC_API_KEY ??= 'sk-test-dummy';
 
 import { runPipeline, shouldUnclaim } from './youtube-bot.server';
 import { persistYouTubeTurn } from './youtube-bot-store.server';
-import { FALLBACK_RESPONSE, CHAT_MODEL } from './chat.server';
+import { FALLBACK_RESPONSE } from './chat.server';
+import { YOUTUBE_ANSWER_MODEL } from '../../packages/health-core/src/models';
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
@@ -56,6 +59,7 @@ describe('US-15 AC52: a 529 on YouTube stores the assistant fallback row', () =>
 
     const outcome = await runPipeline(thread, entry, 'Video body');
     expect(fetchMock).toHaveBeenCalledTimes(2); // one retry, then the fallback
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).model).toBe('claude-haiku-5-5');
     expect(outcome.completion?.failureMode).toBe('api-error');
     expect(outcome).toMatchObject({ posted: false, isFallback: true, failureMode: 'api-error' });
     expect(shouldUnclaim(outcome)).toBe(true);
@@ -64,10 +68,34 @@ describe('US-15 AC52: a 529 on YouTube stores the assistant fallback row', () =>
     await persistYouTubeTurn({ thread, outcome, postedYoutubeId: null });
     const asst = supa.inserts.find((i) => i.table === 'chat_messages' && i.row.role === 'assistant')?.row;
     expect(asst).toMatchObject({
-      content: FALLBACK_RESPONSE, model: CHAT_MODEL, is_fallback: true, failure_mode: 'api-error',
+      content: FALLBACK_RESPONSE, model: YOUTUBE_ANSWER_MODEL, is_fallback: true, failure_mode: 'api-error',
       error_detail: expect.stringContaining('529'),
     });
     expect(supa.inserts.find((i) => i.table === 'chat_match_events')?.row)
       .toMatchObject({ message_id: asst?.id, is_fallback: true, failure_mode: 'api-error' });
+  });
+});
+
+describe('US-15 AC77: the YouTube answer runs on Haiku 5.5', () => {
+  it('runPipeline asks Haiku with the web answer\'s effort, posts its reply, and the row names Haiku', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(
+      JSON.stringify({ content: [{ type: 'text', text: 'A Haiku answer.' }], stop_reason: 'end_turn', usage: { input_tokens: 10, output_tokens: 5 } }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+    const thread = { topLevelCommentId: 't2', videoId: 'v1', authorDisplayName: 'A', authorChannelId: null, text: 'What is a good ApoB?', publishedAt: '2026-11-03T00:00:00Z' };
+    const entry = { title: 'ApoB', handle: 'apob', url: 'https://drstanfield.com/blogs/news/apob', tags: [], publishedAt: '2026-09-01' };
+
+    const outcome = await runPipeline(thread, entry, 'Video body');
+    expect(fetchMock).toHaveBeenCalledTimes(1); // the classifier is stubbed and the router skipped: the answer only
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body).toMatchObject({ model: 'claude-haiku-5-5', max_tokens: 4096, thinking: { type: 'adaptive', display: 'summarized' }, output_config: { effort: 'medium' } });
+    expect(body).not.toHaveProperty('tools');
+    expect(outcome).toMatchObject({ posted: true, replyText: 'A Haiku answer.' });
+
+    supa.inserts.length = 0;
+    await persistYouTubeTurn({ thread, outcome, postedYoutubeId: 'yt-1' });
+    expect(supa.inserts.find((i) => i.table === 'chat_messages' && i.row.role === 'assistant')?.row)
+      .toMatchObject({ content: 'A Haiku answer.', model: 'claude-haiku-5-5', is_fallback: false });
   });
 });

@@ -8,7 +8,7 @@ import * as Sentry from '@sentry/react-router';
 import { classifyMessage, isUnreadableAnswer, shouldFireRouter } from './chat-classifier.server';
 import { sanitizeForRouter, type RouterResult } from './chat-router.server';
 import { runRouter } from './chat-router-stage.server';
-import { SILENT_ON_YOUTUBE } from '../../packages/health-core/src/models';
+import { SILENT_ON_YOUTUBE, YOUTUBE_ANSWER_MODEL } from '../../packages/health-core/src/models';
 import { findBlogByVideoId, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { preferMasters } from './router-view';
 import { loadBlogArticle } from './matched-content';
@@ -318,8 +318,8 @@ export async function runPipeline(
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(YOUTUBE_SAVED_CHAT), blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);
   const tBeforeLlm = Date.now();
-  // No form here to apply an edit to, so no tools (US-15 AC19).
-  const completion = await getChatCompletion(systemBlocks, conversationMessages, false, undefined, { purpose: 'YOUTUBE' });
+  // No form here to apply an edit to, so no tools (US-15 AC19). Haiku answers, for cost (AC77).
+  const completion = await getChatCompletion(systemBlocks, conversationMessages, false, undefined, { purpose: 'YOUTUBE', model: YOUTUBE_ANSWER_MODEL });
 
   return {
     classification: classifierResult.classification,

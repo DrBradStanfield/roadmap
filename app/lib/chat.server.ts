@@ -26,9 +26,9 @@ import { CHAT_PROMPT } from './chat-system-prompt.server';
 // Constants
 // ---------------------------------------------------------------------------
 
-// The main answer runs on Sonnet 5.5 (CHAT_MODEL, pinned in health-core
-// models.ts with every other hop); the router is Sonnet 5.5 with thinking off,
-// the classifier Haiku 5.5 with thinking off.
+// The main answer runs on Sonnet 5.5 (CHAT_MODEL, pinned in health-core models.ts with
+// every other hop; YouTube's passes YOUTUBE_ANSWER_MODEL, Haiku 5.5, as `opts.model`);
+// the router is Sonnet 5.5 with thinking off, the classifier Haiku 5.5 with thinking off.
 // The 2026-08-06 audit's failures were self-check failures in the ANSWER
 // (fabricated citation ids), so the answer is the hop worth the better model;
 // 5.5 reasons better than Sonnet 5 at the same price and tokenizer.
@@ -43,8 +43,8 @@ import { CHAT_PROMPT } from './chat-system-prompt.server';
 //     summary; it is not empty): a form-edit turn with no `text` then shows
 //     toolOnlyAck (below).
 //   • A refusal returns 200 with `stop_reason: 'refusal'`: its own outcome.
-// Persistence paths tag rows with CHAT_MODEL re-exported from here; never
-// re-declare the string locally (Discord once did, and mislabelled its rows).
+// Persistence paths tag rows with the result's `model`, else CHAT_MODEL re-exported
+// from here; never re-declare the string locally (Discord once did, and mislabelled its rows).
 const MAX_MESSAGE_LENGTH = 8000;
 const HISTORY_TOKEN_BUDGET = 8000;
 
@@ -371,6 +371,8 @@ export interface ChatCompletionResult {
   toolRound?: true;
   /** A subscription change the model proposed (US-59); the route turns it into a confirm card or drops it. */
   subscriptionProposal?: SubscriptionProposal;
+  /** The model the turn ran on (`opts.model`, else CHAT_MODEL); persistence tags the row with it (US-15 AC77). */
+  model?: string;
 }
 
 /** Shown when the model proposed a subscription change with no prose; the card carries the detail (US-59). */
@@ -438,15 +440,16 @@ export async function getChatCompletion(
   messages: ChatTurnMessage[],
   canApplyEdits: boolean,
   onEvent: ((event: ChatStreamEvent) => void) | undefined,
-  opts: { purpose: ChatPurpose; subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean },
+  opts: { purpose: ChatPurpose; subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean; model?: string },
 ): Promise<ChatCompletionResult> {
   // Backstop for any caller that skipped its own guard (US-15 AC65); file names only (AC74).
   if (CHAT_PROMPT.kind === 'missing') throw new Error(`Chat docs missing (${CHAT_PROMPT.files.join(', ')}); no model call`);
   const profileEdits = opts?.profileEdits === true;
   const app = opts?.app === true;
   const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits, app) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];
+  const model = opts.model ?? CHAT_MODEL;
   const body = {
-    ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
+    ...modelParams(model, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: systemBlocks,
     ...(tools.length ? { tools } : {}),
   };
@@ -474,7 +477,7 @@ export async function getChatCompletion(
       const refusalCategory = result.refusalCategory ?? 'other';
       return {
         content: refusalLine(refusalCategory),
-        usage,
+        usage, model,
         isFallback: false,
         isRefusal: true,
         refusalCategory,
@@ -497,7 +500,7 @@ export async function getChatCompletion(
       if (proposedEdits.length > 0 || refused > 0) {
         return {
           content: toolOnlyAck(proposedEdits, app, refused),
-          usage,
+          usage, model,
           isFallback: false,
           stopReason,
           ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
@@ -506,11 +509,11 @@ export async function getChatCompletion(
         };
       }
       if (subscriptionProposal) {
-        return { content: SUBSCRIPTION_TOOL_ONLY_ACK, usage, isFallback: false, stopReason, subscriptionProposal, ...roadmapRun };
+        return { content: SUBSCRIPTION_TOOL_ONLY_ACK, usage, model, isFallback: false, stopReason, subscriptionProposal, ...roadmapRun };
       }
       return {
         content: FALLBACK_RESPONSE,
-        usage,
+        usage, model,
         isFallback: true,
         stopReason,
         failureMode: 'empty-response',
@@ -519,7 +522,7 @@ export async function getChatCompletion(
     }
     return {
       content: result.content,
-      usage,
+      usage, model,
       isFallback: false,
       stopReason,
       ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
@@ -535,7 +538,7 @@ export async function getChatCompletion(
       content: FALLBACK_RESPONSE,
       // The failed call's usage is unknown, so it counts zero; a first call that
       // returned before a failed second one keeps its usage and its round.
-      usage,
+      usage, model,
       isFallback: true,
       failureMode: 'api-error',
       errorDetail,
@@ -582,10 +585,6 @@ export function reportChatFallback(params: {
     Sentry.captureMessage('Chat: main-LLM fallback (empty-response)', { level: 'warning', tags, extra });
   }
 }
-
-// ---------------------------------------------------------------------------
-// Prompt cache warmup
-// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // Conversation title generation

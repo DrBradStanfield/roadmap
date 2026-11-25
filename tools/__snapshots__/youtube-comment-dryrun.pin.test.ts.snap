@@ -96,7 +96,7 @@ Classification:",
 
 Synthetic matched text: synthetic-zeta-guide, synthetic-zeta-video",
       "max_tokens": 4096,
-      "model": "claude-sonnet-5-5",
+      "model": "claude-haiku-5-5",
       "output_config": {
         "effort": "medium",
       },
@@ -136,7 +136,7 @@ Classification:",
       ],
       "matched": null,
       "max_tokens": 4096,
-      "model": "claude-sonnet-5-5",
+      "model": "claude-haiku-5-5",
       "output_config": {
         "effort": "medium",
       },
@@ -192,7 +192,7 @@ Classification:",
       ],
       "matched": null,
       "max_tokens": 4096,
-      "model": "claude-sonnet-5-5",
+      "model": "claude-haiku-5-5",
       "output_config": {
         "effort": "medium",
       },
@@ -267,7 +267,7 @@ Classification:",
       ],
       "matched": null,
       "max_tokens": 4096,
-      "model": "claude-sonnet-5-5",
+      "model": "claude-haiku-5-5",
       "output_config": {
         "effort": "medium",
       },
@@ -334,7 +334,7 @@ exports[`youtube-comment-dryrun pins (US-64 AC23) > a full run: stdout, every re
 </style>
 </head><body>
 <h1>YouTube comment dry-run</h1>
-<div class="subtitle">Video: <a href="https://youtu.be/zzSynthVid1">Synthetic zeta video</a> · Blog: <code>synthetic-zeta-video.md</code> · Model: claude-sonnet-5-5</div>
+<div class="subtitle">Video: <a href="https://youtu.be/zzSynthVid1">Synthetic zeta video</a> · Blog: <code>synthetic-zeta-video.md</code> · Model: claude-haiku-5-5</div>
 
 <div class="summary">
   <strong>Summary</strong>
