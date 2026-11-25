@@ -10,7 +10,7 @@
  */
 import type { FormSection } from './input-form';
 import { labTestSeries, type LabValueRow } from './lab-series';
-import { BLOOD_TEST_METRICS, METRIC_TO_FIELD, VITAL_METRICS } from './mappings';
+import { BLOOD_TEST_METRICS, METRIC_TO_FIELD } from './mappings';
 import { TOPICS, topicSections, type PlanSectionKey, type TopicCard, type TopicId } from './plan-sections';
 import type { Suggestion } from './types';
 
@@ -32,7 +32,7 @@ export type TopicRow =
 /** The form's questions a topic draws after its rows; Cancer screening's stand as its rows. */
 export type TopicQuestions = 'weight-medications' | 'lipid-medications' | 'cancer-screening' | 'supplements';
 
-/** A row worked out from other rows: it shows when its inputs' rows exist and its value does. */
+/** A row worked out from other rows. Its inputs' rows are always listed, so it shows when its value does. */
 export type DerivedRow = 'whtr' | 'nonHdl' | 'egfr';
 
 /** What the client knows that decides the layout: facts about the record and the device, no platform. */
@@ -68,33 +68,26 @@ export interface PlanTopic<S extends Suggestion = Suggestion> {
   screenings: Array<{ group: string; suggestions: S[] }>;
 }
 
-/** My health's two modes: topics once the form is full; before it, every card in one list, Other. */
+/** My health's two modes: topics once the form is full; before it, every card in one list, Other,
+ *  its urgent cards first (`urgent`, then `other`), as the iPhone draws it (TopicPlan.swift). */
 export type MyHealthLayout<S extends Suggestion = Suggestion> =
   | { kind: 'topics'; topics: PlanTopic<S>[] }
-  | { kind: 'waiting'; other: TopicCard<S>[]; ownershipLine?: string };
+  | { kind: 'waiting'; urgent: TopicCard<S>[]; other: TopicCard<S>[]; ownershipLine?: string };
 
 /** The core blood tests, in the grid's order (PSA is asked under prostate screening); the web's `BLOOD_ROWS`. */
-export const BLOOD_ROW_METRICS: readonly string[] = BLOOD_TEST_METRICS.filter((m) => m !== 'psa' && METRIC_TO_FIELD[m]);
+const BLOOD_ROW_METRICS: readonly string[] = BLOOD_TEST_METRICS.filter((m) => m !== 'psa' && METRIC_TO_FIELD[m]);
 const LIPID_ROW_METRICS = ['apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa'] as const;
 /** The lab eGFR's series key: its own row, left out while the plan's eGFR row stands for it (US-73 AC7). */
 const LAB_EGFR = 'egfr';
-/** Every core metric a record lists a row for: the vitals and the core blood tests. */
-const LISTED: ReadonlySet<string> = new Set([...VITAL_METRICS, ...BLOOD_ROW_METRICS]);
-/** Each derived row's inputs. */
-export const DERIVED_INPUTS: Readonly<Record<DerivedRow, readonly string[]>> = { whtr: ['waist'], nonHdl: ['total_cholesterol', 'hdl'], egfr: ['creatinine'] };
 
 /** The medicine form's sections and the topic that draws each. */
 const MEDICATION_TOPIC: Readonly<Record<string, TopicId>> = { 'weight-medications': 'weight', 'lipid-medications': 'cholesterol' };
 
 const core = (metric: string): TopicRow => ({ kind: 'core', metric });
 
-/** The rule for every derived row, once: its inputs' rows exist and its value does. */
-export const derivedShows = (row: DerivedRow, facts: Pick<PlanTopicFacts, 'derived'>): boolean =>
-  facts.derived[row] && DERIVED_INPUTS[row].every((m) => LISTED.has(m));
-
 /** Each topic's rows (US-62 AC21). */
-export function topicRows(facts: PlanTopicFacts): Partial<Record<TopicId, TopicRow[]>> {
-  const shows = (row: DerivedRow) => derivedShows(row, facts);
+function topicRows(facts: PlanTopicFacts): Partial<Record<TopicId, TopicRow[]>> {
+  const shows = (row: DerivedRow) => facts.derived[row];
   const egfr: TopicRow[] = shows('egfr') ? [{ kind: 'egfr' }] : [];
   // Which series, not their trends: the day only moves a trend's window.
   const labs = labTestSeries(facts.labValues, new Date(0)).map((r) => r.seriesKey)
@@ -113,8 +106,8 @@ export function topicRows(facts: PlanTopicFacts): Partial<Record<TopicId, TopicR
 type Sections<S extends Suggestion> = ReadonlyArray<{ key: PlanSectionKey; cards: ReadonlyArray<{ category: Suggestion['category']; suggestions: S[] }>; ownershipLine?: string }>;
 
 /**
- * My health's layout. Before the form is full: no topics, every card in Other
- * (nothing is placed on a question, as none is drawn). Then the topics in TOPICS'
+ * My health's layout. Before the form is full: no topics, every card in Other, the
+ * urgent ones apart to lead it (nothing is placed on a question, as none is drawn). Then the topics in TOPICS'
  * order, empty ones left out: a topic shows when it has a card, a row or
  * questions. Cancer screening shows for a note, any screening section or a card;
  * while a note shows nothing is placed on its questions, so those suggestions are
@@ -129,7 +122,8 @@ export function planTopics<S extends Suggestion>(
   if (!facts.formFull) {
     const layout = topicSections(sections, { medications: [], screenings: [] });
     const ownershipLine = layout.sections.find((section) => section.ownershipLine)?.ownershipLine;
-    return { kind: 'waiting', other: layout.sections.flatMap((section) => section.cards), ...(ownershipLine ? { ownershipLine } : null) };
+    const all = layout.sections.flatMap((section) => section.cards);
+    return { kind: 'waiting', urgent: all.filter((c) => c.priority === 'urgent'), other: all.filter((c) => c.priority !== 'urgent'), ...(ownershipLine ? { ownershipLine } : null) };
   }
   const layout = topicSections(sections, facts.screeningNote ? { ...forms, screenings: [] } : forms);
   const rows = topicRows(facts);

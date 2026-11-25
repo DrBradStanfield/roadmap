@@ -6,9 +6,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { labTestSeries } from './lab-series';
-import { BLOOD_TEST_METRICS, VITAL_METRICS } from './mappings';
 import type { TopicId } from './plan-sections';
-import { DERIVED_INPUTS, type DerivedRow } from './plan-topics';
+import type { DerivedRow } from './plan-topics';
 import { cardIds, genWorld, layoutOf, mulberry32, placedIds, rowName, run, SEEDS, shuffle, TOPIC_ORDER } from './plan-topics.fixtures';
 
 describe('planTopics over generated plans (US-62 AC39)', () => {
@@ -67,17 +66,15 @@ describe('planTopics over generated plans (US-62 AC39)', () => {
     }
   });
 
-  it('rows by the rulings: a derived row when its inputs are listed and its value exists, the weight row unless asked beside the height, the lab rows labTestSeries gives', () => {
-    const listed = new Set([...VITAL_METRICS, ...BLOOD_TEST_METRICS]);
+  it('rows by the rulings: a derived row when its value exists, the weight row unless asked beside the height, the lab rows labTestSeries gives', () => {
+    const derived: DerivedRow[] = ['whtr', 'nonHdl', 'egfr'];
     for (const seed of SEEDS) {
       const w = genWorld(seed);
       const f = w.facts;
       const rows = new Map(run(w).map((t) => [t.topic, t.rows.map(rowName)]));
       const all = [...rows.values()].flat();
       const where = `seed ${seed}`;
-      for (const d of Object.keys(DERIVED_INPUTS) as DerivedRow[]) {
-        expect(all.includes(d), `${where}, ${d}`).toBe(f.derived[d] && DERIVED_INPUTS[d].every((m) => listed.has(m)));
-      }
+      for (const d of derived) expect(all.includes(d), `${where}, ${d}`).toBe(f.derived[d]);
       expect(rows.get('weight')!.includes('weight'), where).toBe(!f.weightAskedWithHeight);
       const labKeys = labTestSeries(f.labValues, new Date('2026-11-25')).map((r) => `lab:${r.seriesKey}`);
       expect(rows.get('bloodTests')!.filter((n) => n.startsWith('lab:')), where).toEqual(f.derived.egfr ? labKeys.filter((k) => k !== 'lab:egfr') : labKeys);
@@ -93,14 +90,17 @@ describe('planTopics over generated plans (US-62 AC39)', () => {
     }
   });
 
-  it('before the form is full: no topics, and every suggestion once in Other', () => {
+  it('before the form is full: no topics, every suggestion once in Other, and no other card before an urgent one', () => {
     for (const seed of SEEDS) {
       const w = genWorld(seed);
       const layout = layoutOf(w);
       expect(layout.kind, `seed ${seed}`).toBe(w.facts.formFull ? 'topics' : 'waiting');
       if (layout.kind !== 'waiting') continue;
-      const ids = layout.other.flatMap((c) => c.suggestions.map((s) => s.id));
+      const ids = [...layout.urgent, ...layout.other].flatMap((c) => c.suggestions.map((s) => s.id));
       expect([...ids].sort(), `seed ${seed}`).toEqual(w.suggestions.map((s) => s.id).sort());
+      // Drawn urgent then other, so every urgent card leads: none in `other`, only urgent ones in `urgent`.
+      const urgent = (c: { priority: string }) => c.priority === 'urgent';
+      expect([layout.urgent.every(urgent), layout.other.some(urgent)], `seed ${seed}`).toEqual([true, false]);
     }
   });
 });
