@@ -424,7 +424,7 @@ describe('document writes: refused by default, written only on opt-in', () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
     await expect(new DropboxAdapter('token').writeDocument('Lab results/a.pdf', new Blob(['x'])))
-      .rejects.toThrow(new StorageError('The hosted server does not write uploaded documents.'));
+      .rejects.toThrow(new StorageError('The hosted server does not write uploaded documents.', undefined, undefined, undefined, undefined, 'refused'));
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

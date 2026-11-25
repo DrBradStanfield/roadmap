@@ -12,7 +12,6 @@ import {
   DOC_KEY_PREFIX, healthWritesAllowed, newLogOffId, noteLogOffHeard, removeByPrefix, safeGetItem, safeRemoveItem, safeSetItem, stopLocalHealthWrites,
 } from '../lib/storage';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core/adapter';
-import { refusedWrite } from '@roadmap/health-core/write-refusal';
 import { WritesStoppedError } from '../lib/error-diagnostics';
 
 // The roadmap file keeps its ORIGINAL keys (existing users' device data lives
@@ -77,7 +76,7 @@ export function clearLocalNamedFiles(): void {
   } catch (error) {
     // A missing fence could let an old tab write erased content back. Do not
     // report completed cleanup if invalidation could not be stored.
-    throw new StorageError('Could not complete on-device history cleanup.', undefined, error);
+    throw new StorageError('Could not complete on-device history cleanup.', undefined, error, undefined, undefined, 'refused');
   }
 }
 
@@ -95,7 +94,7 @@ function readFrom(fileName: string, getItem: (key: string) => string | null): Re
   try {
     body = JSON.parse(raw);
   } catch (error) {
-    throw new StorageError('Local data is corrupt and could not be read.', undefined, error);
+    throw new StorageError('Local data is corrupt and could not be read.', undefined, error, undefined, undefined, 'no-answer');
   }
   return { body, version: getItem(versionKey(fileName)) ?? '0' };
 }
@@ -148,7 +147,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     // written here holds health data (the record, the chat history), so a new
     // file is refused by default. A guest page that opened with no log-off on
     // this device since it loaded always may write.
-    if (roadmapLocalWritesStopped()) throw refusedWrite(new WritesStoppedError());
+    if (roadmapLocalWritesStopped()) throw new WritesStoppedError(); // raised refused by its constructor
     // `?? '0'` is defensive: localStorage is externally mutable, so tolerate a
     // present file with a missing version key (treat it as version 0).
     const current = safeGetItem(fileKey(fileName)) == null ? null : safeGetItem(versionKey(fileName)) ?? '0';
@@ -169,7 +168,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       localStorage.setItem(fileKey(fileName), written);
     } catch (error) {
       noteRecordSave(fileName, false);
-      throw new StorageError(FULL, undefined, error, undefined, undefined, quotaRefused(error));
+      throw new StorageError(FULL, undefined, error, undefined, undefined, 'refused'); // a setItem that throws stored nothing
     }
     try {
       localStorage.setItem(versionKey(fileName), next);
@@ -184,7 +183,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       noteRecordSave(fileName, safeGetItem(fileKey(fileName)) === written);
       // Not put back, the record may have stored: never a definite refusal (S69).
       throw restored
-        ? new StorageError(FULL, undefined, error, undefined, undefined, quotaRefused(error))
+        ? new StorageError(FULL, undefined, error, undefined, undefined, 'refused')
         : new StorageError(FULL, 'This change may have been stored. Read the record again before trying it a second time.', error, undefined, undefined, 'may-have-landed');
     }
     noteRecordSave(fileName, true);
@@ -220,14 +219,14 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   async readDocument(ref: string): Promise<Blob> {
     const dataUrl = safeGetItem(DOC_KEY_PREFIX + ref);
-    if (dataUrl == null) throw new StorageError(`document not found: ${ref}`);
+    if (dataUrl == null) throw new StorageError(`document not found: ${ref}`, undefined, undefined, undefined, undefined, 'refused');
     return (await fetch(dataUrl)).blob(); // data: URLs are fetchable → preserves mime type
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const dataUrl = await blobToDataUrl(bytes);
     // The record's write rule (US-09 AC2c): every device document's bytes pass here.
-    if (roadmapLocalWritesStopped()) throw refusedWrite(new WritesStoppedError());
+    if (roadmapLocalWritesStopped()) throw new WritesStoppedError(); // raised refused by its constructor
     try {
       // Direct setItem (not safeSetItem) so a quota overflow surfaces instead of
       // silently dropping the document — no silent data loss.
@@ -237,18 +236,15 @@ export class LocalStorageAdapter implements StorageAdapter {
         'Could not store the document on this device (local storage is likely full). Connect a cloud backend for documents.',
         undefined,
         error,
+        undefined,
+        undefined,
+        'refused',
       );
     }
   }
 }
 
 export const FULL = 'Could not save on this device (local storage may be full).';
-
-/** A full browser store refused the write, nothing stored. Any other setItem failure is left
- *  unnamed, so a write that threw it counts as may have landed (write-refusal.ts afterWrite). */
-function quotaRefused(error: unknown): 'refused' | undefined {
-  return (error as { name?: unknown } | null)?.name === 'QuotaExceededError' ? 'refused' : undefined;
-}
 
 /** This browser stores a copy of the record (US-09 AC49); unreadable storage stores none. */
 export function deviceRecordStored(): boolean {

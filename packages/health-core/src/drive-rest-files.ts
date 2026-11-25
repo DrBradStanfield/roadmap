@@ -67,8 +67,9 @@ function limitOf(status: number, text: string): StorageFailureReason | undefined
   }
 }
 
-/** A non-ok answer, as a typed failure. `wrote`: the call sent a write (an
- *  upload, a create, a delete), so an answer that is not a refusal may have landed. */
+/** A non-ok answer, as a typed failure. `wrote`: the call sent a write to a
+ *  file (an upload, a create, a delete), so an answer that is not a refusal may
+ *  have landed. A folder create stores no file, so it sends none (US-10 AC16). */
 export async function fail(what: string, res: Response, wrote = false): Promise<never> {
   const text = await res.text();
   throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${text}`, undefined, undefined, res.status, limitOf(res.status, text), answerOutcome(res.status, wrote));
@@ -126,9 +127,9 @@ export async function driveCreateFolder(accessToken: string, name: string, paren
     body: JSON.stringify({ name, mimeType: DRIVE_FOLDER_MIME, ...(parentId ? { parents: [parentId] } : null) }),
     signal,
   });
-  if (!res.ok) await fail('folder create', res, true);
+  if (!res.ok) await fail('folder create', res);
   const id = (await jsonBody<{ id?: string }>(res)).id;
-  if (!id) throw new StorageError(`${PROVIDER} folder create returned no id.`);
+  if (!id) throw new StorageError(`${PROVIDER} folder create returned no id.`, undefined, undefined, undefined, undefined, 'no-answer');
   return id;
 }
 
@@ -197,16 +198,20 @@ export function driveCreateFile(
  */
 export async function driveUploadDocument(accessToken: string, name: string, bytes: Blob, parentId: string): Promise<void> {
   const res = await driveCreateFile(accessToken, name, bytes.type || 'application/octet-stream', bytes, parentId);
-  if (!res.ok) throw new StorageError(`${PROVIDER} document create failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status, true));
+  if (!res.ok) {
+    // Drive's named limits are its reasons, as on the record's writes (`fail`).
+    const text = await res.text();
+    throw new StorageError(`${PROVIDER} document create failed (${res.status}).`, undefined, undefined, res.status, limitOf(res.status, text), answerOutcome(res.status, true));
+  }
 }
 
 /** The bytes of the document named `name` inside `parentId`, under the document deadline and
  *  the caller's own signal (US-09 AC53); not res.blob(), which the engine shim lacks (US-73 AC12). */
 export async function driveDownloadDocument(accessToken: string, name: string, parentId: string, signal?: AbortSignal): Promise<Blob> {
   const id = await driveFindFileId(accessToken, name, parentId, signal);
-  if (!id) throw new StorageError(`${PROVIDER} document not found.`, undefined, undefined, undefined, 'not-found');
+  if (!id) throw new StorageError(`${PROVIDER} document not found.`, undefined, undefined, undefined, 'not-found', 'refused');
   const res = await request(`${DRIVE_API}/files/${id}?alt=media`, { headers: auth(accessToken), signal, timeoutMs: TRANSFER_DEADLINE_MS.document });
-  if (!res.ok) throw new StorageError(`${PROVIDER} document read failed (${res.status}).`, undefined, undefined, res.status);
+  if (!res.ok) throw new StorageError(`${PROVIDER} document read failed (${res.status}).`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
   return new Blob([await res.arrayBuffer()], { type: res.headers.get('content-type') ?? '' });
 }
 
@@ -291,6 +296,6 @@ export async function driveDownloadJson(accessToken: string, fileId: string, sig
   try {
     return JSON.parse(text) as unknown;
   } catch (error) {
-    throw new StorageError(`${PROVIDER} read failed: file is not valid JSON (possible corruption).`, undefined, error);
+    throw new StorageError(`${PROVIDER} read failed: file is not valid JSON (possible corruption).`, undefined, error, undefined, undefined, 'no-answer');
   }
 }

@@ -100,7 +100,7 @@ async function saveOneDocument(
     stopped: () => !!at && (open !== at || at.session.refuses(erase)),
     write: (ref, data) => (bytes
       ? at!.host.store.writeDocument(ref, new Blob([data], { type: choice.mimeType }))
-      : Promise.reject(new StorageError('The original changed or could not be read.'))),
+      : Promise.reject(new StorageError('The original changed or could not be read.', undefined, undefined, undefined, undefined, 'refused'))),
     mimeType: () => choice.mimeType,
   };
 

@@ -29,7 +29,7 @@ import {
   type StorageBackendId,
 } from './adapter';
 import { RecordShapeError, SchemaTooNewError } from './migrate';
-import { afterWrite, mayHaveLanded, uncertainWrite } from './write-refusal';
+import { afterWrite, mayHaveLanded } from './write-refusal';
 
 const MAX_SAVE_ATTEMPTS = 5;
 
@@ -163,7 +163,7 @@ export class SyncManager<T extends SyncedFile> {
           ? 'the provider refused this connection’s access. Reconnect the provider, which grants access again, then read the record again to check what landed before retrying.'
           : 'a later step failed, so check what landed: read the record again before trying it a second time.');
         // The reason stays too, so a revoked grant met after the write is still a reconnect (US-09 AC30).
-        const wrapped = uncertainWrite(new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, reason));
+        const wrapped = new StorageError(error instanceof Error ? error.message : 'Save failed after a write.', hint, error, status, reason, 'may-have-landed');
         if (landedWarning) wrapped.earlierLanded = true;
         throw wrapped;
       }
@@ -178,8 +178,12 @@ export class SyncManager<T extends SyncedFile> {
           ? 'Some of it may have landed. Read the record again before retrying.'
           : 'Your data is unharmed and nothing was written. Try again.',
       lastError,
+      undefined,
+      undefined,
+      // Every attempt's write was refused as a conflict, unless one went out first.
+      mayHaveWritten ? 'may-have-landed' : 'refused',
     );
-    throw mayHaveWritten ? uncertainWrite(storm) : storm;
+    throw storm;
   }
 
   /**
@@ -193,13 +197,17 @@ export class SyncManager<T extends SyncedFile> {
       throw new StorageError(
         'Verify-after-write failed: the file is missing after a successful write',
         VERIFY_HINT,
+        undefined,
+        undefined,
+        undefined,
+        'may-have-landed',
       );
     }
     let parsed: T;
     try {
       parsed = this.doc.migrate(body, this.ctx());
     } catch (error) {
-      throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error);
+      throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error, undefined, undefined, 'may-have-landed');
     }
     verifyPersistedFile(this.doc, expected, parsed, this.ctx());
   }
