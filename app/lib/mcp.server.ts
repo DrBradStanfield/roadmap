@@ -19,7 +19,7 @@ import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
-import { accessRefused, describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
+import { accessRefused, describeStorageFailure, isStorageFailure, untouched } from '../../packages/health-core/src/sync-manager';
 import { mayHaveLanded } from '../../packages/health-core/src/write-refusal';
 import { type GuardRefusal, isToolName, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { DOCUMENT_TEXT_NOTE, MAX_APPROVAL_LENGTH, OPEN_SOURCE_NOTE, SI_NOTE } from '../../packages/health-core/src/mcp-tool-contract';
@@ -248,7 +248,7 @@ async function callHostedTool(
  * save's verify read comes after the upload stored the change, and SyncManager
  * marks it may-have-landed: the shared wording then says both, reconnect and
  * read the record before retrying (US-10 AC4a). Before any upload, nothing was
- * read or written.
+ * written, and nothing read unless the save's own read answered (US-10 AC20).
  */
 function accessRefusedText(error: StorageError, provider: string): string {
   if (mayHaveLanded(error)) {
@@ -256,7 +256,7 @@ function accessRefusedText(error: StorageError, provider: string): string {
     return `${failed.message}. ${failed.hint}`;
   }
   return (
-    `${provider} refused this connection’s access to the record. Nothing was read and nothing was written. ` +
+    `${provider} refused this connection’s access to the record. ${untouched(error)}. ` +
     'Ask the user to reconnect the connector, which grants it again.'
   );
 }
