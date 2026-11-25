@@ -50,12 +50,12 @@ import { recordServerEvent } from '../lib/product-events.server';
  */
 
 // Opt-ins and schedule pushes are rare per user; this mostly slows abuse.
-const allowRequest = createRateLimiter(20, 60_000, 10 * 60_000);
+const allowRequest = createRateLimiter(20, 60_000, 10 * 60_000, { name: 'reminders requests per IP' });
 // An address-only optin names someone ELSE'S inbox for free, so it carries
 // the capture route's bounds (US-23 AC8): 5/day per email, 20/hour per IP.
 // Keyed on the hashed IP — the raw address never sits in process memory.
-const allowOptinEmail = createRateLimiter(5, DAY_MS, 30 * 60_000);
-const allowOptinIp = createRateLimiter(20, 60 * 60_000, 30 * 60_000);
+const allowOptinEmail = createRateLimiter(5, DAY_MS, 30 * 60_000, { name: 'reminders opt-in per email' });
+const allowOptinIp = createRateLimiter(20, 60 * 60_000, 30 * 60_000, { name: 'reminders opt-in per IP' });
 
 const bodySchema = z.union([
   // Optional TYPED marketing opt-in on both optin shapes (§10: a deliberate
@@ -126,7 +126,8 @@ export async function action({ request }: ActionFunctionArgs) {
       enrolment = await upsertVerifiedOptin(email, input.schedule);
     } else {
       email = input.email.toLowerCase();
-      if (!allowOptinEmail(emailLimiterKey(email)) || !allowOptinIp(ipHash)) {
+      // IP first, as the capture route: an IP-refused request never reaches the email map (S-22).
+      if (!allowOptinIp(ipHash) || !allowOptinEmail(emailLimiterKey(email))) {
         return Response.json({ error: 'Too many requests' }, { status: 429, headers });
       }
       enrolment = await enrolByEmail(email, input.provider, input.schedule);

@@ -2,10 +2,10 @@
 // files it, through health-core's saveDocuments. Split from cloud.ts (file budget); it commits
 // through the open cloud session as cloudEdit does.
 import { StorageError } from '../../packages/health-core/src/adapter';
-import { labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO, type DocumentSavePlan } from '../../packages/health-core/src/document-save';
+import { committedFile, labArchivePayload, saveDocuments, type DocumentPayload, type DocumentSaveIO, type DocumentSavePlan } from '../../packages/health-core/src/document-save';
 import { validDay } from '../../packages/health-core/src/record-edits';
-import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { commit, ERASED, NOT_OPEN, open, refuse } from './cloud';
+import { commit, ERASED, NOT_OPEN, open } from './cloud';
+import { refuse } from './guarded-edit';
 import { checkArgs } from './contract';
 import type { Extraction } from './lab-review';
 import { readRecord } from './my-data';
@@ -17,10 +17,15 @@ type DocumentChoice = { sourceFileName: string; mimeType: string; contentHash?: 
   | { kind: 'document'; title: string; documentDate: string | null }
   | { kind: 'labArchive'; reportDay: string | null });
 
-/** Document saves run one after another, so each plans its refs against the
- *  record as the previous one committed it: two at once would be given the
- *  same ref and one original would overwrite the other. */
+/** Document saves, and the shared upload's Save, run one after another, so each plans its refs against
+ *  the record as the previous one committed it: two at once would be given the same ref and one
+ *  original would overwrite the other. The queue keeps no answer once it has settled. */
 let documentQueue: Promise<unknown> = Promise.resolve();
+export function oneDocumentSaveAtATime(work: () => Promise<string>): Promise<string> {
+  const run = documentQueue.then(work);
+  documentQueue = run.then(() => {}, () => {});
+  return run;
+}
 
 /**
  * File one reviewed file as the web does (US-52 AC13d, US-14 AC5): health-core's
@@ -35,9 +40,13 @@ let documentQueue: Promise<unknown> = Promise.resolve();
  * `original` null with a `contentHash`: the file changed or could not be read
  * since the review read it, so the row is filed without it, with the reviewed
  * bytes' hash (US-14 AC4's metadata-only fallback), and the answer says `stale`.
- * With no cloud (`erase` ''), as on the web off-cloud, no original is kept: a
- * document is a text-only row added to `recordJson`, answered for Swift to
- * write to the phone's file, and a lab report's original is not kept at all.
+ * With no cloud (`erase` ''), as on the web off-cloud, no original is kept: the
+ * row carries the reviewed bytes' `contentHash` alone, metadata-only (US-14
+ * AC10), so a later upload of the same file knows it: a document's text row,
+ * or a lab report's archive row (with no hash, a photo or a scan, a lab report
+ * files nothing). It is added to `recordJson`, answered for Swift to write to
+ * the phone's file. A lab archive row lists no value rows here: this door
+ * does not write them (US-14 AC10).
  *
  * Answers `{ ok, record, erase?, saved, unstored, stored, stale }` or `{ ok: false, reason, message }`.
  * `stored`: the original reached the cloud; null when none was offered to one.
@@ -46,22 +55,23 @@ export function documentSave(
   recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
 ): Promise<string> {
   checkArgs('documentSave', arguments);
-  const run = documentQueue.then(() => saveOneDocument(recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId)).then((answer) => JSON.stringify(answer));
-  documentQueue = run.catch(() => {});
-  return run;
+  // The session it is asked of, taken now: the save keeps to it, however long it waits in the queue.
+  const asked = erase ? open : null;
+  return oneDocumentSaveAtATime(() => saveOneDocument(asked, recordJson, extractionJson, choiceJson, original, erase, nowIso, deviceId).then((answer) => JSON.stringify(answer)));
 }
 
 async function saveOneDocument(
-  recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
+  asked: typeof open, recordJson: string, extractionJson: string, choiceJson: string, original: ArrayBuffer | null, erase: string, nowIso: string, deviceId: string,
 ): Promise<object> {
   const choice = JSON.parse(choiceJson) as DocumentChoice;
   const extraction = JSON.parse(extractionJson) as Extraction;
-  const at = erase ? open : null;
-  if (erase && !at) return refuse('not-open', NOT_OPEN);
+  const at = asked;
+  if (erase && (!at || open !== at)) return refuse('not-open', NOT_OPEN);
   if (at?.session.refuses(erase)) return refuse('erased', ERASED);
   // The one gate for originals: kept only in the person's cloud, as on the web
-  // (UploadModal strips them off-cloud).
-  const hash = at ? choice.contentHash : undefined;
+  // (UploadModal strips them off-cloud). The hash is kept either way (US-14 AC10).
+  const contentHash = choice.contentHash || undefined;
+  const hash = at ? contentHash : undefined;
   const bytes = hash && original && original.byteLength > 0 ? new Uint8Array(original) : null;
   const file = hash ? bytes ?? new Uint8Array(0) : undefined;
   let plan: DocumentSavePlan | null = null;
@@ -73,29 +83,31 @@ async function saveOneDocument(
   });
   let payload: DocumentPayload<Uint8Array<ArrayBuffer>>;
   if (choice.kind === 'labArchive') {
-    if (!file) return answer(at ? JSON.stringify(at.session.file) : recordJson);
-    payload = labArchivePayload(choice.sourceFileName, validDay(choice.reportDay, { now: nowIso }), file);
+    if (!contentHash) return answer(at ? JSON.stringify(at.session.file) : recordJson);
+    payload = labArchivePayload(choice.sourceFileName, validDay(choice.reportDay, { now: nowIso }), file, { contentHash });
   } else {
     const doc = extraction.classification === 'lab_report' ? null : extraction.document;
     if (!doc) return refuse('not-found', 'This file has no document to save.');
     payload = {
       documentType: doc.classification, title: choice.title || doc.title, documentDate: validDay(choice.documentDate, { now: nowIso }),
-      contentMd: doc.contentMarkdown, metadata: doc.metadata, sourceFileName: choice.sourceFileName, file,
+      contentMd: doc.contentMarkdown, metadata: doc.metadata, sourceFileName: choice.sourceFileName, file, contentHash,
     };
   }
   const io: DocumentSaveIO<Uint8Array<ArrayBuffer>> = {
     // Hashed by the phone as it read the file: the same bytes it uploads, or none.
     hash: async () => hash!,
+    // Asked before every write attempt, retries included (US-11 AC1a): the session closed, or an erase moved.
+    stopped: () => !!at && (open !== at || at.session.refuses(erase)),
     write: (ref, data) => (bytes
       ? at!.host.store.writeDocument(ref, new Blob([data], { type: choice.mimeType }))
-      : Promise.reject(new StorageError('The original changed or could not be read.'))),
+      : Promise.reject(new StorageError('The original changed or could not be read.', undefined, undefined, undefined, undefined, 'refused'))),
     mimeType: () => choice.mimeType,
   };
 
   if (!at) {
     const current = readRecord(recordJson, nowIso, deviceId);
     plan = await saveDocuments(current, [payload], io);
-    return answer(JSON.stringify(committed(current, plan)));
+    return answer(JSON.stringify(committedFile(current, plan)));
   }
 
   plan = await saveDocuments(at.session.file, [payload], io);
@@ -103,17 +115,8 @@ async function saveOneDocument(
   if (open !== at) return refuse('not-open', 'The cloud record closed while this was saving, so it was not saved. Try again.');
   if (at.session.refuses(erase)) return refuse('erased', ERASED);
   if (plan.saved.length > 0) {
-    const refusal = commit(at, committed(at.session.file, plan), erase, nowIso);
+    const refusal = commit(at, committedFile(at.session.file, plan), erase, nowIso);
     if (refusal) return refusal;
   }
   return answer(JSON.stringify(at.session.file));
-}
-
-/** `file` with the plan's rows committed. The commit writes in place (it pushes rows
- *  and flags `deleted`, documents only), so it runs on a copy of the documents: the
- *  file given is a read record or the session's, both shared (my-data.ts readRecord). */
-function committed(file: RoadmapFile, plan: DocumentSavePlan): RoadmapFile {
-  const next = { ...file, documents: file.documents.map((d) => ({ ...d })) };
-  plan.commit(next);
-  return next;
 }

@@ -65,7 +65,7 @@
  *     same plan run over the medications shown here, and a card that run
  *     lacks has none. derivedValues: the plan's own numbers and BMI category,
  *     withheld for a known minor as plan.ts withholds them; missingInputs:
- *     the plan's gating field names it lacks. uploadedDocuments is always empty.
+ *     the plan's gating field names it lacks.
  * Every other key is dropped.
  */
 import type { CreatinineDay, HealthInputs, SuggestionInputs } from './types';
@@ -344,7 +344,6 @@ export function buildChatContextJson(payload: unknown, statedCreatinineDay?: str
         description: descriptions.get(s.id),
       })),
     } : {}),
-    uploadedDocuments: [],
   }, null, 2);
 }
 

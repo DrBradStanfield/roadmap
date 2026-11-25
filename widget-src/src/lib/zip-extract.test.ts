@@ -13,7 +13,8 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
 import JSZip from 'jszip';
-import { getZipEntries, isZip } from './zip-extract';
+import { getZipEntries } from './zip-extract';
+import { isZip } from './file-kinds';
 
 const REAL_ZIP_PATH = '/Users/bradstanfield/Library/CloudStorage/Dropbox/health.zip';
 

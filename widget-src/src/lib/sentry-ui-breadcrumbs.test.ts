@@ -4,12 +4,12 @@ import { webcrypto } from 'node:crypto';
 import { createElement } from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { Sentry, scrubBreadcrumb, scrubEvent } from './sentry';
-import { addMeasurement, flushRoadmapStore } from './roadmap-data';
+import { addMeasurement, flushRoadmapStore, getShownErase } from './roadmap-data';
 import { seedGuest } from '../testing/health-tool-harness';
 
 vi.mock('./server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('./chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('../components/ChatEmbed', () => ({ ChatEmbed: () => null }));
@@ -97,6 +97,17 @@ it('sends click and input breadcrumbs without labels, names, values or status cl
   }
 });
 
+// US-74 review P1: a single-topic widget's result status class is scrubbed
+// from a click breadcrumb's element path, as the full app's status classes are.
+it('drops the widget result status class from a click breadcrumb', () => {
+  document.body.innerHTML = '<form class="hr-widget-form"><div class="hr-widget-tile"><div class="hr-widget-status">Elevated</div></div></form>';
+  const target = document.querySelector('.hr-widget-status')!;
+  const crumb = scrubBreadcrumb({ category: 'ui.click', message: 'x' }, { event: { target } } as never)!;
+  expect(crumb.message).toBe('body > form.hr-widget-form > div.hr-widget-tile > div');
+  const bare = scrubBreadcrumb({ category: 'ui.click', message: 'form.hr-widget-form > div.hr-widget-status[title="x"]' })!;
+  expect(bare.message).toBe('form.hr-widget-form > div');
+});
+
 // US-09 AC7d on My health (US-62 phase 5): the real page, an urgent plan, and
 // clicks on what a finding draws. No card id, status class or suggestion id
 // may name what the plan found.
@@ -106,7 +117,7 @@ it('My health: a card body, its Urgent label, the banner, a nav dot and the alco
   Element.prototype.scrollIntoView ??= () => {};
   await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1968, birthMonth: 6, unitSystem: 'si' },
     [['weight', 100], ['systolic_bp', 162], ['diastolic_bp', 101]], [], '2026-10-12');
-  await addMeasurement('hba1c', 50, '2026-10-12');
+  await addMeasurement('hba1c', 50, '2026-10-12', getShownErase());
   await flushRoadmapStore();
   const view = render(createElement(HealthTool));
   await waitFor(() => expect(view.container.querySelector('.mh-banner')).not.toBeNull());

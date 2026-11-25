@@ -39,16 +39,31 @@ vi.mock('./connect', () => ({
   logOff: vi.fn(),
 }));
 
-import { SyncControl } from './sync-control';
-import { noteDevicePage, stopLocalHealthWrites } from '../src/lib/storage';
-import { BackendPickerModal } from './backend-picker';
-import { bootSignIn, resetSignIn } from '../src/storage/sign-in-state';
+// Fresh modules for every test (US-09 AC13, AC19): the page's write state, the
+// log-off id it loaded with, the sign-in answer and sync-control's "seen" memory
+// all last for the module's life, so a shared copy would make the order matter.
+let SyncControl: typeof import('./sync-control').SyncControl;
+let BackendPickerModal: typeof import('./backend-picker').BackendPickerModal;
+let noteDevicePage: typeof import('../src/lib/storage').noteDevicePage;
+let stopLocalHealthWrites: typeof import('../src/lib/storage').stopLocalHealthWrites;
+let bootSignIn: typeof import('../src/storage/sign-in-state').bootSignIn;
+let resetSignIn: typeof import('../src/storage/sign-in-state').resetSignIn;
+let openBackendPicker: typeof import('../src/lib/storage-notice').openBackendPicker;
 
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal = vi.fn();
   HTMLDialogElement.prototype.close = vi.fn();
 });
-afterEach(cleanup);
+beforeEach(async () => {
+  localStorage.clear();
+  vi.resetModules();
+  ({ SyncControl } = await import('./sync-control'));
+  ({ BackendPickerModal } = await import('./backend-picker'));
+  ({ noteDevicePage, stopLocalHealthWrites } = await import('../src/lib/storage'));
+  ({ bootSignIn, resetSignIn } = await import('../src/storage/sign-in-state'));
+  ({ openBackendPicker } = await import('../src/lib/storage-notice'));
+});
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 /** The load's answer, as boot seeds it (US-09 AC48): Drive's sign-in ended; any other cloud did not answer. */
 const lostAtLoad = (provider: 'google-drive' | 'dropbox' | 'github' | 'self-host') => {
@@ -181,22 +196,8 @@ describe('US-09 AC5 — the picker', () => {
 // a side localStorage key in this browser, never the record.
 describe('US-09 AC19 — the storage button pulses once the guest has their PDF', () => {
   const SEEN_KEY = 'hr_storage_cta_seen';
-  // A fresh sync-control per test: it remembers "seen" for the page's life
-  // (module scope), and the AC5 tests above press the button too.
-  let Sync: typeof SyncControl;
-  let openPicker: () => void;
-  let show: (ui: React.ReactNode) => ReturnType<typeof render>;
-  let signIn: typeof import('../src/storage/sign-in-state');
-  beforeEach(async () => {
-    localStorage.clear();
-    vi.resetModules();
-    ({ SyncControl: Sync } = await import('./sync-control'));
-    const notice = await import('../src/lib/storage-notice');
-    openPicker = notice.openBackendPicker;
-    signIn = await import('../src/storage/sign-in-state');
-    show = (ui) => render(<>{ui}</>);
-  });
-  afterEach(() => { vi.resetAllMocks(); vi.restoreAllMocks(); });
+  const show = (ui: React.ReactNode) => render(<>{ui}</>);
+  afterEach(() => { vi.resetAllMocks(); });
   const cta = (view: ReturnType<typeof render>) => view.getByRole('button', { name: PLAN_STORAGE_CTA });
   const pulsing = (view: ReturnType<typeof render>) => cta(view).classList.contains('hr-sync-btn-attention');
   const throwingStorage = () => {
@@ -205,29 +206,29 @@ describe('US-09 AC19 — the storage button pulses once the guest has their PDF'
   };
 
   it('pulses only with attention and before the button was ever pressed', () => {
-    expect(pulsing(show(<Sync backend="local" hasData attention />))).toBe(true);
+    expect(pulsing(show(<SyncControl backend="local" hasData attention />))).toBe(true);
     cleanup();
-    expect(pulsing(show(<Sync backend="local" hasData attention={false} />))).toBe(false);
+    expect(pulsing(show(<SyncControl backend="local" hasData attention={false} />))).toBe(false);
     cleanup();
-    expect(pulsing(show(<Sync backend="local" hasData />))).toBe(false);
+    expect(pulsing(show(<SyncControl backend="local" hasData />))).toBe(false);
     cleanup();
     localStorage.setItem(SEEN_KEY, '1');
-    expect(pulsing(show(<Sync backend="local" hasData attention />))).toBe(false);
+    expect(pulsing(show(<SyncControl backend="local" hasData attention />))).toBe(false);
   });
 
   it('pressing it stops the pulse now and on later visits, and still opens the picker', () => {
-    const view = show(<Sync backend="local" hasData attention />);
+    const view = show(<SyncControl backend="local" hasData attention />);
     fireEvent.click(cta(view));
     expect(pulsing(view)).toBe(false);
     expect(document.querySelector('dialog.hr-modal')).toBeTruthy();
     expect(localStorage.getItem(SEEN_KEY)).toBe('1');
     cleanup();
-    expect(pulsing(show(<Sync backend="local" hasData attention />))).toBe(false);
+    expect(pulsing(show(<SyncControl backend="local" hasData attention />))).toBe(false);
   });
 
   it('the picker opened by any other route (a storage link, the email step) stops it too', () => {
-    const view = show(<Sync backend="local" hasData attention />);
-    act(() => openPicker());
+    const view = show(<SyncControl backend="local" hasData attention />);
+    act(() => openBackendPicker());
     expect(pulsing(view)).toBe(false);
     expect(document.querySelector('dialog.hr-modal')).toBeTruthy();
     expect(localStorage.getItem(SEEN_KEY)).toBe('1');
@@ -235,21 +236,21 @@ describe('US-09 AC19 — the storage button pulses once the guest has their PDF'
 
   it('storage that throws never breaks the button: it pulses, stops when pressed, and stays stopped on a remount', () => {
     throwingStorage();
-    const view = show(<Sync backend="local" hasData attention />);
+    const view = show(<SyncControl backend="local" hasData attention />);
     expect(pulsing(view)).toBe(true);
     fireEvent.click(cta(view));
     expect(pulsing(view)).toBe(false);
     expect(document.querySelector('dialog.hr-modal')).toBeTruthy();
     cleanup();
-    expect(pulsing(show(<Sync backend="local" hasData attention />))).toBe(false);
+    expect(pulsing(show(<SyncControl backend="local" hasData attention />))).toBe(false);
   });
 
   it('a cloud or reconnect session has no such button, so nothing pulses', () => {
     const lost = [{ kind: 'signedOut', provider: 'google-drive' }, { kind: 'unreachable', provider: 'dropbox' }] as const;
     for (const [backend, state] of [['dropbox', undefined], ['local', lost[0]], ['local', lost[1]]] as const) {
-      signIn.resetSignIn();
-      if (state) signIn.bootSignIn(state);
-      expect(show(<Sync backend={backend} hasData attention />).container.querySelector('.hr-sync-btn-attention')).toBeNull();
+      resetSignIn();
+      if (state) bootSignIn(state);
+      expect(show(<SyncControl backend={backend} hasData attention />).container.querySelector('.hr-sync-btn-attention')).toBeNull();
       cleanup();
     }
   });
@@ -274,42 +275,33 @@ describe('US-09 AC13: the fallback notice on a live page', () => {
 });
 
 describe('US-09 AC13: the fallback notice on a page that missed another tab\'s log-off', () => {
-  // The fallback state lasts for the module's life, so the stop tests below follow.
   it('shows no promise once the log-off id has changed, and drops it when the change arrives as a storage event', () => {
     localStorage.setItem('health_roadmap_backend', 'dropbox');
     noteDevicePage(); // a fallback page for Dropbox
     const shown = guest(<SyncControl backend="local" hasData />, 'dropbox');
     expect(shown.container.textContent).toContain('kept in this browser');
-    try {
-      act(() => {
-        localStorage.setItem('health_roadmap_log_off_id', 'id-after'); // another tab logged off; no signal reached this page
-        window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_id' }));
-      });
-      expect(shown.container.textContent).toContain('Your record is safe in your');
-      expect(shown.container.textContent).not.toContain('kept in this browser');
-      shown.unmount();
+    act(() => {
+      localStorage.setItem('health_roadmap_log_off_id', 'id-after'); // another tab logged off; no signal reached this page
+      window.dispatchEvent(new StorageEvent('storage', { key: 'health_roadmap_log_off_id' }));
+    });
+    expect(shown.container.textContent).toContain('Your record is safe in your');
+    expect(shown.container.textContent).not.toContain('kept in this browser');
+    shown.unmount();
 
-      const later = guest(<SyncControl backend="local" hasData />, 'google-drive');
-      expect(later.container.textContent).not.toContain('kept in this browser');
-    } finally {
-      localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
-    }
+    const later = guest(<SyncControl backend="local" hasData />, 'google-drive');
+    expect(later.container.textContent).not.toContain('kept in this browser');
   });
 
   it('a page restored from the back-forward cache after the log-off id changed shows no promise', () => {
     const shown = guest(<SyncControl backend="local" hasData />, 'dropbox');
     expect(shown.container.textContent).toContain('kept in this browser');
-    try {
-      act(() => {
-        // Changed while the page sat in the cache: no storage event reaches it.
-        localStorage.setItem('health_roadmap_log_off_id', 'id-after');
-        window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
-      });
-      expect(shown.container.textContent).toContain('Your record is safe in your');
-      expect(shown.container.textContent).not.toContain('kept in this browser');
-    } finally {
-      localStorage.removeItem('health_roadmap_log_off_id'); // the id the page loaded with, for the tests below
-    }
+    act(() => {
+      // Changed while the page sat in the cache: no storage event reaches it.
+      localStorage.setItem('health_roadmap_log_off_id', 'id-after');
+      window.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    });
+    expect(shown.container.textContent).toContain('Your record is safe in your');
+    expect(shown.container.textContent).not.toContain('kept in this browser');
   });
 
   it('an unmounted sync control hears no log-off id change and no back-forward restore', () => {
@@ -346,7 +338,6 @@ describe('US-09 AC13: the fallback notice on a page that missed another tab\'s l
 });
 
 describe('US-09 AC13: the fallback notice on a page whose device writes stopped', () => {
-  // Last in this file: the stop lasts for the module's life.
   it('a notice already on screen drops the promise when the writes stop, with no other change', () => {
     const { container } = guest(<SyncControl backend="local" hasData />, 'dropbox');
     expect(container.textContent).toContain('kept in this browser');

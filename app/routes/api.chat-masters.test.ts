@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   auth: vi.fn(),
   route: vi.fn(),
+  sentry: vi.fn(),
   load: vi.fn((..._args: unknown[]) => ({ content: 'loaded', titles: [] as string[], skipped: [] as string[], reduced: ['tm-d'] })),
   fakes: [
     { title: 'Vitamin D', handle: 'tm-d', url: 'u', tags: [], publishedAt: '2024-01-01T00:00:00Z', type: 'reference' as const, reviewed: '2026-10-20' },
@@ -25,25 +26,25 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
   getAuthenticatedUser: mocks.auth,
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
-vi.mock('../lib/supabase.server', () => ({
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => ({
   logAudit: vi.fn(), getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
   GuestRateLimitError: class extends Error {},
 }));
-vi.mock('../lib/chat.server', async (original) => ({
-  resolveChatContext: () => ({ userContextJson: '{}' }),
-  buildSystemBlocks: () => [], buildConversationMessages: () => [],
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('../lib/supabase-client.server', async (o) => ({ ...await o<object>(), createUserClient: supa.createUserClient }));
+vi.mock('../lib/chat.server', async (original) => (await import('../lib/chat-server.test-helpers')).chatServerStub(await original<typeof import('../lib/chat.server')>(), {
   loadMatchedArticlesFromHandles: mocks.load,
-  DOCTOR_POSTURE: '', BRAND_POSTURE: '',
-  getChatCompletion: async () => ({ content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 }, isFallback: false, stopReason: 'end_turn' }),
-  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test',
-  MAX_MESSAGE_LENGTH: (await original<typeof import('../lib/chat.server')>()).MAX_MESSAGE_LENGTH,
 }));
 vi.mock('../lib/chat-router.server', async (original) => ({
   ...await original<typeof import('../lib/chat-router.server')>(),
-  routeQuery: mocks.route, reportRouterFailure: vi.fn(),
+  routeQuery: mocks.route,
 }));
+vi.mock('@sentry/react-router', async (original) => ({ ...await original<object>(), captureMessage: mocks.sentry }));
 vi.mock('../lib/chat-classifier.server', () => ({
   classifyMessage: async (text: string) => (text.startsWith('Thanks')
     ? { routerSkipped: true, classification: 'SKIP', latencyMs: 0 }
@@ -140,5 +141,28 @@ describe('US-50 AC14: the storefront chat loads the master, not the older post',
     await post({ message: 'Is vitamin D worth taking?', articleHandle: 'not-a-real-post-x9' });
     expect(loaded()).toEqual(['tm-d']);
     expect(JSON.stringify(inserts)).not.toContain('not-a-real-post-x9');
+  });
+});
+
+// US-15 AC74: the web's router-failure report, from the stage every surface shares
+// (Discord and YouTube: lib/chat-router-report.test.ts). No chat text, no error text.
+describe('US-15 AC74: the web chat reports a router failure once', () => {
+  const routerReports = () => mocks.sentry.mock.calls.filter(([msg]) => msg === 'Router: request or output failure');
+  beforeEach(() => { mocks.sentry.mockClear(); });
+
+  it('a failed router call: one report, right after the router call, the same words, level and extra, with the platform tag', async () => {
+    mocks.route.mockResolvedValueOnce({ handles: [], rawJson: 'not json', usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 }, latencyMs: 9, cacheHit: false, error: 'Unexpected token in vitamin D' });
+    expect((await post({ message: 'Is vitamin D worth taking?' })).status).toBe(200);
+    expect(routerReports()).toEqual([['Router: request or output failure', {
+      level: 'warning', tags: { feature: 'chat', subsystem: 'router', platform: 'shopify' }, extra: { latencyMs: 9, cacheHit: false },
+    }]]);
+    expect(JSON.stringify(routerReports())).not.toMatch(/vitamin|Unexpected|not json/);
+  });
+
+  it('a router that answers, or does not run, is not reported', async () => {
+    await post({ message: 'Is vitamin D worth taking?' });
+    await post({ message: 'Thanks, that helps' });
+    expect(mocks.route).toHaveBeenCalledTimes(1);
+    expect(routerReports()).toEqual([]);
   });
 });

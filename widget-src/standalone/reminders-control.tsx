@@ -16,80 +16,72 @@
  * typing + ticking is the consent). The typed address goes to Klaviyo only;
  * the reminder row never stores it.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
 import { EMAIL_REGEX } from '../src/lib/email';
+import { REMOTE_CHANGED_EVENT } from '../src/storage/roadmap-store';
 import { cancelReminders, ENROL_NOTICE_KEY, optInToReminders, ReminderEmailNeeded, remindersSupported } from './reminders';
+import { busy as isBusy, INITIAL_STEP, shown, transition, type FormEdit, type ToggleForm } from './reminders-toggle-machine';
 import type { Backend } from './connect';
 
+const failure = (e: unknown): string => (e instanceof Error ? e.message : 'Something went wrong — please retry.');
+
 export function RemindersControl({ backend }: { backend: Backend }) {
-  // This toggle stays on the page (no reload ends it), so busy must reset.
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState(false);
-  const [wantsUpdates, setWantsUpdates] = useState(false);
-  const [typedEmail, setTypedEmail] = useState('');
-  // The provider had no email to give: ask once (never enrol silently).
-  const [needsEmail, setNeedsEmail] = useState(false);
-  const [reminderEmail, setReminderEmail] = useState('');
-  // The address was already enrolled (US-17 AC8): no token comes back, so
-  // this device cannot show "on" — say so instead of failing.
-  const [refreshedFor, setRefreshedFor] = useState<string | null>(null);
+  // The toggle's mode, one step (H116); on or off is the record's, read below.
+  const [step, send] = useReducer(transition, INITIAL_STEP);
   // The opt-in lives in the user's file; local state just re-renders on change.
   const [, setVersion] = useState(0);
 
   // The load-time schedule push clears a stale opt-in when the user
-  // unsubscribed from an email link (404) — re-render when that happens.
+  // unsubscribed from an email link (404), and another device's choice is
+  // merged in (US-17 AC17) — re-render when either happens.
   useEffect(() => {
-    const onChange = () => setVersion((v) => v + 1);
+    const onChange = () => {
+      setVersion((v) => v + 1);
+      if (getReminderOptIn()?.status === 'active') send({ type: 'recordOn' });
+    };
     window.addEventListener('hr:reminders-changed', onChange);
-    return () => window.removeEventListener('hr:reminders-changed', onChange);
+    window.addEventListener(REMOTE_CHANGED_EVENT, onChange);
+    return () => {
+      window.removeEventListener('hr:reminders-changed', onChange);
+      window.removeEventListener(REMOTE_CHANGED_EVENT, onChange);
+    };
   }, []);
 
   if (!remindersSupported(backend)) return null;
   const optIn = getReminderOptIn();
   const active = optIn?.status === 'active';
 
-  const wrap = (fn: () => Promise<void>) => async (): Promise<void> => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong — please retry.');
-    } finally {
-      setBusy(false);
-      setVersion((v) => v + 1);
-    }
-  };
+  const busy = isBusy(step);
+  const view = shown(step);
+  const edit = (change: FormEdit) => send({ type: 'edit', edit: change });
 
-  const resetStep = () => {
-    setConfirming(false);
-    setWantsUpdates(false);
-    setTypedEmail('');
-    setNeedsEmail(false);
-    setReminderEmail('');
-  };
-
-  const turnOn = wrap(async () => {
-    const marketingEmail = wantsUpdates ? typedEmail.trim() : undefined;
-    if (marketingEmail !== undefined && !EMAIL_REGEX.test(marketingEmail)) {
-      throw new Error('That email doesn’t look right — please check it (or untick the box).');
-    }
-    const email = needsEmail ? reminderEmail.trim() : undefined;
-    if (email !== undefined && !EMAIL_REGEX.test(email)) {
-      throw new Error('That email doesn’t look right — please check it.');
-    }
+  const turnOn = async (form: ToggleForm): Promise<void> => {
+    send({ type: 'submit' });
     try {
+      const marketingEmail = form.wantsUpdates ? form.typedEmail.trim() : undefined;
+      if (marketingEmail !== undefined && !EMAIL_REGEX.test(marketingEmail)) {
+        throw new Error('That email doesn’t look right — please check it (or untick the box).');
+      }
+      const email = form.needsEmail ? form.reminderEmail.trim() : undefined;
+      if (email !== undefined && !EMAIL_REGEX.test(email)) {
+        throw new Error('That email doesn’t look right — please check it.');
+      }
       const result = await optInToReminders(backend, { marketingEmail, email });
-      if (result.refreshed) setRefreshedFor(result.email);
+      send(result.refreshed ? { type: 'onRefreshed', email: result.email } : { type: 'onDone' });
     } catch (e) {
-      if (e instanceof ReminderEmailNeeded) setNeedsEmail(true);
-      throw e;
+      send({ type: 'onFailed', message: failure(e), needsEmail: e instanceof ReminderEmailNeeded });
     }
-    resetStep();
-  });
-  const turnOff = wrap(() => cancelReminders());
+  };
+  const turnOff = async (): Promise<void> => {
+    send({ type: 'off' });
+    try {
+      await cancelReminders();
+      send({ type: 'offDone' });
+    } catch (e) {
+      send({ type: 'offFailed', message: failure(e) });
+    }
+  };
 
   return (
     <div className="hr-reminders">
@@ -97,7 +89,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
         <>
           <span className="hr-sync-status">✓ Email health reminders on → {optIn!.email}</span>
           <button className="hr-sync-link" disabled={busy} onClick={() => void turnOff()}>
-            {busy ? 'Turning off…' : 'Turn off'}
+            {step.phase === 'turningOn' ? 'Setting up…' : busy ? 'Turning off…' : 'Turn off'}
           </button>
           {/* US-17 AC1/AC5: default-on must never be silent. Wherever the
               control renders, it states exactly what leaves the device. */}
@@ -107,64 +99,62 @@ export function RemindersControl({ backend }: { backend: Backend }) {
             your email address (the one on your cloud account, or the one you typed).
           </span>
         </>
-      ) : confirming ? (
+      ) : view.phase === 'asking' ? (
         <div className="hr-sync-form">
           <span className="hr-sync-detail">
             Reminders go to the email on your connected cloud account.
           </span>
-          {needsEmail && (
+          {view.form.needsEmail && (
             <input
               type="email"
               placeholder="Email for your reminders"
               aria-label="Email for your reminders"
-              value={reminderEmail}
-              onChange={(e) => setReminderEmail(e.target.value)}
+              value={view.form.reminderEmail}
+              readOnly={busy}
+              onChange={(e) => edit({ reminderEmail: e.target.value })}
             />
           )}
           <label className="hr-sync-detail">
             <input
               type="checkbox"
-              checked={wantsUpdates}
-              onChange={(e) => setWantsUpdates(e.target.checked)}
+              checked={view.form.wantsUpdates}
+              onChange={(e) => edit({ wantsUpdates: e.target.checked })}
             />{' '}
             Also add me to the MicroVitamin mailing list (Dr Brad’s supplement company). Unsubscribe anytime.
           </label>
-          {wantsUpdates && (
+          {view.form.wantsUpdates && (
             <input
               type="email"
               placeholder="Your email for the MicroVitamin list"
               aria-label="Email for the MicroVitamin mailing list"
-              value={typedEmail}
-              onChange={(e) => setTypedEmail(e.target.value)}
+              value={view.form.typedEmail}
+              readOnly={busy}
+              onChange={(e) => edit({ typedEmail: e.target.value })}
             />
           )}
           <span>
-            <button className="hr-sync-link" disabled={busy} onClick={() => void turnOn()}>
+            <button className="hr-sync-link" disabled={busy} onClick={() => void turnOn(view.form)}>
               {busy ? 'Setting up…' : 'Turn on reminders'}
             </button>{' '}
-            <button
-              className="hr-sync-link"
-              disabled={busy}
-              onClick={() => { resetStep(); setError(null); }}
-            >
+            <button className="hr-sync-link" disabled={busy} onClick={() => send({ type: 'dismiss' })}>
               Cancel
             </button>
           </span>
         </div>
-      ) : refreshedFor ? (
+      ) : view.phase === 'refreshed' ? (
         <span className="hr-sync-detail">
-          Reminders are already set up for {refreshedFor} — we refreshed your schedule. To turn them off,
+          Reminders are already set up for {view.email} — we refreshed your schedule. To turn them off,
           use the link in any reminder email.
         </span>
       ) : (
         <>
           <span className="hr-sync-detail">Get an email when a check-up or blood test comes due.</span>
-          <button className="hr-sync-link" disabled={busy} onClick={() => setConfirming(true)}>
+          <button className="hr-sync-link" disabled={busy} onClick={() => send({ type: 'open' })}>
             Turn on email health reminders
           </button>
         </>
       )}
-      {error && <span className="hr-sync-error">{error}</span>}
+      {view.error && <span className="hr-sync-error">{view.error}</span>}
     </div>
   );
 }

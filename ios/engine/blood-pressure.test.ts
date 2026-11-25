@@ -294,21 +294,45 @@ describe('height in feet and inches (US-25 AC17)', () => {
 describe('blood pressure history at scale', () => {
   // Ten years of daily readings took 17 s on an iPhone 15 Pro Max when each day
   // re-scanned the record; it now takes one pass. Node's JIT ran the old code in 0.9 s.
+  // The test times growth, not speed (an absolute budget fails on a loaded
+  // machine, docs/gotchas.md): 4x the days must take under 10x the time (one
+  // pass about 4x, a re-scan per day about 16x), each size the fastest of three runs.
   it('ten years of daily pairs build in one pass', () => {
-    const file = nz();
-    for (let back = 1; back <= 3650; back++) {
-      const day = new Date(Date.parse(NOW) - back * 864e5).toISOString().slice(0, 10);
-      for (const [metricType, value] of [['systolic_bp', 120], ['diastolic_bp', 80]] as const) {
-        file.measurements.push({ id: `${metricType}-${day}`, metricType, value, recordedAt: day, createdAt: `${day}T08:00:00Z`,
-          source: 'manual', status: 'active', correctsId: null, externalId: null });
+    const SIZES = [912, 3650, 14_600]; // days: two and a half, ten and forty years
+    const GROWTH_LIMIT = 10; // per 4x step: one pass ~4, a re-scan per day ~16
+    const FLOOR_MS = 1; // below this a timer reading is noise, not a cost
+    const HANG_MS = 10_000; // last-resort backstop, whatever the machine
+    const daily = (days: number) => {
+      const file = nz();
+      for (let back = 1; back <= days; back++) {
+        const day = new Date(Date.parse(NOW) - back * 864e5).toISOString().slice(0, 10);
+        for (const [metricType, value] of [['systolic_bp', 120], ['diastolic_bp', 80]] as const) {
+          file.measurements.push({ id: `${metricType}-${day}`, metricType, value, recordedAt: day, createdAt: `${day}T08:00:00Z`,
+            source: 'manual', status: 'active', correctsId: null, externalId: null });
+        }
       }
+      return file;
+    };
+    const fastest = (file: RoadmapFile) => {
+      let best = Infinity;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const start = performance.now();
+        metricHistory(file, 'blood_pressure', LATER);
+        best = Math.min(best, performance.now() - start);
+      }
+      return best;
+    };
+    let previous = fastest(daily(SIZES[0]));
+    for (const [step, days] of SIZES.slice(1).entries()) {
+      const took = fastest(daily(days));
+      expect(took, `${days} days`).toBeLessThan(HANG_MS);
+      expect(took / Math.max(previous, FLOOR_MS), `growth from ${SIZES[step]} to ${days} days`).toBeLessThan(GROWTH_LIMIT);
+      previous = took;
     }
-    const start = performance.now();
-    const rows = metricHistory(file, 'blood_pressure', LATER).rows;
-    expect(performance.now() - start).toBeLessThan(300);
+    const rows = metricHistory(daily(3650), 'blood_pressure', LATER).rows;
     expect(rows).toHaveLength(3650);
     expect(rows[0]).toMatchObject({ value: '120/80', status: 'active' });
-  });
+  }, 60_000);
 });
 
 // US-02 AC8: the top number above the bottom, on every save of the pair.

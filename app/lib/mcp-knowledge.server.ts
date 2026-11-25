@@ -3,7 +3,7 @@
  *
  * The chatbot's knowledge base, offered to the user's own assistant. The
  * user's AI pays: nothing here calls a model, an embeddings API or any other
- * network service. It is the CLI's BM25 ranker (`tools/search-knowledge.ts`)
+ * network service. It is the CLI's BM25 ranker (`./search-knowledge.ts`)
  * over the files bundled into the image (`docs/blog/index.json` and the
  * bodies under docs/blog), and the client's
  * model reads what comes back.
@@ -15,12 +15,13 @@
  * refusal repeats them.
  */
 import * as z from '../../packages/health-core/src/zod';
-import { bestSection, buildIndex, search, tokenize, type Index } from '../../tools/search-knowledge';
+import { bestSection, buildIndex, search, tokenize, type Index } from './search-knowledge';
 import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle } from './matched-content';
 import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 import { routerView } from './router-view';
-import type { McpToolDefinition, ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import type { ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import type { McpToolDefinition } from '../../packages/health-core/src/mcp-tool-catalogue';
 
 /** The switch. Only the exact word `on` turns the tools on; unset, empty or anything else is off. */
 export function knowledgeToolsEnabled(): boolean {

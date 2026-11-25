@@ -4,7 +4,8 @@
  * widget-src/src/storage/old-safari-deadline.test.ts.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { fetchOrFail, timeoutDeadline } from './adapter';
+import { fetchOrFail } from './adapter';
+import { timeoutDeadline } from './transfer-deadline';
 
 const nativeTimeout = AbortSignal.timeout;
 

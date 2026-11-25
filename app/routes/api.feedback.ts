@@ -10,7 +10,7 @@ import { createRateLimiter } from '../lib/rate-limiter';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
 // 3 submissions per hour per IP — the same limiter every other route uses.
-const checkFeedbackRateLimit = createRateLimiter(3, 60 * 60_000, 10 * 60_000);
+const checkFeedbackRateLimit = createRateLimiter(3, 60 * 60_000, 10 * 60_000, { name: 'feedback per IP' });
 
 const feedbackSchema = z.object({
   email: z.email().max(200),

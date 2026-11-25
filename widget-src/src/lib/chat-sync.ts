@@ -4,6 +4,7 @@
  * Works same-tab (separate React roots) and cross-tab (same origin).
  */
 
+import type { Key } from '@roadmap/health-core/chat-turn';
 import type { ChatConversation, ChatMessage } from './chat-api';
 
 const CHANNEL_NAME = 'hr_chat_sync';
@@ -15,7 +16,9 @@ export type SyncMessage =
   // flight, its own or another tab's. Read only from an older bundle's message,
   // which has no `sending`; it can go once no such bundle can still be open.
   // `loaded` false: the sender has not read its thread, so `messages` are no history (absent: they are).
-  | { instanceId: string; type: 'state'; payload: { conversations: ChatConversation[]; activeConversationId: string | null; messages: ChatMessage[]; isLoading: boolean; sending?: boolean; loaded?: boolean; error: string | null }; ts: number }
+  // `asked`: the chat-turn key of the chat the sender's own send asked in, while it waits or streams; `shown`: the
+  // key of the chat it shows (US-15 AC17d). Absent from an older bundle: its send then draws no dots elsewhere.
+  | { instanceId: string; type: 'state'; payload: { conversations: ChatConversation[]; activeConversationId: string | null; messages: ChatMessage[]; isLoading: boolean; sending?: boolean; asked?: Key; shown?: Key; loaded?: boolean; error: string | null }; ts: number }
   | { instanceId: string; type: 'thread-new'; payload: Record<string, never>; ts: number }
   | { instanceId: string; type: 'thread-deleted'; payload: { id: string }; ts: number };
 

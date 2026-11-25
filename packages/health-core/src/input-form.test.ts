@@ -2,7 +2,7 @@
 // as data, shared by the web form and the iPhone app.
 import { describe, expect, it } from 'vitest';
 import {
-  customSupplementAdd, customSupplementKey, customSupplementMatch, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
+  anyScreeningEligible, customSupplementAdd, customSupplementKey, customSupplementMatch, medicationForm, medicationWrites, screeningForm, screeningMonths, screeningWrites,
   type FormField, type FormSection, type MedicationBasis,
 } from './input-form';
 import { LIPID_MEDS_IN_STEPS } from './suggestions';
@@ -131,7 +131,7 @@ const flat: MedicationBasis = {
 };
 const elevated: MedicationBasis = {
   ...flat, lipidMarker: { kind: 'apoB', label: 'ApoB', value: 1.2, target: 0.8, elevated: true },
-  weightMedTrigger: { on: true, reasons: ['prediabetic HbA1c'] }, bmi: 31,
+  weightMedTrigger: { on: true, reasons: ['an HbA1c in the prediabetes range'] }, bmi: 31,
 };
 
 describe('screeningForm', () => {
@@ -235,6 +235,27 @@ describe('screeningForm', () => {
     // Review R4: "Not yet started" clears the chain but keeps the question, so LDCT can be picked again.
     expect(keys(screeningForm(60, 'male', { lungSmokingHistory: 'former_smoker', lungPackYears: 15, lungScreening: 'not_yet_started' }))).toContain('lung_screening');
   });
+
+  it('US-07 AC1k: from 86 with no sex, the cancer section shows only when one of its groups does (Brad 2026-11-12, D9)', () => {
+    expect(screeningForm(86, undefined, {})).toEqual([]);
+    expect(screeningForm(95, undefined, {})).toEqual([]);
+    // The neighbours keep it: 85 with no sex (colorectal's last year), 86 with a sex, and past 80 with a stored LDCT answer.
+    expect(screeningForm(85, undefined, {})[0].groups.map((g) => g.id)).toEqual(['colorectal']);
+    expect(screeningForm(86, 'male', {})[0].groups.map((g) => g.id)).toEqual(['prostate']);
+    expect(screeningForm(86, 'female', {})[0].groups.map((g) => g.id)).toEqual(['breast', 'cervical', 'endometrial']);
+    const ldct = { lungSmokingHistory: 'former_smoker', lungPackYears: 25, lungScreening: 'annual_ldct' } as ScreeningInputs;
+    expect(screeningForm(86, undefined, ldct)[0].groups.map((g) => g.id)).toEqual(['lung']);
+    // The web's gate (InputPanel) says the same at every age and sex, so the web draws no empty section either.
+    for (const scr of [{}, ldct]) {
+      for (const sex of ['male', 'female', undefined]) {
+        for (let age = 0; age <= 110; age++) {
+          const cancer = screeningForm(age, sex, scr).find((s) => s.id === 'cancer-screening');
+          expect(cancer?.groups.length ?? 1, `${age} ${sex}`).toBeGreaterThan(0);
+          expect(anyScreeningEligible(age, sex, scr), `${age} ${sex}`).toBe(!!cancer);
+        }
+      }
+    }
+  });
 });
 
 describe('screeningWrites', () => {
@@ -331,7 +352,7 @@ describe('medicationForm', () => {
     const form = medicationForm({}, elevated);
     expect(keys(form)).toEqual(['statin', 'glp1']);
     expect(form[0].intro).toMatch(/ApoB/);
-    expect(field(form, 'statin').hint).toBe('Statins are the most effective first step. They reduce cholesterol production in the liver.');
+    expect(field(form, 'statin').hint).toBe('Guidelines name statins the first medicine to consider when cholesterol stays above target. They reduce cholesterol production in the liver.');
     const onStatin: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 10 } };
     expect(keys(medicationForm(onStatin, elevated))).toEqual(['statin', 'statin_dose', 'ezetimibe', 'glp1']);
     expect(field(medicationForm(onStatin, elevated), 'ezetimibe').hint).toMatch(/more ApoB reduction/);

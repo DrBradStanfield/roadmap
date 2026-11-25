@@ -14,7 +14,7 @@ vi.mock('../lib/roadmap-data', async original => ({
 }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackABConversion: vi.fn(), trackProductEvent: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), media: q, addEventListener() {}, removeEventListener() {} }));
@@ -46,7 +46,7 @@ describe('US-09 AC5 — one storage line, in the plan\'s storage card', () => {
       ...MY_HEALTH_PROPS,
       inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si' as const,
       unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
-      labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(), medications: [],
+      labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), medications: [],
       onMedicationChange: vi.fn(), onScreeningChange: vi.fn(), supplements: [], onSupplementChange: vi.fn(), screenings: [],
       onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
       hasApiResponse: true, onboarding: { stage: 3 as const, reached: 3 as const, fullForm: false, aboutYouLow: false }, planBasis: {}, grading: {},

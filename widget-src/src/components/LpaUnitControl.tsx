@@ -9,11 +9,11 @@ import { LPA_UNITS, type LpaUnit } from '@roadmap/health-core/units';
 
 const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
 
-export function LpaUnitControl({ unit, onChange }: { unit: LpaUnit; onChange: (unit: LpaUnit) => void }) {
+export function LpaUnitControl({ unit, onChange, disabled }: { unit: LpaUnit; onChange: (unit: LpaUnit) => void; disabled?: boolean }) {
   const buttons = useRef<Array<HTMLButtonElement | null>>([]);
   const onKeyDown = (e: KeyboardEvent) => {
     const step = STEP[e.key];
-    if (!step) return;
+    if (!step || disabled) return;
     e.preventDefault();
     const next = (LPA_UNITS.indexOf(unit) + step + LPA_UNITS.length) % LPA_UNITS.length;
     buttons.current[next]?.focus();
@@ -30,6 +30,7 @@ export function LpaUnitControl({ unit, onChange }: { unit: LpaUnit; onChange: (u
           aria-checked={u === unit}
           tabIndex={u === unit ? 0 : -1}
           className={`bt-unit-segment${u === unit ? ' bt-unit-segment--active' : ''}`}
+          disabled={disabled}
           onClick={() => { if (u !== unit) onChange(u); }}
         >
           {u}

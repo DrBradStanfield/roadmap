@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-I-8,S6 record edits and iPhone engine,Onboarding flow decisions move from the View to OnboardingSteps,not started,"OnboardingView.swift:439 change(for:), :525 advance, :543 previous",,,no
+I-8,S6 record edits and iPhone engine,Onboarding flow decisions move from the View to OnboardingSteps,not started,"needs a look: advance now lives in the OnboardingFlow union (OnboardingFlow.swift:160, iOS S6) and previous delegates to OnboardingSteps.previous (OnboardingSteps.swift:92, called from OnboardingView+Flow.swift:231); only change(for:) still decides in the view (OnboardingView+Flow.swift:173), so the lead may be mostly done. OnboardingView.swift:439 change(for:), :525 advance, :543 previous",,,no

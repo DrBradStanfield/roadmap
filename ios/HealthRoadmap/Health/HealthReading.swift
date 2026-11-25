@@ -6,21 +6,15 @@ enum HealthKind: String, CaseIterable, Sendable {
     case weight, height, waist, bloodPressure
 }
 
-/// One reading handed to the engine (`DeviceSample` in packages/health-core/src/device-import.ts).
-/// Swift does no clinical work on it: the engine decides whether it lands.
-struct HealthSample: Encodable, Equatable, Sendable {
-    /// The HealthKit sample UUID: the row's `externalId`, so a reading is taken once.
-    let externalId: String
-    /// The record's metric: weight, waist, systolic_bp, diastolic_bp, or height.
-    let metricType: String
-    /// SI: kg, cm, mmHg.
-    let value: Double
-    /// The instant in the zone it was taken in, with that zone's offset, Gregorian:
-    /// `2026-10-21T08:30:00+13:00`. Its date is the record's slot (the day the person lived).
-    let measuredAt: String
-    /// The two halves of one blood pressure share it (the correlation's UUID): they land together.
-    let pairId: String?
-
+/// One reading handed to the engine (`DeviceSample` in packages/health-core/src/device-import.ts),
+/// its shape generated from ios/engine/contract.ts (Engine/Generated/EngineContract.swift).
+/// Swift does no clinical work on it: the engine decides whether it lands. `externalId`: the
+/// HealthKit sample UUID, so a reading is taken once. `metricType`: weight, waist, systolic_bp,
+/// diastolic_bp or height. `value`: SI (kg, cm, mmHg). `measuredAt`: the instant in the zone it
+/// was taken in, with that zone's offset, Gregorian (`2026-10-21T08:30:00+13:00`); its date is
+/// the record's slot, the day the person lived. `pairId`: shared by the two halves of one blood
+/// pressure (the correlation's UUID), which land together.
+extension HealthSample {
     init(id: UUID, metric: String, value: Double, at date: Date, timeZone: TimeZone = .current, pairId: UUID? = nil) {
         externalId = id.uuidString
         metricType = metric
@@ -69,19 +63,11 @@ struct HealthBatch: Sendable {
     let anchor: Data?
 }
 
-/// One lab result from Health Records, handed to the engine as it came (US-72). Swift
-/// parses nothing (D2): the engine reads the FHIR JSON and decides whether it lands.
-struct HealthRecord: Encodable, Equatable, Sendable {
-    /// The HealthKit source: the institution's account, the FHIR endpoint the resource's
-    /// id is unique within (Apple, HKFHIRResource.identifier).
-    let sourceId: String
-    /// `Observation`, for a lab result.
-    let resourceType: String
-    /// "1.0.2" (DSTU2) or "4.0.1" (R4).
-    let fhirVersion: String
-    /// The FHIR resource, UTF-8 JSON.
-    let json: String
-}
+// `HealthRecord`, one lab result from Health Records handed to the engine as it came (US-72), is
+// generated (Engine/Generated/EngineContract.swift). Swift parses nothing (D2): the engine reads the
+// FHIR JSON and decides whether it lands. `sourceId`: the HealthKit source, the institution's account,
+// the FHIR endpoint the resource's id is unique within (HKFHIRResource.identifier); `resourceType`:
+// `Observation` for a lab result; `fhirVersion`: "1.0.2" (DSTU2) or "4.0.1" (R4); `json`: the resource.
 
 /// New lab results since an anchor, and the anchor to keep once they are saved.
 struct HealthRecordBatch: Sendable {
@@ -89,11 +75,10 @@ struct HealthRecordBatch: Sendable {
     let anchor: Data?
 }
 
-/// What the engine made of one batch of lab results (the `healthRecords` edit's answer).
-/// Counts only: they never leave the phone, not even to Clarity (D9).
-struct HealthRecordCounts: Decodable, Equatable, Sendable {
-    let added, corrected, withdrawn, alreadyInRecord, notRead: Int
-
+/// What the engine made of one batch of lab results (the `healthRecords` edit's answer), its
+/// shape generated (Engine/Generated/EngineContract.swift). Counts only: they never leave the
+/// phone, not even to Clarity (D9).
+extension HealthRecordCounts {
     /// At least one row landed: "Health Records imported" (AC13).
     var landed: Bool { added + corrected > 0 }
 }

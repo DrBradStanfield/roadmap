@@ -98,41 +98,29 @@ final class RecordSourcePinsTests: XCTestCase, CloudFixtures {
         return (release, showing)
     }
 
-    /// Lead S10 (review R2): a lab report saved during showPhone's read is refused in its turn with
-    /// the existing words before anything is read against the phone's record, so a summary that
-    /// would fail there (a value the report lacks) cannot answer instead. Nothing is written.
-    func testALabImportAskedWhileLeavingTheCloudIsRefused() async throws {
+    /// Lead S10 (review R2): an upload saved during showPhone's read is refused in its turn with
+    /// the existing words before anything is read against the phone's record. Nothing is written:
+    /// neither its value nor its document.
+    func testAnUploadSavedWhileLeavingTheCloudIsRefused() async throws {
         let engine = try HealthEngine()
         let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
         let (release, showing) = try await leavingTheCloud(store, engine: engine)
-        store.pinScreen()  // the review sheet opens on the cloud's screen
+        store.pinScreen()  // the upload's page opens on the cloud's screen
         defer { store.unpinScreen() }
-        let extraction = #"{"classification":"lab_report","reportDate":"2026-10-01","values":[{"metric":"ldl","valueSI":3.1,"displayValue":3.1,"displayUnit":"mmol/L","displaySystem":"si","confidence":"high"}],"additionalValues":[],"refusedValues":[]}"#
-        let asked = Task { await store.importLabs(extractionJSON: extraction, refs: ["v9"], reportDay: "2026-10-01") }
+        let opened = store.pinned ?? store.screen
+        var drive = try UploadPageTests.Drive()
+        drive.pick(["lab", "letter"])
+        drive.read("lab", UploadPageTests.lab(values: UploadPageTests.ldl))
+        drive.read("letter", UploadPageTests.letter())
+        drive.step(UploadAction.saveEvent(promised: try drive.page().reviewed))
+        let state = drive.state
+        let asked = Task { await store.saveUpload(state: state, originals: [:], read: { _ in nil }, as: opened) }
         release()
         await showing.value
         let result = await asked.value
         XCTAssertEqual(result, .failure(LabRefusal(message: "Your record changed while this was open, so this was not saved. Close this and enter the value again.")))
         let onDisk = (try? Data(contentsOf: RecordStore.file(in: folder))).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
         XCTAssertEqual((onDisk?["labValues"] as? [Any])?.count ?? 0, 0, "nothing reaches the phone's file")
-    }
-
-    /// Lead S10 (review R2): a document filed during showPhone's read is refused in its turn with
-    /// the existing words, and nothing is written.
-    func testADocumentSavedWhileLeavingTheCloudIsRefused() async throws {
-        let engine = try HealthEngine()
-        let store = try RecordStore(folder: folder, engine: engine, deviceId: "ios-test")
-        let (release, showing) = try await leavingTheCloud(store, engine: engine)
-        store.pinScreen()
-        defer { store.unpinScreen() }
-        let letter = ##"{"classification":"clinic_letter","reportDate":null,"values":[],"additionalValues":[],"document":{"classification":"clinic_letter","title":"Cardiology follow-up","documentDate":null,"contentMarkdown":"# Letter","metadata":{}}}"##
-        let choice = DocumentChoice(kind: .document, sourceFileName: "Letter.pdf", title: "Cardiology follow-up", documentDate: nil, mimeType: "application/pdf", contentHash: nil)
-        let asked = Task { await store.saveDocument(extractionJSON: letter, choice: choice, original: nil) }
-        release()
-        await showing.value
-        let result = await asked.value
-        XCTAssertEqual(result, .refused("Your record changed while this was open, so this was not saved. Close this and try again."))
-        let onDisk = (try? Data(contentsOf: RecordStore.file(in: folder))).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
         XCTAssertEqual((onDisk?["documents"] as? [Any])?.count ?? 0, 0, "nothing reaches the phone's file")
         XCTAssertFalse(store.recordJSON.contains("Cardiology follow-up"))
     }

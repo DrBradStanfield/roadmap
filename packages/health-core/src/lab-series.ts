@@ -12,12 +12,19 @@ import { trendWindow } from './recent-trend';
 import { rowTarget } from './row-target';
 import { comparatorOf, limitText, type Comparator } from './lab-limits';
 import { compareReadings } from './measurement-history';
+import { isCoreRow } from './core-rows';
 
 /** A lab test's name for display: its catalogue label, else the snake_case name title-cased. */
 export function labValueLabel(metricName: string): string {
   return resolveLabCatalogEntry(metricName)?.label
     ?? metricName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
+
+/** A lab value's day refused: the words the add-a-value write says (record-edits.ts), and the upload's not-saved line for a value with no real past day. */
+export const LAB_DAY_REFUSAL = 'A lab value is for a real day, today or before.';
+/** A blood test's day that has not happened: the web's words when a test is moved to such a day (MoveTestPanel.tsx), and
+ *  the upload's not-saved line for a core value printed on one. */
+export const DAY_NOT_HAPPENED = 'That day has not happened yet.';
 
 /**
  * What a person reads when the record refused a lab value's unit: the unit a
@@ -221,4 +228,11 @@ export function labSeriesRows(rows: (LabValueRow & { referenceLow?: number | nul
       ...(sameUnit ? trendOf(s.points) : { trend: [] }),
     };
   });
+}
+
+/** The lab tests beyond the core ones, as My health lists them (moved from the iPhone engine's
+ *  `labTestRows`, lead I-4): a core row is a blood test's own row, never a lab test here (US-66 AC7),
+ *  and a limit is no point on the trend (US-12 AC20). */
+export function labTestSeries(rows: ReadonlyArray<Parameters<typeof labSeriesRows>[0][number]>, now: Date): LabSeriesRow[] {
+  return labSeriesRows(rows.filter((row) => !isCoreRow(row)), now, true);
 }

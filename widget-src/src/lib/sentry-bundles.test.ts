@@ -36,6 +36,7 @@ describe('production Sentry bundle filters', () => {
   const shopifyAssets = emittedJs('../../../extensions/health-tool-widget/assets/');
   it('sees the committed Shopify bundles', () => {
     expect(shopifyAssets).toContain('health-plan-v2.js');
+    expect(shopifyAssets).toContain('health-widgets.js'); // US-74, review P4: checked by the case below
     expect(shopifyAssets.length).toBeGreaterThanOrEqual(5);
   });
 

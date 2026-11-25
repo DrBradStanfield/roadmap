@@ -40,7 +40,11 @@ describe('US-66 AC1: the core units are pinned', () => {
       hba1c: 'mmol/mol', creatinine: 'µmol/L', psa: 'ng/mL', apob: 'g/L', ldl: 'mmol/L',
       total_cholesterol: 'mmol/L', hdl: 'mmol/L', triglycerides: 'mmol/L', lpa: 'nmol/L',
     });
-    expect(Object.keys(CORE_BLOOD_UNITS).sort()).toEqual([...BLOOD_TEST_METRICS].sort());
+  });
+
+  // Lead A2-5: BLOOD_TEST_METRICS is the core keys, in the order the matrix and My data draw their rows.
+  it('lists the blood test metrics as the core keys, in row order', () => {
+    expect(BLOOD_TEST_METRICS).toEqual(['hba1c', 'creatinine', 'psa', 'apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa']);
   });
 
   it('slots a core row apart from any lab row, even one named "core:ldl"', () => {

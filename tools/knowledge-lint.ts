@@ -35,6 +35,7 @@
  *                             exits 1 on an unwaived master-places finding and keeps that master's earlier hashes
  *     --init-state            write the first lint-state.json (refuses if one exists); after
  *                             that only knowledge-lint-compare.ts --run advances it
+ *       --probe               with --init-state: say what it would do and write nothing (the CLI-guard pin, T20)
  */
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
@@ -399,6 +400,7 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
       const { entries, state, topics, algo } = loadInputs(root);
       if (state) { log(`${PATHS.state} exists; --init-state writes only the first one.`); return 1; }
       const next = nextState(entries, null, topics, algo, '', false);
+      if (has('--probe')) { log(`${PATHS.state} missing; --init-state would write ${Object.keys(next.entries).length} entries. --probe wrote nothing.`); return 0; }
       writeFileSync(stateFile, `${JSON.stringify(next, null, 1)}\n`);
       log(`Wrote ${PATHS.state}: ${Object.keys(next.entries).length} entries, next slice ${next.cursor + 1} of ${SLICE_WEEKS}.`);
       return 0;

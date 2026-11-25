@@ -7,6 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const spies = vi.hoisted(() => ({
+  file: 'app/lib/chat-system-prompt.md',
   read: (): string => 'synthetic prompt',
   callAnthropic: vi.fn(async () => { throw new Error('no model call in this test'); }),
   streamAnthropic: vi.fn(async () => { throw new Error('no model call in this test'); }),
@@ -21,7 +22,7 @@ const CONVERSATION = '12345678-1234-4234-8234-123456789abc';
 vi.mock('fs', async (original) => {
   const real = await original<typeof import('fs')>();
   const readFileSync = ((file: string, ...rest: unknown[]) =>
-    String(file).endsWith('app/lib/chat-system-prompt.md') ? spies.read() : (real.readFileSync as (...a: unknown[]) => unknown)(file, ...rest)) as typeof real.readFileSync;
+    String(file).endsWith(spies.file) ? spies.read() : (real.readFileSync as (...a: unknown[]) => unknown)(file, ...rest)) as typeof real.readFileSync;
   return { ...real, readFileSync, default: { ...real, readFileSync } };
 });
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
@@ -31,7 +32,8 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
   ...await original<typeof import('../lib/route-helpers.server')>(),
   getAuthenticatedUser: vi.fn(async () => null),
 }));
-vi.mock('../lib/supabase.server', () => {
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => {
   const query: any = {};
   for (const method of ['select', 'eq', 'order', 'limit', 'single', 'maybeSingle', 'update', 'delete', 'insert']) {
     query[method] = (...args: unknown[]) => { spies.dbCalls.push(`${method}(${args.map(String).join(',')})`); return query; };
@@ -44,7 +46,10 @@ vi.mock('../lib/supabase.server', () => {
     GuestRateLimitError: class extends Error {},
   };
 });
-vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: supa.createUserClient }));
 vi.mock('../lib/anthropic.server', async (original) => ({
   ...await original<typeof import('../lib/anthropic.server')>(),
   callAnthropicWithUsage: spies.callAnthropic,
@@ -67,6 +72,7 @@ afterEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   spies.dbCalls.length = 0;
+  spies.file = 'app/lib/chat-system-prompt.md';
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -125,6 +131,18 @@ describe('US-15 AC65: chat refuses when its system prompt is missing', () => {
     } finally {
       delete process.env.CHAT_ENABLED;
     }
+  });
+
+  // US-15 AC72: each other chat doc missing or empty gives the same refusal.
+  it.each(['health_roadmap_algorithm.md', 'docs/products.md', 'app/lib/chat-posture-doctor.md', 'app/lib/chat-posture-brand.md']
+    .flatMap((file) => [[file, 'absent', absent], [file, 'empty', () => '']] as const))('US-15 AC72: %s %s: the same 503, no model call', async (file, _how, read) => {
+    spies.file = file;
+    const res = await post(read, { stream: true });
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ success: false, error: 'Chat is temporarily disabled' });
+    expect(spies.classify).not.toHaveBeenCalled();
+    expect(spies.streamAnthropic).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('control: with the prompt loaded the turn gets past the guard', async () => {

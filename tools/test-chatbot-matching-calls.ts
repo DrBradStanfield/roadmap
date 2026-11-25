@@ -1,17 +1,13 @@
 // The router harness's paid calls (tools/test-chatbot-matching.ts): the router and answer calls (scored by
 // harness-answers.ts scoreAnswer), and the run loop. apiErrorCount lives here with every call that counts an error.
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, PROMPT_CACHE, modelParams, toStat } from '../packages/health-core/src/models';
-import { chatToolsFor, withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
-import { loadMatchedContent } from '../app/lib/matched-content';
+import { withRoadmapRound, type ChatContentBlock } from '../packages/health-core/src/run-roadmap';
 import { preferMasters } from '../app/lib/router-view';
-import { youtubeTurn } from './chatbot-surfaces';
 import { scoreAnswer } from './harness-answers';
 import { parseRouterReply } from '../app/lib/router-reply';
-import { buildSystemBlocks } from '../app/lib/chat.server';
 import {
-  ANSWER_MODEL, ANSWER_SYSTEM_CONTEXT, FULL_INDEX, POSTURES, ROUTER_INDEX_BLOCK, ROUTER_MODEL, ROUTER_PROMPT, SAVED_CHATS,
-  USER_CONTEXTS, VALID_HANDLES, YOUTUBE_VIDEOS, answerCheckRuns, answerStats, apiKey, callStats, concurrency, hasAnswerCheck,
-  repairHandle, runs, suite, thinkingOff, type TestQuery,
+  ANSWER_MODEL, FULL_INDEX, ROUTER_INDEX_BLOCK, ROUTER_MODEL, ROUTER_PROMPT, VALID_HANDLES, answerCheckRuns, answerRequest,
+  answerStats, apiKey, callStats, concurrency, hasAnswerCheck, repairHandle, runs, suite, thinkingOff, type TestQuery,
 } from './test-chatbot-matching-setup';
 export let apiErrorCount = 0;
 
@@ -132,28 +128,8 @@ class AnswerApiError extends Error {
 }
 
 async function checkAnswer(q: TestQuery, matchedHandles: string[] = []): Promise<AnswerCheckResult> {
-  const { query, surface } = q;
-  const video = YOUTUBE_VIDEOS.get(q);
-  const youtube = video && youtubeTurn(video, matchedHandles, query, q.history ?? [], FULL_INDEX);
-  const matchedContent = youtube ? youtube.matchedContent : loadMatchedContent(matchedHandles).content;
-  // Production order (buildSystemBlocks): products, then the surface posture and its SAVED-CHAT block, then articles.
-  const savedChat = SAVED_CHATS.get(q);
-  const base = surface ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n${POSTURES.get(surface)}${savedChat ? `\n\n---\n\n${savedChat}` : ''}` : ANSWER_SYSTEM_CONTEXT;
-  const userContextJson = USER_CONTEXTS.get(q);
-  // The YouTube bot's platform context sits where the widget's user data does (runPipeline). Both carry a SAVED-CHAT block (SAVED_CHAT_DEFAULT).
-  const platformContext = youtube ? youtube.platformContext : userContextJson;
-  const system = platformContext !== undefined
-    ? buildSystemBlocks(platformContext, { surfaceContext: surface && POSTURES.get(surface), savedChat: savedChat!, blogArticles: matchedContent || null })
-    : matchedContent
-      ? `${base}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
-      : base;
-  const messages = youtube ? youtube.messages : [...q.history ?? [], { role: 'user' as const, content: query }];
-  const body = {
-    ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
-    system,
-    // As production: the tools change what the model writes. The YouTube bot has none (US-15 AC19).
-    ...(video ? {} : { tools: chatToolsFor(messages) }),
-  };
+  const { system, messages, tools } = answerRequest(q, matchedHandles);
+  const body = { ...modelParams(ANSWER_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT), system, ...(tools ? { tools } : {}) };
 
   // One Messages call; a 429 waits and retries once. As production (callAnthropicWithUsage): thinking makes an answer take 10-20 s.
   const send = async (fields: object) => {

@@ -29,7 +29,7 @@ import { escapeHtml as esc } from './escape-html.mjs';
 import * as z from '../packages/health-core/src/zod';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
-import { updateProfile } from '../packages/health-core/src/mcp-tools';
+import { updateProfile } from '../packages/health-core/src/profile-edits';
 import { appendLabValue, appendMeasurement } from '../packages/health-core/src/record-edits';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { readableView } from '../packages/health-core/src/readable-rows';

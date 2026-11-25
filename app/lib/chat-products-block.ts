@@ -3,8 +3,8 @@
  * writing style and the answer bank. All four cache breakpoints are in use, so
  * the two shared files ride inside this block instead of a fifth one.
  *
- * Shared by chat.server.ts (production) and tools/test-chatbot-matching.ts
- * (the harness), so both send the same text. No server imports: tsx loads it.
+ * Built by chat.server.ts; tools/test-chatbot-matching.ts sends it only through
+ * buildSystemBlocks (US-15 AC24a). No server imports: tsx loads it.
  *
  * docs/writing-style.md and docs/chatbot/answer-bank.md come from the private
  * claude_business repo (its tools/sync-shared-docs.mjs); never edit them here.

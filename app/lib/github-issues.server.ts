@@ -11,7 +11,8 @@
  * public, so what leaves is only what the tool already allowed: the assistant's
  * own description of the problem.
  */
-import { FEEDBACK_REPO, FEEDBACK_UNAVAILABLE, type FeedbackFiler, type FeedbackIssue } from '../../packages/health-core/src/mcp-tools';
+import { FEEDBACK_REPO } from '../../packages/health-core/src/mcp-tool-contract';
+import { FEEDBACK_UNAVAILABLE, type FeedbackFiler, type FeedbackIssue } from '../../packages/health-core/src/mcp-feedback';
 import type { McpProvider } from './mcp-providers.server';
 
 const API = `https://api.github.com/repos/${FEEDBACK_REPO}/issues`;

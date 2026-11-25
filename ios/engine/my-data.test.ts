@@ -174,8 +174,8 @@ describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
     expect(shown.get('ldl')?.target).toBe('Optimal <1.4');
     expect(shown.get('hba1c')?.target).toBe('Normal <39');
     expect(shown.get('blood_pressure')?.target).toBe('Target <120/80');
-    expect(shown.get('weight')?.target).toBe('Target 78.0');
-    expect(shown.get('waist')?.target).toBe('Target <90');
+    expect(shown.get('weight')?.target).toBe('Target 78.0 kg');
+    expect(shown.get('waist')?.target).toBe('Target <90 cm');
     expect(rows(myData(adult(), NOW, { ldl: 'conventional' })).get('ldl')?.target).toBe('Optimal <55');
   });
 
@@ -183,10 +183,10 @@ describe('myData rows: target and previous value (US-62 AC8, AC9)', () => {
     const minor = rows(myData(edited(adult(), { kind: 'profile', birthYear: 2015 }), NOW));
     expect(minor.get('ldl')?.target).toBeNull();
     expect(minor.get('blood_pressure')?.target).toBeNull();
-    expect(minor.get('waist')?.target).toBe('Target <90');
+    expect(minor.get('waist')?.target).toBe('Target <90 cm');
     const noHeight = rows(myData(edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'), { kind: 'profile', sex: 'male', birthYear: 1970 }), NOW));
     expect(noHeight.get('weight')?.target).toBeNull();
-    expect(noHeight.get('ldl')?.target).toBe('Optimal <1.4');
+    expect(noHeight.get('ldl')?.target).toBe('Optimal <1.4 mmol/L');
   });
 
   const idOf = (file: RoadmapFile, metric: string, day: string) =>
@@ -564,7 +564,7 @@ describe('readRecord (AC4, adversary R4)', () => {
     expect(notRecord).toMatchObject({ name: 'Refusal', message: 'This file is not a health record.' });
     const record = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
     const tooNew = refusal(JSON.stringify({ ...record, schemaVersion: 999 }));
-    expect(tooNew).toMatchObject({ name: 'Refusal', message: 'A newer version of Health Roadmap wrote this record. Update the app to open it.' });
+    expect(tooNew).toMatchObject({ name: 'Refusal', message: 'A newer version of this app wrote this record. Update the app to open it.' });
     // A broken record is no refusal: its text stays hidden.
     expect(refusal(JSON.stringify({ hello: 1 }))).not.toBeInstanceOf(Refusal);
   });
@@ -739,6 +739,15 @@ describe('forms (AC8)', () => {
   it('with an age and no sex and no question that applies, says the sexed questions wait for sex', () => {
     const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
       { kind: 'profile', birthYear: 2004, birthMonth: 1, height: 170 });
+    const data = myData(file, NOW);
+    expect(data.screenings).toEqual([]);
+    expect(data.screeningNote).toBe('Some screening questions depend on your sex. Add it in About you.');
+  });
+
+  // US-07 AC1k: from 86 with no sex no cancer group applies, so the app draws no empty cancer section and says why.
+  it('from 86 with no sex, shows no empty cancer section and says the sexed questions wait for sex', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', birthYear: 1940, birthMonth: 1, height: 170 });
     const data = myData(file, NOW);
     expect(data.screenings).toEqual([]);
     expect(data.screeningNote).toBe('Some screening questions depend on your sex. Add it in About you.');

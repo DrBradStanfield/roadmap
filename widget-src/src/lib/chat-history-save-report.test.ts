@@ -94,7 +94,7 @@ describe.each([
   });
 
   it('a real device failure (storage full) is still reported once', async () => {
-    store.recordExchange.mockRejectedValueOnce(new StorageError('Synthetic storage full'));
+    store.recordExchange.mockRejectedValueOnce(new StorageError('Synthetic storage full', undefined, undefined, undefined, undefined, 'refused'));
     await send('hello', null, null);
     await settle();
     expect(sentry.captureException).toHaveBeenCalledOnce();

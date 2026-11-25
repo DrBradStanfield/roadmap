@@ -1,5 +1,6 @@
 // The words of "Delete all my data" (US-11 AC5): the confirm before the click,
 // the alert after it, and the refusal of a save the erase overtook (US-16 AC2a).
+import { eraseOutcomeWords, type EraseChatStep } from '@roadmap/health-core/erase-outcome';
 import { SHOPIFY_SURFACE } from './build-flags';
 
 // What "Delete all my data" does, said BEFORE the click. The caveats used to
@@ -56,24 +57,11 @@ const ERASE_DONE_TAIL =
       'It keeps what you sent through the feedback box.'
     : '');
 
-export const ERASE_DONE = 'Your health record and chat history are deleted.' + ERASE_DONE_TAIL;
-
-// The chat erase is best-effort (roadmap-data.ts): an unreachable cloud must
-// never trap a user's data on their device. When it fails, the tombstones are
-// already in the in-memory singleton, so the next recordExchange merges them
-// through sync.save. Say that, rather than claiming a deletion that did not
-// happen.
-export const ERASE_DONE_CHAT_PENDING =
-  'Your health record is deleted. Your chat history could not be reached just now; ' +
-  'it is erased on your next chat.' + ERASE_DONE_TAIL;
-
-// The cloud chat history could not be read (US-11 AC2c), so the stored file
-// still holds its conversations, and the failure may be lasting (a newer
-// schema, an unreadable file). Say where it still is. If this page had it
-// open, its copy is tombstoned all the same (AC2g), so a hand delete lasts.
-export const ERASE_DONE_CHAT_UNREAD =
-  'Your health record is deleted. Your chat history could not be read, so any chats you saved ' +
-  'are still in your cloud folder, in chat-history.json.' + ERASE_DONE_TAIL;
+/** The erase stands: the shared outcome words for its chat step, then what it cannot reach, then any warning (US-11 AC13). */
+export function eraseDone(chat: EraseChatStep, warning?: string): string {
+  const done = eraseOutcomeWords({ record: 'erased', chat }) + ERASE_DONE_TAIL;
+  return warning ? `${done}\n\n${warning}` : done;
+}
 
 /** Said when the erase itself failed and gave no reason of its own. */
 export const ERASE_FAILED = 'Failed to delete data. Please try again.';

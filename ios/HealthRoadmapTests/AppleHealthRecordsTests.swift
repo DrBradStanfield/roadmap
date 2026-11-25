@@ -74,6 +74,17 @@ final class AppleHealthRecordsTests: XCTestCase {
         return HealthRecord(sourceId: "com.apple.health.clinical.test|Test Hospital", resourceType: "DiagnosticReport", fhirVersion: "1.0.2", json: json)
     }
 
+    /// A result HealthKit took out of a panel, as it hands one over (AC17). Synthetic values.
+    private static func fromPanel(_ id: String, loinc: String, value: Double, unit: String) -> HealthRecord {
+        let json = """
+        {"resourceType":"Observation","id":"DiagnosticReport/panel-1#\(id)","status":"final",\
+        "meta":{"profile":["http://fhir.org/guides/argonaut/StructureDefinition/argo-observationresults"]},\
+        "code":{"coding":[{"system":"http://loinc.org","code":"\(loinc)"}]},\
+        "effectiveDateTime":"2026-10-01T09:00:00Z","valueQuantity":{"value":\(value),"unit":"\(unit)"}}
+        """
+        return HealthRecord(sourceId: "com.apple.health.clinical.test|Test Hospital", resourceType: "Observation", fhirVersion: "1.0.2", json: json)
+    }
+
     private func rows(_ store: RecordStore, source: String = "health_records") throws -> [[String: Any]] {
         let record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(store.recordJSON.utf8)) as? [String: Any])
         let measurements = record["measurements"] as? [[String: Any]] ?? []
@@ -323,20 +334,33 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertNotNil(memory.labResultsAnchor)
     }
 
-    /// Rules version 3 (results contained in a DiagnosticReport now land): a phone whose
-    /// anchor was kept under version 2, past every panel it refused, reads every result again.
-    func testAnAnchorKeptUnderRulesVersion2IsReadAgain_US72() async throws {
-        XCTAssertEqual(HealthSyncMemory.labResultsRulesVersion, 3)
+    /// What HealthKit hands over for a US lab's panel (AC17): each result its own Observation,
+    /// its id `DiagnosticReport/<report>#<result>`. Each lands as a row.
+    func testAResultTakenOutOfAPanelLands_US72_AC17() async throws {
         memory.connected = true
-        memory.labResultsAnchor = Data("version 2 build".utf8)
-        memory.labResultsRules = 2
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.pendingRecords = [Self.fromPanel("r1", loinc: "4548-4", value: 5.6, unit: "%"), Self.fromPanel("r2", loinc: "13457-7", value: 100, unit: "mg/dL")]
+        let (store, sync, _) = try parts(health)
+        await sync.refresh()
+        XCTAssertEqual(Set(try rows(store).compactMap { $0["metricName"] as? String }), ["hba1c", "ldl"])
+        XCTAssertNotNil(memory.labResultsAnchor)
+    }
+
+    /// Rules version 4 (a result HealthKit took out of a panel now lands, AC17): a phone whose
+    /// anchor was kept under version 3, past every such result it refused, reads every result again.
+    func testAnAnchorKeptUnderRulesVersion3IsReadAgain_US72() async throws {
+        XCTAssertEqual(HealthSyncMemory.labResultsRulesVersion, 4)
+        memory.connected = true
+        memory.labResultsAnchor = Data("version 3 build".utf8)
+        memory.labResultsRules = 3
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         health.pendingRecords = [Self.hba1c()]
         let (_, sync, _) = try parts(health)
         await sync.refresh()
         XCTAssertEqual(health.recordAnchors, [nil], "read from the start")
-        XCTAssertEqual(memory.labResultsRules, 3)
+        XCTAssertEqual(memory.labResultsRules, 4)
     }
 
     // MARK: AC2, AC5: the edit sent

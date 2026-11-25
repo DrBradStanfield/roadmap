@@ -1,6 +1,7 @@
 // US-71 AC7 + AC8 (lead M17): test.sh tells a sim-run refusal or give-up (75) and a stop (76) from a test failure.
 // test.sh runs from a copy of ios/ in a temp folder, with fake build-engine, sim-run and clone cleanup
-// beside it, so nothing builds or boots. The fake sim-run logs each zone and exits $FAKE_EXIT.
+// beside it, so nothing builds or boots. The fake sim-run logs each zone and exits $FAKE_EXIT
+// ($FAKE_EXIT_UTC, when set, for the UTC zone only).
 //   npx vitest run ios/scripts/test-sh.test.ts
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -12,6 +13,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 const SCRIPT = process.env.TEST_SH_SCRIPT ?? join(__dirname, 'test.sh');
 const SIM_RUN = `#!/bin/sh
 echo "$TEST_RUNNER_TZ" >> "$FAKE_LOG"
+echo "sim-run: zone $TEST_RUNNER_TZ"
+[ "$TEST_RUNNER_TZ" = UTC ] && FAKE_EXIT="\${FAKE_EXIT_UTC:-$FAKE_EXIT}"
+# xcodebuild prints an Executed line per suite, then the run's total last.
+case "$FAKE_EXIT" in 0|65) printf '\t Executed 2 tests, with 0 failures (0 unexpected) in 0.1 seconds\n\t Executed 9 tests in %s, with 0 failures (0 unexpected) in 0.5 seconds\n' "$TEST_RUNNER_TZ";; esac
 case "$FAKE_EXIT" in
   0) echo "** TEST SUCCEEDED **";;
   75) echo "sim-run: gave up after 30m (load guard, not the lock): load 20.00 is over 12" >&2;;
@@ -33,11 +38,11 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
-function run(exitCode: number) {
+function run(exitCode: number, utcExitCode = exitCode) {
   const log = join(dir, 'zones.log');
   const r = spawnSync('sh', [join(dir, 'ios', 'scripts', 'test.sh')], {
     encoding: 'utf8',
-    env: { ...process.env, FAKE_EXIT: String(exitCode), FAKE_LOG: log, HR_DERIVED_DATA: join(dir, 'dd') },
+    env: { ...process.env, FAKE_EXIT: String(exitCode), FAKE_EXIT_UTC: String(utcExitCode), FAKE_LOG: log, HR_DERIVED_DATA: join(dir, 'dd') },
   });
   const zones = existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n') : [];
   return { status: r.status, out: r.stdout + r.stderr, zones };
@@ -66,9 +71,73 @@ describe('US-71 AC8 test.sh passes a sim-run give-up through', () => {
   it('a test failure (exit 65) still prints FAILED and exits 1', () => {
     const r = run(65);
     expect(r.out).toContain('FAILED in UTC');
+    expect(r.out).toContain('FAILED in Pacific/Auckland');
+    expect(r.out).toContain('iOS tests FAILED in: UTC Pacific/Auckland');
     expect(r.out).not.toContain('NOT RUN');
     expect(r.status).toBe(1);
-    expect(r.zones).toEqual(['UTC']);
+    expect(r.zones).toEqual(['UTC', 'Pacific/Auckland']);
+  });
+
+  // US-25 AC1: a failed first zone must not hide the second zone's result.
+  it('a failed first zone still runs the second, prints both results and exits 1', () => {
+    const r = run(0, 65);
+    expect(r.zones).toEqual(['UTC', 'Pacific/Auckland']);
+    expect(r.out).toContain('FAILED in UTC');
+    expect(r.out).toContain('passed in Pacific/Auckland');
+    expect(r.out).toContain('iOS tests FAILED in: UTC');
+    expect(r.out).not.toContain('All iOS tests passed');
+    expect(r.status).toBe(1);
+  });
+
+  // The Auckland run overwrites build/test-output.txt, so a failed zone's log is kept beside it.
+  it('after a UTC failure the UTC copy holds the UTC run and the FAILED line names it', () => {
+    const r = run(0, 65);
+    const build = join(dir, 'ios', 'build');
+    expect(r.out).toContain('FAILED in UTC (log: ios/build/test-output-UTC.txt)');
+    const utc = readFileSync(join(build, 'test-output-UTC.txt'), 'utf8');
+    expect(utc).toContain('sim-run: zone UTC');
+    expect(utc).toContain('** TEST FAILED **');
+    expect(utc).not.toContain('Pacific/Auckland');
+    expect(readFileSync(join(build, 'test-output.txt'), 'utf8')).toContain('sim-run: zone Pacific/Auckland');
+    expect(existsSync(join(build, 'test-output-Pacific-Auckland.txt'))).toBe(false);
+  });
+
+  it('a failed Auckland zone is copied under a name with no slash', () => {
+    const r = run(65, 0);
+    expect(r.out).toContain('FAILED in Pacific/Auckland (log: ios/build/test-output-Pacific-Auckland.txt)');
+    const akl = readFileSync(join(dir, 'ios', 'build', 'test-output-Pacific-Auckland.txt'), 'utf8');
+    expect(akl).toContain('sim-run: zone Pacific/Auckland');
+    expect(existsSync(join(dir, 'ios', 'build', 'test-output-UTC.txt'))).toBe(false);
+  });
+
+  // A caller that retries on 75 or 76 must not lose a real failure from an earlier zone.
+  it.each([
+    [75, 'NOT RUN in Pacific/Auckland'],
+    [76, 'STOPPED in Pacific/Auckland'],
+  ])('a UTC failure outranks a later Auckland %i: it reports the failure and exits 1', (code, line) => {
+    const r = run(code, 65);
+    expect(r.zones).toEqual(['UTC', 'Pacific/Auckland']);
+    expect(r.out).toContain(line);
+    expect(r.out).toContain('iOS tests FAILED in: UTC (logs: ios/build/test-output-UTC.txt)');
+    expect(readFileSync(join(dir, 'ios', 'build', 'test-output-UTC.txt'), 'utf8')).toContain('** TEST FAILED **');
+    expect(r.status).toBe(1);
+  });
+
+  it('a UTC pass then an Auckland 75 still exits 75', () => {
+    const r = run(75, 0);
+    expect(r.out).toContain('passed in UTC');
+    expect(r.out).toContain('NOT RUN in Pacific/Auckland');
+    expect(r.out).not.toContain('FAILED in');
+    expect(r.status).toBe(75);
+  });
+
+  // Lead S60: the console filter dropped each zone's count; test.sh prints the total, not each suite's.
+  it.each([[0, 0], [0, 65]])("prints each zone's total Executed line (exit %i, UTC exit %i)", (code, utc) => {
+    const r = run(code, utc);
+    expect(r.out).toContain('Executed 9 tests in UTC, with 0 failures');
+    expect(r.out).toContain('Executed 9 tests in Pacific/Auckland, with 0 failures');
+    expect(r.out).not.toContain('Executed 2 tests');
+    expect(r.out.indexOf('Executed 9 tests in UTC')).toBeLessThan(r.out.indexOf('== tests in Pacific/Auckland'));
   });
 
   it('a pass runs both zones and exits 0', () => {

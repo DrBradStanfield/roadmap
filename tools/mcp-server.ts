@@ -18,7 +18,10 @@
 import { existsSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
-import { type ImportCommit, type ImportPayload, type ImportSurface, MCP_TOOLS, DOCUMENT_TEXT_NOTE, OPEN_SOURCE_NOTE, SI_NOTE, RECEIPT_LIFETIME_SECONDS, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
+import { runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
+import { type ImportCommit, DOCUMENT_TEXT_NOTE, OPEN_SOURCE_NOTE, SI_NOTE, RECEIPT_LIFETIME_SECONDS } from '../packages/health-core/src/mcp-tool-contract';
+import { type ImportPayload, type ImportSurface } from '../packages/health-core/src/mcp-import';
+import { MCP_TOOLS } from '../packages/health-core/src/mcp-tool-catalogue';
 import { dispatchRpc, INVALID_REQUEST, PARSE_ERROR, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../packages/health-core/src/mcp-rpc';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { REPO_PUBLIC } from '../packages/health-core/src/plan';

@@ -20,7 +20,7 @@ export interface Door {
   args: readonly Arg[];
   /** What the door answers, in words: hashed for a contract door. */
   returns: string;
-  /** The answer's wire type; left out (opaque) until the door's answer is typed. */
+  /** The answer's wire type, for the generated Swift; left out (opaque text) until it is typed. */
   result?: z.ZodType;
   /** A whole door outside the hashed file (bridge-optional.json optionalDoors). */
   optionalDoor?: true;
@@ -37,16 +37,20 @@ const number = z.number();
 const flag = z.boolean();
 const provider = z.enum(['dropbox', 'google-drive']);
 // An ArrayBuffer from any context: JavaScriptCore's own, or Node's vm in the tests.
-const nullableBytes = z.custom<ArrayBuffer>((v) => Object.prototype.toString.call(v) === '[object ArrayBuffer]').nullable();
+/** An ArrayBuffer from any context (JavaScriptCore's, or Node's vm in the tests). */
+export const isArrayBuffer = (v: unknown): v is ArrayBuffer => Object.prototype.toString.call(v) === '[object ArrayBuffer]';
+const nullableBytes = z.custom<ArrayBuffer>(isArrayBuffer).meta({ wire: 'bytes' }).nullable();
 // An argument entry.ts declares optional (`unitsJson?`): the app sends it, the engine's own
 // callers and tests may leave it out, and the door answers as before without it.
 const maybeText = text.optional();
 const maybeFlag = flag.optional();
-const maybeCallback = z.custom<(text: string) => string>((v) => typeof v === 'function').optional();
+const callback = z.custom<(text: string) => unknown>((v) => typeof v === 'function').meta({ wire: 'callback' });
+const maybeCallback = z.custom<(text: string) => string>((v) => typeof v === 'function').meta({ wire: 'callback' }).optional();
 
 // --- Edit: every change the My data tab, the chat and Apple Health ask for -----------------
-// Wire shapes only. A field the engine checks with words of its own (units, alcohol, Lp(a)'s
-// unit, a supplement's status, the chat part) is plain text here, so those words stay the answer.
+// Wire shapes only; `.meta({ id })` names one for the generated Swift (contract-swift.ts). A field
+// the engine checks with words of its own (units, alcohol, Lp(a)'s unit, a supplement's status,
+// the chat part) is plain text here, so those words stay the answer.
 
 /** Systolic and diastolic for one day, both or neither (blood-pressure.ts). */
 export const PRESSURE_EDIT = z.object({
@@ -72,7 +76,8 @@ export const FORM_EDIT = z.discriminatedUnion('kind', [
 ]);
 
 /** A medication row as the chat's change and its Undo read it (health-core ChatMedicationRow). */
-const chatMedicationRow = z.object({ medicationKey: z.string(), drugName: z.string(), doseValue: z.number().nullable().default(null), doseUnit: z.string().nullable().default(null) });
+const chatMedicationRow = z.object({ medicationKey: z.string(), drugName: z.string(), doseValue: z.number().nullable().default(null), doseUnit: z.string().nullable().default(null) })
+  .meta({ id: 'ChatMedicationRow' });
 
 /** The chat's edits, as Swift passes them back to cloudEdit or applyEditJson (chat-edits.ts). */
 export const CHAT_EDIT = z.discriminatedUnion('kind', [
@@ -83,6 +88,13 @@ export const CHAT_EDIT = z.discriminatedUnion('kind', [
   /** The medications part's Undo: each row as it was, written in order (chatEditsPreview's `undo`). */
   z.object({ kind: z.literal('chatUndo'), medications: z.array(chatMedicationRow) }),
 ]);
+
+/** One reading from Apple Health (health-core DeviceSample): in SI, at an instant with its zone's offset.
+ *  `pairId`: shared by the two halves of one blood pressure, which land together or not at all. */
+const healthSample = z.object({ externalId: z.string(), metricType: z.string(), value: z.number(), measuredAt: z.string(), pairId: z.string().optional() })
+  .meta({ id: 'HealthSample' });
+/** One Health Records resource as HealthKit gave it (health-core ClinicalRecordInput). */
+const healthRecord = z.object({ sourceId: z.string(), resourceType: z.string(), fhirVersion: z.string(), json: z.string() }).meta({ id: 'HealthRecord' });
 
 const dose = { doseValue: z.number().nullable().optional(), doseUnit: z.string().nullable().optional() };
 
@@ -109,10 +121,10 @@ export const EDIT = z.discriminatedUnion('kind', [
    *  health-core's device-import decides what lands. */
   z.object({
     kind: z.literal('appleHealth'),
-    samples: z.array(z.object({ externalId: z.string(), metricType: z.string(), value: z.number(), measuredAt: z.string(), pairId: z.string().optional() })),
+    samples: z.array(healthSample),
   }),
   /** Lab results from Health Records (US-72): health-core's health-records-import decides what lands. */
-  z.object({ kind: z.literal('healthRecords'), records: z.array(z.object({ sourceId: z.string(), resourceType: z.string(), fhirVersion: z.string(), json: z.string() })) }),
+  z.object({ kind: z.literal('healthRecords'), records: z.array(healthRecord) }),
   ...FORM_EDIT.options,
   /** The ticked values of an uploaded lab report (US-52 AC8), written by the web's bulk rule. */
   z.object({ kind: z.literal('labImport'), extractionJson: z.string(), refs: z.array(z.string()), reportDay: z.string() }),
@@ -123,7 +135,27 @@ export const EDIT = z.discriminatedUnion('kind', [
    *  (AddLabTest.tsx). An engine before it knows no such kind, and the edit fails. */
   z.object({ kind: z.literal('labAddName'), name: z.string(), value: z.number(), unit: z.string(), day: z.string().optional() }),
   ...CHAT_EDIT.options,
-]);
+]).meta({ id: 'EngineEdit' });
+
+// --- Answers the app decodes (typed; every other door's answer is still opaque) -------------
+
+/** What a Health Records batch did (US-72), counts only. */
+const healthRecordCounts = z.object({ added: z.int(), corrected: z.int(), withdrawn: z.int(), alreadyInRecord: z.int(), notRead: z.int() })
+  .meta({ id: 'HealthRecordCounts' });
+
+/** applyEditJson's and cloudEdit's answer: the new record, or why it refused. `reason`: the engine's
+ *  code ("out-of-range", "slot-occupied", "invalid-edit"); `message`: its words for the person;
+ *  `existingId`: the row holding the day; `erase`: in the cloud, the erase the new record is at. */
+export const EDIT_OUTCOME = z.object({
+  ok: z.boolean(), record: z.string().optional(), reason: z.string().optional(), message: z.string().optional(),
+  existingId: z.string().optional(), erase: z.string().optional(), healthRecords: healthRecordCounts.optional(),
+}).meta({ id: 'EditOutcome' });
+
+/** convertJson's answer: `value` unrounded, for an edit; `text` as the record shows it; `feetInches` for a height. */
+export const CONVERSION = z.object({
+  value: z.number(), text: z.string(),
+  feetInches: z.object({ feet: z.int(), inches: z.int() }).meta({ id: 'HeightFeetInches' }).nullable(),
+}).meta({ id: 'UnitConversion' });
 
 export type Edit = z.infer<typeof EDIT>;
 export type PressureEdit = z.infer<typeof PRESSURE_EDIT>;
@@ -163,6 +195,7 @@ export const VALUES: Record<string, string> = {
 export const DOORS = {
   applyEditJson: {
     kind: 'sync',
+    result: EDIT_OUTCOME,
     args: [['recordJson', text], ['editJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', maybeText]],
     returns: "{ok:true, record} or {ok:false, reason, message}; the edit kinds include healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]} (US-72), whose answer adds healthRecords {added, corrected, withdrawn, alreadyInRecord, notRead}; an engine without that kind must not reach an app that sends it",
   },
@@ -205,6 +238,7 @@ export const DOORS = {
   },
   cloudEdit: {
     kind: 'sync',
+    result: EDIT_OUTCOME,
     args: [['editJson', text], ['erase', text], ['shownUnits', text], ['nowIso', text], ['unitsJson', maybeText], ['shownLpaUnit', maybeText]],
     returns: "JSON outcome; for a healthRecords edit it adds healthRecords, as applyEditJson's",
   },
@@ -227,11 +261,15 @@ export const DOORS = {
     kind: 'sync',
     args: [['extractionJson', text], ['refsJson', text], ['reportDay', text], ['erase', text], ['shownUnits', text], ['nowIso', text], ['unitsJson', text]],
     returns: "cloudEdit's JSON outcome with the labSaveSummary taken in the same step (US-52 AC8)",
+    optionalAt: 6,
+    optionalReturns: "summary.sameDay (US-52 AC8b), as labSaveSummaryJson's. An engine before it sends none; an app before it ignores it.",
   },
   cloudOpen: {
     kind: 'promise',
     args: [['provider', provider], ['deviceId', text], ['firstConnect', flag], ['mergePhone', flag]],
     returns: "Promise of JSON",
+    optionalAt: 4,
+    optionalReturns: "eraseEpoch (lead H200, US-25 AC16j): the record's own meta.eraseEpoch (0 when unset), beside record, erase and session in the view. The same view is the 'changed' news's payload and cloudErase's view, so both carry it too. The app holds a new session's first record undrawn when its eraseEpoch differs from the one the record shown was drawn at, even when it cannot draw it, so the pre-erase copy is never shown over another device's erase. An engine before it sends none, and the app holds only on its other evidence, as before; an app before it ignores the key.",
   },
   cloudRefresh: {
     kind: 'promise',
@@ -275,6 +313,8 @@ export const DOORS = {
     kind: 'sync',
     args: [['recordJson', text], ['extractionJson', text], ['refsJson', text], ['reportDay', text], ['nowIso', text], ['deviceId', text]],
     returns: "summary JSON",
+    optionalAt: 5,
+    optionalReturns: "summary.sameDay (US-52 AC8b): the ticked values another reading of the same test that day displaced, as lines \"<labels>: another reading of this test is on the same day\" (health-core notSavedGroups); save all names them in its notes. An engine before it sends none, and the app names none; an app before it ignores it.",
   },
   mergeJson: {
     kind: 'sync',
@@ -293,6 +333,7 @@ export const DOORS = {
   },
   convertJson: {
     kind: 'sync',
+    result: CONVERSION,
     args: [['metric', text], ['value', number], ['from', text], ['to', text]],
     returns: "{value, text, feetInches|null} JSON: a typed value in the other units by health-core's factors, for onboarding's entry-only unit switches (US-54 AC6)",
   },
@@ -315,7 +356,7 @@ export const DOORS = {
     returns: "{myData: MyData, plan: {sections: [PlanSection], tiles: [StatTile], ms} or {error, planError}} JSON from one read and one computePlan: My data and the Plan tab's layout and summary tiles, the web's Quick Stats (US-25 AC2, AC22), each tile with its required `about` line (US-57 AC5); tiles [] when they cannot be drawn; myData.vo2Bands is the VO2 max bands row {sex, fromAge, toAge, p20, p50, p80} or null (US-56 AC8), where p20 is the Low line: FRIEND's P20, or from age 60 Apple's Low Cardio Fitness alert line, which can exceed p50 (men 80 to 89), so an app that assumes p20 < p50 must not receive it; ms the whole milliseconds from computePlan through the tiles and the layout; planError true for health-core's PlanError; throws when My data cannot be drawn",
     optionalAt: 1,
     optionalArgs: [['isUS', maybeFlag]],
-    optionalReturns: "plan.usProducts: us-products.ts's usProductSections, the [PlanSection] ready to draw, for isUS true (the App Store storefront USA) and a known adult: on the Supplements section each product card's suggestion carries usProduct {product, name, line, url} and its US description and references, and the section carries ownershipLine. Left out when no block shows (US-61). An app before it sends no isUS, so it gets none; an engine before it sends no usProducts, so the app draws the plain sections. Its first shape (2026-10-31, {blocks, ownershipLine}) was read by no shipped app, so the change is safe for builds 3 and 4. Also myData.vitals[], bloodTests[] and psa rows' target (health-core rowTarget(...).bare, or null) and previous (the newest earlier day's value in the row's units, or null), US-62 AC8/AC9: an engine before them sends neither, and the app draws the row with its date alone and no bracketed value; an app before them ignores both. Also every such row's status (health-core row-grade.ts valueStatus or pressureStatus: \"ok\", \"warn\", \"bad\" or null) and gradeWords (gradeWords: the words a screen reader says after an off-target value, or null), US-62 AC8 / US-25 AC17, and myData.labTests, the lab tests beyond the core ones as rows of the same shape (lab-series.ts groupLabValues, the web's MyDataRows.tsx labRows): an engine before them sends none, and the app draws every value plain, speaks no grade and lists no lab test row; an app before them ignores all three. Also every such row's note (US-12 AC21): \"Printed as a limit, so the plan cannot grade it against its cutoff.\" for a latest value printed as a limit the rule leaves ungraded, else null, which the app says where the grade would be; an engine before it sends none, and the app says nothing there; an app before it ignores it. Also myData.labTests rows' series: \"lab\" (US-25 AC25): the app opens, reads and adds to a lab test by it, never by name, so a lab test named like a core metric keeps its own page; an engine before it sends no labTests at all. Also movedRecord (US-66 AC14): the record as text when reading recordJson moved its blood tests into one table; the app opening the phone's file writes it there once. An engine before it sends none, so the file stays in the old shape until the next edit, as before; an app before it ignores it. Also plan.topics (US-73 AC3): health-core topicSections over usProducts when it shows, else sections, placed against myData's medication and screening questions: {sections: [{topic, title, cards, ownershipLine?}], medicines: [{key, suggestions}], screenings: [{group, suggestions}]}; every suggestion is in a card or a row, an urgent one in both; topic ids are weight, sleep, fitness, bloodPressure, cholesterol, screening, skin, bloodTests, supplements and other, and the app draws an id it does not know under Other. Left out when the plan cannot be laid out by topic. An engine before it sends none, and the app draws the sections; an app before it ignores it. Also myData.supplements' active and stopped rows' stoppedDay (US-73 AC10b): a stopped one's latest stop, YYYY-MM-DD on the phone, null when active or no stop is recorded; the app says \"Stopped <day>\" on a stopped row. An engine before it sends none, and the app says \"Stopped\" alone; an app before it ignores it. Also myData.documents (US-73 AC12, documents.ts documentShelf): {scans, others}, each [{id, title, typeLabel, day (YYYY-MM-DD or null), content (the extracted markdown), sourceFileName (or null), original ({name, mimeType}, null for a text-only row)}], newest first and an undated one last; live rows only and never a lab report's archive row, as the web's Documents list. An engine before it sends none, and the app lists no documents; an app before it ignores it.",
+    optionalReturns: "plan.usProducts: us-products.ts's usProductSections, the [PlanSection] ready to draw, for isUS true (the App Store storefront USA) and a known adult: on the Supplements section each product card's suggestion carries usProduct {product, name, line, url} and its US description and references, and the section carries ownershipLine. Left out when no block shows (US-61). An app before it sends no isUS, so it gets none; an engine before it sends no usProducts, so the app draws the plain sections. Its first shape (2026-10-31, {blocks, ownershipLine}) was read by no shipped app, so the change is safe for builds 3 and 4. Also myData.vitals[], bloodTests[] and psa rows' target (health-core rowTarget(...).alone for a row with no value, else .bare, or null) and previous (the newest earlier day's value in the row's units, or null), US-62 AC8/AC9: an engine before them sends neither, and the app draws the row with its date alone and no bracketed value; an app before them ignores both. Also every such row's status (health-core row-grade.ts valueStatus or pressureStatus: \"ok\", \"warn\", \"bad\" or null) and gradeWords (gradeWords: the words a screen reader says after an off-target value, or null), US-62 AC8 / US-25 AC17, and myData.labTests, the lab tests beyond the core ones as rows of the same shape (lab-series.ts groupLabValues, the web's MyDataRows.tsx labRows): an engine before them sends none, and the app draws every value plain, speaks no grade and lists no lab test row; an app before them ignores all three. Also every such row's note (US-12 AC21): \"Printed as a limit, so the plan cannot grade it against its cutoff.\" for a latest value printed as a limit the rule leaves ungraded, else null, which the app says where the grade would be; an engine before it sends none, and the app says nothing there; an app before it ignores it. Also myData.labTests rows' series: \"lab\" (US-25 AC25): the app opens, reads and adds to a lab test by it, never by name, so a lab test named like a core metric keeps its own page; an engine before it sends no labTests at all. Also movedRecord (US-66 AC14): the record as text when reading recordJson moved its blood tests into one table; the app opening the phone's file writes it there once. An engine before it sends none, so the file stays in the old shape until the next edit, as before; an app before it ignores it. Also plan.topics (US-73 AC3): health-core topicSections over usProducts when it shows, else sections, placed against myData's medication and screening questions: {sections: [{topic, title, cards, ownershipLine?}], medicines: [{key, suggestions}], screenings: [{group, suggestions}]}; every suggestion is in a card or a row, an urgent one in both; topic ids are weight, sleep, fitness, bloodPressure, cholesterol, screening, skin, bloodTests, supplements and other, and the app draws an id it does not know under Other. Left out when the plan cannot be laid out by topic. An engine before it sends none, and the app draws the sections; an app before it ignores it. Also myData.supplements' active and stopped rows' stoppedDay (US-73 AC10b): a stopped one's latest stop, YYYY-MM-DD on the phone, null when active or no stop is recorded; the app says \"Stopped <day>\" on a stopped row. An engine before it sends none, and the app says \"Stopped\" alone; an app before it ignores it. Also myData.documents (US-73 AC12, documents.ts documentShelf): {scans, others}, each [{id, title, typeLabel, day (YYYY-MM-DD or null), content (the extracted markdown), sourceFileName (or null), original ({name, mimeType}, null for a text-only row)}], newest first and an undated one last; live rows only and never a lab report's archive row, as the web's Documents list. An engine before it sends none, and the app lists no documents; an app before it ignores it.",
   },
   sectionsJson: {
     kind: 'sync',
@@ -348,13 +389,67 @@ export const DOORS = {
     kind: 'sync',
     optionalDoor: true,
     args: [['request', text]],
-    returns: "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps LabFileReader's Swift rules, which answer the same today (lead U14: delete them once the engine floor guarantees the door).",
+    returns: "Shared upload PR 3 (US-52 AC7): the upload's verdicts for one pick, by health-core upload-rules (fileVerdict, zipMemberVerdict, UPLOAD_LIMITS.phone), as JSON {limits: {fileBytes, zipBytes, filesPerPick, zipMembers, pdfPages, textPageChars, folderBytes, photoPx, sendsInFlight, convertsInFlight}, files: [verdict], zipMembers: [verdict]} for request {files: [{name, bytes}], zipMembers: [path]}, in order; each verdict \"keep\", \"tooLarge\", \"unsupported\" or \"hidden\". An engine before it has no such door: the app reads that as unavailable (optionalCall answers nil) and keeps nothing: the shared upload runs only on an engine that has the door, and the app holds no Swift copy of these rules (lead U14).",
+  },
+  labReviewGroupsJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['recordJson', text], ['extractionJson', text], ['refsJson', text], ['reportDay', text], ['nowIso', text], ['deviceId', text]],
+    returns: "US-13 AC13, US-52 AC8: one lab report's import review for the refs ticked now (refsJson, a JSON array of labReviewJson item refs) and the test day (reportDay, YYYY-MM-DD, or \"\" while none is set: values with no day of their own are then \"waiting\", never sent; a value with its own day keeps it), by health-core import-review.ts against the record read raw: JSON {summary, items: [{ref, group (\"sure\", \"unsure\", \"saved\", \"notSaved\" or \"waiting\"), reasons? (unsure only), conflict? (the words for a different value already held that day), refusal? (the save's own refusal line for a value outside its range)}], omitted (the extraction's own refused and unread rows as lines), check: {title, footer} | null, sure: {willSave, showAll, hide} | null, alreadySaved: string | null, notSaved: {title, lines, footer} | null, saveRefs (the ticked refs Save sends, in the order it must send them), save (the Save button's words, or null when no value could be written: no Save)}. Every word is health-core's; the app asks again when a tick or the day changes. An engine before it has no such door: the app reads that as no groups (optionalCall answers nil) and lists every value as a row, never a crash.",
   },
   cloudOnline: {
     kind: 'sync',
     optionalDoor: true,
     args: [],
     returns: "US-09 AC30: '{}'. The app calls it when NWPathMonitor reports the network satisfied again: the open cloud session retries a failed save (at most once a minute; this trigger never after a refused sign-in) and catches up as a return does, and that catch-up's re-read still retries a failed save first, a refused sign-in's included (lead A25); nothing when no cloud is open. An engine before it has no such door: optionalCall answers nil and nothing is retried on that trigger, never a crash.",
+  },
+  cloudEraseHeld: {
+    kind: 'promise',
+    optionalDoor: true,
+    args: [],
+    returns: "S50b (US-25 AC16i): a Promise of one word, asked before Disconnect or a switch closes anything. It flushes the open session first, as a close does, then says whether an erase made on this phone is still unsent: 'none' (no session, no such erase, or a save has carried it), 'transient' (its last save failed in a way known to pass: a network call with no answer, a timeout, an abort, 408, 429, a 5xx, or Google's rate or daily limit), 'definite' (the provider refused it: storage full, a refused sign-in, another 4xx) 'unknown' (anything else, a failure no report explained included) or 'expired' (a transient failure 24 hours or more after the erase's first failed send, owner 2026-11-14). Only 'transient' holds the Disconnect; the app runs today's path on every other word and on one it does not know. cloudClose's answers are unchanged. An engine before it has no such door: optionalCall answers nil and Disconnect runs as before, never a crash.",
+  },
+  // The shared upload (design PR 12, US-52 AC8c, upload-doors.ts). Each answers its JSON, or on
+  // malformed input the refusal {ok: false, reason, message}: reason "invalid-platform",
+  // "invalid-state", "invalid-event", "invalid-record", "record-too-new" or "engine-error"; never a throw. The
+  // state is health-core UploadState, opaque to the app: it stores what a door answered and
+  // sends it back. An engine before them has no such doors: optionalCall answers nil, and the
+  // app says the pick was not read, never a crash.
+  uploadStartJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['platform', text]],
+    returns: "Shared upload (US-52 AC8c): a new upload's state JSON (health-core initialUpload) for platform \"web\" or \"phone\"; any other platform is refused (\"invalid-platform\").",
+  },
+  uploadStepJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text], ['eventJson', text], ['recordJson', text], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): one event through health-core transition, as JSON {state, effects}. The event is health-core UploadEvent less what only the engine knows, strict (an unnamed key is refused, invalid-event); the parsed event runs: hashed {run, id, hash} (the engine adds known from the record, knownIndex and knownAs); streamEnded {run, id, line, now}, the streaming lab route's end, line its last NDJSON line as received or null when there was none: the engine reads it (health-core labStreamAnswer), status 200 with a checked read becomes answered, anything else sendFailed with the shared code, no line or an unreadable one the network failure; sendFailed {run, id, status (null when no answer came), body (the answer's text, or null), contentType (its header, or null), local (optional, the phone's own outcome when no lab-read answer came; status and body are then not read: {kind: cannotAttest}; {kind: attestFailed, stage, code}, short words; {kind: refused, status, message}, its App Attest registration or challenge refused, under 500 app_refused, from 500 server_error, with the words; {kind: badAnswer}; or {kind: timeout | dropped | unreachable}, how the request failed on the way, the network failure with today's iPhone words)} for a real HTTP refusal before any stream, read by health-core appGateFailure (a final 401 and other 4xx but 422 and 429 app_refused, the gate's 400 body_read_failed the network's, a 413 too_large, the gate's own error words carried as text) or for the phone's own outcome; a streamed 5xx keeps the server's words too; answered {run, id, extraction, now} for a whole read, checked (UPLOAD_EXTRACTION), the engine adds legacy (readIsLegacy); saveStarted {reviewed (optional)}, reviewed being the list the view drawn at the tap carried, sent back untouched: Save writes only those values and counts or names each one it could not write. Before any event, a chosen Replace whose target no longer holds its slot on the record (another writer moved, corrected or deleted it) is dropped and its value unticked (health-core replacesLost); uploadViewJson and uploadSavePlanJson draw the state the same way. recordJson: the record as text, \"\" for none; read only for hashed, answered and streamEnded, and while a Replace is chosen (\"\" drops no Replace), through deviceId (the app's own, as the screen doors take it). Steps are strictly serial: one call at a time, each given the state the previous one returned; otherwise an event is lost and its effects' answers are dropped as stale. A record a newer app wrote is refused as record-too-new, in readRecord's words. The full wire per event is entry.ts uploadStepJson's comment.",
+  },
+  uploadViewJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): the drawable view, health-core UploadView as JSON {progress, summary, sections, sure, documents, files, notices, save, stop, done, phase, refused, closeEnabled, doneLabel, editable, alreadySaved, reviewed (what this page would write, [{file, ref, lab}], for the app to send back on saveStarted)} plus engineError (this door's own engine-error words, for a later call that answers nothing), every string resolved and every count made; one uploadReview of the state against the record per call, so it counts what uploadSavePlanJson writes for the same inputs. cloudConnected: originals are stored and counted only with a cloud. deviceId: the app's own, as the screen doors take it. Costly for a large upload (entry.ts): at most one call per frame, coalesced, off the main thread.",
+  },
+  uploadSavePlanJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text], ['recordJson', text], ['nowIso', text], ['cloudConnected', flag], ['deviceId', text]],
+    returns: "Shared upload (US-52 AC8c): what one Save writes, health-core UploadSavePlan as JSON {labRows: [{fileId, rows}], documents: [{fileId, fields}], labArchives: [{fileId, sourceFileName, reportDate}], archiveOnly: [{fileId, fields}], counts: {values, documents, archived, originals}}, from the same review rule as uploadViewJson. Read only: the save itself goes through uploadSaveJson.",
+  },
+  uploadUsageJson: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['stateJson', text]],
+    returns: "Shared upload (US-12 AC10): the run's usage counts for upload_outcome, health-core uploadUsageCounts as JSON {known?, failedFinal?, firstReadSeconds?}, each a whole number capped at 1000; {} before a pick. Counts only, never a name, hash or value.",
+  },
+  uploadSaveJson: {
+    kind: 'promise',
+    optionalDoor: true,
+    args: [['stateJson', text], ['recordJson', text], ['erase', text], ['nowIso', text], ['deviceId', text], ['originalsJson', text], ['readOriginal', callback]],
+    returns: "Shared upload (US-52 AC8c, US-14 AC10): a Promise of one Save, health-core uploadSave: the pick's values (bulkAppendValues) and its document and lab archive rows (saveDocuments, labArchivePayload listing the rows the values wrote) in one step, for a state in its saving phase. erase as documentSave takes it: with a cloud open, the engine first writes each original the save plan stores, once, reading its bytes by calling readOriginal(fileId) only for the files originalsJson ({fileId: mimeType}) names as its own, as it writes it; anything but a non-empty ArrayBuffer within the per-file cap (UPLOAD_LIMITS fileBytes) is no original. Then every row is written on the session's record as it stands at that moment (the phone's copy and its pending marker first), so an edit that landed meanwhile is kept and a value whose (metric, day) it took is skipped; nothing new commits nothing. The Save is held to the session open when it is asked: none open then, or another one open by the time it runs (even at the same erase), refuses as not-open. '' for no cloud: onto recordJson, keeping no original. One Save at a time, in documentSave's queue. Answers JSON {ok: true, record (the record as text), erase? (with a cloud), outcome: {values (rows written), documents (the letters and documents the review listed to be saved that were saved, as the Save label counts them: never a lab report's archive row nor an original filed behind a held row), archived (originals filed behind a held row), unstored (originals the plan stores that did not land: unreadable, over the cap, or refused by the cloud; their rows keep the hash alone), skippedValues and skippedLabValues (each present only when above 0: values the reviewed page would write, carried by saveStarted, whose slot another writer took before the commit, a core value or another lab; the done view names them), refused (present only when the commit refused a value because the record changed meanwhile: each {label, reason} in the review's not-saved reasons or {line}, the web's refusal words; the done view names them)}}, the app's saved event's outcome as it is (the done view then warns when unstored is above 0), or {ok: false, reason, message}: reason invalid-state, invalid-record, record-too-new, invalid-originals, not-saving, not-ready (a selected value Save would refuse, or a report waiting for its day, in the view's words; nothing written), not-open, erased, phone-write or engine-error; the app sends each as a saveFailed, which Save can try again. A repeat on the record it saved writes nothing and answers zero counts.",
   },
 } satisfies Record<string, Door>;
 

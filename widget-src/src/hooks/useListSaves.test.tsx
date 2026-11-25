@@ -15,6 +15,7 @@ const store = vi.hoisted(() => ({
 }));
 vi.mock('../lib/roadmap-data', () => ({
   getShownErase: () => store.erase,
+  stillShown: (asked: string) => asked === store.erase,
   saveMedication: async (...a: unknown[]) => { store.calls.push(['med', ...a]); return store.ok; },
   saveScreening: async (...a: unknown[]) => { store.calls.push(['screening', ...a]); return store.ok; },
   saveSupplement: async (...a: unknown[]) => { store.calls.push(['supplement', ...a]); return store.ok; },
@@ -22,7 +23,7 @@ vi.mock('../lib/roadmap-data', () => ({
   loadLatestMeasurements: async () => ({ medications: [{ medicationKey: 'statin' }], screenings: [] }),
 }));
 const mirror = vi.hoisted(() => ({ patches: [] as unknown[] }));
-vi.mock('../lib/storage', () => ({ patchMirror: (p: unknown) => { mirror.patches.push(p); } }));
+vi.mock('../lib/chat-mirror', () => ({ writeMirror: (p: unknown) => { mirror.patches.push(p); } }));
 
 import { useListSaves } from './useListSaves';
 
@@ -112,7 +113,7 @@ describe('US-06 AC13, US-16 AC2a: flushed, dropped, refused', () => {
     act(() => view.result.current.handleSupplementDelete('vitd'));
     await tick(1000);
     expect(record.stopSupplement).toHaveBeenCalledWith('vitd');
-    expect(store.calls).toEqual([['stop', 'vitd']]);
+    expect(store.calls).toEqual([['stop', 'vitd', 'e1']]);
   });
 
   it('a refused medication save is reported, and the chat copy still takes the stored lists', async () => {
@@ -130,5 +131,44 @@ describe('US-06 AC13, US-16 AC2a: flushed, dropped, refused', () => {
     act(() => view.result.current.handleSupplementChange('vitd', 'Vitamin D', 1000, 'IU'));
     await tick(300);
     expect(writeRefused).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('US-34 AC4, US-16 AC2a (H52): a re-read flushes only the saves whose erase is still shown', () => {
+  it('flushListSaves fires a shown entry now and skips one from an erase no longer shown, which still fires on its timer', async () => {
+    const { view, writeRefused } = setup();
+    act(() => {
+      view.result.current.handleMedicationChange('statin', 'Atorvastatin', 40, 'mg'); // shown erase e1
+      view.result.current.handleScreeningChange('colon', '2025-06', 'e0'); // asked under an older erase
+    });
+    act(() => view.result.current.flushListSaves());
+    await act(async () => {});
+    expect(store.calls).toEqual([['med', 'statin', 'Atorvastatin', 40, 'mg', 'e1']]);
+    expect(view.result.current.medicationWaiting('statin')).toBe(false);
+    await tick(300); // the skipped one waits on, as before the flush
+    expect(store.calls).toEqual([['med', 'statin', 'Atorvastatin', 40, 'mg', 'e1'], ['screening', 'colon', '2025-06', 'e0']]);
+    expect(writeRefused).not.toHaveBeenCalled();
+  });
+
+  it('a skipped entry is still dropped by this tab\'s erase (forget), unsaved', async () => {
+    const { view } = setup();
+    act(() => view.result.current.handleMedicationChange('statin', 'Atorvastatin', 40, 'mg'));
+    store.erase = 'e2'; // this tab's erase is shown before its forget runs
+    act(() => view.result.current.flushListSaves());
+    expect(view.result.current.medicationWaiting('statin')).toBe(true);
+    act(() => view.result.current.dropListSaves());
+    await tick(1000);
+    expect(store.calls).toEqual([]);
+  });
+
+  it('a skipped entry raises no WRITE_REFUSED: nothing is written at the flush', async () => {
+    const { view, writeRefused } = setup();
+    store.ok = false; // the store would refuse it
+    act(() => view.result.current.handleSupplementChange('vitd', 'Vitamin D', 1000, 'IU'));
+    store.erase = 'e2';
+    act(() => view.result.current.flushListSaves());
+    await act(async () => {});
+    expect(store.calls).toEqual([]);
+    expect(writeRefused).not.toHaveBeenCalled();
   });
 });

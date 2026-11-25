@@ -10,6 +10,8 @@ import { describe, expect, it } from 'vitest';
 
 const css = readFileSync(resolve(__dirname, 'styles.css'), 'utf8');
 const standaloneCss = readFileSync(resolve(__dirname, '../standalone/standalone.css'), 'utf8');
+/** The field controls styles.css imports first (and the widget bundle carries, scoped). */
+const fieldsCss = readFileSync(resolve(__dirname, 'components/fields.css'), 'utf8');
 
 function token(name: string): string {
   const root = /:root\s*\{([^}]*)\}/.exec(css)![1];
@@ -84,7 +86,7 @@ describe('US-62 AC8 — a grade as text', () => {
 describe('web redesign §1 — each use is on the right token', () => {
   const rules = (sheet: string) => sheet.replace(/\/\*[\s\S]*?\*\//g, '').split('}').map((r) => r.replace(/\s+/g, ' '));
 
-  it.each([['styles.css', css], ['standalone.css', standaloneCss]])('%s never sets text in the brand green', (_, sheet) => {
+  it.each([['styles.css', css], ['fields.css', fieldsCss], ['standalone.css', standaloneCss]])('%s never sets text in the brand green', (_, sheet) => {
     const textInBrand = rules(sheet).filter((r) => /(^|[;{ ])color:\s*(var\(--color-brand\)|#00a38b)/i.test(r));
     expect(textInBrand).toEqual([]);
   });
@@ -111,11 +113,11 @@ describe('web redesign §1 — each use is on the right token', () => {
       .toEqual(['.a strong', '.a > em']);
   });
 
-  it.each([['styles.css', css], ['standalone.css', standaloneCss]])('%s never fades brand-green text with opacity', (_, sheet) => {
+  it.each([['styles.css', css], ['fields.css', fieldsCss], ['standalone.css', standaloneCss]])('%s never fades brand-green text with opacity', (_, sheet) => {
     expect(fadedGreen(sheet)).toEqual([]);
   });
 
-  it.each([['styles.css', css], ['standalone.css', standaloneCss]])('%s never puts a white label on the brand green', (_, sheet) => {
+  it.each([['styles.css', css], ['fields.css', fieldsCss], ['standalone.css', standaloneCss]])('%s never puts a white label on the brand green', (_, sheet) => {
     const whiteOnBrand = rules(sheet).filter((r) =>
       /background(-color)?:\s*(var\(--color-brand\)|#00a38b)/i.test(r) && /(^|[;{ ])color:\s*(#fff\b|#ffffff|white)/i.test(r));
     expect(whiteOnBrand).toEqual([]);

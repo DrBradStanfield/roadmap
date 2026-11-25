@@ -91,7 +91,7 @@ final class USProductsTests: XCTestCase {
         /// Whether `body` drew the record again (RecordStore.follow's guard skips a repeat).
         func redraws(_ body: () async -> Void) async -> Bool {
             let redrew = Flag()
-            withObservationTracking { _ = store.drawn } onChange: { redrew.set() }
+            withObservationTracking { _ = store.draws } onChange: { redrew.set() }
             await body()
             return redrew.value
         }

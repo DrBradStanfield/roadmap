@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { saveMedication, saveScreening, saveSupplement, deleteSupplementApi, loadLatestMeasurements } from '../lib/roadmap-data';
-import { patchMirror } from '../lib/storage';
+import { saveMedication, saveScreening, saveSupplement, deleteSupplementApi, getShownErase, loadLatestMeasurements } from '../lib/roadmap-data';
+import { writeMirror } from '../lib/chat-mirror';
 import * as listSaves from '../lib/list-saves';
 import type { ListSaves } from '../lib/list-saves';
 import type { useRecordState } from './useRecordState';
@@ -17,8 +17,9 @@ type RecordPatches = Pick<ReturnType<typeof useRecordState>, 'patchMedication' |
  *   showed when the change was made. A newer change to the same row restarts
  *   it.
  * A change is shown at once (the record copy is patched ahead of its save).
- * A waiting save then fires on its timer, or now when the page goes away
- * (`flushListSaves`), or is dropped unsaved: by an erase (`dropListSaves`),
+ * A waiting save then fires on its timer, or now when the page goes away or
+ * a whole re-read is about to replace the lists (`flushListSaves`, only while
+ * its erase is still shown), or is dropped unsaved: by an erase (`dropListSaves`),
  * by the page unmounting, or by the supplement's own stop.
  *
  * After every medication or screening save, refused or not, the chat copy
@@ -29,10 +30,11 @@ type RecordPatches = Pick<ReturnType<typeof useRecordState>, 'patchMedication' |
 
 /** The lists the store holds, for the chat copy (US-15 AC10). Never the
  *  form's: a failed save would leave a row the record lacks, and a re-read
- *  inside the debounce would put the old list back with nothing to undo it. */
+ *  inside the debounce would put the old list back with nothing to undo it.
+ *  The PSA flag is worked out again from them (US-34 AC11). */
 async function mirrorSavedLists(): Promise<void> {
   const result = await loadLatestMeasurements();
-  if (result) patchMirror({ medications: result.medications, screenings: result.screenings });
+  if (result) writeMirror({ medications: result.medications, screenings: result.screenings, latest: result.previousMeasurements });
 }
 export function useListSaves(record: RecordPatches, writeRefused: (erase?: string) => void) {
   const { patchMedication, patchScreening, patchSupplement, stopSupplement } = record;
@@ -46,7 +48,7 @@ export function useListSaves(record: RecordPatches, writeRefused: (erase?: strin
     return mirrorSavedLists();
   }, [writeRefused]);
   const dropListSaves = useCallback(() => listSaves.dropListSaves(all()), []);
-  const flushListSaves = useCallback(() => listSaves.flushListSaves(all()), []);
+  const flushListSaves = useCallback(() => listSaves.flushShown(all()), []);
   // Unmounting drops what waits: a save after the page is gone would be stale.
   useEffect(() => () => listSaves.dropListSaves(all()), []);
   /** A medication's save still waits (the chat's Undo reads it, US-16). */
@@ -109,7 +111,7 @@ export function useListSaves(record: RecordPatches, writeRefused: (erase?: strin
     // A dose save still waiting would land after the stop and restart the row.
     listSaves.cancelListSave(supplementSaves.current, supplementKey);
     stopSupplement(supplementKey);
-    void deleteSupplementApi(supplementKey).then(saved => { if (!saved) writeRefused(); });
+    void deleteSupplementApi(supplementKey, getShownErase()).then(saved => { if (!saved) writeRefused(); });
   }, [writeRefused, stopSupplement]);
 
   return {

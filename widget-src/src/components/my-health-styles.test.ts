@@ -60,6 +60,23 @@ describe('US-62 AC30: My health styles', () => {
     expect(cascaded(title, 'font-size', DESKTOP)).toBe('28px');
     expect(cascaded(title, 'clip', DESKTOP)).toBeUndefined();
   });
+
+  it('US-73 AC13: on desktop the doctor line shares the title row, wrapping its words beside the title, dropping under it only below 180px', () => {
+    const line = nest('mh-header', 'mh-heading', 'p|mh-education');
+    const heading = line.parentElement!;
+    expect(cascaded(heading, 'display', DESKTOP)).toBe('flex');
+    expect(cascaded(heading, 'flex-wrap', DESKTOP)).toBe('wrap');
+    // Its last line on the title's baseline: two 13px lines then fit the 44px row, so the
+    // cards still line up with the chat column's at 1200px with a long Reconnect (2026-11-23).
+    expect(cascaded(heading, 'align-items', DESKTOP)).toBe('last baseline');
+    // A browser that drops `last baseline` (an older Safari) keeps plain baseline, declared first.
+    const [headingBlock] = blocks(/\.mh-heading\s*$/);
+    expect(headingBlock.replace(/\s+/g, ' ')).toContain('align-items: baseline; align-items: last baseline;');
+    expect(cascaded(line, 'flex', DESKTOP)).toBe('1 1 180px'); // fills the room beside the title; drops only below 180px
+    expect(cascaded(line, 'margin-top', DESKTOP)).toBe('0'); // no offset from the title's baseline
+    expect(cascaded(line, 'margin-bottom', DESKTOP)).toBe('0'); // nothing to push the row past 44px
+    expect(cascaded(nest('mh-title'), 'flex', DESKTOP)).toBe('0 0 auto'); // the title never shrinks or wraps
+  });
 });
 
 describe('US-62 AC35: the Account tab design', () => {
@@ -125,5 +142,29 @@ describe('US-62 AC36: one card inset on every phone tab', () => {
     const embed = nest('chat-embed-root', 'chat-embed');
     embed.parentElement!.id = 'health-chatbot-embed-root';
     expect(sides(embed, 'margin', PHONE)).toEqual(['10px', '10px']);
+  });
+});
+
+describe('US-62 AC10b (H78): the value page focus ring', () => {
+  it('the date box draws the Value box\'s inset teal ring on :focus-within, which WebKit matches', () => {
+    const ring = blocks(/\.md-add input\[type="date"\]:focus-within/);
+    expect(ring).toHaveLength(1);
+    expect(ring[0]).toMatch(/outline:\s*2px solid var\(--color-brand-text\)/);
+    expect(ring[0]).toMatch(/outline-offset:\s*-2px/);
+    expect(blocks(/\.md-add input:focus-visible/)).toEqual(ring);
+  });
+
+  it('H89: the lab Add form\'s date box and the matrix\'s date cells draw that same ring', () => {
+    const ring = blocks(/\.md-add input\[type="date"\]:focus-within/);
+    // AddLabTest's Value and Date boxes, as the value page's Add form.
+    expect(blocks(/\.alr-add-form input:focus-visible/)).toEqual(ring);
+    expect(blocks(/\.alr-add-form input\[type="date"\]:focus-within/)).toEqual(ring);
+    // DraftDateCell: the button by keyboard, and while its hidden date input has focus (WebKit's only Tab stop).
+    for (const cell of ['bt-cell-draft-date', 'bt-cell-movable']) {
+      expect(blocks(new RegExp(`\\.${cell}:focus-visible`))).toEqual(ring);
+      expect(blocks(new RegExp(`\\.${cell}:has\\(> \\.bt-date-hidden-icon:focus\\)`))).toEqual(ring);
+      // :focus-within would also match the clicked button itself, a ring on every Chromium click (R1).
+      expect(blocks(new RegExp(`\\.${cell}:focus-within`))).toEqual([]);
+    }
   });
 });

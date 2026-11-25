@@ -22,21 +22,22 @@ vi.mock('../lib/route-helpers.server', async (original) => ({
   getAuthenticatedUser: mocks.auth,
 }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
-vi.mock('../lib/supabase.server', () => ({
+// api.chat.ts imports these from their defining modules (S-14).
+const supa = vi.hoisted(() => ({
   logAudit: vi.fn(), getProfile: vi.fn(async () => null), updateSubscriptionPlan: vi.fn(),
   createUserClient: vi.fn(() => ({ from: mocks.from })),
   getOrCreateGuestSession: vi.fn(async () => ({ sessionId: '87654321-4321-4321-8321-cba987654321', sessionToken: 'tok' })),
   GuestRateLimitError: class extends Error {},
 }));
-vi.mock('../lib/chat.server', async (original) => ({
-  resolveChatContext: () => ({ userContextJson: '{}' }),
+vi.mock('../lib/supabase-identity.server', async (o) => ({ ...await o<object>(), logAudit: supa.logAudit }));
+vi.mock('../lib/supabase-guest.server', async (o) => ({ ...await o<object>(), getOrCreateGuestSession: supa.getOrCreateGuestSession, GuestRateLimitError: supa.GuestRateLimitError }));
+vi.mock('../lib/supabase-account.server', async (o) => ({ ...await o<object>(), getProfile: supa.getProfile, updateSubscriptionPlan: supa.updateSubscriptionPlan }));
+vi.mock('../lib/supabase-client.server', async (o) => ({ ...await o<object>(), createUserClient: supa.createUserClient }));
+vi.mock('../lib/chat.server', async (original) => (await import('../lib/chat-server.test-helpers')).chatServerStub(await original<typeof import('../lib/chat.server')>(), {
   buildSystemBlocks: (_u: string, opts?: { blogArticles?: string | null }) => { mocks.blogArticles = opts?.blogArticles; return []; },
   buildConversationMessages: (_history: unknown, message: string) => [{ role: 'user', content: message }],
   loadMatchedArticlesFromHandles: (handles: string[]) => mocks.loadArticles ? mocks.loadArticles(handles) : mocks.articles,
-  DOCTOR_POSTURE: '', BRAND_POSTURE: '',
   getChatCompletion: mocks.getChatCompletion,
-  reportChatFallback: vi.fn(), generateTitle: () => 'Synthetic title', CHAT_MODEL: 'test',
-  MAX_MESSAGE_LENGTH: (await original<typeof import('../lib/chat.server')>()).MAX_MESSAGE_LENGTH,
 }));
 vi.mock('../lib/chat-router.server', async (original) => ({
   ...await original<typeof import('../lib/chat-router.server')>(),

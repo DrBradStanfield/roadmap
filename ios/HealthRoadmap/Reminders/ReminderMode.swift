@@ -13,20 +13,25 @@ enum ReminderMode: Equatable {
 
     nonisolated static func transition(_ mode: ReminderMode, _ event: ReminderEvent) -> (ReminderMode, ReminderEffect?) {
         switch (mode, event) {
-        case (.off, .tappedOn(let attempt)): (.asking(attempt: attempt), .askPermission(attempt: attempt))
+        // An erase here or taken in, even one held with no record to read: the opt-in ends (US-11).
+        case (_, .erased): (.off, nil)
+        // An erase before this tap is one the person opts in after: the next refresh must not end it.
+        case (.off, .tappedOn(let attempt)): (.asking(attempt: attempt), .resnapshotAndAsk(attempt: attempt))
         case (.off, .tappedOff), (.off, .asked), (.off, .read): (.off, nil)
 
         case (.asking, .tappedOn): (mode, nil)
         case (.asking, .tappedOff): (.off, .refresh)
-        case (.asking(let current), .asked(let attempt, let granted, let epoch, let askedAt)):
+        case (.asking(let current), .asked(let attempt, let granted, let epoch, let askedAt, let lastRead)):
             if attempt != current { (mode, nil) }
             // An erase while iOS answered moved the epoch: the grant was for the record before
-            // it (US-11). A failed read before the ask (nil) cannot tell, so the grant counts.
-            else if granted, let epoch, (askedAt ?? epoch) >= epoch { (.on(epoch: epoch), .refresh) }
+            // it (US-11). A failed read before the ask falls back to the last good read; with
+            // none ever, an erase cannot be told, so the grant does not count.
+            else if granted, let epoch, let before = askedAt ?? lastRead, before >= epoch { (.on(epoch: epoch), .refresh) }
             else { (.off, .refresh) }
         case (.asking, .read): (mode, nil)
 
-        // "Allow notifications" asks again; the answer only changes what is scheduled.
+        // "Allow notifications" asks again; the answer only changes what is scheduled. No
+        // resnapshot: an unseen erase must still end the opt-in.
         case (.on, .tappedOn(let attempt)): (mode, .askPermission(attempt: attempt))
         case (.on, .tappedOff): (.off, .refresh)
         case (.on, .asked): (mode, .refresh)
@@ -40,15 +45,20 @@ enum ReminderEvent: Equatable {
     /// The switch turned on, or "Allow notifications"; the attempt is the scheduler's token.
     case tappedOn(attempt: Int)
     case tappedOff
-    /// iOS's answer to an attempt, with the record's erase epoch read after a grant and the one
-    /// read as the ask began (nil when the record could not be read).
-    case asked(attempt: Int, granted: Bool, epoch: Int?, askedAt: Int?)
+    /// iOS's answer to an attempt, with the record's erase epoch read after a grant, the one
+    /// read as the ask began (nil when the record could not be read), and the last good read's
+    /// before the ask (nil when the record was never read).
+    case asked(attempt: Int, granted: Bool, epoch: Int?, askedAt: Int?, lastRead: Int?)
     /// A refresh read the record: its erase epoch, or nil when it could not be read.
     case read(epoch: Int?)
+    /// An erase reached the record since the last refresh, made here or taken in, drawn or not (S52, S63).
+    case erased
 }
 
 enum ReminderEffect: Equatable {
     case askPermission(attempt: Int)
+    /// Take the store's erase count afresh, then ask: a tap from off.
+    case resnapshotAndAsk(attempt: Int)
     /// Rebuild the pending notifications from the mode: add when on and allowed, else only remove.
     case refresh
 }

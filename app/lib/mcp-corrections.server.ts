@@ -4,7 +4,7 @@
  */
 import { dayOf, daysBetween } from '../../packages/health-core/src/merge';
 import type { GuardRefusal } from '../../packages/health-core/src/mcp-tools';
-import { PROFILE_FIELDS } from '../../packages/health-core/src/mcp-tool-contract';
+import { PROFILE_FIELDS } from '../../packages/health-core/src/profile-fields';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
 /**

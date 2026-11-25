@@ -22,6 +22,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';
 |---|---|---|---|---|---|
 | **Shopify prod v2**<br>**Status: live** | `npm run build:shopify-prod` | [vite.config.shopify-prod.ts](../../widget-src/vite.config.shopify-prod.ts) (+ upload build) | `LOCAL_FIRST` + `SHOPIFY_SURFACE` | `health-plan-v2.js` + lazy `…-HistoryPanel.js` + `.css` → extension assets | None; explicit local data imports |
 | **GitHub Pages / self-host** | `npm run build:pages` | [vite.config.standalone.ts](../../widget-src/vite.config.standalone.ts) (+ upload build) | `LOCAL_FIRST` only | `dist-pages/`, base `/roadmap/`, sourcemaps on | `chat-api.ts→byok-chat.ts`, `upload-api.ts→byok-upload.ts` |
+| **Single-topic widgets** (US-74) | `npm run build:widget` (side bundles) | [vite.config.widgets.ts](../../widget-src/vite.config.widgets.ts) | `SHOPIFY_SURFACE` | `health-widgets.js` + `.css` → extension assets; one bundle for every `data-widget` block | None; same `roadmap-data.ts` → `RoadmapStore` as the full app |
 | **Legacy v1** **Status: RETIRED 2026-06-15** | *deleted* (was `npm run build:widget`) | *deleted* (`vite.config.ts` + entry `src/index.tsx` removed) | — | `health-tool.js` deleted from assets | — |
 
 > **Build ownership.** The Pages config is `vite.config.standalone.ts`; build commands live in the root package. Shopify uses Brad's chat/upload transports. Pages replaces only those AI transports with BYOK; no build substitutes the health-record data module.

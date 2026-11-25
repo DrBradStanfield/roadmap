@@ -79,7 +79,7 @@ describe('loadGuestInputs (the blog bubble and chatbot embed context)', () => {
   it('US-07 AC7: the creatinine row\'s own day, not another row\'s, decides against the lab eGFR', () => {
     // Creatinine before the lab's day: the lab's eGFR is the plan's. The other
     // rows are newer than the lab, and sort either side of 'creatinine'.
-    saveToLocalStorage(PROFILE, [row('weight', 82, '2026-10-01'), row('apob', 0.9, '2026-10-01'), row('creatinine', 80, '2026-08-01')], [], [], [], LAB);
+    saveToLocalStorage(PROFILE, [row('weight', 82, '2026-10-01'), row('apob', 0.9, '2026-10-01'), row('creatinine', 80, '2026-08-01')], [], [], LAB);
     expect(loadGuestInputs()).toMatchObject(LAB);
   });
 });

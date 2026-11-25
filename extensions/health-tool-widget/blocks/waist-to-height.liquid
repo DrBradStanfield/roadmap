@@ -1,0 +1,74 @@
+<!-- US-74: one measurement on its own page. Height, weight and waist, saved to
+     the same record the full Health Roadmap reads, and the plan's own results.
+     No hero, no doctor photo or name (AC1). The bundle health-widgets.js serves
+     every single-topic block and routes by data-widget (AC8); the schema's
+     javascript and stylesheet keys load it once per page, however many blocks. -->
+<div class="hr-widget-block">
+  {%- if block.settings.heading != blank -%}
+    <h1 class="hr-widget-heading">{{ block.settings.heading | escape }}</h1>
+  {%- endif -%}
+  <div class="hr-widget-layout">
+    {% comment %} Clarity: mask this node and every descendant. Health values
+         render as page text and Clarity records text by default (AC5).
+         The NBSP dodges the storefront's `div:empty { display:none }` rule. {% endcomment %}
+    <div
+      class="hr-widget"
+      data-widget="waist-to-height"
+      data-clarity-mask="true"
+      data-next-url="{{ block.settings.next_url | escape }}"
+      data-next-label="{{ block.settings.next_label | escape }}"
+    >&nbsp;</div>
+    {% comment %} No jump on load for a returning visitor (Brad 2026-11-18): a saved height with a saved
+         waist or weight on this device opens the calculator with its results, so the card reserves that
+         height before the script mounts. Reads this device's record only; writes and sends nothing. The
+         class says only that such a record exists, never a value or a grade (AC5). {% endcomment %}
+    <script>
+      (function (card) {
+        try {
+          var file = JSON.parse(localStorage.getItem('health_roadmap_file_v2') || 'null');
+          var day = function (m) { return m && m.status === 'active' && (m.metricType === 'waist' || m.metricType === 'weight'); };
+          if (file && file.profile && file.profile.heightCm > 0 && (file.measurements || []).some(day)) card.classList.add('hr-widget--saved');
+        } catch (e) {}
+      })(document.currentScript.previousElementSibling);
+    </script>
+    {%- if block.settings.aside != blank -%}
+      {% comment %} Shopify's own richtext output: the merchant's words, no health values. {% endcomment %}
+      <div class="hr-widget-aside">{{ block.settings.aside }}</div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Waist-to-height ratio",
+  "target": "section",
+  "javascript": "health-widgets.js",
+  "stylesheet": "health-widgets.css",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading (optional)",
+      "info": "Shown above the calculator as the page's main heading."
+    },
+    {
+      "type": "richtext",
+      "id": "aside",
+      "label": "Text beside the calculator (optional)",
+      "info": "Right of the calculator on wide screens, below it on phones."
+    },
+    {
+      "type": "url",
+      "id": "next_url",
+      "label": "Next-step link (shown after a result)",
+      "info": "A page on this store only: the link must start with /. Any other address is not shown."
+    },
+    {
+      "type": "text",
+      "id": "next_label",
+      "label": "Next-step link label",
+      "info": "Left blank, the link reads Next step."
+    }
+  ]
+}
+{% endschema %}

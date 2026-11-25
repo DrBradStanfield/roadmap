@@ -43,7 +43,7 @@ final class PlanLayoutTests: XCTestCase {
             ["exercise"],
             ["sleep"],
             ["screening-breast"],
-            ["hba1c-normal"],
+            // US-07 AC18 (Brad 2026-11-23): the sample's normal HbA1c gets no card.
         ])
     }
 
@@ -88,6 +88,13 @@ final class PlanLayoutTests: XCTestCase {
     /// US-25 AC10b: the education line is the welcome screen's sentence, byte for byte, in one place.
     func testTheEducationLineIsTheApprovedSentence_US25_AC10b() {
         XCTAssertEqual(EducationNote.text, "For education only, not medical advice. Talk to your doctor before you change anything about your health or medicines.")
+    }
+
+    /// US-73 AC13 and US-52 AC6h (App Review 1.4.1): My health's line under its title and the chat
+    /// consent's first paragraph, each in one place. Shown on screen: ReviewPlacementUITests.
+    func testTheDoctorLinesAreTheDecidedSentences_US73_AC13_US52_AC6h() {
+        XCTAssertEqual(EducationNote.myHealth, "For education, not medical advice. Always talk to your doctor.")
+        XCTAssertEqual(EducationNote.chatConsent, "This app is educational and is not medical advice. Always discuss your health with your doctor.")
     }
 
     /// US-25 AC22: the summary tiles reach the screen as the engine wrote them, the web's

@@ -1,8 +1,6 @@
 // S-14 (untangle ledger): the post-split re-export blocks are gone, so each
 // name has one import path, its defining module. A re-export coming back fails
-// here. supabase.server.ts keeps only the names api.chat.ts still imports
-// (repointing it would grow a file over the 500-line ratchet) plus the
-// dashboard and A/B names.
+// here. supabase.server.ts keeps only the dashboard and A/B names.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -20,17 +18,14 @@ function reExports(file: string): Record<string, string[]> {
 }
 
 describe('S-14: no post-split re-export blocks', () => {
-  it('supabase.server.ts re-exports only what api.chat.ts uses, plus dashboard and A/B', () => {
+  it('supabase.server.ts re-exports only the dashboard and A/B names', () => {
     const got = reExports('supabase.server.ts');
-    expect(got['./supabase-client.server']).toEqual(['createUserClient']);
-    expect(got['./supabase-identity.server']).toEqual(['logAudit']);
-    expect(got['./supabase-guest.server']).toEqual(['GuestRateLimitError', 'getOrCreateGuestSession']);
-    expect(got['./supabase-account.server']).toEqual(['DbProfile', 'getProfile', 'updateSubscriptionPlan']);
+    expect(got['./supabase-client.server']).toBeUndefined();
+    expect(got['./supabase-identity.server']).toBeUndefined();
+    expect(got['./supabase-guest.server']).toBeUndefined();
+    expect(got['./supabase-account.server']).toBeUndefined();
     expect(got['./supabase-cron-lock.server']).toBeUndefined();
-    expect(Object.keys(got).sort()).toEqual([
-      './supabase-ab.server', './supabase-account.server', './supabase-client.server',
-      './supabase-dashboard.server', './supabase-guest.server', './supabase-identity.server',
-    ]);
+    expect(Object.keys(got).sort()).toEqual(['./supabase-ab.server', './supabase-dashboard.server']);
   });
 
   it('youtube-bot.server.ts re-exports nothing from its config, api or store modules', () => {

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A31,web forms,"A lab value saved after Cancel in AddLabTest lands with nothing said",note,closed,"Closed 2026-11-13, by design: the save already sent cannot be recalled, so the value is in the record and shows in the timeline; the form's answer names its opening and is dropped once Cancel closed it (widget-src/src/components/AddLabTest.tsx:44-46, the 'saved' event at :74). No data is lost and nothing false is said. Found by the cross-PR review of the 13 Nov merges, beside US-09 AC51 and AC52",,no

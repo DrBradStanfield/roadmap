@@ -11,7 +11,9 @@
  * changes nothing. A move that hands the page to a redirect or a reload is
  * `navigating`; only then can the browser's back-forward cache show this page
  * again with nothing running (`restored`), and only then does a reopened
- * picker mean the page did not leave (`reopened`), so the move is over. A move
+ * picker mean the page did not leave (`reopened`), so the move is over. A
+ * stopped load tells the page nothing, so a page still here `HAND_OFF_MS` after
+ * its hand-off did not leave either (`stayed`, US-09 AC45a). A move
  * still waiting on a fetch stays claimed. `cancel` is "Stop reconnecting": it
  * ends only a reconnect whose popup answer is not yet saved, with no error text.
  * Once the answer is saved (`saved`), the reconnect is `reconnected` and runs
@@ -21,8 +23,10 @@
  * Never holds a credential: the GitHub token and the WebDAV password stay in
  * the picker's component state and die with its mount.
  */
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { logOffId, type LogOffId } from '../src/lib/storage';
+import { getBackendKind } from '../src/lib/roadmap-data';
+import { exitAnswered, rereadStoredHome } from '../src/storage/sign-in-state';
 import type { Backend } from './connect';
 
 /** The picker step a move started from, where a reopened picker shows it. */
@@ -49,7 +53,8 @@ export type SwitchEvent =
   | { type: 'saved'; run: number }
   | { type: 'clearError' }
   | { type: 'restored' }
-  | { type: 'reopened' };
+  | { type: 'reopened' }
+  | { type: 'stayed'; run: number };
 
 /** The step a running state shows on a reopened picker. */
 export function stepOf(state: SwitchFlow): MoveStep | null {
@@ -68,8 +73,9 @@ export function transition(state: SwitchFlow, event: SwitchEvent): { next: Switc
     if (event.type === 'clearError' && state.error !== null) return { next: { kind: 'idle', run: state.run, error: null }, run: false };
     return same;
   }
-  if (event.type === 'restored' || event.type === 'reopened') {
-    return state.kind === 'navigating' ? { next: { kind: 'idle', run: state.run, error: null }, run: false } : same;
+  if (event.type === 'restored' || event.type === 'reopened' || event.type === 'stayed') {
+    const left = state.kind === 'navigating' && (event.type !== 'stayed' || event.run === state.run);
+    return left ? { next: { kind: 'idle', run: state.run, error: null }, run: false } : same;
   }
   if (!('run' in event) || event.run !== state.run) return same;
   if (event.type === 'failed') return { next: { kind: 'idle', run: state.run, error: event.message }, run: false };
@@ -103,7 +109,11 @@ export function subscribeSwitchFlow(listener: () => void): () => void {
 export function dispatch(event: SwitchEvent): boolean {
   const { next, run } = transition(flow, event);
   if (next !== flow) {
+    const stayed = flow.kind === 'navigating' && next.kind === 'idle';
     flow = next;
+    // However a hand-off ends with the page still here, a page on this browser's copy shows the home this
+    // browser now stores (US-09 AC52); a page on a cloud still runs on it until a reload.
+    if (stayed && getBackendKind() === 'local') rereadStoredHome();
     listeners.forEach((listener) => listener());
   }
   return run;
@@ -120,6 +130,7 @@ export interface Move {
 /** Claim the flow with `event`; when it is claimed, run the move and report how it ended. */
 export async function runMove(event: SwitchEvent, move: (m: Move) => Promise<void>): Promise<void> {
   if (!dispatch(event)) return;
+  exitAnswered(); // any move answers the reconnect panel's exit question (US-09 AC51)
   const { run } = flow;
   const gen = logOffId();
   try {
@@ -136,8 +147,20 @@ if (typeof window !== 'undefined') {
   });
 }
 
+/** How long a page may stay after handing itself to a redirect or reload
+ *  before the move counts as over: a page that really leaves is gone by then. */
+export const HAND_OFF_MS = 15_000;
+
+/** Every surface that shows the flow frees a hand-off that never left (US-09 AC45a). */
 export function useSwitchFlow(): SwitchFlow {
-  return useSyncExternalStore(subscribeSwitchFlow, getSwitchFlow, getSwitchFlow);
+  const state = useSyncExternalStore(subscribeSwitchFlow, getSwitchFlow, getSwitchFlow);
+  const handedOff = state.kind === 'navigating' ? state.run : null;
+  useEffect(() => {
+    if (handedOff === null) return;
+    const timer = setTimeout(() => dispatch({ type: 'stayed', run: handedOff }), HAND_OFF_MS);
+    return () => clearTimeout(timer);
+  }, [handedOff]);
+  return state;
 }
 
 /** Tests only: a fresh page's idle flow without a fresh module graph. */

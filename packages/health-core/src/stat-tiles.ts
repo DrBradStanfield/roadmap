@@ -78,6 +78,21 @@ const TONES: Record<string, StatTone> = {
   'Diabetic': 'urgent',
 };
 
+/** The word a tile shows for a grade that names a condition: the range, never the person (Brad 2026-11-20).
+ *  The grade itself (calculations.ts) is unchanged; only its display word. */
+const RANGE_WORD: Record<string, string> = {
+  'Underweight': 'Underweight range', 'Overweight': 'Overweight range', 'Obese': 'Obesity range',
+  'Prediabetic': 'Prediabetes range', 'Diabetic': 'Diabetes range', 'Kidney Failure': 'eGFR below 15',
+};
+
+/** The value pages' line under a tile graded outside its normal range (Brad 2026-11-20): the iPhone shows it
+ *  in the tile's `about`, the web under the page's tiles. */
+export const RANGE_NOT_DIAGNOSIS = 'A range is not a diagnosis. Your doctor confirms one.';
+const RANGE_TILES = new Set<StatTileKey>(['bmi', 'hba1c', 'egfr']);
+/** A BMI, HbA1c or eGFR tile graded outside Normal: a range a reader could take for a diagnosis. */
+export const rangeShown = (tile: Pick<StatTile, 'key' | 'status'>): boolean =>
+  RANGE_TILES.has(tile.key) && !!tile.status && tile.status !== NOT_GRADED && tile.status.label !== 'Normal';
+
 const graded = (label: string): StatTileStatus => ({ label, tone: TONES[label] });
 
 /** A limit's tile status when the bound does not decide: no tone, as no grade (US-12 AC20). */
@@ -201,8 +216,10 @@ export function statTiles(results: HealthResults, { unitSystem, unitOverrides, s
   }
   return tiles.map((t) => ({
     ...t,
+    // The grade's display word (RANGE_WORD); tones above stay keyed by the grade.
+    ...(t.status && RANGE_WORD[t.status.label] ? { status: { ...t.status, label: RANGE_WORD[t.status.label] } } : {}),
     about: `${!adult && t.key === 'bmi' ? STAT_TILE_ABOUT_MINOR_BMI
-      : t.key === 'egfr' && (results.eGFRFromLab || results.limits?.labEgfr) ? STAT_TILE_ABOUT_LAB_EGFR : STAT_TILE_ABOUT[t.key]}${t.status === NOT_GRADED ? ` ${LIMIT_NOT_GRADED}` : ''}`,
+      : t.key === 'egfr' && (results.eGFRFromLab || results.limits?.labEgfr) ? STAT_TILE_ABOUT_LAB_EGFR : STAT_TILE_ABOUT[t.key]}${t.status === NOT_GRADED ? ` ${LIMIT_NOT_GRADED}` : ''}${rangeShown(t) ? ` ${RANGE_NOT_DIAGNOSIS}` : ''}`,
   }));
 }
 

@@ -13,6 +13,8 @@ extension HealthEngine {
         let session: Int
         /// The engine's stamp, set in Swift (`stamp`): one stamped earlier is older.
         var order: Int? = nil
+        /// The record's own meta.eraseEpoch (lead H200); nil from an engine before it: no evidence, no hold.
+        var eraseEpoch: Int? = nil
     }
 
     /// What a cloud session reports through the `notify` native (declared in
@@ -61,7 +63,7 @@ extension HealthEngine {
     /// merges the phone's file in whatever its marker says.
     /// Throws `EngineError.callFailed` whose text is the failure's JSON (`SyncProblem`).
     func cloudOpen(provider: CloudProvider, deviceId: String, firstConnect: Bool, mergePhone: Bool = false) async throws -> CloudView {
-        let (json, order) = try await callAsync("cloudOpen", [provider.rawValue, deviceId, firstConnect, mergePhone], read: stamped)
+        let (json, order) = try await doorCloudOpen(provider: provider.rawValue, deviceId: deviceId, firstConnect: firstConnect, mergePhone: mergePhone, read: stamped)
         var view = try JSONDecoder().decode(CloudView.self, from: Data(json.utf8))
         view.order = order
         return view
@@ -70,43 +72,26 @@ extension HealthEngine {
     /// One My data edit through the open session, checked against the erase and the
     /// units the screen showed when the edit began (a sheet's opening).
     /// `choices`: the per-test units the sheet showed (US-25 AC17e), as JSON.
-    func cloudEdit(_ edit: RecordEdit, erase: String, units: String, now: Date, choices: String = "{}", lpaUnit: String) throws -> EditOutcome {
+    /// `order`: the engine's stamp, taken as it answers (`stamp`).
+    func cloudEdit(_ edit: RecordEdit, erase: String, units: String, now: Date, choices: String = "{}", lpaUnit: String) throws -> (outcome: EditOutcome, order: Int) {
         let editJSON = String(decoding: try JSONEncoder().encode(edit), as: UTF8.self)
-        let json = try call("cloudEdit", [editJSON, erase, units, now.formatted(Self.iso), choices, lpaUnit])
-        var outcome = try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
-        outcome.order = stamp()
-        return outcome
-    }
-
-    /// A lab report's ticked values through the open session, and what saving them did:
-    /// one engine door takes the summary against the session's working copy and runs
-    /// the import on it in the same step (cloud.ts `cloudLabImport`), so a value another
-    /// device brought in is never counted as saved (US-52 AC8).
-    func cloudLabImport(extractionJSON: String, refs: [String], reportDay: String, erase: String, units: String, now: Date, choices: String) throws -> (outcome: EditOutcome, summary: LabSaveSummary?) {
-        let refsJSON = String(decoding: try JSONEncoder().encode(refs), as: UTF8.self)
-        let json = try call("cloudLabImport", [extractionJSON, refsJSON, reportDay, erase, units, now.formatted(Self.iso), choices])
-        var outcome = try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
-        outcome.order = stamp()
-        return (outcome, try JSONDecoder().decode(Summarised.self, from: Data(json.utf8)).summary)
-    }
-
-    private struct Summarised: Decodable {
-        let summary: LabSaveSummary?
+        let outcome = try doorCloudEdit(editJson: editJSON, erase: erase, shownUnits: units, nowIso: now.formatted(Self.iso), unitsJson: choices, shownLpaUnit: lpaUnit)
+        return (outcome, stamp())
     }
 
     /// The app came to the foreground: re-read, and retry a refused save.
-    func cloudVisible() throws { _ = try call("cloudVisible", []) }
+    func cloudVisible() throws { _ = try doorCloudVisible() }
     /// The app left the screen.
-    func cloudHidden() throws { _ = try call("cloudHidden", []) }
+    func cloudHidden() throws { _ = try doorCloudHidden() }
 
     /// Re-read now; true when something changed.
     func cloudRefresh() async throws -> Bool {
-        try await callAsync("cloudRefresh", []) == "changed"
+        try await doorCloudRefresh() == "changed"
     }
 
     /// Save waiting edits now; true when they reached the cloud.
     func cloudFlush() async throws -> Bool {
-        try await callAsync("cloudFlush", []) == "saved"
+        try await doorCloudFlush() == "saved"
     }
 
     /// What `cloudClose` did (ios/engine/cloud.ts): `none`, no open session (an open still in
@@ -121,6 +106,13 @@ extension HealthEngine {
     /// An answer this build does not know reads as `unreachable`: no copy is claimed.
     @discardableResult
     func cloudClose(copyDown: Bool) async throws -> CloudClose {
-        CloudClose(rawValue: try await callAsync("cloudClose", [copyDown])) ?? .unreachable
+        CloudClose(rawValue: try await doorCloudClose(copyDown: copyDown)) ?? .unreachable
+    }
+
+    /// True when an erase made here is still unsent over a failure that may pass (US-25 AC16i,
+    /// `cloudEraseHeld`, which flushes first). False for every other answer, a word this build
+    /// does not know, and an engine without the door (optionalCall's nil): Disconnect runs as before.
+    func eraseHeldOverAPassingFailure() async throws -> Bool {
+        try await doorCloudEraseHeld() == "transient"
     }
 }

@@ -38,8 +38,12 @@ final class OAuthClient {
         let email: String?
     }
 
-    /// Not private only so a test can switch the store's failure seams mid-run.
+    #if DEBUG
+    /// Settable in Debug builds only, so a test can switch the store's failure seams mid-run (US-25 AC11q).
     var tokens: TokenStore
+    #else
+    private let tokens: TokenStore
+    #endif
     private let session: URLSession
     private let now: () -> Date
     /// The provider's client id; tests pass one for Google before the real one exists.

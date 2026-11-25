@@ -1,2 +1,2 @@
 id,section,title,status,evidence,pr,durability_check,needs_brad
-A2-8,S5 clinical rules,Split lab-extraction.ts along its section banners,not started,"packages/health-core/src/lab-extraction.ts is one 1,166-line module",,,yes
+A2-8,S5 clinical rules,Split lab-extraction.ts along its section banners,done,"lab-extraction.ts (1154 to 22) now only re-exports. Its banners became lab-extraction-contract.ts (Types + Unified system prompt, 306), lab-extraction-units.ts (Unit resolution, 267), lab-extraction-parse.ts (Response parsing, 437) and lab-extraction-files.ts (Which files an upload or an import will read, 168), moved unchanged; no import cycle at runtime (US-64)",2101,the file-size ratchet (scripts/file-size-ratchet.test.ts),no (owner ruled 2026-11-25)

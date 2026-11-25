@@ -31,11 +31,11 @@ function cancerCard(sex: 'female' | 'male' | undefined, age: number, screenings:
     ...MY_HEALTH_PROPS,
     inputs, effectiveInputs: inputs, onChange: vi.fn(), errors: {}, unitSystem: 'si',
     unitOverrides: {}, onToggleFieldUnit: vi.fn(), previousMeasurements: [], bloodTestHistory: [], vitalsHistory: [],
-    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()), onDraftValue: vi.fn(),
+    labValues: [], onSaveBloodTestBatch: vi.fn(async () => new Map()),
     medications: [], onMedicationChange: vi.fn(), screenings: rows(screenings), onScreeningChange: vi.fn(),
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age }, grading: {},
+    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age, screeningAge: age }, grading: {},
   };
   const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
   const card = [...container.querySelectorAll('.section-card')]

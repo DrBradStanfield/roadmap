@@ -17,10 +17,10 @@ import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGi
 import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
-import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
-import { currentSignIn, lostSignIn, subscribeSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
+import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, exitChoice, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
+import { askBeforeExit, currentSignIn, exitAnswered, lostSignIn, subscribeSignIn, type ExitQuestion, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { dispatch, getSwitchFlow, isCurrentRun, runMove, useSwitchFlow, type Move, type SwitchEvent } from './switch-flow';
-import { PROVIDERS } from './providers';
+import { noCopyQuestion, PROVIDERS, safeWhere, staleCopyQuestion } from './providers';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
@@ -76,18 +76,30 @@ function useLocalSaveRefused(backend: Backend): boolean {
 }
 
 /** US-09 AC2i (lead C31): said while a device page's writes have stopped after another page's log-off.
- *  A cloud page's stop refuses only its device mirror, and its saves reach its cloud while its sign-in
- *  still holds, so it says nothing (lead C32). A page whose own log-off has begun reloads at once. */
+ *  A page whose own log-off has begun reloads at once. */
 const WRITES_STOPPED = 'This page has stopped saving. Reload it to carry on.';
+/** US-09 AC2i (lead C32; words Brad 2026-11-26): a cloud page's stop refuses only its device mirror, and
+ *  its saves reach its cloud while its sign-in holds, so it is said once a save fails. No reload is asked:
+ *  a reload opens this browser logged off, and the unsaved changes on this page are gone. */
+const CLOUD_STOPPED = 'This browser was logged off in another tab. Your latest changes show here but are not saved.';
 const writesStoppedHere = (): boolean => !healthWritesAllowed() && !ownLogOffHasBegun();
+
+/** What the save alert says: one state, read from the page (US-01 AC5, US-09 AC2i). */
+export type SaveAlert = 'none' | 'deviceRefused' | 'deviceStopped' | 'cloudStopped';
+export function saveAlert(backend: Backend, stopped: boolean, localRefused: boolean, status: SaveStatus): SaveAlert {
+  if (backend !== 'local') return stopped && (status === 'not-saved' || status === 'not-saved-on-device') ? 'cloudStopped' : 'none';
+  if (stopped) return 'deviceStopped';
+  return localRefused ? 'deviceRefused' : 'none';
+}
+const SAVE_ALERT_WORDS = { deviceRefused: LOCAL_SAVE_REFUSED, deviceStopped: WRITES_STOPPED, cloudStopped: CLOUD_STOPPED } as const;
 
 /** US-01 AC5: said while this device refuses the record's saves; US-09 AC2i: or will take none. Beside
  *  the storage button, and on a phone also atop My health and Chat, since the button sits in the Account tab (US-62 AC34). */
 export function LocalSaveAlert({ backend }: { backend: Backend }) {
   const localRefused = useLocalSaveRefused(backend);
   const stopped = useSyncExternalStore(onHealthWritesChange, writesStoppedHere, writesStoppedHere);
-  if (backend === 'local' && stopped) return <span className="hr-sync-error" role="alert">{WRITES_STOPPED}</span>;
-  return localRefused ? <span className="hr-sync-error" role="alert">{LOCAL_SAVE_REFUSED}</span> : null;
+  const alert = saveAlert(backend, stopped, localRefused, useSaveFacts(backend).status);
+  return alert === 'none' ? null : <span className="hr-sync-error" role="alert">{SAVE_ALERT_WORDS[alert]}</span>;
 }
 
 /** US-09 AC30: a connected record's save words (lead A1 step d, owner 2026-11-12),
@@ -106,7 +118,7 @@ const deviceHolds = ({ status, pendingSync }: SaveFacts): boolean =>
   pendingSync && status === 'not-saved-on-device';
 
 /** The page's one sign-in state (US-09 AC48), seeded at boot and raised when a sign-in ends. */
-const useSignIn = (): SignIn => useSyncExternalStore(subscribeSignIn, currentSignIn, currentSignIn);
+export const useSignIn = (): SignIn => useSyncExternalStore(subscribeSignIn, currentSignIn, currentSignIn);
 
 /** US-09 AC48: the bar's words for a Drive or Dropbox sign-in that ended. */
 const SIGN_IN_AGAIN = { 'google-drive': 'Sign in to Google again', dropbox: 'Sign in to Dropbox again' } as const;
@@ -265,6 +277,16 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
       forgetBackend();
       location.reload();
     });
+  // A page that never read its cloud asks first (US-09 AC49, AC50). Decided again on a yes, so the words a
+  // person agrees to are still true: an edit or another tab may have changed what this browser holds.
+  // Asked only while no move runs; the move's claim answers it (AC51).
+  const chooseThisBrowserOnly = (provider: LostSignIn['provider'], asked?: ExitQuestion): void => {
+    if (getSwitchFlow().kind !== 'idle') return;
+    const choice = exitChoice();
+    const question = choice === 'askEmpty' ? 'empty' : choice === 'askStale' ? 'stale' : undefined;
+    if (question && question !== asked) return askBeforeExit(question);
+    forgetProvider(provider);
+  };
 
   const state = storageState(backend, signIn);
   const provider = backend === 'local' ? '' : PROVIDERS[backend].label;
@@ -289,7 +311,7 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
           {signedOut ? (reconnecting ? 'Reconnecting…' : `Reconnect ${label}`) : 'Retry'}
         </button>
         <span className="hr-sync-detail">
-          Your record is safe in your {label}.
+          Your record is safe {safeWhere(reconnect.provider)}.
           {/* A page whose device writes are refused keeps nothing in this browser. */}
           {signedOut && ' Sign in again to keep it in step.'}
           {writesAllowed && (signedOut
@@ -297,7 +319,15 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
             : ` Anything you change now is kept in this browser and merges as soon as ${label} answers again.`)}
         </span>
         <div className="hr-sync-more">
-          <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => forgetProvider(reconnect.provider)}>Use this browser only</button>
+          {signIn.kind === 'confirmingExit' ? (
+            <>
+              <span className="hr-sync-detail">{(signIn.question === 'stale' ? staleCopyQuestion : noCopyQuestion)(reconnect.provider)}</span>
+              <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => chooseThisBrowserOnly(reconnect.provider, signIn.question)}>Use this browser only</button>
+              <button type="button" className="hr-sync-link" onClick={exitAnswered}>Cancel</button>
+            </>
+          ) : (
+            <button type="button" className="hr-sync-link" disabled={!idle} onClick={() => chooseThisBrowserOnly(reconnect.provider)}>Use this browser only</button>
+          )}
         </div>
         {error && <span className="hr-sync-error">{error}</span>}
       </div>

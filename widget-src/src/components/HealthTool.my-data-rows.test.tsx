@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, configure, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveLabValues, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 
 vi.mock('chart.js', () => {
   class Chart { static register() {} destroy() {} update() {} }
@@ -24,7 +24,7 @@ vi.mock('chartjs-adapter-date-fns', () => ({}));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
@@ -34,6 +34,7 @@ import { HealthTool } from './HealthTool';
 import { trackProductEvent } from '../lib/server-api';
 import { openSettings } from '../testing/settings';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
+import { seedOpenLabValues } from '../testing/seed-record';
 
 // Adversary R7 (2026-11-02): each Add waits on the store's real async save. Under a
 // loaded full run that took longer than waitFor's default 1 s, so two AC10 tests
@@ -67,14 +68,14 @@ afterEach(async () => {
 
 /** A man of 51, 178 cm: LDL on two days, HbA1c on one, weight and a pressure on two, sodium with its printed range, vitamin D without one. */
 async function seed(profile: Record<string, unknown> = { sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5 }) {
-  await saveChangedMeasurements({ ...profile, unitSystem: 'si' }, {});
+  await saveChangedMeasurements({ ...profile, unitSystem: 'si' }, {}, getShownErase());
   for (const [metric, value, day] of [
     ['ldl', 2.9, '2026-04-02'], ['ldl', 3.4, '2026-10-12'], ['hba1c', 36, '2026-10-12'],
     ['weight', 84, '2026-09-20'], ['weight', 81, '2026-10-20'],
     ['systolic_bp', 132, '2026-09-20'], ['diastolic_bp', 84, '2026-09-20'],
     ['systolic_bp', 126, '2026-10-20'], ['diastolic_bp', 80, '2026-10-20'],
-  ] as const) await addMeasurement(metric, value, `${day}T00:00:00.000Z`);
-  await bulkSaveLabValues([
+  ] as const) await addMeasurement(metric, value, `${day}T00:00:00.000Z`, getShownErase());
+  await seedOpenLabValues([
     { metricName: 'sodium', value: 139, unit: 'mmol/L', referenceLow: 135, referenceHigh: 145, recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
     { metricName: 'vitamin_d', value: 72, unit: 'nmol/L', recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
   ]);
@@ -129,7 +130,7 @@ describe('US-62 AC8: one row per value on a phone', () => {
     expect(row(view, 'Vitamin D (25-OH)').querySelector('.md-row-meta')!.textContent).toBe('Oct 2026');
     const apob = row(view, 'ApoB');
     expect(apob.querySelector('.md-row-add')!.textContent).toBe('Add');
-    expect(apob.querySelector('.md-row-meta')!.textContent).toBe('Optimal <0.50');
+    expect(apob.querySelector('.md-row-meta')!.textContent).toBe('Optimal <0.50 g/L');
   });
 
   it('a returning record\'s rows show its saved values from the first render, never Add (CI WebKit, PR 421)', async () => {
@@ -147,7 +148,7 @@ describe('US-62 AC8: one row per value on a phone', () => {
   it('a known minor: no adult targets on the rows, the waist target stays (US-07 AC6)', async () => {
     const year = new Date().getFullYear() - 12;
     await seed({ sex: 'male', heightCm: 150, birthYear: year, birthMonth: 1 });
-    await addMeasurement('waist', 70, '2026-10-20T00:00:00.000Z');
+    await addMeasurement('waist', 70, '2026-10-20T00:00:00.000Z', getShownErase());
     await flushRoadmapStore();
     const view = await renderTool();
     expect(row(view, 'LDL Cholesterol').querySelector('.md-row-meta')!.textContent).toBe('Oct 2026');
@@ -279,7 +280,7 @@ describe('US-62 AC10: the value page', () => {
 
     // Another writer replaces the systolic of that day before Save.
     const sys = fileRows('systolic_bp').find(r => r.recordedAt.startsWith('2026-10-20'))!;
-    expect(await correctValue(sys.id, 128)).toBe('ok');
+    expect(await correctValue(sys.id, 128, getShownErase())).toBe('ok');
     await flushRoadmapStore();
     const before = JSON.stringify([fileRows('systolic_bp'), fileRows('diastolic_bp')]);
     fireEvent.change(within(page).getByLabelText('Diastolic (bottom number)'), { target: { value: '78' } });
@@ -355,6 +356,64 @@ describe('US-62 AC11: All results as a table', () => {
     expect(tables()[0].hidden).toBe(true);
     expect(row(view, 'LDL Cholesterol')).toBeTruthy();
   });
+
+  // H79: at 390 px each grid is 397 inner against 334 visible, its date columns 91.
+  // Scrolled to the right edge (63), the vitals grid hid most of its first date
+  // column under the name column and showed a clipped sliver of it. Where Trend
+  // scrolls with the data (a phone), it snaps to whole columns; where Trend is
+  // sticky (desktop), it keeps the right edge, so New never slides under Trend.
+  // The blood grid always opens at its right edge.
+  async function openedAt(view: ReturnType<typeof render>, scrollWidth: number, clientWidth: number) {
+    await new Promise(r => setTimeout(r, 600)); // the hidden grids' mount scroll has given up
+    const scrollers = new Map<string, HTMLElement>();
+    for (const sel of ['.bt-vitals-card .bt-timeline-scroll', '.bt-timeline:not(.bt-vitals-card) .bt-timeline-scroll']) {
+      const el = view.container.querySelector<HTMLElement>(`.md-table ${sel}`);
+      if (!el) continue;
+      let left = 0;
+      Object.defineProperty(el, 'scrollWidth', { configurable: true, get: () => scrollWidth });
+      Object.defineProperty(el, 'clientWidth', { configurable: true, get: () => clientWidth });
+      Object.defineProperty(el, 'scrollLeft', { configurable: true, get: () => left,
+        set: (v: number) => { left = Math.min(Math.max(v, 0), scrollWidth - clientWidth); } });
+      el.querySelectorAll<HTMLElement>('.bt-header-row .bt-cell-value').forEach(cell =>
+        Object.defineProperty(cell, 'offsetWidth', { configurable: true, get: () => 91 }));
+      scrollers.set(sel.startsWith('.bt-vitals') ? 'vitals' : 'blood', el);
+    }
+    fireEvent.click(view.getByRole('button', { name: 'All results as a table' }));
+    return { vitals: scrollers.get('vitals')!.scrollLeft, blood: scrollers.get('blood')?.scrollLeft };
+  }
+
+  it('H79: at 390 the vitals grid opens on whole columns (0) and the blood grid at its right edge (63)', async () => {
+    await seed();
+    expect(await openedAt(await renderTool(), 397, 334)).toEqual({ vitals: 0, blood: 63 });
+  });
+
+  it('H79: with more than a column of overflow (154), the vitals grid scrolls whole columns (91)', async () => {
+    await seed();
+    expect(await openedAt(await renderTool(), 488, 334)).toEqual({ vitals: 91, blood: 154 });
+  });
+
+  it('H79: where Trend is sticky (desktop CSS), the vitals grid keeps its right edge, so New stays clear of Trend', async () => {
+    await seed();
+    const view = await renderTool();
+    const real = window.getComputedStyle;
+    const spy = vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) => {
+      const style = real(el, pseudo);
+      return el.classList.contains('bt-cell-trend') ? { ...style, position: 'sticky' } as CSSStyleDeclaration : style;
+    });
+    try {
+      expect(await openedAt(view, 488, 334)).toEqual({ vitals: 154, blood: 154 });
+    } finally { spy.mockRestore(); }
+  });
+
+  it('H79: with no saved vitals, the lone New column is a whole column too (320 px: 42 overflow -> 0)', async () => {
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+    await addMeasurement('ldl', 3.4, '2026-10-12T00:00:00.000Z', getShownErase());
+    await flushRoadmapStore();
+    const view = await renderTool();
+    expect(view.container.querySelector('.bt-vitals-card .bt-header-row .bt-cell-draft-date')).not.toBeNull();
+    expect(view.container.querySelectorAll('.bt-vitals-card .bt-header-row .bt-cell-date').length).toBe(0);
+    expect((await openedAt(view, 306, 264)).vitals).toBe(0);
+  });
 });
 
 describe('US-62 AC12, AC24: About you in Settings on a phone', () => {
@@ -376,6 +435,33 @@ describe('US-62 AC12, AC24: About you in Settings on a phone', () => {
     await waitFor(() => expect(view.container.querySelector('.health-section-title')).not.toBeNull());
     expect(sectionOrder(view)[0]).toBe('Starting info');
     expect(sectionOrder(view)).not.toContain('About you');
+  });
+});
+
+// W1-3 pin: before H71 a latch read the device's mirror (MIRROR_KEY) at mount and showed the first-time
+// vitals card unless the mirror held a vitals row. Every mirror state now opens the same rows.
+describe('US-62 AC8 (W1-3): the vitals rows show whatever the device mirror held at mount', () => {
+  const rowsOf = (view: ReturnType<typeof render>, topic: string) => [...view.container.querySelectorAll(`[data-topic="${topic}"] .md-row`)]
+    .map(r => r.querySelector('.md-row-label')?.textContent);
+  it.each([
+    ['no mirror (a fresh browser)', false, 1],
+    ['a mirror with no vitals row', false, 2],
+    ['a mirror with vitals rows', true, 2],
+  ] as const)('%s: Waist and Blood Pressure are rows, never first-time fields', async (_, vitals, visits) => {
+    if (vitals) await seed();
+    else {
+      await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+      await addMeasurement('ldl', 3.0, '2026-09-01T00:00:00.000Z', getShownErase());
+      await flushRoadmapStore();
+    }
+    for (let i = 1; i < visits; i++) { await renderTool(); cleanup(); }
+    const mirror = localStorage.getItem('health_roadmap_data');
+    expect(mirror === null).toBe(visits === 1);
+    if (mirror) expect(JSON.parse(mirror).previousMeasurements.some((m: { metricType: string }) => m.metricType === 'weight')).toBe(vitals);
+    const view = await renderTool();
+    expect(rowsOf(view, 'weight')).toContain('Waist');
+    expect(rowsOf(view, 'bloodPressure')).toContain('Blood Pressure');
+    expect(view.container.querySelector('#waistCm, #systolicBp, #diastolicBp')).toBeNull();
   });
 });
 
@@ -422,7 +508,7 @@ describe('US-62 AC10 review fixes: what Add expects is frozen when entry begins 
     fireEvent.click(row(view, 'LDL Cholesterol'));
     fireEvent.change(page(view).querySelector('input[type="date"]')!, { target: { value: '2026-10-30' } });
     fireEvent.change(within(page(view)).getByLabelText(/Value/), { target: { value: '2.2' } });
-    await remoteWrite(() => addMeasurement('ldl', 5.0, '2026-10-30T00:00:00.000Z'));
+    await remoteWrite(() => addMeasurement('ldl', 5.0, '2026-10-30T00:00:00.000Z', getShownErase()));
     await waitFor(() => expect(page(view).querySelector('.md-history')!.textContent).toContain('5.0'));
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(within(page(view)).getByRole('alert').textContent).toBe('This value changed on another device, so your edit was not saved.'));
@@ -444,7 +530,7 @@ describe('US-62 AC10 review fixes: what Add expects is frozen when entry begins 
     fireEvent.change(page(view).querySelector('input[type="date"]')!, { target: { value: '2026-10-12' } });
     fireEvent.change(within(page(view)).getByLabelText(/Value/), { target: { value: '3.1' } });
     const old = fileRows('ldl').find(r => r.recordedAt.startsWith('2026-10-12'))!;
-    await remoteWrite(() => correctValue(old.id, 3.6));
+    await remoteWrite(() => correctValue(old.id, 3.6, getShownErase()));
     await waitFor(() => expect(page(view).querySelector('.md-history')!.textContent).toContain('3.6'));
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Save correction' }));
     await waitFor(() => expect(within(page(view)).getByRole('alert').textContent).toMatch(/changed on another device/));
@@ -460,7 +546,7 @@ describe('US-62 AC10 review fixes: what Add expects is frozen when entry begins 
     fireEvent.change(page(view).querySelector('input[type="date"]')!, { target: { value: '2026-10-29' } });
     fireEvent.change(within(page(view)).getByLabelText('Systolic (top number)'), { target: { value: '124' } });
     fireEvent.change(within(page(view)).getByLabelText('Diastolic (bottom number)'), { target: { value: '78' } });
-    await remoteWrite(() => addMeasurement('systolic_bp', 140, '2026-10-29T00:00:00.000Z'));
+    await remoteWrite(() => addMeasurement('systolic_bp', 140, '2026-10-29T00:00:00.000Z', getShownErase()));
     await waitFor(() => expect(fileRows('systolic_bp').some(r => r.recordedAt.startsWith('2026-10-29'))).toBe(true));
     await new Promise(r => setTimeout(r, 50));
     fireEvent.click(page(view).querySelector('.md-add-save')!);

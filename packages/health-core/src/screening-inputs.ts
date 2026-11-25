@@ -28,7 +28,7 @@ function castEnum<T extends string>(value: string, valid: readonly T[]): T | und
  *  `lastDoneBy` (now) or before it, as the form offers only past months; a follow-up date
  *  may be future. That month is the one at UTC+14, the earliest time zone, so the widget
  *  (local time) and the chat server (UTC) agree for every user. */
-function screeningDate(value: string, lastDoneBy?: Date): string | undefined {
+export function screeningDate(value: string, lastDoneBy?: Date): string | undefined {
   const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(value);
   if (!m) return undefined;
   const [year, month, day] = [Number(m[1]), Number(m[2]), m[3] === undefined ? 1 : Number(m[3])];

@@ -19,13 +19,13 @@ import { serveClientMetadata } from '../lib/mcp-cimd.test-helpers';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { DRIVE_FOLDER_NAME } from '../../packages/health-core/src/drive-rest';
-import { ToolContractError } from '../../packages/health-core/src/mcp-tools';
+import { ToolContractError } from '../../packages/health-core/src/mcp-tool-contract';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { type AccessPayload, resetMcpMemory } from '../lib/mcp-grants.server';
 import { type McpProvider } from '../lib/mcp-providers.server';
 import { packSealed, unpackSealed } from '../lib/mcp-seal.server';
-import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
+import { type AdapterFactory, mcpEndpoint } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
 const ISSUER = 'https://mcp.example.test';
@@ -34,12 +34,16 @@ const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 const NOW = '2026-09-02T10:00:00.000Z';
 const TODAY = NOW.slice(0, 10);
+/** Eleven seconds after NOW: past a receipt's pause (US-36 AC9, US-35 AC19). */
+const LATER = new Date(Date.parse(NOW) + 11_000).toISOString();
 /** The user's own words, quoted in every confirming call and commit (US-36 AC9, US-35 AC7, 2026-10-07). */
 const APPROVED = 'Yes, go ahead';
 
 let cloud: MemoryCloud;
 /** Which provider the factory was asked for, per call. */
 let builtFor: McpProvider[] = [];
+/** The folder every case's endpoint opens, set before each case; undefined is the real factory (this file's own state). */
+let makeAdapter: AdapterFactory | undefined;
 
 beforeEach(() => {
   // A client id that is a URL means a CIMD fetch: answered here, so no DNS or socket leaves the machine.
@@ -54,15 +58,14 @@ beforeEach(() => {
   resetMcpMemory();
   cloud = new MemoryCloud();
   builtFor = [];
-  setAdapterFactory((provider) => {
+  makeAdapter = (provider) => {
     builtFor.push(provider);
     return new MemoryAdapter(cloud);
-  });
+  };
   stubTokenEndpoints();
 });
 
 afterEach(() => {
-  setAdapterFactory(null);
   vi.unstubAllGlobals();
   delete process.env.MCP_SEAL_KEYS;
   delete process.env.GOOGLE_DRIVE_CLIENT_ID;
@@ -172,14 +175,15 @@ async function connect(label: string): Promise<{ clientId: string; access: strin
   return { clientId, access: tokens.access_token, refresh: tokens.refresh_token, to };
 }
 
-async function callTool(access: string, name: string, args: unknown) {
+async function callTool(access: string, name: string, args: unknown, now = NOW) {
   const res = await mcpEndpoint(
     new Request(`${ISSUER}/mcp`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
     }),
-    NOW,
+    now,
+    { makeAdapter },
   );
   expect(res.status).toBe(200);
   const answer = (await res.json()) as { result: { content: Array<{ text: string }>; isError?: boolean } };
@@ -294,7 +298,7 @@ describe('a Google connection, end to end (US-32 phase 2)', () => {
 describe('the provider is sealed, not asserted (US-32 phase 2)', () => {
   it('a Dropbox token reaches Dropbox and never Google', async () => {
     const { access } = await connect('Dropbox');
-    setAdapterFactory(null); // the real factory, chosen by the sealed provider
+    makeAdapter = undefined; // the real factory, chosen by the sealed provider
 
     const hosts: string[] = [];
     vi.stubGlobal('fetch', vi.fn(async (input: string | URL) => {
@@ -354,7 +358,7 @@ describe('the provider is sealed, not asserted (US-32 phase 2)', () => {
 describe('the real adapter finds the file the widget made (US-32 phase 2)', () => {
   it('reads the record out of the app folder over a Google connection', async () => {
     const { access } = await connect('Google Drive');
-    setAdapterFactory(null);
+    makeAdapter = undefined;
 
     const file = createEmptyFile({ deviceId: 'phone', now: '2026-01-01T00:00:00.000Z' });
     const asked: string[] = [];
@@ -427,9 +431,9 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
     // does NOT dress up as a storage problem — it means we broke our own
     // contract. It used to escape the endpoint entirely and become a 500 the
     // vendor could not match to any request.
-    setAdapterFactory(() => {
+    makeAdapter = () => {
       throw new ToolContractError('a bug in us');
-    });
+    };
     const res = await mcpEndpoint(
       new Request(`${ISSUER}/mcp`, {
         method: 'POST',
@@ -437,6 +441,7 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
         body: JSON.stringify({ jsonrpc: '2.0', id: 'abc', method: 'tools/call', params: { name: 'read_record', arguments: {} } }),
       }),
       NOW,
+      { makeAdapter },
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { id: string; error: { code: number; message: string } };
@@ -451,13 +456,13 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
     // A bug of ours, thrown where the record is written. It used to fall into
     // the catch-all and come back worded as "the record in Dropbox did not
     // answer" — sending the user to check a cloud folder that was fine.
-    setAdapterFactory(() => {
+    makeAdapter = () => {
       const adapter = new MemoryAdapter(cloud);
       adapter.write = () => {
         throw new TypeError('boom');
       };
       return adapter;
-    });
+    };
     const res = await mcpEndpoint(
       new Request(`${ISSUER}/mcp`, {
         method: 'POST',
@@ -470,6 +475,7 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
         }),
       }),
       NOW,
+      { makeAdapter },
     );
     const body = (await res.json()) as { id: string; result?: unknown; error: { code: number; message: string } };
     expect(body.result).toBeUndefined();
@@ -483,7 +489,7 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
     // The nuance the rethrow must not swallow: `fetch` rejects with a bare
     // TypeError when the network is down, so the ADAPTER owns it and raises a
     // StorageError. Real DropboxAdapter here, not the memory one.
-    setAdapterFactory(() => new DropboxAdapter('dropbox-access'));
+    makeAdapter = () => new DropboxAdapter('dropbox-access');
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: string | URL) => {
@@ -507,7 +513,7 @@ describe('US-37 AC1 — no folder nudge on Google Drive', () => {
     cloud.docs.set('labs.pdf', new Blob([new Uint8Array(4)]));
     const listing = new MemoryAdapter(cloud);
     const list = vi.spyOn(listing, 'list');
-    setAdapterFactory(() => listing);
+    makeAdapter = () => listing;
     const { access } = await connect('Google Drive');
     const answer = await callTool(access, 'read_record', {});
     expect(answer.isError).toBe(false);
@@ -527,7 +533,7 @@ describe('US-36 AC8 — file_results works on a Google Drive record, where the f
     expect(propose.isError).toBe(false);
     const data = JSON.parse(propose.text) as { receipt: string; candidates: Array<{ id: string }> };
     expect(data.candidates).toHaveLength(1);
-    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [], approval: APPROVED } }, LATER);
     expect(commit.isError).toBe(false);
     expect(commit.text).toContain('Saved to the user’s Google Drive');
     // Written under the name the report PRINTED (US-21 phase 3: the printed name is what chooses a conversion); the slot is the catalogue key either way.
