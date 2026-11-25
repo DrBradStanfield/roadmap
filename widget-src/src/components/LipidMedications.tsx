@@ -1,12 +1,12 @@
 // Cholesterol medicine questions, one section of the form (moved out of InputPanel).
-import { optionElements } from './form-kit';
+import { recordedChoice } from './form-kit';
 import type { Placement } from './MyHealth';
 import { STATIN_NAMES, STATIN_DRUGS, EZETIMIBE_OPTIONS, PCSK9I_OPTIONS, BEMPEDOIC_ACID_OPTIONS, type MedicationInputs } from '@roadmap/health-core/types';
 import { medicationsToInputs, type ApiMedication, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
 import { type LipidMarker, LIPID_MEDS_IN_STEPS, lipidTargetSentence } from '@roadmap/health-core/suggestions';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { lipidCascade } from '@roadmap/health-core/medication-cascades';
-import { MEDICATION_TEXT, optionsShowing, escalationOptions, doseOptions } from '@roadmap/health-core/input-form';
+import { MEDICATION_TEXT, escalationOptions, doseOptions } from '@roadmap/health-core/input-form';
 
 interface LipidMedicationsProps {
   place: Placement;
@@ -46,19 +46,13 @@ export function LipidMedications(props: LipidMedicationsProps) {
       <div className="statin-selection-row">
         <select
           id="statin-name"
-          value={statinDrug}
-          onChange={(e) => writeMedication(medInputs, cascadeMode, 'statin', e.target.value)}
-        >
-          {optionElements(optionsShowing(STATIN_NAMES, statinDrug))}
-        </select>
+          {...recordedChoice(STATIN_NAMES, statinDrug, (value) => writeMedication(medInputs, cascadeMode, 'statin', value))}
+        />
         {availableDoses.length > 0 && (
           <select
             id="statin-dose"
-            value={statinDose ?? ''}
-            onChange={(e) => writeMedication(medInputs, cascadeMode, 'statin_dose', e.target.value)}
-          >
-            {optionElements(optionsShowing(doseOptions(availableDoses), statinDose === null ? '' : String(statinDose), 'Add dose'))}
-          </select>
+            {...recordedChoice(doseOptions(availableDoses), statinDose === null ? '' : String(statinDose), (value) => writeMedication(medInputs, cascadeMode, 'statin_dose', value), 'Add dose')}
+          />
         )}
       </div>
       {place.on('statin', 'statin_dose')}
@@ -70,11 +64,8 @@ export function LipidMedications(props: LipidMedicationsProps) {
       <label htmlFor="ezetimibe">{MEDICATION_TEXT.ezetimibeLabel}</label>
       <select
         id="ezetimibe"
-        value={medInputs.ezetimibe || 'not_yet'}
-        onChange={e => writeMedication(medInputs, cascadeMode, 'ezetimibe', e.target.value)}
-      >
-        {optionElements(optionsShowing(EZETIMIBE_OPTIONS, medInputs.ezetimibe || 'not_yet'))}
-      </select>
+        {...recordedChoice(EZETIMIBE_OPTIONS, medInputs.ezetimibe || 'not_yet', (value) => writeMedication(medInputs, cascadeMode, 'ezetimibe', value))}
+      />
       {place.on('ezetimibe')}
     </div>
   );
@@ -84,11 +75,8 @@ export function LipidMedications(props: LipidMedicationsProps) {
       <label htmlFor="pcsk9i">{MEDICATION_TEXT.pcsk9iLabel}</label>
       <select
         id="pcsk9i"
-        value={medInputs.pcsk9i || 'not_yet'}
-        onChange={e => writeMedication(medInputs, cascadeMode, 'pcsk9i', e.target.value)}
-      >
-        {optionElements(optionsShowing(PCSK9I_OPTIONS, medInputs.pcsk9i || 'not_yet'))}
-      </select>
+        {...recordedChoice(PCSK9I_OPTIONS, medInputs.pcsk9i || 'not_yet', (value) => writeMedication(medInputs, cascadeMode, 'pcsk9i', value))}
+      />
       {place.on('pcsk9i')}
     </div>
   );
@@ -98,11 +86,8 @@ export function LipidMedications(props: LipidMedicationsProps) {
       <label htmlFor="bempedoic-acid">{MEDICATION_TEXT.bempedoicAcidLabel}</label>
       <select
         id="bempedoic-acid"
-        value={medInputs.bempedoicAcid || 'not_yet'}
-        onChange={e => writeMedication(medInputs, cascadeMode, 'bempedoic_acid', e.target.value)}
-      >
-        {optionElements(optionsShowing(BEMPEDOIC_ACID_OPTIONS, medInputs.bempedoicAcid || 'not_yet'))}
-      </select>
+        {...recordedChoice(BEMPEDOIC_ACID_OPTIONS, medInputs.bempedoicAcid || 'not_yet', (value) => writeMedication(medInputs, cascadeMode, 'bempedoic_acid', value))}
+      />
       {place.on('bempedoic_acid')}
     </div>
   );
@@ -175,11 +160,8 @@ export function LipidMedications(props: LipidMedicationsProps) {
           )}
           <select
             id="statin-escalation"
-            value={medInputs.statinEscalation || 'not_yet'}
-            onChange={e => writeMedication(medInputs, cascadeMode, 'statin_escalation', e.target.value)}
-          >
-            {optionElements(optionsShowing(escalationOptions(step), medInputs.statinEscalation || 'not_yet'))}
-          </select>
+            {...recordedChoice(escalationOptions(step), medInputs.statinEscalation || 'not_yet', (value) => writeMedication(medInputs, cascadeMode, 'statin_escalation', value))}
+          />
           {place.on('statin_escalation')}
         </div>
       )}

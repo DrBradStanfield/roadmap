@@ -105,16 +105,17 @@ Examples in this repo:
   exported `transition`; the hook sends events and runs the timers the phase asks
   for. `useHighlights.test.tsx` has the table (US-07 AC3).
 - `widget-src/src/lib/remote-replay.ts`: one named state
-  (`loading | loading-held | idle | held`), each event a method;
-  `remote-replay.test.ts` drives it through its states and events (US-34 AC4).
+  (`loading | loading-held | idle | held`), changed only by its exported pure
+  `transition`, which returns the read to run; each method sends one event.
+  `remote-replay.test.ts` has the table (US-34 AC4).
 - `widget-src/src/hooks/useErase.ts`: runs on the erase machine
   (`widget-src/src/lib/erase-machine.ts`, fix 4): one `EraseState` union
   (`loading | idle | erasing`, with the erase shown and heard), a pure
   `transition` with a table test, and effects run through doors. The
   `erasing` boolean and `erasingNow` ref are gone.
 
-None of these yet has a separate pure `transition` function. The first PR that
-writes one sets the pattern; keep it small.
+All three now have a separate pure `transition` (remote-replay's since R13
+PR 1). A new machine follows the same shape; keep it small.
 
 ### Composition
 
