@@ -34,13 +34,13 @@ vi.mock('../lib/storage', () => ({ healthWritesAllowed: () => !store.stopped, pa
 import { useProfileSave } from './useProfileSave';
 
 function setup(start: Partial<HealthInputs> = {}, units = { pending: (): 'si' | 'conventional' | undefined => undefined, saved: vi.fn() }) {
-  const relay = { saved: vi.fn() };
+  const relay = { settled: vi.fn() };
   const writeRefused = vi.fn();
   const view = renderHook(() => {
     const [inputs, setInputs] = useState<Partial<HealthInputs>>(start);
     const inputsRef = useRef(inputs);
     inputsRef.current = inputs;
-    const save = useProfileSave({ inputs, inputsRef, setInputs, loaded: true, onClean: relay.saved, writeRefused, units });
+    const save = useProfileSave({ inputs, inputsRef, setInputs, loaded: true, onSettled: relay.settled, writeRefused, units });
     return { save, inputs, setInputs };
   });
   return { view, relay, writeRefused, units };
@@ -63,7 +63,7 @@ describe('US-34 AC4: clean releases a held remote change', () => {
     expect(view.result.current.save.profileDirty()).toBe(false);
     await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(true); });
     expect(store.saves).toEqual([]);
-    expect(relay.saved).toHaveBeenCalledTimes(1);
+    expect(relay.settled).toHaveBeenCalledTimes(1);
   });
 
   it('an edit is dirty; its save sends only the profile, against the saved copy, then releases the relay', async () => {
@@ -74,7 +74,7 @@ describe('US-34 AC4: clean releases a held remote change', () => {
     await act(async () => { await view.result.current.save.flushProfile('e1'); });
     expect(store.saves).toEqual([{ current: { heightCm: 172 }, previous: { heightCm: 170 }, erase: 'e1' }]);
     expect(view.result.current.save.profileDirty()).toBe(false);
-    expect(relay.saved).toHaveBeenCalledTimes(1);
+    expect(relay.settled).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -86,7 +86,7 @@ describe('US-34 AC7a: local writes stopped end this tab\'s unit switch', () => {
     await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(true); });
     expect(store.saves).toEqual([]);
     expect(units.saved).toHaveBeenCalledWith('conventional');
-    expect(relay.saved).toHaveBeenCalledTimes(1);
+    expect(relay.settled).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -117,7 +117,7 @@ describe('saving: what a save leaves behind', () => {
     const pending = view.result.current.save.flushProfile(store.erase);
     act(() => view.result.current.setInputs(p => ({ ...p, heightCm: 181 })));
     await act(async () => { open(); await pending; });
-    expect(relay.saved).not.toHaveBeenCalled();
+    expect(relay.settled).not.toHaveBeenCalled();
     expect(view.result.current.save.profileDirty()).toBe(true);
   });
 
@@ -156,13 +156,26 @@ describe('saving: what a save leaves behind', () => {
 });
 
 describe('kept: what the store refuses', () => {
-  it('US-02 AC5: an out-of-range value stays unsaved and dirty, and the relay keeps holding', async () => {
+  it('US-02 AC5, US-34 AC8 (H14): an out-of-range value stays unsaved, dirty and in the form; the save still settles, ending a hold', async () => {
     const { view, relay } = setup({});
     act(() => view.result.current.setInputs({ heightCm: 999 }));
     store.next = { ok: true, refused: { heightCm: 999 } };
     await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(view.result.current.save.profileDirty()).toBe(true);
-    expect(relay.saved).not.toHaveBeenCalled();
+    expect(view.result.current.inputs.heightCm).toBe(999);
+    expect(relay.settled).toHaveBeenCalledTimes(1);
+  });
+
+  it('US-34 AC8: a refused value and an edit made while the save was on its way: the hold waits for that edit\'s save', async () => {
+    const { view, relay } = setup({});
+    act(() => view.result.current.setInputs({ heightCm: 999 }));
+    store.next = { ok: true, refused: { heightCm: 999 } };
+    let open!: () => void;
+    store.gate = new Promise<void>(r => { open = r; });
+    const pending = view.result.current.save.flushProfile(store.erase);
+    act(() => view.result.current.setInputs(p => ({ ...p, heightCm: 998 })));
+    await act(async () => { open(); await pending; });
+    expect(relay.settled).not.toHaveBeenCalled();
   });
 
   it('US-54 AC5b: a refused birth pair goes back to the record\'s and says why until the next birth edit', async () => {
@@ -183,6 +196,6 @@ describe('kept: what the store refuses', () => {
     store.next = { ok: false };
     await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(false); });
     expect(writeRefused).toHaveBeenCalledTimes(1);
-    expect(relay.saved).not.toHaveBeenCalled();
+    expect(relay.settled).not.toHaveBeenCalled();
   });
 });

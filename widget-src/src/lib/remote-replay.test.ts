@@ -24,7 +24,7 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     relay.arrived(true);
     expect(apply).not.toHaveBeenCalled();
 
-    relay.saved();
+    relay.settled();
     expect(apply).toHaveBeenCalledTimes(1);
   });
 
@@ -33,14 +33,14 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     const relay = ready(apply);
 
     relay.arrived(true);
-    relay.saved();
-    relay.saved();
+    relay.settled();
+    relay.settled();
     expect(apply).toHaveBeenCalledTimes(1);
   });
 
   it('does nothing on a save when no change was held', () => {
     const apply = vi.fn();
-    ready(apply).saved();
+    ready(apply).settled();
     expect(apply).not.toHaveBeenCalled();
   });
 
@@ -50,7 +50,7 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
 
     relay.arrived(true);
     relay.arrived(true);
-    relay.saved();
+    relay.settled();
     expect(apply).toHaveBeenCalledTimes(1);
   });
 
@@ -60,7 +60,7 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
 
     relay.arrived(true);
     relay.arrived(false);
-    relay.saved();
+    relay.settled();
     expect(apply).toHaveBeenCalledTimes(1);
   });
 
@@ -70,7 +70,7 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
 
     relay.arrived(true);
     expect(relay.reread()).toBe(true);
-    relay.saved();
+    relay.settled();
     expect(apply.mock.calls).toEqual([[true]]);
   });
 
@@ -79,7 +79,7 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     const relay = ready(apply);
 
     expect(relay.reread()).toBe(false);
-    relay.saved();
+    relay.settled();
     expect(apply.mock.calls).toEqual([[false]]);
   });
 
@@ -88,11 +88,11 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     const relay = createRemoteChangeRelay(apply);
 
     relay.arrived(false);
-    relay.saved();
+    relay.settled();
     expect(apply).not.toHaveBeenCalled();
     relay.loaded();
     relay.loaded();
-    relay.saved();
+    relay.settled();
     expect(apply.mock.calls).toEqual([[true]]);
   });
 
@@ -103,7 +103,7 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     relay.arrived(false);
     expect(relay.reread()).toBe(false); // the first read, still to come, would overwrite what this shows
     relay.loaded();
-    relay.saved();
+    relay.settled();
     expect(apply.mock.calls).toEqual([[false], [true]]);
   });
 
@@ -123,7 +123,7 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     relay.arrived(true);
     relay.shows();
     expect(apply.mock.calls).toEqual([[false]]);
-    relay.saved();
+    relay.settled();
     expect(apply).toHaveBeenCalledTimes(1);
   });
 
@@ -148,15 +148,15 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
   type Relay = ReturnType<typeof createRemoteChangeRelay<void>>;
   it.each<[string, boolean, (relay: Relay) => void, unknown[][]]>([
     ['a held echo waits, then the save that cleans the form applies it: clears, counts nothing', true,
-      r => { r.arrived(true, false); r.saved(); }, [[true, false]]],
+      r => { r.arrived(true, false); r.settled(); }, [[true, false]]],
     ['a clean echo applies at once: clears, counts nothing', true, r => { r.arrived(false, false); }, [[true, false]]],
-    ['an echo held with a plain change: one read, counted once', true, r => { r.arrived(true, false); r.arrived(true); r.saved(); }, [[true]]],
-    ['a plain change held, then an echo: one read, counted once', true, r => { r.arrived(true); r.arrived(true, false); r.saved(); }, [[true]]],
+    ['an echo held with a plain change: one read, counted once', true, r => { r.arrived(true, false); r.arrived(true); r.settled(); }, [[true]]],
+    ['a plain change held, then an echo: one read, counted once', true, r => { r.arrived(true); r.arrived(true, false); r.settled(); }, [[true]]],
     ['a held echo ended by a reread (an upload, a \'left\' re-read): clears, counts nothing', true,
       r => { r.arrived(true, false); r.reread(); }, [[true, false]]],
     ['a loading-held echo ended by loaded: clears, counts nothing', false, r => { r.arrived(false, false); r.loaded(); }, [[true, false]]],
     ['a held echo ended by saved: clears, counts nothing; a second save reads nothing', true,
-      r => { r.arrived(true, false); r.saved(); r.saved(); }, [[true, false]]],
+      r => { r.arrived(true, false); r.settled(); r.settled(); }, [[true, false]]],
     ['a reread with nothing held: neither', true, r => { r.reread(); }, [[false]]],
   ])('F2: %s', (_name, loaded, steps, calls) => {
     const apply = vi.fn();
@@ -182,7 +182,7 @@ const EVENTS: Record<string, HoldEvent> = {
   'echo dirty': { type: 'arrived', formDirty: true, counts: false },
   'echo clean': { type: 'arrived', formDirty: false, counts: false },
   loaded: { type: 'loaded' },
-  saved: { type: 'saved' },
+  settled: { type: 'settled' },
   reread: { type: 'reread' },
   shows: { type: 'shows' },
 };
@@ -193,7 +193,7 @@ const TABLE: Row[] = [
   ['loading', 'echo dirty', 'loading-held-', '-'],
   ['loading', 'echo clean', 'loading-held-', '-'],
   ['loading', 'loaded', 'idle', '-'],
-  ['loading', 'saved', 'loading', '-'], // early save: nothing held yet
+  ['loading', 'settled', 'loading', '-'], // early save: nothing held yet
   ['loading', 'reread', 'loading', 'own'],
   ['loading', 'shows', 'loading', 'own'],
   ['loading-held+', 'arrived dirty', 'loading-held+', '-'],
@@ -201,7 +201,7 @@ const TABLE: Row[] = [
   ['loading-held+', 'echo dirty', 'loading-held+', '-'], // a counting change waits beside the echo
   ['loading-held+', 'echo clean', 'loading-held+', '-'],
   ['loading-held+', 'loaded', 'idle', 'remote'],
-  ['loading-held+', 'saved', 'loading-held+', '-'], // out of order: a save before the first read keeps the wait
+  ['loading-held+', 'settled', 'loading-held+', '-'], // out of order: a save before the first read keeps the wait
   ['loading-held+', 'reread', 'loading-held+', 'own'], // the first read, still to come, takes the change in
   ['loading-held+', 'shows', 'loading', 'own'],
   ['loading-held-', 'arrived dirty', 'loading-held+', '-'],
@@ -209,7 +209,7 @@ const TABLE: Row[] = [
   ['loading-held-', 'echo dirty', 'loading-held-', '-'],
   ['loading-held-', 'echo clean', 'loading-held-', '-'],
   ['loading-held-', 'loaded', 'idle', 'uncounted'],
-  ['loading-held-', 'saved', 'loading-held-', '-'],
+  ['loading-held-', 'settled', 'loading-held-', '-'],
   ['loading-held-', 'reread', 'loading-held-', 'own'],
   ['loading-held-', 'shows', 'loading', 'own'],
   ['idle', 'arrived dirty', 'held+', '-'],
@@ -217,7 +217,7 @@ const TABLE: Row[] = [
   ['idle', 'echo dirty', 'held-', '-'],
   ['idle', 'echo clean', 'idle', 'uncounted'],
   ['idle', 'loaded', 'idle', '-'], // late: a second first-read signal reads nothing
-  ['idle', 'saved', 'idle', '-'], // late: a second save reads nothing
+  ['idle', 'settled', 'idle', '-'], // late: a second save reads nothing
   ['idle', 'reread', 'idle', 'own'],
   ['idle', 'shows', 'idle', 'own'],
   ['held+', 'arrived dirty', 'held+', '-'],
@@ -225,7 +225,7 @@ const TABLE: Row[] = [
   ['held+', 'echo dirty', 'held+', '-'],
   ['held+', 'echo clean', 'idle', 'remote'], // one read, counted once
   ['held+', 'loaded', 'held+', '-'], // late: the first read was shown long ago
-  ['held+', 'saved', 'idle', 'remote'],
+  ['held+', 'settled', 'idle', 'remote'],
   ['held+', 'reread', 'idle', 'remote'],
   ['held+', 'shows', 'idle', 'own'], // the erase machine counts its own read
   ['held-', 'arrived dirty', 'held+', '-'],
@@ -233,7 +233,7 @@ const TABLE: Row[] = [
   ['held-', 'echo dirty', 'held-', '-'],
   ['held-', 'echo clean', 'idle', 'uncounted'],
   ['held-', 'loaded', 'held-', '-'],
-  ['held-', 'saved', 'idle', 'uncounted'],
+  ['held-', 'settled', 'idle', 'uncounted'],
   ['held-', 'reread', 'idle', 'uncounted'],
   ['held-', 'shows', 'idle', 'own'],
 ];
@@ -252,14 +252,21 @@ describe('US-34 AC4 — the hold transition table', () => {
   // Late and out-of-order sequences from a fresh page (loading), folded through the transition alone.
   it.each<[string, string[], string, (HoldRead | '-')[]]>([
     ['a change before the first read, a save, then the read shown: applies once, at the read',
-      ['arrived clean', 'saved', 'loaded', 'saved'], 'idle', ['-', '-', 'remote', '-']],
+      ['arrived clean', 'settled', 'loaded', 'settled'], 'idle', ['-', '-', 'remote', '-']],
     ['the first-read signal twice: the second reads nothing', ['loaded', 'loaded'], 'idle', ['-', '-']],
     ['a hold, then the erase machine\'s read, then the late save: the save reads nothing',
-      ['loaded', 'arrived dirty', 'shows', 'saved'], 'idle', ['-', '-', 'own', '-']],
+      ['loaded', 'arrived dirty', 'shows', 'settled'], 'idle', ['-', '-', 'own', '-']],
     ['the erase machine\'s read before the first read: still loading, so a later change waits',
       ['shows', 'arrived clean', 'loaded'], 'idle', ['own', '-', 'remote']],
     ['an echo held, then a counting change: one read at the save, counted',
-      ['loaded', 'echo dirty', 'arrived dirty', 'saved'], 'idle', ['-', '-', '-', 'remote']],
+      ['loaded', 'echo dirty', 'arrived dirty', 'settled'], 'idle', ['-', '-', '-', 'remote']],
+    // US-34 AC8 (H14): `settled` fires on a save that landed or had a value refused, so a refused value never ends the hold for good.
+    ['AC8: a refused value left in the form: each change held, each save that settles ends its hold, once',
+      ['loaded', 'arrived dirty', 'settled', 'arrived dirty', 'settled', 'settled'], 'idle', ['-', '-', 'remote', '-', 'remote', '-']],
+    ['AC8: a re-read ends the hold, then the save settles late: it reads nothing',
+      ['loaded', 'arrived dirty', 'reread', 'settled'], 'idle', ['-', '-', 'remote', '-']],
+    ['AC8 out of order: the save settles, then a change arrives on the still-dirty form: held for the next save',
+      ['loaded', 'settled', 'arrived dirty'], 'held+', ['-', '-', '-']],
   ])('%s', (_name, events, last, reads) => {
     let state = STATES.loading;
     const seen: (HoldRead | '-')[] = [];
