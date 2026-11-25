@@ -139,40 +139,61 @@ const STAMPS = [
   '2026-05-01T07:00:00Z', '2026-05-02', '', 'not a stamp',
 ];
 
-function keyedFile(r: () => number, side: string): RoadmapFile {
+/** What a class of seeded copies may hold. */
+interface Gen {
+  /** Several rows for one key within a copy, or at most one. */
+  repeatedKeys: boolean;
+  /** An erase list naming ids from the row-id pool, from epoch 1, e or e + 1. */
+  eraseList: boolean;
+}
+
+const ROW_IDS = ['m_0', 'm_1', 'm_2', 'm_3', 's_0', 's_1', 's_2', 's_3'];
+const ERASE_TIMES = ['2026-05-01T07:30:00Z', '2026-05-01T08:00:00Z', '2026-05-02T00:00:00Z'];
+
+function keyedFile(r: () => number, side: string, gen: Gen): RoadmapFile {
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(r() * xs.length)];
   const n = (max: number) => Math.floor(r() * (max + 1));
   const stamp = () => ({ updatedAt: pick(STAMPS), ...(r() < 0.8 ? { lamport: n(2) } : null) });
+  /** Up to four keys drawn freely from `pool`, or a subset with each at most once. */
+  const keys = (pool: string[]): string[] => {
+    if (gen.repeatedKeys) return Array.from({ length: n(4) }, () => pick(pool));
+    return shuffled(pool, r).slice(0, n(pool.length));
+  };
   const f = file();
   f.meta.lastDeviceId = `dev_${side}`;
-  // Copies past different erases meet at the gate; none lists ids or keeps an
-  // erase time, so the higher epoch's copy wins whole.
-  f.meta.eraseEpoch = pick([0, 0, 1]);
-  f.medications = Array.from({ length: n(4) }, (): FileMedication => ({
-    id: `m_${n(3)}`, medicationKey: pick(['statin', 'ezetimibe']), drugName: pick(['a', 'b']),
-    doseValue: n(2), doseUnit: 'mg', ...stamp(),
+  const e = pick([0, 1, 2]);
+  f.meta.eraseEpoch = e;
+  if (r() < 0.5) f.meta.erasedAt = pick(ERASE_TIMES);
+  if (gen.eraseList) {
+    const ids = [...new Set(Array.from({ length: n(3) }, () => pick(ROW_IDS)))].sort();
+    f.erasedRows = { fromEpoch: pick([1, e, e + 1]), ids };
+  }
+  f.medications = keys(['statin', 'ezetimibe']).map((medicationKey): FileMedication => ({
+    id: `m_${n(3)}`, medicationKey, drugName: pick(['a', 'b']), doseValue: n(2), doseUnit: 'mg', ...stamp(),
   }));
-  f.supplements = Array.from({ length: n(4) }, (): FileSupplement => ({
-    id: `s_${n(3)}`, supplementKey: pick(['omega3', 'creatine']), supplementName: pick(['x', 'y']),
+  f.supplements = keys(['omega3', 'creatine']).map((supplementKey): FileSupplement => ({
+    id: `s_${n(3)}`, supplementKey, supplementName: pick(['x', 'y']),
     doseValue: n(2), doseUnit: 'g', status: pick(['active', 'stopped'] as const), startedAt: '2026-01-01', ...stamp(),
   }));
-  f.reminderPreferences = Array.from({ length: n(4) }, (): FileReminderPreference => ({
-    category: pick(['blood_test', 'blood_pressure']), enabled: r() < 0.5, ...stamp(),
+  f.reminderPreferences = keys(['blood_test', 'blood_pressure']).map((category): FileReminderPreference => ({
+    category, enabled: r() < 0.5, ...stamp(),
   }));
-  f.recommendationSnapshots = Array.from({ length: n(4) }, (): RecommendationSnapshot => ({
-    date: pick(['2026-05-01', '2026-05-02']),
-    suggestions: Array.from({ length: n(2) }, () => ({ id: pick(['s1', 's2']) }) as unknown as Suggestion),
+  f.recommendationSnapshots = keys(['2026-05-01', '2026-05-02']).map((date): RecommendationSnapshot => ({
+    date, suggestions: Array.from({ length: n(2) }, () => ({ id: pick(['s1', 's2']) }) as unknown as Suggestion),
   }));
   return f;
 }
 
-/** The keyed lists, as the merge returns them. */
+/** The keyed lists and the erase they sit under, as the merge returns them. */
 function keyed(f: RoadmapFile): string {
   return stableStringify({
     medications: f.medications,
     supplements: f.supplements,
     reminderPreferences: f.reminderPreferences,
     recommendationSnapshots: f.recommendationSnapshots,
+    eraseEpoch: f.meta.eraseEpoch,
+    erasedAt: f.meta.erasedAt,
+    erasedRows: f.erasedRows,
   }) ?? '';
 }
 
@@ -196,33 +217,47 @@ function shuffled<T>(xs: T[], r: () => number): T[] {
   return out;
 }
 
-describe('US-10 AC15: the keyed lists merge as a join, repeated keys included (500 seeds)', () => {
-  const SEEDS = 500;
+// Every class draws erase epochs from {0, 1, 2} and an erase time on half the copies.
+const CLASSES: Array<{ name: string; gen: Gen }> = [
+  { name: 'unique keys, no erase list', gen: { repeatedKeys: false, eraseList: false } },
+  { name: 'repeated keys, no erase list', gen: { repeatedKeys: true, eraseList: false } },
+  { name: 'unique keys, an erase list', gen: { repeatedKeys: false, eraseList: true } },
+  { name: 'repeated keys, an erase list', gen: { repeatedKeys: true, eraseList: true } },
+];
+const SEEDS = 500;
+
+describe.each(CLASSES)('US-10 AC15: the keyed lists, $name (500 seeds)', ({ gen }) => {
   const triples = Array.from({ length: SEEDS }, (_, i) => {
     const r = rng(i + 1);
-    return { r, a: keyedFile(r, 'a'), b: keyedFile(r, 'b'), c: keyedFile(r, 'c') };
+    return { r, a: keyedFile(r, 'a', gen), b: keyedFile(r, 'b', gen), c: keyedFile(r, 'c', gen) };
   });
 
-  it('is commutative', () => {
+  it('give the same result whichever copy is merged first', () => {
     for (const { a, b } of triples) expect(keyed(mergeFiles(a, b, OPTS))).toBe(keyed(mergeFiles(b, a, OPTS)));
   });
 
-  it('is associative', () => {
+  it('a merged record merged again with itself is unchanged', () => {
+    for (const { a, b } of triples) {
+      const ab = mergeFiles(a, b, OPTS);
+      expect(keyed(mergeFiles(ab, ab, OPTS))).toBe(keyed(ab));
+    }
+  });
+
+  it('a merged record merged again with either input is unchanged', () => {
+    for (const { a, b } of triples) {
+      const ab = mergeFiles(a, b, OPTS);
+      expect(keyed(mergeFiles(ab, a, OPTS))).toBe(keyed(ab));
+      expect(keyed(mergeFiles(ab, b, OPTS))).toBe(keyed(ab));
+    }
+  });
+
+  it.runIf(!gen.eraseList)('grouping does not matter among copies with no erase list', () => {
     for (const { a, b, c } of triples) {
       expect(keyed(mergeFiles(mergeFiles(a, b, OPTS), c, OPTS))).toBe(keyed(mergeFiles(a, mergeFiles(b, c, OPTS), OPTS)));
     }
   });
 
-  it('is idempotent: a copy merged with itself, or a merge merged again, changes nothing more', () => {
-    for (const { a, b } of triples) {
-      const once = mergeFiles(a, a, OPTS);
-      expect(keyed(mergeFiles(once, a, OPTS))).toBe(keyed(once));
-      const m = mergeFiles(a, b, OPTS);
-      expect(keyed(mergeFiles(m, m, OPTS))).toBe(keyed(m));
-    }
-  });
-
-  it('keeps the latest row by clock for each key, whatever the row order or the side', () => {
+  it.runIf(!gen.eraseList)('keeps the latest row by clock for each key, whatever the row order or the side', () => {
     for (const { r, a, b } of triples) {
       const a2 = { ...a, medications: shuffled(a.medications, r), supplements: shuffled(a.supplements, r), reminderPreferences: shuffled(a.reminderPreferences, r) };
       const all = (f: RoadmapFile, g: RoadmapFile) => ({
@@ -230,7 +265,8 @@ describe('US-10 AC15: the keyed lists merge as a join, repeated keys included (5
         supplements: latestByKey([...f.supplements, ...g.supplements], (x) => x.supplementKey),
         reminderPreferences: latestByKey([...f.reminderPreferences, ...g.reminderPreferences], (x) => x.category),
       });
-      // Past the erase gate only the copy at the higher epoch counts.
+      // With no erase list and no measurement, lab value or document to rescue,
+      // only the copy at the higher epoch counts past the gate.
       const [ea, eb] = [a.meta.eraseEpoch ?? 0, b.meta.eraseEpoch ?? 0];
       const want = all(ea >= eb ? a : b, ea === eb ? b : file());
       for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS), mergeFiles(a2, b, OPTS), mergeFiles(b, a2, OPTS)]) {
