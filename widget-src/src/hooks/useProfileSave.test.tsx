@@ -61,7 +61,7 @@ describe('US-34 AC4: clean releases a held remote change', () => {
     const { view, relay } = setup({ heightCm: 170 });
     act(() => view.result.current.save.markSaved({ heightCm: 170 }));
     expect(view.result.current.save.profileDirty()).toBe(false);
-    await act(async () => { expect(await view.result.current.save.flushProfile()).toBe(true); });
+    await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(true); });
     expect(store.saves).toEqual([]);
     expect(relay.saved).toHaveBeenCalledTimes(1);
   });
@@ -83,7 +83,7 @@ describe('US-34 AC7a: local writes stopped end this tab\'s unit switch', () => {
   it('a switch to US units pending: the flush writes nothing, ends the switch and releases the relay', async () => {
     store.stopped = true;
     const { view, relay, units } = setup({ unitSystem: 'conventional' }, { pending: () => 'conventional', saved: vi.fn() });
-    await act(async () => { expect(await view.result.current.save.flushProfile()).toBe(true); });
+    await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(true); });
     expect(store.saves).toEqual([]);
     expect(units.saved).toHaveBeenCalledWith('conventional');
     expect(relay.saved).toHaveBeenCalledTimes(1);
@@ -114,7 +114,7 @@ describe('saving: what a save leaves behind', () => {
     act(() => view.result.current.setInputs({ heightCm: 180 }));
     let open!: () => void;
     store.gate = new Promise<void>(r => { open = r; });
-    const pending = view.result.current.save.flushProfile();
+    const pending = view.result.current.save.flushProfile(store.erase);
     act(() => view.result.current.setInputs(p => ({ ...p, heightCm: 181 })));
     await act(async () => { open(); await pending; });
     expect(relay.saved).not.toHaveBeenCalled();
@@ -124,7 +124,7 @@ describe('saving: what a save leaves behind', () => {
   it('US-15 AC10: the chat copy gets the saved profile', async () => {
     const { view } = setup({});
     act(() => view.result.current.setInputs({ heightCm: 180, sex: 'male' }));
-    await act(async () => { await view.result.current.save.flushProfile(); });
+    await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(mirror.patches).toEqual([{ profile: { heightCm: 180, sex: 'male' } }]);
   });
 
@@ -141,7 +141,7 @@ describe('saving: what a save leaves behind', () => {
     const { view } = setup({ heightCm: 170, sex: 'male' });
     act(() => view.result.current.save.markSaved({ heightCm: 170, sex: 'male' }));
     act(() => view.result.current.setInputs({ sex: 'male' }));
-    await act(async () => { await view.result.current.save.flushProfile(); });
+    await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(view.result.current.save.profileDirty()).toBe(false);
     expect(mirror.patches).toEqual([{ profile: { sex: 'male' } }]);
   });
@@ -160,7 +160,7 @@ describe('kept: what the store refuses', () => {
     const { view, relay } = setup({});
     act(() => view.result.current.setInputs({ heightCm: 999 }));
     store.next = { ok: true, refused: { heightCm: 999 } };
-    await act(async () => { await view.result.current.save.flushProfile(); });
+    await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(view.result.current.save.profileDirty()).toBe(true);
     expect(relay.saved).not.toHaveBeenCalled();
   });
@@ -170,7 +170,7 @@ describe('kept: what the store refuses', () => {
     act(() => view.result.current.save.markSaved({ birthYear: 1980, birthMonth: 3 }));
     act(() => view.result.current.setInputs({ birthYear: 2030, birthMonth: 1 }));
     store.next = { ok: true, birthRefused: { birthYear: 2030, birthMonth: 1 } };
-    await act(async () => { await view.result.current.save.flushProfile(); });
+    await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(view.result.current.inputs).toMatchObject({ birthYear: 1980, birthMonth: 3 });
     expect(view.result.current.save.birthRefused).toEqual(expect.any(String));
     act(() => view.result.current.save.clearBirthRefused());
@@ -181,7 +181,7 @@ describe('kept: what the store refuses', () => {
     const { view, writeRefused, relay } = setup({});
     act(() => view.result.current.setInputs({ sex: 'female' }));
     store.next = { ok: false };
-    await act(async () => { expect(await view.result.current.save.flushProfile()).toBe(false); });
+    await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(false); });
     expect(writeRefused).toHaveBeenCalledTimes(1);
     expect(relay.saved).not.toHaveBeenCalled();
   });

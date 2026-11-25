@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { render, fireEvent, waitFor, act, screen } from '@testing-library/react';
 import { REMOTE_CHANGED_EVENT, RoadmapStore } from '../storage/roadmap-store';
-import { addMeasurement, deleteUserData, loadAllHistorySync } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, loadAllHistorySync, getShownErase } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { deleteButton } from '../testing/settings';
 import { seedGuest, useHealthToolLifecycle, recordOnDisk } from '../testing/health-tool-harness';
@@ -92,7 +92,7 @@ describe('US-16 AC2c: an upload review read before an erase ends with it', () =>
 
   it('a review of this record survives a re-read that brings no erase', async () => {
     await reviewReadThenHidden();
-    await act(async () => { await addMeasurement('weight', 83, '2026-09-02'); });
+    await act(async () => { await addMeasurement('weight', 83, '2026-09-02', getShownErase()); });
     act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await wait(600);
     fireEvent.click(resumeButton()!);
