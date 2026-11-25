@@ -44,7 +44,7 @@ class TestCloud extends MemoryAdapter {
   async write(...args: Parameters<MemoryAdapter['write']>) {
     this.writes += 1;
     if (this.held) await this.held;
-    if (this.failing) throw new StorageError('The network is down.');
+    if (this.failing) throw new StorageError('The network is down.', undefined, undefined, undefined, undefined, 'may-have-landed');
     return super.write(...args);
   }
 }

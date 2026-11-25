@@ -154,7 +154,7 @@ describe('US-10 AC12 (S62b): what a failed Drive record save tells its caller', 
 /** A device copy whose every write is refused (a full store), as in record-session.erase-mirror.test.ts. */
 class RefusingDevice extends MemoryAdapter {
   async write(): Promise<never> {
-    throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+    throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }), undefined, undefined, 'refused');
   }
 }
 

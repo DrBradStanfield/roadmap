@@ -33,7 +33,9 @@ export function mayHaveLanded(error: unknown): boolean {
 
 /**
  * A write that threw. A conflict is the adapter's own answer; any other failure
- * whose raiser named no outcome may have landed, so it is marked so (lead S57).
+ * that carries no outcome may have landed, so it is marked so (lead S57). Every
+ * StorageError names one (US-10 AC17); what is left is an abort, a schema
+ * refusal or a bug of ours.
  * The failure is never rewrapped, so its words stay. Returns it.
  */
 export function afterWrite<E>(error: E): E {

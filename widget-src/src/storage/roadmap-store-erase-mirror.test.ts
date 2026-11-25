@@ -29,7 +29,7 @@ class FailingCloud extends MemoryAdapter {
   failWrites = false;
   async write(...args: Parameters<MemoryAdapter['write']>) {
     // A definite refusal (a revoked grant): nothing was stored (write-refusal.ts).
-    if (this.failWrites) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403);
+    if (this.failWrites) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403, undefined, 'refused');
     return super.write(...args);
   }
 }

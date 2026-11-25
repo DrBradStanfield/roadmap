@@ -13,7 +13,7 @@ vi.mock('./resolve-backend', () => ({ resolveBackend: vi.fn(async () => ({ resol
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() }, initSentry: vi.fn() }));
 vi.mock('../src/lib/roadmap-data', async (importOriginal) => ({
   ...await importOriginal<typeof import('../src/lib/roadmap-data')>(),
-  initRoadmapStore: vi.fn(async () => { throw new StorageError('The saved record could not be read', 'local'); }),
+  initRoadmapStore: vi.fn(async () => { throw new StorageError('The saved record could not be read', 'local', undefined, undefined, undefined, 'no-answer'); }),
 }));
 
 // The full app's failure panel, which renders into #health-tool-root: the widgets must never call it.

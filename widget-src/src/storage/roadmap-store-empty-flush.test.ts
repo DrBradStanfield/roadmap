@@ -18,7 +18,7 @@ class CountingAdapter extends MemoryAdapter {
   async write(fileName: string, body: object, expected: string | null) {
     if (fileName === ROADMAP_FILE_NAME) this.writes += 1;
     if (this.gate) await this.gate;
-    if (this.failWrites) throw new StorageError('unreachable');
+    if (this.failWrites) throw new StorageError('unreachable', undefined, undefined, undefined, undefined, 'may-have-landed');
     return super.write(fileName, body, expected);
   }
 }

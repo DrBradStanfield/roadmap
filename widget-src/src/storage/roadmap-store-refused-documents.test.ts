@@ -135,7 +135,7 @@ it('A15: a document write the device refuses after log-off is not reported', asy
 });
 
 it('A15: a real document write failure (storage full) is still reported once', async () => {
-  const page = await RoadmapStore.create(new RefusingBlobs(new StorageError('Synthetic storage full')));
+  const page = await RoadmapStore.create(new RefusingBlobs(new StorageError('Synthetic storage full', undefined, undefined, undefined, undefined, 'refused')));
   await uploadThrough(page, [doc('Lipids')]);
   expect(Sentry.captureException).toHaveBeenCalledOnce();
   expect(vi.mocked(Sentry.captureException).mock.calls[0][0]).toMatchObject({ message: 'Document file not stored' });

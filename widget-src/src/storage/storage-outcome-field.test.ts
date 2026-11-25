@@ -145,7 +145,7 @@ class LandThenFail extends MemoryAdapter {
 
 describe('US-10 AC16: the outcome is a field, so it survives a rewrap and a copy', () => {
   it('a failure after a write keeps may-have-landed through SyncManager\'s rewrap, its reason too', async () => {
-    const refusedAfter = new StorageError('Google Drive read failed (401)', undefined, undefined, 401);
+    const refusedAfter = new StorageError('Google Drive read failed (401)', undefined, undefined, 401, undefined, 'refused');
     expect(refusedAfter.outcome).toBe('refused');
     const sync = new SyncManager(new LandThenFail(refusedAfter), 'phone', ROADMAP_DOC, { now: () => NOW });
     const error = await sync.save(ROADMAP_DOC.migrate(null, ctx)).then(() => null, (e: unknown) => e);
@@ -155,9 +155,9 @@ describe('US-10 AC16: the outcome is a field, so it survives a rewrap and a copy
   });
 
   it('a copy made field by field, as a second bundle would, keeps the outcome; the mark it replaced lived in one module', () => {
-    const marked = uncertainWrite(new StorageError('Dropbox write failed (503)', undefined, undefined, 503));
+    const marked = uncertainWrite(new StorageError('Dropbox write failed (503)', undefined, undefined, 503, undefined, 'no-answer'));
     const copy = Object.assign(new Error(marked.message), marked);
     expect(mayHaveLanded(copy)).toBe(true);
-    expect(mayHaveLanded(Object.assign(new Error('a refusal'), new StorageError('refused', undefined, undefined, 400)))).toBe(false);
+    expect(mayHaveLanded(Object.assign(new Error('a refusal'), new StorageError('refused', undefined, undefined, 400, undefined, 'refused')))).toBe(false);
   });
 });

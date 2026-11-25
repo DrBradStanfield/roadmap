@@ -142,7 +142,7 @@ describe('US-10 AC5 — a tab-close write never drops another tab\'s save', () =
     await seeded.flush();
     class SaveFails extends MemoryAdapter {
       async write(): Promise<never> {
-        throw new StorageError('cloud down');
+        throw new StorageError('cloud down', undefined, undefined, undefined, undefined, 'may-have-landed');
       }
     }
     const a = await RoadmapStore.create(new SaveFails(cloud)); // holds the weight

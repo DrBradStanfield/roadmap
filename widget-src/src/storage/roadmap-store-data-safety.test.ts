@@ -652,7 +652,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
   /** A cloud adapter whose writes fail like an expired/unrefreshable token. */
   class TokenExpiredAdapter extends MemoryAdapter {
     async write(): Promise<never> {
-      throw new StorageError('Google Drive needs to be reconnected.');
+      throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, undefined, 'no-answer');
     }
   }
 
@@ -862,7 +862,7 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     let offline = true;
     class FlakyAdapter extends MemoryAdapter {
       async write(...args: Parameters<MemoryAdapter['write']>) {
-        if (offline) throw new StorageError('The network is down.');
+        if (offline) throw new StorageError('The network is down.', undefined, undefined, undefined, undefined, 'may-have-landed');
         return super.write(...args);
       }
     }
@@ -1237,7 +1237,7 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
 
   class SaveFails extends MemoryAdapter {
     async write(): Promise<never> {
-      throw new StorageError('cloud down');
+      throw new StorageError('cloud down', undefined, undefined, undefined, undefined, 'may-have-landed');
     }
   }
   const fileOf = (store: RoadmapStore) => (store as unknown as { file: RoadmapFile }).file;
@@ -1288,7 +1288,7 @@ describe('RoadmapStore.deleteUserData lists the rows it removes (US-09 AC23)', (
     await store.flush();
     store.addMeasurement('ldl', 3.1, '2026-06-02', store.shownErase); // on the debounce
     const before = cloud.files.get(ROADMAP_FILE_NAME)!.json;
-    vi.spyOn(adapter, 'read').mockRejectedValueOnce(new StorageError('Dropbox did not answer'));
+    vi.spyOn(adapter, 'read').mockRejectedValueOnce(new StorageError('Dropbox did not answer', undefined, undefined, undefined, undefined, 'no-answer'));
     const beforeErase = vi.fn(async () => {});
 
     expect(await store.deleteAllData({ teardown: beforeErase })).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });

@@ -22,7 +22,7 @@ const SWITCH_KEY = 'hr_reminders_switch_cancelled';
 class FailingCloud extends MemoryAdapter {
   failWrites = false;
   async write(...args: Parameters<MemoryAdapter['write']>) {
-    if (this.failWrites) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403);
+    if (this.failWrites) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403, undefined, 'refused');
     return super.write(...args);
   }
 }

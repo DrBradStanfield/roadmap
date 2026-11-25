@@ -98,7 +98,7 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
 
     class WriteFailsAdapter extends MemoryAdapter {
       async write(): Promise<never> {
-        throw new StorageError('cloud down');
+        throw new StorageError('cloud down', undefined, undefined, undefined, undefined, 'may-have-landed');
       }
     }
     await liftLocalInto(new WriteFailsAdapter(), 'google-drive');
@@ -156,7 +156,7 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
 
     class WriteFailsAdapter extends MemoryAdapter {
       async write(): Promise<never> {
-        throw new StorageError('cloud down');
+        throw new StorageError('cloud down', undefined, undefined, undefined, undefined, 'may-have-landed');
       }
     }
     await liftLocalInto(new WriteFailsAdapter(), 'google-drive');
