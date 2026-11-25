@@ -40,7 +40,7 @@ function record(seed: number): Record {
   for (const k of LIPIDS) if (r() < 0.2) inputs[k] = 2;
   for (const k of WEIGHT) if (r() < 0.2) inputs[k] = k === 'weightKg' ? 90 : 40;
   const basis: Partial<PlanBasis> | null = r() < 0.1 ? null : {
-    ...(age !== undefined ? { age } : null),
+    ...(age !== undefined ? { age, screeningAge: age } : null), // the screening questions read screeningAge (US-23 AC6c)
     lipidMarker: r() < 0.3 ? { kind: 'ldl', label: 'LDL-c', value: 3.5, target: 2.6, elevated: r() < 0.7 } : null,
     weightMedTrigger: r() < 0.3 ? { on: true, reasons: ['a BMI of 31'] } : { on: false, reasons: [] },
     ...(r() < 0.5 ? { bmi: 31 } : null),
