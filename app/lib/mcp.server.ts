@@ -18,7 +18,6 @@ import { latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
-
 import { StorageError, type StorageAdapter, type StoredFile } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
 import { mayHaveLanded } from '../../packages/health-core/src/write-refusal';
