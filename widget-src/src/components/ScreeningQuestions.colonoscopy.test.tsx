@@ -38,7 +38,7 @@ function panel(screenings: Record<string, string>) {
     medications: [], onMedicationChange: vi.fn(), screenings: rows(screenings), onScreeningChange,
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 60 }, grading: {},
+    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age: 60, screeningAge: 60 }, grading: {},
   };
   const view = (s: Record<string, string>) => <InputPanel {...({ ...props, screenings: rows(s) } as unknown as Parameters<typeof InputPanel>[0])} />;
   const { container, rerender } = render(view(screenings));
