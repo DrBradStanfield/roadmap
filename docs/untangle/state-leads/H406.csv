@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H406,web chat mirror,"After a screening save the mirror keeps its cached PSA flag until the next record read",lead,not started,"Found 2026-11-26 in PR 2119's review: widget-src/src/hooks/useListSaves.ts mirrorSavedLists patches the medications and screenings through patchMirror (widget-src/src/lib/storage.ts), which keeps cached psa as it was. The PSA flag is worked out from the screenings only in useRecordReads mirrorRecord, so a saved screening that changes it reaches the chat only at the next record read.",,no
