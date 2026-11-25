@@ -45,8 +45,8 @@ export interface LimitMapOptions { name: string; maxKeys?: number; oneUse?: true
  * order is expiry order: expired entries leave from the front first, then the oldest live entry. A
  * caller who can make many keys already gets a fresh count per key, the machine-wide caps still bind,
  * and refusing would lock real new callers out. A one-use set is the exception: dropping a live spent
- * id would let it be spent again, so when every entry is live it answers false and its caller refuses
- * (US-52 AC16). A map full of live entries warns once an hour, by its name alone.
+ * id would let it be spent again, so when every entry is live it answers false and its caller does not
+ * set the key (US-52 AC16). A map full of live entries warns once an hour, by its name alone.
  */
 export function boundedMap<V>(map: Map<string, V>, expiresAt: (entry: V) => number, options: LimitMapOptions) {
   const maxKeys = options.maxKeys ?? MAX_TRACKED_KEYS;

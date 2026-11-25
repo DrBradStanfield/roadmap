@@ -1,16 +1,25 @@
 /**
- * US-52 AC16: the one-use sets are bounded, and never forget a live spent id. Room comes only from
- * expired ids; a set full of live ones refuses the new id, holds every one it has, and says so by
- * name once an hour. One table, one row per structure, run through the same cases.
+ * US-52 AC16: the one-use sets are bounded. The code set (and any set marked `oneUse`) keeps every
+ * live id: room comes only from expired ids, and while every id held is live it refuses a new one,
+ * saying so by name once an hour. The confirm-receipt set at its bound holds no new key, and the
+ * shared claim store alone decides the claim.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
+const shared = vi.hoisted(() => ({ claimed: new Set<string>(), up: true, calls: 0 }));
+vi.mock('./single-use-claims.server', () => ({
+  claimSingleUse: vi.fn(async (key: string) => {
+    shared.calls++;
+    if (!shared.up) return 'unavailable';
+    if (shared.claimed.has(key)) return 'spent';
+    shared.claimed.add(key);
+    return 'claimed';
+  }),
+}));
 
 import * as Sentry from '@sentry/react-router';
-import { CHALLENGE_TTL_MS } from './app-attest.server';
-import { appLimits } from './app-gate.server';
-import { claimCode, CODE_LIFETIME_SECONDS, resetMcpMemory } from './mcp-grants.server';
+import { claimCode, claimProposal, CODE_LIFETIME_SECONDS, resetMcpMemory } from './mcp-grants.server';
 import { createQuotaCounter, createRateLimiter, MAX_TRACKED_KEYS } from './rate-limiter';
 
 const T0 = 1_000_000;
@@ -23,13 +32,6 @@ const small = (make: (maxKeys: number) => (id: string) => boolean, name: string)
 };
 
 const SETS: OneUseSet[] = [
-  {
-    name: 'app spent challenges',
-    lifeMs: CHALLENGE_TTL_MS + 60_000,
-    maxKeys: MAX_TRACKED_KEYS,
-    take: (id) => appLimits.challenges.take(id, 1),
-    reset: () => appLimits.challenges.reset(),
-  },
   { name: 'mcp spent codes', lifeMs: CODE_LIFETIME_SECONDS * 1000, maxKeys: MAX_TRACKED_KEYS, take: claimCode, reset: resetMcpMemory },
   small((maxKeys) => {
     const quota = createQuotaCounter(1, 1000, 100_000, { name: 'test one-use quota', maxKeys, oneUse: true });
@@ -44,6 +46,8 @@ beforeEach(() => {
   vi.mocked(Sentry.captureMessage).mockClear();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   for (const set of SETS) set.reset();
+  resetMcpMemory();
+  Object.assign(shared, { claimed: new Set<string>(), up: true, calls: 0 });
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -68,7 +72,7 @@ describe.each(SETS)('US-52 AC16: $name', (set) => {
     expect(set.take('a')).toBe(true);
   });
 
-  it('full of live ids: refuses a new id, forgets none, and says so by name alone', () => {
+  it('every id live at the bound: refuses a new id, forgets none, and says so by name alone', () => {
     fill(set);
     expect(set.take('new')).toBe(false);
     expect(set.take('another')).toBe(false);
@@ -79,13 +83,49 @@ describe.each(SETS)('US-52 AC16: $name', (set) => {
     expect(vi.mocked(console.error).mock.calls).toEqual([[`In-memory limit map full: ${set.name}`]]);
   });
 
-  it('full, with one id expired: room comes from that id, and every live one stays spent', () => {
+  it('at the bound, with one id expired: room comes from that id, and every live one stays spent', () => {
     fill(set);
     vi.setSystemTime(T0 + set.lifeMs); // id-0 has expired; id-1 lives one ms longer
     expect(set.take('new')).toBe(true);
     expect(set.take('new')).toBe(false);
-    expect(set.take('another')).toBe(false); // full again, of live ids
+    expect(set.take('another')).toBe(false); // at the bound again, every id live
     expect(set.take('id-1')).toBe(false);
     expect(set.take(`id-${set.maxKeys - 1}`)).toBe(false);
+  });
+});
+
+describe('US-52 AC16: mcp spent confirm receipts', () => {
+  const LIFE = 15 * 60_000;
+  const claim = (receipt: string, at = T0) => claimProposal(receipt, 'conn', LIFE, at);
+
+  async function fillReceipts(): Promise<void> {
+    for (let i = 0; i < MAX_TRACKED_KEYS; i++) expect(await claim(`r-${i}`, T0 + Math.min(i, 1000))).toBe('claimed');
+  }
+
+  it('below the bound, this machine refuses a repeat without asking the store', async () => {
+    expect(await claim('a')).toBe('claimed');
+    const calls = shared.calls;
+    expect(await claim('a', T0 + LIFE - 1)).toBe('spent');
+    expect(shared.calls).toBe(calls);
+  });
+
+  it('every key live at the bound: a fresh receipt is decided by the shared store, once', async () => {
+    await fillReceipts();
+    const calls = shared.calls;
+    expect(await claim('fresh', T0 + 2000)).toBe('claimed');
+    expect(await claim('fresh', T0 + 2001)).toBe('spent'); // not held here: the store refuses it
+    expect(shared.calls).toBe(calls + 2);
+    expect(await claim('r-0', T0 + 2002)).toBe('spent'); // every held key still refused here
+    expect(shared.calls).toBe(calls + 2);
+    expect(vi.mocked(Sentry.captureMessage).mock.calls.map((c) => c[0])).toEqual(['In-memory limit map full']);
+  });
+
+  it('every key live at the bound, the store unavailable: the unavailable refusal, and nothing written', async () => {
+    await fillReceipts();
+    shared.up = false;
+    expect(await claim('fresh', T0 + 2000)).toBe('unavailable');
+    expect(shared.claimed.size).toBe(MAX_TRACKED_KEYS);
+    shared.up = true;
+    expect(await claim('fresh', T0 + 2001)).toBe('claimed'); // the retry asks the store, which decides
   });
 });
