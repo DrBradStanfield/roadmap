@@ -31,22 +31,6 @@ issue, and nothing private.
   check: PR 2072, now on main, made record text and values never go into an attribute (US-09 AC7l), so these names
   are built from labelled-by references to the text on screen. What remains: the owner's check, then turning the
   names on. Nothing draws them yet.
-- **Should the erase confirm mention files saved offline on another device?** Issue: originals are to be stored
-  in the background after Save (design parked) ([drafts/background-originals.md](drafts/background-originals.md), section 6). An
-  erase removes every document it saw, and the files waiting for it. A document saved on a device that was offline,
-  and synced only after an erase made elsewhere, was never seen by that erase: it stays, as any such row does
-  today, and its original is then stored. Options: (1) leave the confirm as it is: it stays short, and the case
-  matches what the app already does for every value saved offline; (2) add a line naming the case: more exact,
-  longer, about a rare case. Recommendation: option 1, because the confirm already promises only what the erase
-  saw, and the rule is the same for every kind of row.
-
-- **Older app versions and the new background storing.** Issue: storing originals after Save adds a new kind of
-  document row ([drafts/background-originals.md](drafts/background-originals.md), open problem (b)). An app version
-  from before the change would read that row wrongly, so the record will be marked so that older versions refuse
-  it. Once a phone stores an original this way, an app version from before the change cannot open that record until
-  it is updated. Options: (a) accept, and ship the reader change one app version before the writer, so almost nobody
-  is caught; (b) do not build background storing, and Save keeps waiting for the files. Recommendation: (a), because
-  the wait at Save is what you asked to remove, and one version's head start leaves only people who skip updates.
 
 ### Words that need your yes (raised 2026-11-25)
 
@@ -100,20 +84,11 @@ issue, and nothing private.
   the agent wait 10 seconds before the second, confirming call. The one session last week that tried it filed nothing
   after four tries. Options: keep the pause; say how many seconds are left; reword the line when the time runs out.
   Recommendation: keep the pause and say the seconds left.
-- **Two server items to close.** Issue: slow lab-import warnings cannot be tied to a deploy, and a server image
-  without the chat prompt file could still deploy. Both need workflow or setting changes. Options: build both; close
-  both. Recommendation: close both, because the chat already refuses and alerts when the prompt is missing.
-- **Files lost when a lab batch times out (self-hosted build).** Issue: on the GitHub Pages build, a batch that times
-  out throws away files already read on the person's own key. Options: keep them; close. Recommendation: close: it
-  touches only that build, and it is rare.
 - **A "Not saved" marker on chat replies with edits.** Issue: a reply that lands after the person left its thread
   saves nothing, but reads as saved when they reopen the thread (design: [drafts/c22-c26-design.md](drafts/c22-c26-design.md)).
   Options: (A) store a "Not saved" marker on every such reply (new words, a new stored field, iPhone too); (B) only on
   replies that carried edits; (C) wait for the iPhone chat work. Recommendation: B, reusing the existing banner
   words, since a reply with no edits had nothing to lose.
-- **The reminders switch when iPhone permission was already decided.** Issue: if the person already answered iOS's
-  notification question, the reminders switch does nothing and says nothing. Options: show the existing Settings row
-  then; new words; leave. Recommendation: show the existing row (no new words), if you accept its line in this case.
 - **Restore " It will upload automatically."** Issue: Settings' waiting line on the web ("Some data in this browser
   is still waiting to sync…") dropped this clause on 14 Nov until you approve it. The retry it describes already
   runs. Options: approve it; leave it out. Recommendation: approve: it is true, and tells the person they need do
@@ -157,13 +132,6 @@ issue, and nothing private.
 - **Retire one parity test.** Issue: a test checks that the server's error-report scrubber gives the same output as
   its hand copy. That copy is now generated from the shared source, so the test checks one thing twice. Options:
   retire it; keep it. Recommendation: retire it.
-- **A stated age near New Year.** Issue: contributor PR 1899 makes every screening gate read age at the UTC month.
-  A person who states an age (not a birth date) to the command-line plan tool or the self-hosted chat gets a January
-  birth year from the local year, so in the hours between the local and the UTC New Year the screening cards read
-  one year away from that age: one card can appear or vanish. The hosted plan and chat run in UTC and do not change.
-  Options: (1) keep the stated age as given: the record must mark a birth year as stated, which it does not store
-  today; (2) accept. Recommendation: accept: a few hours a year, only for a stated age, and the fix needs a new stored
-  field.
 - **The story file every PR edits.** Issue: docs/user-stories.md is one file every PR appends to. PRs that add to
   the same story conflict, and a conflicting PR gets no CI run; on 25 Nov six PRs needed a rebase for this alone.
   Options: one file per story section, built into the page by the existing Pages step; keep one file.
@@ -212,6 +180,19 @@ issue, and nothing private.
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
+- "Two server items to close" are closed with no change ("go with your recommendations"): slow lab-import warnings stay
+  without a deploy tag, and no deploy gate is added for the chat prompt file, since chat already refuses and alerts
+  when it is missing (leads C8, H67).
+- "Files lost when a lab batch times out (self-hosted build)" is closed with no change ("go with your
+  recommendations"): it touches only the GitHub Pages build and is rare (lead H132).
+- The erase confirm does not mention files saved offline on another device: "do this for now. it's simpler". The
+  confirm stays as it is.
+- Older app versions and background storing: option (a), "the existing iOS app, virtually no one is using". The
+  reader ships one app version before the writer.
+- A stated age near New Year is accepted as it is ("go with your recommendations"): a few hours a year, only for a
+  stated age.
+- The reminders switch when iPhone permission was already decided shows the existing Settings row, with no new words
+  ("go with your recommendations"). It waits for the next iPhone build (lead S33).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
