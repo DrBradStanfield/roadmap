@@ -128,7 +128,7 @@ const PATHS: Path[] = [
     expect(p.now().erase.loaded).toBe(false); // the saves stay off (L2, H37)
   }, { counted: 1, reads: 1 }, false],
   ['H37 (rule R2): this tab\'s erase ends before the first read shows; a later arrival waits for that read', async (p) => {
-    const erase = ownErase(p, { success: true, chatErased: true, chat: 'erased' });
+    const erase = ownErase(p, { success: true, chat: 'erased' });
     await erase.finish(B); // this tab's erase
     expect(p.now().erase.loaded).toBe(false); // the saves stay off until the first read shows
     await announced(C); // another writer's, above it
@@ -148,7 +148,7 @@ const PATHS: Path[] = [
     await settle();
   }, { counted: 1, reads: 1 }],
   ['it arrives during this tab\'s erase, and wins (own-end at it)', async (p) => {
-    const erase = ownErase(p, { success: true, chatErased: true, chat: 'erased' });
+    const erase = ownErase(p, { success: true, chat: 'erased' });
     await announced(B);
     await erase.finish();
     expect(log).toContain(`say ${eraseDone('erased')}`);

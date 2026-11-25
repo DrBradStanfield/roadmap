@@ -128,7 +128,7 @@ export function useErase(props: EraseDoorProps): Erase {
     // A log-off refusal is not a failure, so it is not reported (US-09 AC2c, A19).
     const result: Awaited<ReturnType<typeof deleteUserData>> = await deleteUserData().catch((error: unknown) => {
       if (!writesStopped(error)) Sentry.captureException(recordFailure(error, 'Erase failed'), { tags: { area: 'erase', op: 'delete-all' } });
-      return { success: false, chatErased: false, chat: null };
+      return { success: false, chat: null };
     });
     // Read in the turn it dispatches (2b-1 R1). An erase whose write failed
     // still leaves the erased copy in the store, which retries it: the screen

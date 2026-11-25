@@ -6,8 +6,9 @@
  * may have finished when the record erase did not.
  */
 
-/** The chat step, once it ran: deleted, not reached, or reached and not read. */
-export type EraseChatStep = 'erased' | 'unreached' | 'unread';
+/** The chat step, once it ran: deleted; not reached; reached in the cloud and not read; or, on this
+ *  device, a file that could not be opened (a newer schema, unreadable bytes), so nothing in it was erased. */
+export type EraseChatStep = 'erased' | 'unreached' | 'unread' | 'unopened';
 
 export type EraseOutcome =
   /** The record is erased. */
@@ -28,6 +29,8 @@ const CHAT_AFTER_ERASE: Record<EraseChatStep, string> = {
   // The stored file still holds its conversations, and the failure may last (a newer schema, an
   // unreadable file): say where it still is (US-11 AC2c).
   unread: `Your health record is deleted. ${CHAT_UNREAD}`,
+  // On this device a record erase that stands removes the chat file itself, opened or not (US-11 AC3).
+  unopened: 'Your health record and chat history are deleted.',
 };
 
 /** The chat step beside a record that was not erased. */
@@ -35,6 +38,7 @@ const CHAT_AFTER_FAILURE: Record<EraseChatStep, string> = {
   erased: 'Your chat history was deleted.',
   unreached: 'Your chat history could not be reached just now.',
   unread: CHAT_UNREAD,
+  unopened: 'Your chat history could not be read, so it was not deleted.',
 };
 
 export function eraseOutcomeWords(outcome: EraseOutcome): string {

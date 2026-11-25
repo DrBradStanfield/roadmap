@@ -114,7 +114,7 @@ describe('explicit local-first data path', () => {
     expect(chat).not.toBeNull();
     await chat!.recordExchange({ conversationId: 'c1', isNew: true, userText: 'my ldl is 3.2', assistantText: 'ok' });
 
-    expect(await data.deleteUserData()).toEqual({ success: true, chatErased: true });
+    expect(await data.deleteUserData()).toEqual({ success: true, chat: 'erased' });
 
     expect(chat!.listConversations()).toEqual([]);
     const persisted = cloud.files.get('chat-history.json')!.json;
@@ -130,7 +130,7 @@ describe('explicit local-first data path', () => {
     await chat!.recordExchange({ conversationId: 'c1', isNew: true, userText: 'hello', assistantText: 'ok' });
     vi.spyOn(chat!, 'eraseAll').mockRejectedValue(new Error('cloud unreachable'));
 
-    expect(await data.deleteUserData()).toEqual({ success: true, chatErased: false });
+    expect(await data.deleteUserData()).toEqual({ success: true, chat: 'unreached' });
     expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
   });
 
@@ -141,7 +141,7 @@ describe('explicit local-first data path', () => {
   it('erases the record even when the reminder teardown fails', async () => {
     data.setPreEraseHook(async () => { throw new Error('Reminder row delete failed (500).'); });
     try {
-      expect(await data.deleteUserData()).toEqual({ success: true, chatErased: true });
+      expect(await data.deleteUserData()).toEqual({ success: true, chat: 'erased' });
       expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
     } finally {
       data.setPreEraseHook(async () => null);
@@ -158,7 +158,7 @@ describe('explicit local-first data path', () => {
     data.setPreEraseHook(hook);
     vi.spyOn(MemoryAdapter.prototype, 'read').mockRejectedValueOnce(new Error('cloud unreachable'));
     try {
-      expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });
+      expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chat: null });
       expect(hook).not.toHaveBeenCalled();
       expect(eraseAll).not.toHaveBeenCalled();
       expect(chat!.listConversations()).toHaveLength(1);

@@ -78,8 +78,7 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
     expect(result.success).toBe(true);
     expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
     expect(live(cloud)).toHaveLength(1);
-    expect(result.chatErased).toBe(false);
-    expect(result.chat).toBe('unread');
+        expect(result.chat).toBe('unread');
     chatReported();
   });
 
@@ -134,8 +133,7 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
     const result = await data.deleteUserData();
 
     expect(result.success).toBe(true);
-    expect(result.chatErased).toBe(true);
-    expect(result.chat).toBe('erased');
+        expect(result.chat).toBe('erased');
     expect(live(cloud)).toHaveLength(0);
     // The erased store is the shared one, so a chat opened next sees the tombstones.
     expect((await getChatHistory())!.listConversations()).toHaveLength(0);
@@ -145,8 +143,7 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
     const open = await getChatHistory();
     const result = await data.deleteUserData();
 
-    expect(result.chatErased).toBe(true);
-    expect(result.chat).toBe('erased');
+        expect(result.chat).toBe('erased');
     expect(open!.listConversations()).toHaveLength(0);
     expect(await getChatHistory()).toBe(open);
     expect(live(cloud)).toHaveLength(0);
@@ -156,8 +153,7 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
     setChatHistoryFactory(null);
     const result = await data.deleteUserData();
 
-    expect(result.chatErased).toBe(true);
-    expect(result.chat).toBe('erased');
+        expect(result.chat).toBe('erased');
     expect(Sentry.captureException).not.toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ tags: expect.objectContaining({ area: 'chat-history' }) }),
