@@ -103,6 +103,28 @@ describe('US-15 AC10: reloadValues', () => {
     expect(setters.setLabValueHistory).toHaveBeenCalledWith([egfrRow(40)]);
   });
 
+  it('US-34 AC9 (H15): the mirror carries the profile the page shows, asked as it is written; none given, the record\'s', async () => {
+    const latest = { inputs: { heightCm: 170, birthYear: 1981 }, previousMeasurements: [], medications: [], screenings: [] };
+    data.latest = latest;
+    const page = { heightCm: 170, birthYear: 1980 };
+    // Held while the mirror's lab read waits: the page's profile.
+    let shown: () => typeof page | undefined = () => page;
+    const { view } = setup();
+    let read!: Promise<unknown>;
+    act(() => { read = view.result.current.reloadValues(() => shown()); });
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => { data.labReads[0].resolve([]); await Promise.resolve(); });
+    await act(async () => { data.labReads[1].resolve([]); await read; });
+    expect(mirror.saved.map((args) => args[0])).toEqual([page]);
+    // The hold ends while the read is on its way: the mirror takes the record read, not the profile from before.
+    act(() => { read = view.result.current.reloadValues(() => shown()); });
+    await act(async () => { await Promise.resolve(); });
+    shown = () => undefined;
+    await act(async () => { data.labReads[2].resolve([]); await Promise.resolve(); });
+    await act(async () => { data.labReads[3].resolve([]); await read; });
+    expect(mirror.saved.map((args) => args[0])).toEqual([page, latest.inputs]);
+  });
+
   it('nothing on record: no values replaced and no mirror written, but labs and history are still read', async () => {
     const { view, setters } = setup();
     data.hold = false;

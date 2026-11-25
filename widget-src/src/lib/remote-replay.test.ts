@@ -117,6 +117,18 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     expect(apply.mock.calls).toEqual([[true]]);
   });
 
+  it('US-34 AC9 (H15): `holding` is true only while a change waits for the next profile save, never while loading', () => {
+    const relay = createRemoteChangeRelay(vi.fn());
+    const seen: boolean[] = [relay.holding()]; // loading
+    relay.arrived(true); seen.push(relay.holding()); // loading-held
+    relay.loaded(); seen.push(relay.holding()); // idle (the waiting change applied)
+    relay.arrived(true); seen.push(relay.holding()); // held
+    relay.settled(); seen.push(relay.holding()); // idle
+    relay.arrived(true); relay.reread(); seen.push(relay.holding()); // a re-read ends it
+    relay.arrived(true); relay.shows(); seen.push(relay.holding()); // so does the erase machine's read
+    expect(seen).toEqual([false, false, false, true, false, false, false]);
+  });
+
   it('fix 4 2b-3: the erase machine\'s read (`shows`) ends a hold and counts nothing; the save that cleans the form reads nothing more', () => {
     const apply = vi.fn();
     const relay = ready(apply);

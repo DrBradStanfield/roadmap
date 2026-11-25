@@ -149,7 +149,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
   const { showRecord, signal: rereadRecord, ownSave, shows: showErase, settled: profileSettled, firstReadShown, firstReadFailed } = useRecordApply({
     setInputs, reloadValues, applyLists, units, erase: eraseStore,
-    later: () => ({ markSaved, flushPendingSave, flushListSaves, profileDirty, clearAnswered }), // declared below
+    later: () => ({ markSaved, flushPendingSave, flushListSaves, profileDirty, clearAnswered, savedProfile }), // declared below
   });
   // The medication, screening and supplement saves (hooks/useListSaves).
   const {
@@ -270,7 +270,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }, [reached, epoch, chatPrefetch]);
 
   // The profile's save: height, sex, the birth date, the unit system (hooks/useProfileSave).
-  const { flushProfile, profileTimer, markSaved, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
+  const { flushProfile, profileTimer, markSaved, savedProfile, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
     inputs, inputsRef, setInputs, loaded, onSettled: profileSettled, writeRefused, units,
   });
 

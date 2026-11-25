@@ -45,6 +45,8 @@ export interface ProfileSave {
   profileTimer: { flush: () => void; cancel: () => void };
   /** The record's profile as last read or saved. */
   markSaved: (inputs: Partial<HealthInputs>) => void;
+  /** A copy of the record's profile as last read or saved: the profile the page shows as saved (US-34 AC9). */
+  savedProfile: () => Partial<HealthInputs>;
   /** The form holds a profile edit the record does not (US-34 AC4). */
   profileDirty: () => boolean;
   birthRefused: string | null;
@@ -127,8 +129,9 @@ export function useProfileSave(args: {
   }, [inputs, loaded, profileTimer, units]);
 
   const markSaved = useCallback((record: Partial<HealthInputs>) => { saved.current = { ...record }; }, []);
+  const savedProfile = useCallback(() => ({ ...saved.current }), []);
   const profileDirty = useCallback(() => hasUnsavedProfileEdits(inputsRef.current, saved.current), [inputsRef]);
   const clearBirthRefused = useCallback(() => setBirthRefused(null), []);
 
-  return { flushProfile, profileTimer, markSaved, profileDirty, birthRefused, clearBirthRefused };
+  return { flushProfile, profileTimer, markSaved, savedProfile, profileDirty, birthRefused, clearBirthRefused };
 }

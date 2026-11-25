@@ -13,6 +13,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
+import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import type { EraseEffect, EraseState } from '../lib/erase-machine';
 
@@ -38,12 +39,15 @@ const RESULT = {
 function setup(loaded = true) {
   const fx = {
     setInputs: vi.fn(),
-    reloadValues: vi.fn(async () => RESULT),
+    reloadValues: vi.fn(async (_shown?: () => Partial<HealthInputs> | undefined) => RESULT),
     applyLists: vi.fn(),
     units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
     // The erase machine as apply sees it: the screen shows 'erase-1'; `dispatch` records each read's erase.
     erase: { getSnapshot: () => ({ shown: 'erase-1' }) as EraseState, dispatch: vi.fn((): EraseEffect[] => []) },
-    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
+    later: {
+      markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn(),
+      savedProfile: vi.fn(() => ({ heightCm: 170, birthYear: 1980 })),
+    },
   };
   const hook = renderHook(() => useRecordApply({
     setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
@@ -137,6 +141,24 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     await act(async () => { finish(RESULT); });
     await settle();
     expect(done).toBe(true);
+  });
+
+  it('US-34 AC9 (H15): an own save\'s read mirrors the profile the page shows while a change is held, the record\'s otherwise; the read that ends the hold mirrors the record', async () => {
+    const { fx, hook } = setup();
+    /** The profile each read hands the chat mirror, asked now (useRecordReads asks it as the mirror is written). */
+    const mirrored = () => fx.reloadValues.mock.calls.map(([shown]) => shown?.());
+    await act(async () => { await hook.result.current.ownSave(); });
+    expect(mirrored()).toEqual([undefined]); // nothing held
+    fx.later.profileDirty.mockReturnValue(true);
+    await act(async () => { await hook.result.current.signal('remote'); }); // held
+    fx.reloadValues.mockClear();
+    await act(async () => { await hook.result.current.ownSave(); });
+    expect(mirrored()).toEqual([{ heightCm: 170, birthYear: 1980 }]);
+    fx.reloadValues.mockClear();
+    await act(async () => { hook.result.current.settled(); });
+    await settle();
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1);
+    expect(mirrored()).toEqual([undefined]); // the hold's read: the record's
   });
 
   it('US-34 AC4a: ownSave keeps its identity across renders, so a save built on it is not rebuilt each render', () => {

@@ -96,5 +96,7 @@ export function createRemoteChangeRelay<T>(apply: (remote: boolean, counts?: boo
     // reread and shows always ask for a read (the table test pins it).
     reread(): T { return run(send({ type: 'reread' }) ?? 'own'); },
     shows(): T { return run(send({ type: 'shows' }) ?? 'own'); },
+    /** A change waits for the next profile save: the page shows the profile from before it (US-34 AC9). */
+    holding(): boolean { return state.phase === 'held'; },
   };
 }

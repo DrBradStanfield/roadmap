@@ -23,7 +23,9 @@ import { formatDisplayValue, toCanonicalValue } from '@roadmap/health-core/units
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { addMeasurement, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening, getShownErase } from '../lib/roadmap-data';
-import { BT_TIMELINE_DRAFT_KEY, VITALS_DRAFT_KEY, loadFromLocalStorage } from '../lib/storage';
+import { BT_TIMELINE_DRAFT_KEY, MIRROR_CHANGED_EVENT, VITALS_DRAFT_KEY, loadFromLocalStorage, loadGuestInputs } from '../lib/storage';
+import { parseProposedEdit } from '@roadmap/health-core/chat-edits';
+import type { ChatEditTarget } from '../hooks/useChatState';
 import { trackABConversion } from '../lib/server-api';
 import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 import { WRITE_REFUSED } from '../lib/erase-copy';
@@ -89,7 +91,15 @@ vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
   listConversations: () => Promise.resolve(null), getChatGate: () => null,
 }));
-vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
+// The page's chat: its context (what it sends the model) and its edit target, as the reply lands (US-16 AC2).
+const chat = vi.hoisted(() => ({ target: null as null | ChatEditTarget, context: null as null | (() => unknown) }));
+vi.mock('./ChatEmbed', () => ({
+  ChatEmbed: ({ onProposeEdit, guestInputs }: { onProposeEdit: ChatEditTarget; guestInputs: () => unknown }) => {
+    chat.target = onProposeEdit;
+    chat.context = guestInputs;
+    return null;
+  },
+}));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 // Run once as a microtask queued in the first commit. Outside act, React runs the commit's
 // passive effects as their own scheduler task once the commit's task yields; a first render
@@ -142,6 +152,7 @@ beforeEach(async () => {
   Object.assign(failMirror, { next: false, threw: false, always: false });
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
+  Object.assign(chat, { target: null, context: null });
   vi.mocked(trackABConversion).mockClear();
   vi.mocked(Sentry.captureException).mockClear();
   viewport.mobile = false;
@@ -1078,17 +1089,87 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     expect(calls('remote_change_applied')).toHaveLength(1);
   });
 
-  it('US-34 AC4a (today, follow-up flips): under a hold the chat mirror carries the held profile', async () => {
+  // US-34 AC9 (H15): the chat mirror carries the profile the page shows, held or not.
+  /** The context the bubble and the chatbot embed send the model (lib/storage loadGuestInputs), as a plain record. */
+  const mirrorContext = () => (loadGuestInputs() ?? {}) as Record<string, unknown>;
+  /** The keys whose values differ between two contexts. */
+  const differ = (a: Record<string, unknown>, b: Record<string, unknown>) =>
+    [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k])).sort();
+  const banner = () => document.body.querySelector('.chat-profile-proposal[role="status"]') as HTMLElement | null;
+
+  it('US-34 AC9 (H15): under a hold, an own save\'s read leaves the chat\'s context on the profile the page shows; only the corrected value moves', async () => {
+    await recordWithLdl();
+    const view = await open();
+    await heightOutOfRange(view);
+    const shown = mirrorContext(); // the context the page's own record builds, before the other device's change
+    expect(shown.birthYear).toBe(1980);
+    await heldBirthYear(view);
+    await OWN_SAVES[1][1](view); // a correction's save, and its values read (the Weight page's ends the hold, AC8)
+    await settle(50);
+    expect(field(view, 'birthYear')).toBe('1980');
+    expect(mirror()?.inputs.birthYear).toBe(1980); // was the held 1981 (the pin this flips)
+    // Nothing more is sent than the page's own values build: the same keys, only the corrected LDL and its history moved.
+    const held = mirrorContext();
+    expect(differ(shown, held)).toEqual(['ldlC', 'measurementHistory']);
+    expect(held.ldlC).toBe(1.9);
+    expect(calls('remote_change_applied')).toEqual([]);
+  });
+
+  it('US-34 AC9 (H15): the hold ends: the mirror takes the applied record in that read, written once, and a later own save keeps it', async () => {
     await recordWithLdl();
     const view = await open();
     await heightOutOfRange(view);
     await heldBirthYear(view);
-    await OWN_SAVES[1][1](view); // a correction's save, and its re-read (the Weight page's ends the hold, AC8)
+    await OWN_SAVES[1][1](view); // its values read lands under the hold
     await settle(50);
-    // The page shows the old birth year; the chat mirror (mirrorRecord writes result.inputs) the held one.
-    expect(field(view, 'birthYear')).toBe('1980');
-    expect(mirror()?.inputs.birthYear).toBe(1981);
-    expect(calls('remote_change_applied')).toEqual([]);
+    expect(mirror()?.inputs.birthYear).toBe(1980); // the page's, not the held 1981
+    const written: Array<number | undefined> = []; // the mirror's birth year at each write
+    const onWrite = () => { written.push(mirror()?.inputs.birthYear); };
+    window.addEventListener(MIRROR_CHANGED_EVENT, onWrite);
+    try {
+      reads.count = 0;
+      type(q(view, '#heightCm'), '171');
+      leave(q(view, '#heightCm'));
+      await waitFor(() => expect(field(view, 'birthYear')).toBe('1981'), { timeout: 3000 });
+      await settle(800);
+      // The height's save writes its saved profile (the page's), then the hold's one record read writes the applied one.
+      expect(reads.count).toBe(1);
+      expect(written).toEqual([1980, 1981]);
+      expect(mirror()?.inputs).toMatchObject({ birthYear: 1981, heightCm: 171 });
+      expect(calls('remote_change_applied')).toHaveLength(1);
+      // Nothing held now: the next own save's read writes the record's profile, still 1981.
+      await OWN_SAVES[2][1](view);
+      await settle(50);
+      expect(mirror()?.inputs.birthYear).toBe(1981);
+    } finally {
+      window.removeEventListener(MIRROR_CHANGED_EVENT, onWrite);
+    }
+  });
+
+  // New in AC9: the mirror's sex. Pinned, unchanged: the page's own chat context (planInputs) and the banner (the form).
+  it('US-34 AC9 (H15), US-16 AC2: under a hold, the mirror sends the sex the page shows; the proposal is checked against, and saved to, the profile on screen, as before', async () => {
+    await recordWithLdl(); // female, 170 cm
+    const view = await open();
+    await heightOutOfRange(view);
+    await anotherWriter(() => saveChangedMeasurements({ sex: 'male' }, { sex: 'female' }, getShownErase()));
+    await settle(50);
+    await OWN_SAVES[1][1](view); // an own save's read under the hold
+    await settle(50);
+    // Both chats send the sex the page shows, not the held one.
+    expect(mirrorContext().sex).toBe('female');
+    expect((chat.context!() as Record<string, unknown>).sex).toBe('female');
+    // The reply proposes male and 175 cm: both differ from the page's profile, so both show (the held profile already says male).
+    const edit = parseProposedEdit('propose_profile_edit', { sex: 'male', height: { value: 175, unit: 'cm' } })!;
+    act(() => { chat.target!.take([edit], chat.target!.ask(), true); });
+    expect(banner()!.textContent).toContain('Male (replaces Female), height 175 cm');
+    fireEvent.click(Array.from(banner()!.querySelectorAll('button')).find((b) => b.textContent === 'Save')!);
+    await waitFor(async () => expect((await recordOnDisk()).profile.heightCm).toBe(175), { timeout: 3000 });
+    await settle(800);
+    // The save wrote the page's profile with the proposal; the hold ended, and the record shows once.
+    expect((await recordOnDisk()).profile).toMatchObject({ sex: 'male', heightCm: 175, birthYear: 1980 });
+    expect(field(view, 'heightCm')).toBe('175');
+    expect(mirror()?.inputs).toMatchObject({ sex: 'male', heightCm: 175 });
+    expect(calls('remote_change_applied')).toHaveLength(1);
   });
 
   // US-34 AC8 (H14): the hold ends at the next profile save that settles, landed or refused.
