@@ -58,8 +58,8 @@ vi.mock('../lib/server-api', async original => {
 const refuse = vi.hoisted(() => ({ next: false, gate: null as null | Promise<void> }));
 // How many times the page re-reads the record (survey R8: a held change applied twice).
 const reads = vi.hoisted(() => ({ count: 0 }));
-// The next medication save waits on this when asked: true lands it, false refuses it (US-15 AC10).
-const listSave = vi.hoisted(() => ({ gate: null as null | Promise<boolean> }));
+// The next medication (`gate`) or screening (`screening`) save waits on this when asked: true lands it, false refuses it (US-15 AC10).
+const listSave = vi.hoisted(() => ({ gate: null as null | Promise<boolean>, screening: null as null | Promise<boolean> }));
 vi.mock('../lib/roadmap-data', async original => {
   const real = await original<typeof import('../lib/roadmap-data')>();
   return {
@@ -79,6 +79,11 @@ vi.mock('../lib/roadmap-data', async original => {
       const gate = listSave.gate;
       listSave.gate = null;
       return gate ? gate.then((lands) => lands && real.saveMedication(...args)) : real.saveMedication(...args);
+    },
+    saveScreening: (...args: Parameters<typeof real.saveScreening>) => {
+      const gate = listSave.screening;
+      listSave.screening = null;
+      return gate ? gate.then((lands) => lands && real.saveScreening(...args)) : real.saveScreening(...args);
     },
   };
 });
@@ -157,6 +162,7 @@ beforeEach(async () => {
   refuse.next = false;
   refuse.gate = null;
   listSave.gate = null;
+  listSave.screening = null;
   Object.assign(failMirror, { next: false, threw: false, always: false });
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
@@ -1239,6 +1245,32 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     expect(doses.length).toBeGreaterThan(1); // the own save's read, and the refusal's copy of the saved lists
     expect(doses).not.toContain(40);
     expect(mirrorStatin()).toBe(20);
+  });
+
+  it('US-15 AC10, US-34 AC11: under a hold, a dose save lands while a screening answer is still on its way: the mirror takes the saved dose beside its own profile, never the answer', async () => {
+    await recordWithLdl();
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase()); // with a weight, the page asks the screenings
+    await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase());
+    await flushRoadmapStore();
+    const view = await open();
+    let answerLands!: (lands: boolean) => void;
+    listSave.screening = new Promise<boolean>((r) => { answerLands = r; });
+    fireEvent.change(q(view, '#colorectal-method')!, { target: { value: 'colonoscopy_10yr' } });
+    await settle(300); // the answer's save is on its way, not landed
+    await heightOutOfRange(view);
+    await heldBirthYear(view);
+    fireEvent.change(q(view, '#statin-dose')!, { target: { value: '40' } });
+    await settle(300); // the dose's save lands
+    await act(async () => { await flushRoadmapStore(); });
+    expect(mirrorStatin()).toBe(40); // saved: it reaches the mirror under the hold
+    expect(mirror()?.screenings).toEqual([]); // the answer on its way does not
+    expect(mirror()?.inputs.birthYear).toBe(1980); // the page's saved profile, not the held 1981 (AC9)
+    expect(field(view, 'birthYear')).toBe('1980'); // still held
+    await act(async () => { answerLands(true); });
+    await settle(50);
+    await act(async () => { await flushRoadmapStore(); });
+    await waitFor(() => expect(mirror()?.screenings.map((s) => s.screeningKey)).toEqual(['colorectal_method'])); // saved now
+    expect(mirrorStatin()).toBe(40);
   });
 
   // New in AC9: the mirror's sex. Pinned, unchanged: the page's own chat context (planInputs) and the banner (the form).
