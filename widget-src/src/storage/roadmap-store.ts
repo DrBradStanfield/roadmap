@@ -137,7 +137,7 @@ export class RoadmapStore {
   get backendId() { return this.session.backendId; }
   /** What the storage line says of the save (US-09 AC30); see the session. */
   get saveStatus() { return this.session.saveStatus; }
-  get retryDue() { return this.session.retryDue; } // US-09 AC30: Settings says an upload will come
+  get uploadPromised() { return this.session.uploadPromised; } // US-09 AC61: Settings says an upload will come
 
   /** Which erase this copy is at, as one comparable string (US-16 AC2a). */
   get eraseIdentity(): string {

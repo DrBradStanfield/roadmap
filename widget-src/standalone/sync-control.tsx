@@ -14,7 +14,7 @@
  */
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, savePopupGrant, SYNC_PENDING_EVENT } from '../src/storage';
-import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
+import { currentSaveStatus, currentUploadPromised } from '../src/lib/roadmap-data';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, exitChoice, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
@@ -35,12 +35,12 @@ const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
 let storageCtaSeen = false;
 
 /** What a connected record's save is doing: the session's save status (US-09
- *  AC30), whether a retry of a failed save will come, and the store's
+ *  AC30), whether a retry of a failed save will come and may land (AC61), and the store's
  *  pending-sync marker ("still waiting to sync"), set by a failed cloud save or
  *  a failed connect-time lift and cleared by the next successful cloud save.
  *  Each fires its event on every change; no polling. */
 interface SaveFacts { status: SaveStatus; pendingSync: boolean; retry: boolean }
-const readSaveFacts = (): SaveFacts => ({ status: currentSaveStatus(), pendingSync: isSyncPending(), retry: currentRetryDue() });
+const readSaveFacts = (): SaveFacts => ({ status: currentSaveStatus(), pendingSync: isSyncPending(), retry: currentUploadPromised() });
 function useSaveFacts(backend: Backend): SaveFacts {
   // Read at mount, so the first frame never says a false Synced.
   const [facts, setFacts] = useState<SaveFacts>(() => (backend === 'local' ? { status: 'saved', pendingSync: false, retry: false } : readSaveFacts()));
@@ -349,11 +349,10 @@ export function SyncControl({ backend, hasData = true, attention = false }: {
           </button>
         </span>
         {deviceHolds(facts) && (
-          // " It will upload automatically." between the two sentences while facts.retry is held out
-          // pending Brad's approval of the wording (US-09 AC30, 2026-11-14); the retry itself is unchanged.
           <span className="hr-sync-detail">
             Some data in this browser is still waiting to sync to your {provider}.
-            Your data is safe in this browser meanwhile.
+            {/* Only while a retry will come: never after a refused sign-in (US-09 AC30; Brad 2026-11-26). */}
+            {facts.retry && ' It will upload automatically.'} Your data is safe in this browser meanwhile.
           </span>
         )}
       </div>

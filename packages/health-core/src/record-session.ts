@@ -16,10 +16,9 @@ import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
 import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
 import { recordSync, ROADMAP_DOC } from './roadmap-doc';
-import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
+import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveFailureOf, saveStatus, transition, unsaved, uploadPromised, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import type { RoadmapFile } from './roadmap-file';
 import type { SyncContext, SyncManager } from './sync-manager';
-import { mayHaveLanded } from './write-refusal';
 
 export { eraseIdentityOf } from './erase-identity';
 
@@ -175,9 +174,9 @@ export class RecordSession {
   /** @internal The last pass failed, wrote nothing and reached no device copy (lead S57). */ get writtenNowhere(): boolean { return writtenNowhere(this.mode); }
   /** A retry of a failed save would start one (US-09 AC30): a cloud's, one is owed, and the page
    *  may still save, not stopped by a log-off elsewhere (US-09 AC2c). Never on the device tier. */
-  get retryDue(): boolean {
-    return this.host.tier === 'cloud' && retryOwed(this.mode) && !this.host.mirror.writesStopped();
-  }
+  get retryDue(): boolean { return this.host.tier === 'cloud' && retryOwed(this.mode) && !this.host.mirror.writesStopped(); }
+  /** Settings may say "It will upload automatically." (US-09 AC61): a retry is due and the last failure was not a refusal. */
+  get uploadPromised(): boolean { return this.retryDue && uploadPromised(this.mode); }
   /** Retry a failed save (LiveRefresh's triggers): the whole save's answer, or null when none is due. */
   retry(): Promise<boolean> | null { return this.retryDue ? this.persist() : null; }
 
@@ -386,7 +385,7 @@ export class RecordSession {
       const fire = () => { this.persistTimer = null; void this.persist(); };
       this.persistTimer = effect.type === 'arm' ? this.host.timers.set(fire, PERSIST_DEBOUNCE_MS) : null;
     }
-    this.told = tellSaveStatus(this.host, this.told, { status: saveStatus(this.mode), retry: this.retryDue }); // once the effects run
+    this.told = tellSaveStatus(this.host, this.told, { status: saveStatus(this.mode), retry: this.uploadPromised }); // once the effects run
     return pass;
   }
 
@@ -455,7 +454,7 @@ export class RecordSession {
         this.host.report(error, { op: 'after-save', repeat: false });
         return true;
       }
-      this.dispatch({ type: 'passFailed', cause: saveFailureCause(error), ...(mayHaveLanded(error) ? { landed: true } : {}) });
+      this.dispatch({ type: 'passFailed', cause: saveFailureCause(error), failure: saveFailureOf(error) });
       this.running = null;
       // A pass that landed before this one failed may have folded a remote
       // change in: the page must still hear of it (adversary R3).

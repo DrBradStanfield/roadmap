@@ -15,7 +15,7 @@ import { render, fireEvent, cleanup, act } from '@testing-library/react';
 
 const flush = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock('../src/lib/roadmap-data', () => ({
-  currentSaveStatus: () => 'saved', currentRetryDue: () => false, getBackendKind: () => 'local',
+  currentSaveStatus: () => 'saved', currentUploadPromised: () => false, getBackendKind: () => 'local',
   flushRoadmapStore: flush, copyRecordToDevice: vi.fn(async () => undefined),
 }));
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));

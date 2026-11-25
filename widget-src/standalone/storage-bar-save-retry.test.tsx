@@ -3,10 +3,9 @@
  * US-09 AC30 (lead A1 step e): a failed cloud save is retried when the
  * browser comes back online, through the real data layer, record session,
  * live refresh and web host. The line goes back to "Synced to Dropbox", and
- * one `save_retry` product event says how it went. A retry is due only after a
- * failed save that was not a refused grant. Settings' sentence for that state
- * ("It will upload automatically.") is held out pending Brad's approval of the
- * wording (2026-11-14), so the waiting line reads its two sentences alone.
+ * one `save_retry` product event says how it went. Settings says "It will
+ * upload automatically." only while a retry will in fact happen: after a
+ * failed save that was not a refused grant (restored, Brad 2026-11-26).
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
@@ -36,7 +35,7 @@ vi.mock('./connect', () => ({
 }));
 
 import { StorageBar, SyncControl } from './sync-control';
-import { addMeasurement, currentRetryDue, flushRoadmapStore, initRoadmapStore, getShownErase } from '../src/lib/roadmap-data';
+import { addMeasurement, currentUploadPromised, flushRoadmapStore, initRoadmapStore, getShownErase } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
 import { GitHubAdapter } from '../src/storage/github';
 
@@ -152,13 +151,26 @@ describe('US-09 AC30: a failed cloud save is retried when the browser comes back
 });
 
 describe('US-09 AC30: Settings says a retry will come only when one will (lead A1 step e)', () => {
-  // The sentence is held out pending Brad's approval of the wording (2026-11-14); the retry is still due.
-  it('after a failed save (offline), a retry is due and the waiting line reads its two sentences alone', async () => {
+  // Brad approved the clause on 2026-11-26 (lead W2-17).
+  it('after a failed save (offline), the waiting line says it will upload automatically', async () => {
     await failedSave(OFFLINE());
-    expect(currentRetryDue()).toBe(true);
-    const detail = settingsDetail();
-    expect(detail).toBe(`${WAITING} ${SAFE}`);
-    expect(detail).not.toContain(RETRY_CLAUSE);
+    expect(currentUploadPromised()).toBe(true);
+    expect(settingsDetail()).toBe(`${WAITING} ${RETRY_CLAUSE} ${SAFE}`);
+  });
+
+  // US-09 AC61 (owner ruling 2026-11-26): only while the last failure was not a refusal.
+  it('after a save the provider did not answer, the waiting line says it will upload automatically', async () => {
+    await failedSave(new StorageError('Dropbox did not answer', undefined, undefined, undefined, undefined, 'no-answer'));
+    expect(settingsDetail()).toBe(`${WAITING} ${RETRY_CLAUSE} ${SAFE}`);
+  });
+
+  it('after a save the provider refused (a full or forbidden account), a retry is still owed but the line promises no upload', async () => {
+    const cloud = await failedSave(new StorageError('Dropbox call failed (403).', undefined, undefined, 403, 'forbidden', 'refused'));
+    expect(currentUploadPromised()).toBe(false);
+    expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
+    cloud.fail = null;
+    await online(); // the retry is still owed, and runs
+    expect(cloud.writes).toBe(2);
   });
 
   it('after a refused grant, the waiting line never promises an upload', async () => {
@@ -169,20 +181,19 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
   });
 
   // F7: a log-off in another tab stops this page's writes (US-09 AC2c), so no retry will come.
-  // The retry stops being due at once, with no save event to tell the line. The sentence that
-  // said so is held out pending Brad's approval (2026-11-14), so the line reads the same before and after.
-  it('a log-off in another tab ends the due retry at once', async () => {
+  // The sentence goes at once, with no save event to tell the line.
+  it('a log-off in another tab takes the sentence away at once', async () => {
     await failedSave(OFFLINE());
     cleanup();
     render(<SyncControl backend="dropbox" />);
     const detail = () => document.querySelector('.hr-sync-detail')?.textContent ?? null;
-    expect(currentRetryDue()).toBe(true);
-    expect(detail()).toBe(`${WAITING} ${SAFE}`);
+    expect(currentUploadPromised()).toBe(true);
+    expect(detail()).toBe(`${WAITING} ${RETRY_CLAUSE} ${SAFE}`);
     act(() => {
       localStorage.setItem(LOG_OFF_ID_KEY, 'logged-off-elsewhere');
       window.dispatchEvent(new StorageEvent('storage', { key: LOG_OFF_ID_KEY }));
     });
-    expect(currentRetryDue()).toBe(false);
+    expect(currentUploadPromised()).toBe(false);
     expect(detail()).toBe(`${WAITING} ${SAFE}`);
   });
 

@@ -101,10 +101,6 @@ issue, and nothing private.
 - **The reminders switch when iPhone permission was already decided.** Issue: if the person already answered iOS's
   notification question, the reminders switch does nothing and says nothing. Options: show the existing Settings row
   then; new words; leave. Recommendation: show the existing row (no new words), if you accept its line in this case.
-- **Restore " It will upload automatically."** Issue: Settings' waiting line on the web ("Some data in this browser
-  is still waiting to sync…") dropped this clause on 14 Nov until you approve it. The retry it describes already
-  runs. Options: approve it; leave it out. Recommendation: approve: it is true, and tells the person they need do
-  nothing.
 
 ### Product and code decisions (raised 2026-11-25)
 
@@ -209,6 +205,8 @@ issue, and nothing private.
   below); before the form is complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
   birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
   screening questions apply at your age and sex yet." (US-62 AC41).
+- Restore " It will upload automatically.": approved. Settings' waiting line on the web says it again, between its two
+  sentences, only while a retry will come.
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

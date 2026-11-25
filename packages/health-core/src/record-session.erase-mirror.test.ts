@@ -243,12 +243,12 @@ describe('what says a failed pass wrote nowhere (lead S57)', () => {
   it('N1: a landed failure of a pass that started before the swap says nothing of the erase', () => {
     // The erase swapped in change 3 while a pass from change 2 ran; that pass wrote the pre-erase copy, then failed its check.
     const erasing: SaveState = { mode: 'erasing', phase: 'writing', under: { mode: 'saving', changes: 3, saved: 1, from: 2, armed: false } };
-    const early = transition(erasing, { type: 'passFailed', cause: 'other', landed: true }).state;
+    const early = transition(erasing, { type: 'passFailed', cause: 'other', failure: { outcome: 'may-have-landed' } }).state;
     expect(early.mode === 'erasing' && writtenNowhere(early.under)).toBe(true);
     // A pass that carried the erase (from the swap's count) keeps its landed mark.
     const carried: SaveState = { mode: 'erasing', phase: 'writing', under: { mode: 'saving', changes: 3, saved: 1, from: 3, armed: false } };
-    const late = transition(carried, { type: 'passFailed', cause: 'other', landed: true }).state;
-    expect(late.mode === 'erasing' && late.under).toMatchObject({ mode: 'failed', landed: true });
+    const late = transition(carried, { type: 'passFailed', cause: 'other', failure: { outcome: 'may-have-landed' } }).state;
+    expect(late.mode === 'erasing' && late.under).toMatchObject({ mode: 'failed', failure: { outcome: 'may-have-landed' } });
     expect(late.mode === 'erasing' && writtenNowhere(late.under)).toBe(false);
   });
 
@@ -256,8 +256,8 @@ describe('what says a failed pass wrote nowhere (lead S57)', () => {
     const plain = transition(saving, { type: 'passFailed', cause: 'other' }).state;
     expect(writtenNowhere(plain)).toBe(true);
     expect(writtenNowhere(transition(plain, { type: 'mirrored', changes: 2 }).state)).toBe(false);
-    const landed = transition(saving, { type: 'passFailed', cause: 'other', landed: true }).state;
-    expect(landed).toMatchObject({ mode: 'failed', landed: true });
+    const landed = transition(saving, { type: 'passFailed', cause: 'other', failure: { outcome: 'may-have-landed' } }).state;
+    expect(landed).toMatchObject({ mode: 'failed', failure: { outcome: 'may-have-landed' } });
     expect(writtenNowhere(landed)).toBe(false);
     expect(writtenNowhere(saving)).toBe(false);
   });
