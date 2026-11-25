@@ -1,7 +1,10 @@
 // US-64 (lead A1-2): a pin written on main before the time and stamp
 // primitives left merge.ts. For 200 seeded pairs of small records, each merge
 // result's digest must match the snapshot main wrote. A move that changes one
-// byte of what mergeFiles returns, in either order, fails here.
+// byte of what mergeFiles returns, in either order, fails here. US-10 AC15
+// rewrote 39 seeds: 35 whose merged copy held a repeated medication key, and 4
+// where the erase gate's winner held unique keys out of key order. Both orders
+// give one digest for every seed.
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
 import { mergeFiles } from './merge';
