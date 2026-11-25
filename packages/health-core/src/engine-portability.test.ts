@@ -171,7 +171,7 @@ describe('engine portability (ios/architecture.md D4)', () => {
       },
     };
     const session = await RecordSession.open(host);
-    expect(session.edit((file) => void (file.profile.sex = 'female'))).toBe(true);
+    expect(session.edit((file) => void (file.profile.sex = 'female'), session.shownErase)).toBe(true);
     await session.flush();
     expect((await session.erase()).success).toBe(true);
     expect(session.file.meta.eraseEpoch).toBe(1);

@@ -143,7 +143,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     });
     expect(started.reconnect).toEqual({ kind: 'unreachable', provider: 'github' });
     expect(page.lib.healthWritesAllowed()).toBe(true);
-    fallback.addMeasurement('weight', 80, '2026-06-01');
+    fallback.addMeasurement('weight', 80, '2026-06-01', fallback.shownErase);
     await fallback.flush();
     expect(localStorage.getItem('health_roadmap_file_v2')).not.toBeNull();
     expect(page.store.isSyncPending()).toBe(true);
@@ -159,9 +159,9 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
 
   it('US-09 AC23: a weight, a medication and a supplement typed against an erased cloud survive, with their histories', async () => {
     const guest = await RoadmapStore.create(new SaveFails());
-    guest.saveMedication('statin', 'atorvastatin', 20, 'mg');
-    guest.saveSupplement('omega3', 'Omega-3');
-    guest.addMeasurement('weight', 80, '2026-06-01');
+    guest.saveMedication('statin', 'atorvastatin', 20, 'mg', guest.shownErase);
+    guest.saveSupplement('omega3', 'Omega-3', undefined, undefined, undefined, undefined, guest.shownErase);
+    guest.addMeasurement('weight', 80, '2026-06-01', guest.shownErase);
     await expect(guest.flush()).rejects.toThrow();
     expect(isSyncPending()).toBe(true);
 
@@ -182,7 +182,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-06-01T10:00:00.000Z')); // a second before the erase
     const store = await RoadmapStore.create(new SaveFails());
-    store.addMeasurement('weight', 80, '2026-06-01');
+    store.addMeasurement('weight', 80, '2026-06-01', store.shownErase);
     await expect(store.flush()).rejects.toThrow();
     vi.useRealTimers();
 
@@ -193,7 +193,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
   it('US-09 AC23: an erased cloud still wins, but the edits made on-device survive', async () => {
     const started = await startOnBackend({ adapter: new RefusingCloud(), backend: 'dropbox' }, init);
     const onDevice = await RoadmapStore.create(started.adapter);
-    onDevice.addMeasurement('weight', 80);
+    onDevice.addMeasurement('weight', 80, undefined, onDevice.shownErase);
     await onDevice.flush();
 
     // The cloud comes back, and another device erased the record meanwhile.
@@ -213,8 +213,8 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-06-01T10:00:05.000Z'));
     const guest = await RoadmapStore.create(new SaveFails());
-    guest.saveMedication('statin', 'atorvastatin', 20, 'mg');
-    guest.addMeasurement('weight', 80, '2026-06-01');
+    guest.saveMedication('statin', 'atorvastatin', 20, 'mg', guest.shownErase);
+    guest.addMeasurement('weight', 80, '2026-06-01', guest.shownErase);
     await expect(guest.flush()).rejects.toThrow();
     vi.useRealTimers();
 
@@ -232,7 +232,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
     const started = await startOnBackend({ adapter: new RefusingCloud(), backend: 'google-drive' }, data.initRoadmapStore);
     expect(started.reconnect).toEqual({ kind: 'signedOut', provider: 'google-drive' });
-    await data.addMeasurement('weight', 80, '2026-06-01');
+    await data.addMeasurement('weight', 80, '2026-06-01', data.getShownErase());
     await data.flushRoadmapStore();
     const before = localStorage.getItem('health_roadmap_file_v2');
     const hook = vi.fn(async () => null);

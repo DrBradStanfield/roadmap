@@ -15,7 +15,7 @@ import { customSupplementAdd } from '@roadmap/health-core/input-form';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement, flushRoadmapStore, initRoadmapStore, openHistoryLightbox, saveChangedMeasurements, saveMedication, saveSupplement,
-  setReminderOptIn,
+  setReminderOptIn, getShownErase,
 } from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { formatDisplayValue, type MetricType } from '@roadmap/health-core/units';
@@ -130,20 +130,20 @@ afterEach(async () => {
 
 /** Every free-text field of the record holds its own sentinel, every core metric an unusual value. */
 async function seed() {
-  await saveChangedMeasurements({ sex: 'male', heightCm: 191, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
+  await saveChangedMeasurements({ sex: 'male', heightCm: 191, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
   for (const [metric, latest, earlier] of CORE) {
-    await addMeasurement(metric, latest, '2026-10-12T00:00:00.000Z');
-    await addMeasurement(metric, earlier, '2026-04-02T00:00:00.000Z');
+    await addMeasurement(metric, latest, '2026-10-12T00:00:00.000Z', getShownErase());
+    await addMeasurement(metric, earlier, '2026-04-02T00:00:00.000Z', getShownErase());
   }
-  await addMeasurement('systolic_bp', 187, BP_DAY);
-  await addMeasurement('diastolic_bp', 117, BP_DAY);
+  await addMeasurement('systolic_bp', 187, BP_DAY, getShownErase());
+  await addMeasurement('diastolic_bp', 117, BP_DAY, getShownErase());
   seedOpenLabValues([
     { metricName: SENTINEL.lab, value: 4.2, unit: SENTINEL.labUnit, recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
     { metricName: SENTINEL.lab, value: 3.9, unit: SENTINEL.labUnit, recordedAt: '2026-04-02T00:00:00.000Z', source: 'manual' },
   ]);
   const custom = customSupplementAdd(SENTINEL.supplement, []);
-  await saveSupplement(custom.supplementKey, custom.supplementName, 5, 'mg');
-  await saveMedication('statin', SENTINEL.medication, 20, 'mg');
+  await saveSupplement(custom.supplementKey, custom.supplementName, 5, 'mg', undefined, undefined, getShownErase());
+  await saveMedication('statin', SENTINEL.medication, 20, 'mg', getShownErase());
   await seedOpenDocuments([{
     documentType: 'clinic_letter', title: SENTINEL.documentTitle, documentDate: '2026-10-01',
     // The letter's own link: its href is the person's own text, in their own document (exempt below).
@@ -241,7 +241,7 @@ describe('US-09 AC7l: the record\'s own text sits in no attribute on any main sc
   });
 
   it('the reminders line names the address they go to, in no attribute', async () => {
-    setReminderOptIn({ status: 'active', token: 'test-token-good', email: `${SENTINEL.email}@example.org`, provider: 'dropbox' });
+    setReminderOptIn({ status: 'active', token: 'test-token-good', email: `${SENTINEL.email}@example.org`, provider: 'dropbox' }, getShownErase());
     render(<RemindersControl backend="dropbox" />);
     shown(SENTINEL.email);
     expect(leaks()).toEqual([]);

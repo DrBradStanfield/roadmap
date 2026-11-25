@@ -23,6 +23,9 @@ export type Original = () => Promise<Blob>;
 export type UploadEngine = Pick<HealthUploadAPI, 'uploadSave' | 'uploadReview'>;
 /** What the page holds of the pick: the store adds the cloud write and the erase check. */
 export type WebUploadIO = Omit<UploadSaveIO<Original>, 'write' | 'stopped'>;
+/** The web's saving state, its erase required: read at the press on Save (useUploadFlow `save`). The phone's door
+ *  omits it and reads its own session's (ios/engine/upload-doors.ts), so health-core keeps it optional. */
+export type WebSaving = Extract<UploadState, { phase: 'saving' }> & { erase: string };
 
 /** The page's words for a Save that wrote nothing: an erase moved, or a throw. */
 export const SAVE_FAILED = 'Failed to save. Please try again.';
@@ -47,13 +50,12 @@ function reportUnstored(error: unknown, backend: string): void {
 export interface OriginalsCloud { write(ref: string, blob: Blob): Promise<void>; backend: string }
 
 export async function saveUploadThrough(
-  session: RecordSession, cloud: OriginalsCloud, engine: UploadEngine, s: UploadState, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson,
+  session: RecordSession, cloud: OriginalsCloud, engine: UploadEngine, s: WebSaving, now: string, cloudConnected: boolean, io: WebUploadIO, person?: ScreeningPerson,
 ): Promise<UploadSaveAnswer> {
   // The Save stands for the erase the page showed at the press on Save, which the flow's saving state carries (read by
   // useUploadFlow's `save`, never after an await): refused before any write, before each original and at the commit,
-  // since an erase can land while the originals upload (US-16 AC2a, US-11 AC1a). A state without one stands for the
-  // session's mark.
-  const erase = s.phase === 'saving' && s.erase !== undefined ? s.erase : session.shownErase;
+  // since an erase can land while the originals upload (US-16 AC2a, US-11 AC1a).
+  const { erase } = s;
   if (session.refuses(erase)) return ERASED;
   /** An original a busy refusal will retry: its bytes kept, so a retry does not inflate them again, until it settles. */
   const retrying = new Map<string, Blob>();

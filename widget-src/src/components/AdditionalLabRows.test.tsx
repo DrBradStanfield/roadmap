@@ -184,9 +184,9 @@ describe('US-21 AC26 — a refused lab correction says why, in the engine\'s wor
     const { RoadmapStore } = await import('../storage/roadmap-store');
     const { MemoryAdapter } = await import('@roadmap/health-core/memory-adapter');
     const store = await RoadmapStore.create(new MemoryAdapter());
-    const added = store.addLabValue({ metricName: 'sodium', unit: 'mmol/L', value: 141, day: '2026-05-12' });
+    const added = store.addLabValue({ metricName: 'sodium', unit: 'mmol/L', value: 141, day: '2026-05-12' }, store.shownErase);
     expect(added?.ok).toBe(true);
-    const onCorrect: CorrectFn = async (id, value) => store.correctValue(id, value);
+    const onCorrect: CorrectFn = async (id, value) => store.correctValue(id, value, store.shownErase);
     const { container, getByRole } = render(<AdditionalLabRows labValues={store.loadLabValues()} onCorrect={onCorrect} />);
     fireEvent.click(getByRole('button', { name: /Renal/ }));
     fireEvent.click(Array.from(container.querySelectorAll('.bt-cell-clickable')).find((c) => c.textContent === '141') as HTMLElement);

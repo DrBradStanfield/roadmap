@@ -121,7 +121,7 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     const write = adapter.writeDocument.bind(adapter);
     adapter.writeDocument = async (ref, file) => {
       // Another device's same-hash row, folded in while the blob uploads.
-      retry['session'].edit(f => { f.documents.push({ ...f.documents.find(d => d.id === original.id)!, id: 'merged-in' }); });
+      retry['session'].edit(f => { f.documents.push({ ...f.documents.find(d => d.id === original.id)!, id: 'merged-in' }); }, retry['session'].shownErase);
       return write(ref, file);
     };
     expect(await uploadThrough(retry, [payload()])).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 0 } });

@@ -204,8 +204,8 @@ export class RecordSession {
    *  asked for (a keystroke, a chat reply, a timer armed), and is refused when
    *  this copy is at another one, or while its own erase runs, from its confirm:
    *  the write would carry a pre-erase screen into the erased record (US-16
-   *  AC2a). A refusal is the caller's error answer, never a throw. */
-  refuses(erase = this.shownErase): boolean {
+   *  AC2a). A refusal is the caller's error answer, never a throw. Required (R5). */
+  refuses(erase: string): boolean {
     return this.mode.mode === 'erasing' || erase !== this.eraseIdentity;
   }
 
@@ -214,7 +214,7 @@ export class RecordSession {
    * given, or returns the file that replaces it, and a save is scheduled.
    * False, and nothing changed, when `refuses(erase)`.
    */
-  edit(change: (file: RoadmapFile) => RoadmapFile | void, erase?: string): boolean {
+  edit(change: (file: RoadmapFile) => RoadmapFile | void, erase: string): boolean {
     if (this.refuses(erase)) return false;
     const next = change(this.current);
     if (next) this.current = next;

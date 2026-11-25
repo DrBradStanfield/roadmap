@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, configure, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { toOldShape } from '@roadmap/health-core/blood-tests';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, correctValue, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 
 vi.mock('chart.js', () => {
   class Chart { static register() {} destroy() {} update() {} }
@@ -68,13 +68,13 @@ afterEach(async () => {
 
 /** A man of 51, 178 cm: LDL on two days, HbA1c on one, weight and a pressure on two, sodium with its printed range, vitamin D without one. */
 async function seed(profile: Record<string, unknown> = { sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5 }) {
-  await saveChangedMeasurements({ ...profile, unitSystem: 'si' }, {});
+  await saveChangedMeasurements({ ...profile, unitSystem: 'si' }, {}, getShownErase());
   for (const [metric, value, day] of [
     ['ldl', 2.9, '2026-04-02'], ['ldl', 3.4, '2026-10-12'], ['hba1c', 36, '2026-10-12'],
     ['weight', 84, '2026-09-20'], ['weight', 81, '2026-10-20'],
     ['systolic_bp', 132, '2026-09-20'], ['diastolic_bp', 84, '2026-09-20'],
     ['systolic_bp', 126, '2026-10-20'], ['diastolic_bp', 80, '2026-10-20'],
-  ] as const) await addMeasurement(metric, value, `${day}T00:00:00.000Z`);
+  ] as const) await addMeasurement(metric, value, `${day}T00:00:00.000Z`, getShownErase());
   await seedOpenLabValues([
     { metricName: 'sodium', value: 139, unit: 'mmol/L', referenceLow: 135, referenceHigh: 145, recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
     { metricName: 'vitamin_d', value: 72, unit: 'nmol/L', recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
@@ -148,7 +148,7 @@ describe('US-62 AC8: one row per value on a phone', () => {
   it('a known minor: no adult targets on the rows, the waist target stays (US-07 AC6)', async () => {
     const year = new Date().getFullYear() - 12;
     await seed({ sex: 'male', heightCm: 150, birthYear: year, birthMonth: 1 });
-    await addMeasurement('waist', 70, '2026-10-20T00:00:00.000Z');
+    await addMeasurement('waist', 70, '2026-10-20T00:00:00.000Z', getShownErase());
     await flushRoadmapStore();
     const view = await renderTool();
     expect(row(view, 'LDL Cholesterol').querySelector('.md-row-meta')!.textContent).toBe('Oct 2026');
@@ -280,7 +280,7 @@ describe('US-62 AC10: the value page', () => {
 
     // Another writer replaces the systolic of that day before Save.
     const sys = fileRows('systolic_bp').find(r => r.recordedAt.startsWith('2026-10-20'))!;
-    expect(await correctValue(sys.id, 128)).toBe('ok');
+    expect(await correctValue(sys.id, 128, getShownErase())).toBe('ok');
     await flushRoadmapStore();
     const before = JSON.stringify([fileRows('systolic_bp'), fileRows('diastolic_bp')]);
     fireEvent.change(within(page).getByLabelText('Diastolic (bottom number)'), { target: { value: '78' } });
@@ -406,8 +406,8 @@ describe('US-62 AC11: All results as a table', () => {
   });
 
   it('H79: with no saved vitals, the lone New column is a whole column too (320 px: 42 overflow -> 0)', async () => {
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-    await addMeasurement('ldl', 3.4, '2026-10-12T00:00:00.000Z');
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+    await addMeasurement('ldl', 3.4, '2026-10-12T00:00:00.000Z', getShownErase());
     await flushRoadmapStore();
     const view = await renderTool();
     expect(view.container.querySelector('.bt-vitals-card .bt-header-row .bt-cell-draft-date')).not.toBeNull();
@@ -450,8 +450,8 @@ describe('US-62 AC8 (W1-3): the vitals rows show whatever the device mirror held
   ] as const)('%s: Waist and Blood Pressure are rows, never first-time fields', async (_, vitals, visits) => {
     if (vitals) await seed();
     else {
-      await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-      await addMeasurement('ldl', 3.0, '2026-09-01T00:00:00.000Z');
+      await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+      await addMeasurement('ldl', 3.0, '2026-09-01T00:00:00.000Z', getShownErase());
       await flushRoadmapStore();
     }
     for (let i = 1; i < visits; i++) { await renderTool(); cleanup(); }
@@ -508,7 +508,7 @@ describe('US-62 AC10 review fixes: what Add expects is frozen when entry begins 
     fireEvent.click(row(view, 'LDL Cholesterol'));
     fireEvent.change(page(view).querySelector('input[type="date"]')!, { target: { value: '2026-10-30' } });
     fireEvent.change(within(page(view)).getByLabelText(/Value/), { target: { value: '2.2' } });
-    await remoteWrite(() => addMeasurement('ldl', 5.0, '2026-10-30T00:00:00.000Z'));
+    await remoteWrite(() => addMeasurement('ldl', 5.0, '2026-10-30T00:00:00.000Z', getShownErase()));
     await waitFor(() => expect(page(view).querySelector('.md-history')!.textContent).toContain('5.0'));
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(within(page(view)).getByRole('alert').textContent).toBe('This value changed on another device, so your edit was not saved.'));
@@ -530,7 +530,7 @@ describe('US-62 AC10 review fixes: what Add expects is frozen when entry begins 
     fireEvent.change(page(view).querySelector('input[type="date"]')!, { target: { value: '2026-10-12' } });
     fireEvent.change(within(page(view)).getByLabelText(/Value/), { target: { value: '3.1' } });
     const old = fileRows('ldl').find(r => r.recordedAt.startsWith('2026-10-12'))!;
-    await remoteWrite(() => correctValue(old.id, 3.6));
+    await remoteWrite(() => correctValue(old.id, 3.6, getShownErase()));
     await waitFor(() => expect(page(view).querySelector('.md-history')!.textContent).toContain('3.6'));
     fireEvent.click(within(page(view)).getByRole('button', { name: 'Save correction' }));
     await waitFor(() => expect(within(page(view)).getByRole('alert').textContent).toMatch(/changed on another device/));
@@ -546,7 +546,7 @@ describe('US-62 AC10 review fixes: what Add expects is frozen when entry begins 
     fireEvent.change(page(view).querySelector('input[type="date"]')!, { target: { value: '2026-10-29' } });
     fireEvent.change(within(page(view)).getByLabelText('Systolic (top number)'), { target: { value: '124' } });
     fireEvent.change(within(page(view)).getByLabelText('Diastolic (bottom number)'), { target: { value: '78' } });
-    await remoteWrite(() => addMeasurement('systolic_bp', 140, '2026-10-29T00:00:00.000Z'));
+    await remoteWrite(() => addMeasurement('systolic_bp', 140, '2026-10-29T00:00:00.000Z', getShownErase()));
     await waitFor(() => expect(fileRows('systolic_bp').some(r => r.recordedAt.startsWith('2026-10-29'))).toBe(true));
     await new Promise(r => setTimeout(r, 50));
     fireEvent.click(page(view).querySelector('.md-add-save')!);

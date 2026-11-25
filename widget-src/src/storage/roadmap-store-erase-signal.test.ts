@@ -110,7 +110,7 @@ afterEach(() => {
 describe('Fix 4 guarantee (US-16 AC2a, US-34): a moved erase identity is heard exactly once, in the same task, no await between', () => {
   it('US-34 AC6: another tab\'s erase, heard through the storage event', async () => {
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     stops.push(store.startLiveRefresh());
     await anotherWriterErases(new LocalStorageAdapter());
@@ -126,7 +126,7 @@ describe('Fix 4 guarantee (US-16 AC2a, US-34): a moved erase identity is heard e
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     stops.push(store.startLiveRefresh());
     await anotherWriterErases(new MemoryAdapter(cloud));
@@ -141,7 +141,7 @@ describe('Fix 4 guarantee (US-16 AC2a, US-34): a moved erase identity is heard e
     const cloud = new MemoryCloud();
     const adapter = new WatchedCloud(cloud);
     const store = await RoadmapStore.create(adapter);
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     stops.push(store.startLiveRefresh());
     expect(adapter.listeners).toHaveLength(1);
@@ -157,12 +157,12 @@ describe('Fix 4 guarantee (US-16 AC2a, US-34): a moved erase identity is heard e
   it('US-34 AC1: a save that folds another device\'s erase in, in one pass', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     await anotherWriterErases(new MemoryAdapter(cloud));
     const before = store.eraseIdentity;
     const p = probe(store);
-    store.addMeasurement('waist', 90, '2026-09-02');
+    store.addMeasurement('waist', 90, '2026-09-02', store.shownErase);
     await store.flush();
     expect(store.eraseIdentity).not.toBe(before);
     expect(p).toEqual({ moves: 1, onTime: 1, late: 0, heard: 1 });
@@ -170,9 +170,9 @@ describe('Fix 4 guarantee (US-16 AC2a, US-34): a moved erase identity is heard e
 
   it('US-10 AC5: a tab\'s hide (flushSync) that merges another tab\'s erase in', async () => {
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
-    store.addMeasurement('waist', 90, '2026-09-02'); // unsaved, so the hide writes
+    store.addMeasurement('waist', 90, '2026-09-02', store.shownErase); // unsaved, so the hide writes
     await anotherWriterErases(new LocalStorageAdapter());
     const before = store.eraseIdentity;
     const p = probe(store);
@@ -223,7 +223,7 @@ function scriptWrites(proto: { write: StorageAdapter['write'] }, during: (n: num
 async function cloudErasedElsewhere() {
   const cloud = new MemoryCloud();
   const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-  store.addMeasurement('weight', 82, '2026-09-01');
+  store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
   await store.flush();
   await anotherWriterErases(new MemoryAdapter(cloud));
   return store;
@@ -242,11 +242,11 @@ describe('Fix 4 D2 (US-34 AC1): a two-pass save-loop fold hears the erase one pa
       const store = await cloudErasedElsewhere();
       const before = store.eraseIdentity;
       const writes = scriptWrites(MemoryAdapter.prototype, n => {
-        if (n === 1) store.addMeasurement('ldl', 3.1, '2026-09-03'); // made while the first write is out
+        if (n === 1) store.addMeasurement('ldl', 3.1, '2026-09-03', store.shownErase); // made while the first write is out
         during(store, n);
       });
       const p = probe(store);
-      store.addMeasurement('waist', 90, '2026-09-02');
+      store.addMeasurement('waist', 90, '2026-09-02', store.shownErase);
       await store.flush().catch(() => {});
       await settle();
       expect(writes()).toBeGreaterThan(1); // the loop went round
@@ -258,11 +258,11 @@ describe('Fix 4 D2 (US-34 AC1): a two-pass save-loop fold hears the erase one pa
   it('two-pass fold: the erase arrives one pass late, never missed (by design, fix 4 D2; see state-leads H25); a third pass makes three writes', async () => {
     const store = await cloudErasedElsewhere();
     const writes = scriptWrites(MemoryAdapter.prototype, n => {
-      if (n === 1) store.addMeasurement('ldl', 3.1, '2026-09-03');
-      if (n === 2) store.addMeasurement('hba1c', 5.4, '2026-09-04');
+      if (n === 1) store.addMeasurement('ldl', 3.1, '2026-09-03', store.shownErase);
+      if (n === 2) store.addMeasurement('hba1c', 5.4, '2026-09-04', store.shownErase);
     });
     const p = probe(store);
-    store.addMeasurement('waist', 90, '2026-09-02');
+    store.addMeasurement('waist', 90, '2026-09-02', store.shownErase);
     await store.flush();
     expect(writes()).toBe(3);
     expect(p).toEqual(LATE);
@@ -270,16 +270,16 @@ describe('Fix 4 D2 (US-34 AC1): a two-pass save-loop fold hears the erase one pa
 
   it('two-pass fold: the erase arrives one pass late, never missed (by design, fix 4 D2; see state-leads H25); on this device, the page hiding mid-loop', async () => {
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    store.addMeasurement('weight', 82, '2026-09-01');
+    store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
     await store.flush();
     await anotherWriterErases(new LocalStorageAdapter());
     const before = store.eraseIdentity;
     const writes = scriptWrites(LocalStorageAdapter.prototype, n => {
-      if (n === 1) store.addMeasurement('ldl', 3.1, '2026-09-03');
+      if (n === 1) store.addMeasurement('ldl', 3.1, '2026-09-03', store.shownErase);
       if (n === 2) store.flushSync(); // writes synchronously, so the second write conflicts and goes round
     });
     const p = probe(store);
-    store.addMeasurement('waist', 90, '2026-09-02');
+    store.addMeasurement('waist', 90, '2026-09-02', store.shownErase);
     await store.flush().catch(() => {});
     await settle();
     expect(writes()).toBeGreaterThan(1);

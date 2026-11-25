@@ -23,7 +23,7 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { stampFields } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { BACKEND_KEY } from '../storage/web-record-host';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, getShownErase } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import type { SendMessageResult } from '../lib/chat-api';
 import { trackProductEvent } from '../lib/server-api';
@@ -111,9 +111,9 @@ class HeldCloud extends MemoryAdapter {
 async function userOnStatin(adapter: HeldCloud, seed?: () => Promise<unknown>): Promise<RenderResult> {
   localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered (US-11 AC6)
   await initRoadmapStore(adapter);
-  await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
-  await addMeasurement('weight', 82, '2026-09-01');
-  await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+  await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {}, getShownErase());
+  await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+  await saveMedication('statin', 'rosuvastatin', 10, 'mg', getShownErase());
   await seed?.();
   await flushRoadmapStore();
   const view = render(<HealthTool />);
@@ -444,7 +444,7 @@ describe('US-16 AC2a (A6 Codex R1): a dose changed just before "Delete all my da
   it('the record is not re-read: the waiting save lands, and the screen and the stored record agree on the new dose', async () => {
     const cloud = new MemoryCloud();
     const adapter = new HeldCloud(cloud);
-    const view = await userOnStatin(adapter, () => addMeasurement('ldl', 4.2, '2026-09-01')); // the statin's dose shows with an LDL
+    const view = await userOnStatin(adapter, () => addMeasurement('ldl', 4.2, '2026-09-01', getShownErase())); // the statin's dose shows with an LDL
     const dose = await waitFor(() => { const select = view.container.querySelector<HTMLSelectElement>('#statin-dose'); expect(select).not.toBeNull(); return select!; });
     expect(dose.value).toBe('10');
     vi.spyOn(RoadmapStore.prototype, 'loadLatestMeasurements');

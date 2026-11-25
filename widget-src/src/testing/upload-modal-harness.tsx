@@ -72,7 +72,7 @@ async function start() {
   localStorage.setItem(BACKEND_KEY, 'memory');
   const cloud = new MemoryCloud();
   const seed = await RoadmapStore.create(new MemoryAdapter(cloud));
-  if (scenario.held) seed.addMeasurement('ldl', 2.8, DAY);
+  if (scenario.held) seed.addMeasurement('ldl', 2.8, DAY, seed.shownErase);
   await seed.flush();
   if (scenario.save === 'hang') RoadmapStore.prototype.saveUpload = () => new Promise(() => {});
   if (scenario.save === 'throw') RoadmapStore.prototype.saveUpload = async () => { throw new Error('Synthetic: the store threw'); };
