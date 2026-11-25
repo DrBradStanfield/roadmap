@@ -110,3 +110,12 @@ Checked against `main` at `b2548fe3d` and each PR's state.
 - **H406** chat mirror with one writer: open (PR 2132).
 - **H404** widgets follow an erase: open (PR 2127).
 - **R18** the switch stop names its cause in its own words (PR 2122).
+
+## Status, 26 Nov 2026 (second run)
+
+Brad settled the open wording and product items ([decisions-for-brad.md](../decisions-for-brad.md), Decided,
+2026-11-26). Merged: PRs 2079, 2122, 2144, 2145, 2147, 2148, 2149, 2150, 2153, 2154, 2157, 2158, 2160, 2161 and
+2163. Built and held, not merged: PR 2146 (three failure lines; leads H39, H117, H128), PR 2151 (chat history
+lines and the "Not saved" marker; leads A2, C22), PR 2152 (per-row refusal in an upload; lead U11) and PR 2155
+(the upload clause in Settings; lead W2-17). Decided and not started: the glossary PRs (waiting on the contributor),
+untracking the built storefront bundles, splitting the story file, and one workflow PR for CI tidying.
