@@ -81,7 +81,7 @@ function setup() {
 
 const weight = (id: string) =>
   createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date(clock).toISOString() });
-const add = (session: RecordSession, id: string) => session.edit((file) => void file.measurements.push(weight(id)));
+const add = (session: RecordSession, id: string) => session.edit((file) => void file.measurements.push(weight(id)), session.shownErase);
 const stored = (store: MemoryAdapter): RoadmapFile => JSON.parse(store.cloud.files.get(ROADMAP_FILE_NAME)!.json);
 const ids = (file: RoadmapFile) => file.measurements.map((m) => m.id).sort();
 

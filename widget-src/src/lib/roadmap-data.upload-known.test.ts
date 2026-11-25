@@ -5,7 +5,7 @@
 // the upload's one Save (roadmap-data.ts saveUpload), the path a person's upload takes.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { knownAs } from '@roadmap/health-core/upload-known';
-import { deleteDocument, initRoadmapStore, recordFileSync, uploadKnownIndex } from './roadmap-data';
+import { deleteDocument, initRoadmapStore, recordFileSync, uploadKnownIndex, getShownErase } from './roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { uploadOpen } from '../testing/upload-save-kit';
 
@@ -29,7 +29,7 @@ describe('US-12 AC27: the known index follows the record', () => {
   it('a delete, then the same file again before the write lands: it is read', async () => {
     expect(await uploadOpen([letter])).toMatchObject({ ok: true });
     expect(knownAs(uploadKnownIndex(), HASH)).not.toBeNull();
-    expect(await deleteDocument(saved()[0].id)).toBe(true);
+    expect(await deleteDocument(saved()[0].id, getShownErase())).toBe(true);
     expect(knownAs(uploadKnownIndex(), HASH)).toBeNull();
   });
 });
