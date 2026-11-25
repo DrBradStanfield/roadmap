@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H424,chat tools,"Router harness sends no conversation context",lead,not started,"Filed 2026-11-26 from PR 2145: tools/test-chatbot-matching-calls.ts routeQuery sends the query alone, while production's router reads the turn from routerTurn (US-15 AC75). The conversation-context fixture in tools/test-queries.json stays pending until it does. (H424)",,no

@@ -208,6 +208,9 @@ issue, and nothing private.
 - Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
   so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
   dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
+- A YouTube follow-up's classifier and router see the parent comment and the author's own earlier replies, by the
+  same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
+  probably use the same code". No new words.
 - The pause before an agent files feedback stays, and an early confirm now says the seconds left ("go with your
   recommendations"): "That confirm receipt is not valid yet: it can be used in 7 seconds (from <time>), after the user
   has answered. Do not retry before then; end your turn. Nothing was written." (US-36 AC14).
