@@ -53,6 +53,8 @@ export type PlanBasis = Pick<HealthResults, 'age' | 'bmi' | 'idealBodyWeight' | 
   weightMedTrigger: WeightMedicationTrigger;
   /** The plan's lipid marker: ApoB, then non-HDL, then LDL-c. */
   lipidMarker: LipidMarker | null;
+  /** The age the screening cards read (screeningAge, UTC month): the screening questions read it too (US-23 AC6c). */
+  screeningAge?: number;
 };
 
 
@@ -420,7 +422,7 @@ export function InputPanel({
 
   // Null, not an empty element, when no screening applies: My health draws a topic for any element (US-62 AC17).
   const renderScreening = (place: Placement) => {
-    const age = planBasis?.age;
+    const age = planBasis?.screeningAge;
     if (age === undefined || !anyScreeningEligible(age, inputs.sex, screeningsToInputs(screenings))) return null;
     return <ScreeningQuestions place={place} form={form} screenings={screenings} onScreeningChange={onScreeningChange}
                                psaDate={psaDate} onPsaDateChange={onPsaDateChange} onPsaCommit={onPsaCommit} bloodTestHistory={bloodTestHistory}
@@ -428,7 +430,7 @@ export function InputPanel({
   };
 
   const renderBoneDensity = (place: Placement) => {
-    const age = planBasis?.age;
+    const age = planBasis?.screeningAge;
     if (age === undefined) return null;
 
     const sex = inputs.sex;

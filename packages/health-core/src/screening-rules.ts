@@ -353,6 +353,19 @@ export function inAges(ages: Ages, age: number, sex: string | undefined, ignoreU
   return age >= min && (ignoreUpper || max === undefined || age <= max);
 }
 
+type BirthYearMonth = { birthYear?: number; birthMonth?: number };
+
+/** The age every screening gate reads (US-23 AC6b, AC6c): the plan's cards and the reminders (cardAges),
+ *  the questions (askAges, groupAges, through their callers) and the upload gate (uploadMinAge). Whole
+ *  years at the UTC month, so one record at one instant gets one answer in every zone. A missing
+ *  birth month is January. The age the plan shows (calculateAge) keeps the local month. With no
+ *  birth year, `given`: a caller that passes the age itself (generateSuggestions with results only). */
+export function screeningAge(born: BirthYearMonth, now: Date): number | undefined;
+export function screeningAge(born: BirthYearMonth, now: Date, given: number): number;
+export function screeningAge({ birthYear, birthMonth }: BirthYearMonth, now: Date, given?: number): number | undefined {
+  return birthYear ? now.getUTCFullYear() - birthYear - (now.getUTCMonth() + 1 < (birthMonth ?? 1) ? 1 : 0) : given;
+}
+
 /** Whether a row's ages, with the row's own sex, take this person. */
 export const ruleTakes = (r: ScreeningRule, ages: Ages, age: number, sex: string | undefined): boolean =>
   (!r.sex || r.sex === sex) && inAges(ages, age, sex);
