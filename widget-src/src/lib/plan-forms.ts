@@ -19,7 +19,7 @@ export function medicineInputs(e: Partial<HealthInputs>): { hasLipidInput: boole
 export interface PlanFormsInput extends ReturnType<typeof medicineInputs> {
   medications: ApiMedication[];
   screenings: ApiScreening[];
-  planBasis: Partial<Pick<PlanBasis, 'age' | 'bmi' | 'lipidMarker' | 'weightMedTrigger'>> | null;
+  planBasis: Partial<Pick<PlanBasis, 'screeningAge' | 'bmi' | 'lipidMarker' | 'weightMedTrigger'>> | null;
   sex: HealthInputs['sex'];
   unitOverrides: Partial<Record<string, UnitSystem>>;
   unitSystem: UnitSystem;
@@ -35,6 +35,6 @@ export function planForms({ medications, screenings, planBasis, sex, unitOverrid
       hasWeightInput,
       unitFor: (metric) => unitOverrides[METRIC_TO_FIELD[metric]] ?? unitSystem,
     }),
-    screenings: screeningForm(planBasis?.age, sex, screeningsToInputs(screenings)),
+    screenings: screeningForm(planBasis?.screeningAge, sex, screeningsToInputs(screenings)),
   };
 }

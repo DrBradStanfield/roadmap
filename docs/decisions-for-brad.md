@@ -50,15 +50,6 @@ issue, and nothing private.
 
 ### Words that need your yes (raised 2026-11-25)
 
-- **Screen-reader names for the medicine dose boxes and the PDF email box.** Issue: on the web, the dose box beside
-  a statin, GLP-1 or SGLT2 inhibitor has no name, so a screen reader cannot say which medicine it belongs to; the
-  PDF email box is named only by its "Email" placeholder. Contributor PRs 1888 and 1800 add the names "Statin Dose",
-  "GLP-1 Medication Dose", "SGLT2 Inhibitor Dose" and "Email for your PDF". The dose names join two labels the form
-  already has, so they follow any change to those labels. PR 1796 names supplement rows with a lower-case "dose"
-  ("Vitamin D dose"), so the two differ in case. Options: (1) keep "Dose" as submitted: no new string, but two
-  casings on one form; (2) lower-case "dose" in both: one casing, at the cost of a new string or a lower-case call.
-  Recommendation: option 2, so the whole form uses one casing. Note: PR 1796 builds its names from the supplement's name, which the new rule above
-  (US-09 AC7l) says must use a labelled-by reference instead; it needs that change before it merges.
 - **Two chat history lines.** Issue: PR 2078 (on main) makes a failed open of the chat history file retry on the
   next turn, but adds no words. Two places say nothing today: the History list after the file could not be opened
   (it shows old titles, or "No conversations yet"), and a turn that was not saved to the file (nothing on screen).
@@ -214,10 +205,13 @@ issue, and nothing private.
 ## Decided
 
 2026-11-26, Brad's words in quotes:
+- Screen-reader names for the medicine dose boxes end in a lower-case "dose", as the supplement rows do (PR 1796),
+  so the whole form uses one casing: "this" (option 2). PR 1888 now names them "Statin dose", "GLP-1 Medication
+  dose" and "SGLT2 Inhibitor dose", through labelled-by references (US-09 AC7l). "Email for your PDF" is approved for PR 1800.
 - Web sync lines, all three: "use your judgement for the sentences. must be succinct, and I approve whatever sentences
-  you suggest". Now said: "Sign-in did not finish. Your data stays in this browser." (a sign-in a log-off cut short);
+  you suggest". Now said: "Sign-in did not finish because this browser was logged off. Please try again." (a sign-in a log-off cut short);
   "This browser was logged off in another tab. Your latest changes show here but are not saved." (a cloud page whose
-  save failed after that log-off); "Your record in <provider> stays there as it is." (the picker, from a cloud).
+  save failed after that log-off); "Your record in <provider> stays there as it is." and, for a self-hosted record, "Your record on your own server stays there as it is." (the picker, from a cloud).
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every
