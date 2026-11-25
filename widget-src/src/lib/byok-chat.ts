@@ -25,7 +25,7 @@ import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';
 import { askChatHistory, getChatHistory } from './chat-history-access';
-import { chatAskedUnder } from './chat-erase';
+import { chatAskedUnder, recordEraseIn } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 // Types come from chat-api.ts, the one home callers compile against. `import
@@ -216,6 +216,7 @@ export async function sendMessage(
     .then(({ store, askedMarks }) =>
       chatAskedUnder() !== asked ? undefined : store?.recordExchange({
         askedMarks,
+        askedUnder: recordEraseIn(asked),
         conversationId: convId,
         isNew: !conversationId,
         userText: message,
