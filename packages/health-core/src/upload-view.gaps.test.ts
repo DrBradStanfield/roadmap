@@ -129,13 +129,14 @@ describe('gaps the list-view property found, fixed (owner rulings 2026-11-20)', 
     expect(rows(see(next, EMPTY).view)).toMatchObject([{ ticked: false }]);
   });
 
-  // US-13 AC27 replaced the wait: the write refuses that row alone, which keeps its words, and Save may try again.
-  it('refusedAfterChange (seed 869): a record change that makes the write refuse a row leaves the row saying why; Save is not held', () => {
+  // US-13 AC27 replaced the wait: the write refuses that row alone, which keeps its words; with nothing else to write,
+  // the retry waits, saying so (owner ruling on PR 2152).
+  it('refusedAfterChange (seed 869): a record change that makes the write refuse a row leaves the row saying why; Save waits on nothing to save', () => {
     // The other writer's diastolic makes the upload's systolic the wrong way up; the app sends the refusal as a failed Save.
     const record = held([{ kind: 'measurement', metricType: 'diastolic_bp', value: 125, recordedAt: DAY, source: 'manual' }]);
     const s: UploadState = { ...open([labRead('f0', { values: [core({ metric: 'systolic_bp', valueSI: 120, displayValue: 120, displayUnit: 'mmHg' })] })]), phase: 'saveFailed', attempt: 1, message: FIX_ERRORS_TEXT };
     const { view } = see(s, record);
-    expect(view.save).toMatchObject({ enabled: true, why: null, blockers: [] });
+    expect(view.save).toMatchObject({ enabled: false, why: UPLOAD_TEXT.saveNothing, blockers: [] });
     expect(rows(view)).toMatchObject([{ ticked: true, error: expect.any(String) }]);
   });
 

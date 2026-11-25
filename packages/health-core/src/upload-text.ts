@@ -6,7 +6,7 @@
  * failed file reads the same on both clients.
  */
 import { IMPORT_LIMITS } from './import-hints';
-import { IMPORT_REVIEW_TEXT, KIND_WORDS, plural } from './import-review';
+import { IMPORT_REVIEW_TEXT, KIND_WORDS, plural, PRESSURE_PAIR } from './import-review';
 import { METRIC_LABELS } from './mappings';
 import type { MeasurementRefusal } from './record-edits';
 import type { FailDetail } from './upload-failure';
@@ -182,6 +182,7 @@ export function measurementRefusalText({ metricType, reason, message }: Pick<Mea
   if (reason === 'invalid-value') return `${label}: the value was not a number the record can store, so it was not saved.`;
   // A blood pressure the wrong way up (US-02 AC8): no end of a range was missed.
   if (message === PRESSURE_ORDER) return `Blood pressure not saved: ${PRESSURE_ORDER[0].toLowerCase()}${PRESSURE_ORDER.slice(1)} Check the report, then enter it again.`;
+  if (message === PRESSURE_PAIR) return `${label}: ${PRESSURE_PAIR}.`;
   return null;
 }
 /** An empty ZIP, or one of unsupported files, named itself (US-12 AC9); moved from useUploadFlow.ts. */

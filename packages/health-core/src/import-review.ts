@@ -12,7 +12,7 @@
 import { UNDATED_PREVIOUS, isUrineOrRatioUnit, type AdditionalLabValue, type ExtractedValue, type UnifiedExtractionResult } from './lab-extraction';
 import { labTestLabel } from './lab-catalog';
 import { DAY_NOT_HAPPENED, LAB_DAY_REFUSAL } from './lab-series';
-import { bulkAppendValues, slotIndex, slotKey, validDay, type BulkAppendResult, type BulkRow } from './record-edits';
+import { bulkAppendValues, OTHER_HALF, slotIndex, slotKey, validDay, type BulkAppendResult, type BulkRow } from './record-edits';
 import { bulkRowTarget } from './bulk-row-target';
 import { coreStored, createCoreRow, isBloodTestKey } from './blood-tests';
 import { isClinicalDay } from './measurement-history';
@@ -124,6 +124,9 @@ export const isOfferedRef = (ref: string) => /^[va]\d+$/.test(ref);
 /** Why a value gets a row (D1). `outOfRange`: the write refuses its number
  *  (outside its input range, or half of a blood pressure the wrong way up). */
 export type UnsureReason = 'confidence' | 'question' | 'unitGuessed' | 'outOfRange' | 'conflict';
+/** An uploaded blood pressure half whose other half from the same report and day the write refuses: refused with it,
+ *  never written alone (owner ruling on PR 2152, US-13 AC27). The list's caption; with the test's name, the done line. */
+export const PRESSURE_PAIR = 'not saved without its other blood pressure number';
 /** Why a value is not saved (D5). `futureDay`, `futureCoreDay`: its own printed day is no real past day, a lab or a core
  *  value (the shared upload's alone, upload-review.ts). */
 export const NOT_SAVED_REASONS = ['unit', 'noUnit', 'misread', 'scale', 'unreadable', 'urine', 'sameDay', 'futureDay', 'futureCoreDay'] as const;
@@ -280,14 +283,20 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
   // 1) One reading per (test, day), by the review's precedence (US-12 AC12, AC14; US-13 AC3).
   //    A row the write refuses on its own (its unit, its range) takes no slot:
   //    it goes to the run as it is, and a valid reading of that day still lands.
-  const placed = sent.map((_, i) => i).filter((i) => !refusedAlone(sent[i].row, now));
+  //    A blood pressure is one reading (owner ruling on PR 2152, US-13 AC27): a half the write refuses on its own takes
+  //    its other half from the same report and day with it (`paired`), so neither takes a slot and no half is written alone.
+  const alone = sent.map((s) => refusedAlone(s.row, now));
+  const half = (i: number) => { const { metric } = bulkRowTarget(sent[i].row); return OTHER_HALF.has(metric) ? { metric, day: `${sent[i].file}|${sent[i].row.recordedAt.slice(0, 10)}` } : null; };
+  const refusedHalves = new Set(sent.flatMap((_, i) => { const h = half(i); return alone[i] && h ? [`${h.day}|${h.metric}`] : []; }));
+  const paired = (i: number) => { const h = half(i); return !alone[i] && !!h && refusedHalves.has(`${h.day}|${OTHER_HALF.get(h.metric)}`); };
+  const placed = sent.map((_, i) => i).filter((i) => !alone[i] && !paired(i));
   // The record's slots, indexed once for every placement and dry run below.
   const held = heldReadings(record);
   const heldEmpty = heldReadings(empty);
   const placements = placeReadings(placed.map((i) => ({ ...slotOf(sent[i].row), rank: sent[i].rank, edited: sent[i].row.source === 'lab_import_edited', sent: true })), held);
   const places = new Map(placed.map((i, k) => [i, { place: placements[k].place, winner: placements[k].winner === undefined ? undefined : placed[placements[k].winner!] }]));
   const loses = (i: number) => places.get(i)?.place === 'duplicate' || places.get(i)?.place === 'hidden';
-  const batch = sent.map((_, i) => i).filter((i) => !loses(i)).sort((i, j) => sent[i].rank - sent[j].rank || i - j);
+  const batch = sent.map((_, i) => i).filter((i) => !loses(i) && !paired(i)).sort((i, j) => sent[i].rank - sent[j].rank || i - j);
 
   // 2) One dry run of what Save submits; each row's group is its own outcome.
   const groups = new Map<number, Group>(groupsOf(batch.map((i) => sent[i]), record, held, now).map((g, k) => [batch[k], g]));
@@ -300,6 +309,11 @@ export function classifyImportValues(files: readonly ImportFile[], record: Roadm
     const inherited: Group = place === 'hidden' ? { group: 'notSaved', reason: 'sameDay', writes: false }
       : won.writes || won.group === 'saved' ? { group: 'saved', writes: false, duplicate: true } : { ...won, writes: false, refusal: undefined, copy: true }; // the winner's refusal is its own
     values.push({ ...label(s, true), ...inherited } as ClassifiedValue);
+  });
+  sent.forEach((s, i) => {
+    if (!paired(i)) return;
+    const refusal: ImportRefusal = { measurement: { index: -1, metricType: bulkRowTarget(s.row).metric, reason: 'out-of-range', message: PRESSURE_PAIR } };
+    values.push({ ...label(s, true), group: 'unsure', reasons: [...new Set([...s.reasons, 'outOfRange' as const])], writes: false, refusal });
   });
 
   // 3) A value not sent: what ticking it alone would do; with no day, only its refusal.

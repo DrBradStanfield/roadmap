@@ -212,8 +212,10 @@ issue, and nothing private.
   same rule as web and Discord (H415, US-15 AC75): "the router should see the earlier comments. youtube, web, and discord should behave the same here, and so
   probably use the same code". No new words.
 - An out-of-range number in an upload is refused alone, on both clients: "per-row refusal in the shared engine for
-  both, with the refused row shown". Save writes the rest; the row keeps the words it already showed. Held text still
-  blocks Save (US-13 AC27). No new sentences.
+  both, with the refused row shown". Before, both clients blocked the whole Save (the shared engine did), so this is
+  new on both. Save writes the rest; the row keeps the words it already showed, and the done screen names it. Held
+  text still blocks Save (US-13 AC27). The owner's rulings on review: a blood pressure half refused takes its other
+  half from the same report and day with it. New sentence: "not saved without its other blood pressure number".
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

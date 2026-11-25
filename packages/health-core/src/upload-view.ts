@@ -311,7 +311,11 @@ function save(s: UploadState, plan: UploadSavePlan, review: UploadReview): Uploa
   const blockers = s.phase === 'open' || s.phase === 'saveFailed' ? saveBlockers(review, s) : [];
   const blocked = blockers[0]?.why ?? null;
   // After a failed Save, Save tries again, unless the record changed meanwhile so that it would refuse: then it waits, saying why.
-  if (s.phase === 'saveFailed') return { label, enabled: blocked === null, why: blocked, error: s.message, blockers };
+  // ... and only while it would write something (`planIsEmpty`), so a retry never files an empty report (PR 2152 review).
+  if (s.phase === 'saveFailed') {
+    const why = blocked ?? (planIsEmpty(plan) ? UPLOAD_TEXT.saveNothing : null);
+    return { label, enabled: why === null, why, error: s.message, blockers };
+  }
   if (s.phase !== 'open') return { label, enabled: false, why: null, error: null, blockers };
   const waiting = inFlight(s);
   const why = waiting ? UPLOAD_TEXT.saveWait(waiting) : blocked ?? (planIsEmpty(plan) ? UPLOAD_TEXT.saveNothing : null);

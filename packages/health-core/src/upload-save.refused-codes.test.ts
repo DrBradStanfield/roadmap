@@ -181,7 +181,8 @@ describe('US-12 AC6, generated: the codes are the commit write\'s refusals, one 
       const expected = byHand(bulkAppendValues(at, rows, NOW));
       expect(multiset(outcome.refusedCodes), `seed ${seed}`).toEqual(multiset(expected));
       expect('refusedCodes' in outcome, `seed ${seed}`).toBe(expected.length > 0);
-      expect(outcome.refusedCodes?.length ?? 0, `seed ${seed}`).toBe(outcome.refused?.length ?? 0);
+      // `refused` also names the rows the list refused and never sent (US-13 AC27): one code for each commit refusal only.
+      expect(outcome.refused?.length ?? 0, `seed ${seed}`).toBeGreaterThanOrEqual(outcome.refusedCodes?.length ?? 0);
       if (outcome.refusedCodes) { assertClosed(outcome.refusedCodes); refusedSeen++; }
     }
     expect(refusedSeen).toBeGreaterThan(10); // the generator reaches the refusal, not only clean commits

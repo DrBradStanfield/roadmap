@@ -170,7 +170,8 @@ export class Run {
       // Nothing a person reviewed vanishes: each reviewed value not written is counted in the outcome.
       const missing = want.filter((w) => !got.includes(w)).length;
       // Every reviewed value is written, counted as skipped, or named as refused at the commit (a pressure pair turned).
-      const refused = outcome.refused?.length ?? 0;
+      // The commit's own refusals, one code each; `refused` also names the rows the list refused, never sent (US-13 AC27).
+      const refused = outcome.refusedCodes?.length ?? 0;
       if (refused) this.note('refusedAtCommit');
       if (changed && missing !== skipped + refused) fail('P2', `record changed: ${missing} reviewed values not written, ${skipped} counted\nwant ${JSON.stringify(want)}\ngot ${JSON.stringify(got)}`);
       // Never more: nothing is written that the page did not show as to be written.
