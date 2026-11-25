@@ -23,11 +23,6 @@ import { SIGN_IN_KEYS } from './providers';
  *  (lead C29; words Brad 2026-11-26). Not a defect, so not reported. */
 export const SIGN_IN_UNFINISHED = 'Sign-in did not finish because this browser was logged off. Please try again.';
 
-/** The line a redirect return that failed shows: one sentence per cause. */
-function returnFailure(error: unknown, backend: 'dropbox' | 'google-drive'): string {
-  return error instanceof SignInUnfinishedError ? SIGN_IN_UNFINISHED : reportConnectFailure(error, backend);
-}
-
 /** The backend this load runs on, and the connect it refused on the way, if
  *  any (US-09 AC15) — kept apart from the backend so a load-time fallback
  *  cannot drop it. */
@@ -43,7 +38,7 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
   try {
     resumed = await DropboxAdapter.completeRedirect(dropboxConfig());
   } catch (error) {
-    refused = returnFailure(error, 'dropbox');
+    refused = error instanceof SignInUnfinishedError ? SIGN_IN_UNFINISHED : reportConnectFailure(error, 'dropbox');
   }
   // A returned adapter saved its own sign-in under the log-off id it began
   // under (US-09 AC45); otherwise the page opens as if nothing was tried.
@@ -60,7 +55,7 @@ export async function resolveBackend(): Promise<{ resolved: ResolvedBackend; ref
   try {
     gdResumed = await GoogleDriveAdapter.completeRedirect(googleDriveConfig());
   } catch (error) {
-    refused = connectRefusal(error) ?? returnFailure(error, 'google-drive');
+    refused = connectRefusal(error) ?? (error instanceof SignInUnfinishedError ? SIGN_IN_UNFINISHED : reportConnectFailure(error, 'google-drive'));
   }
   if (gdResumed && rememberSignIn(true, 'google-drive', gdResumed.gen)) {
     markSyncPending();
