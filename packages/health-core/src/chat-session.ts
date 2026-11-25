@@ -21,6 +21,8 @@ import {
   cutText,
   type ChatHistoryFile,
 } from './chat-history';
+import { readErase } from './erase-identity';
+import { stampInstant } from './record-time';
 import type { RecordHost, SyncStorage } from './record-host';
 import { SyncManager, type DocumentSpec, type SyncContext } from './sync-manager';
 
@@ -98,9 +100,25 @@ function tombstone(conv: ChatFileConversation, now?: string): void {
 const ERASE_MARK = 'erase:';
 const isEraseMark = (c: ChatFileConversation): boolean => c.deleted === true && c.id.startsWith(ERASE_MARK);
 
-function liveOf(file: ChatHistoryFile): ChatFileConversation[] {
+type Held = (c: ChatFileConversation) => boolean;
+
+/** The record erase's `erasedAt` as an instant (US-11 AC11); NaN with no
+ *  erase, or an identity that cannot be read. */
+function eraseCut(identity: string | undefined): number {
+  const at = identity === undefined ? null : readErase(identity)?.[1];
+  return at ? stampInstant(at) : NaN;
+}
+
+/** The read rule under a record erase (US-11 AC11): a conversation last
+ *  updated before the cut is held back, its time unreadable included. No cut
+ *  holds nothing. */
+function heldBefore(cut: number): Held {
+  return Number.isNaN(cut) ? () => false : (c) => !(stampInstant(c.updatedAt) >= cut);
+}
+
+function liveOf(file: ChatHistoryFile, held: Held = () => false): ChatFileConversation[] {
   return file.conversations
-    .filter((c) => !c.deleted)
+    .filter((c) => !c.deleted && !held(c))
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0));
 }
 
@@ -144,32 +162,37 @@ export class ChatSession {
     private readonly loop: ((doc: DocumentSpec<ChatHistoryFile>) => SyncManager<ChatHistoryFile>) | null,
     private file: ChatHistoryFile,
     private fenceSeen: string | null | typeof CLOSED,
+    /** The record's erase identity, read at every use (US-11 AC11). */
+    private readonly underErase?: () => string,
   ) {
     this.device = sync ? null : deviceStore(host);
   }
 
-  /** Load chat history from the host's store and return a ready session. */
-  static async open(host: RecordHost): Promise<ChatSession> {
+  /** Load chat history from the host's store and return a ready session.
+   *  `underErase` gives the record's erase identity: under an erase the
+   *  session neither shows nor saves into a conversation last updated before
+   *  it, and its next write tombstones them (US-11 AC11). */
+  static async open(host: RecordHost, underErase?: () => string): Promise<ChatSession> {
     const device = deviceStore(host);
     const ctx = contextOf(host);
     if (device) {
       // A page that may not write the device's files reads none either.
-      if (device.closed()) return new ChatSession(host, null, null, migrateChatHistoryFile(null, ctx), CLOSED);
+      if (device.closed()) return new ChatSession(host, null, null, migrateChatHistoryFile(null, ctx), CLOSED, underErase);
       // Read the content-free erase fence with the chat snapshot. It survives
       // a record removal and parses no health data.
       const fence = device.fence();
       const file = migrateChatHistoryFile(device.sync.readSync(CHAT_HISTORY_DOC.fileName).body, ctx);
-      return new ChatSession(host, null, null, file, fence);
+      return new ChatSession(host, null, null, file, fence, underErase);
     }
     const opts = { now: () => contextOf(host).now };
     const sync = new SyncManager(host.store, ctx.deviceId, CHAT_HISTORY_DOC, opts);
-    return new ChatSession(host, sync, (doc) => new SyncManager(host.store, ctx.deviceId, doc, opts), await sync.load(), null);
+    return new ChatSession(host, sync, (doc) => new SyncManager(host.store, ctx.deviceId, doc, opts), await sync.load(), null, underErase);
   }
 
   /** Live (non-deleted) conversation summaries, newest first. */
   listConversations(): ChatConversationSummary[] {
     this.refreshAfterDeviceErase();
-    return liveOf(this.file).map(({ id, title, createdAt, updatedAt }) => ({ id, title, createdAt, updatedAt }));
+    return liveOf(this.file, this.held()).map(({ id, title, createdAt, updatedAt }) => ({ id, title, createdAt, updatedAt }));
   }
 
   /**
@@ -198,7 +221,7 @@ export class ChatSession {
     const conv = this.file.conversations.find((c) => c.id === conversationId);
     // Read in merge order, so a file saved before the question-first rule
     // (US-52 AC6) reads right before its next save rewrites it.
-    return conv && !conv.deleted ? mergeMessages(conv.messages, []) : [];
+    return conv && !conv.deleted && !this.held()(conv) ? mergeMessages(conv.messages, []) : [];
   }
 
   /**
@@ -227,6 +250,10 @@ export class ChatSession {
     if (this.erasedIds.has(opts.conversationId)) return; // erased while the answer was in flight
     const at = this.host.clock.now();
     const now = new Date(at).toISOString();
+    // Written under the erase, so never stamped before it: this clock may
+    // trail the eraser's, or its erasedAt floor (AC11).
+    const cut = this.cut();
+    const updated = cut > at ? new Date(cut).toISOString() : now;
     const messages: ChatFileMessage[] = [
       { id: `u-${at}`, role: 'user', content: opts.userText, createdAt: now },
       {
@@ -240,16 +267,17 @@ export class ChatSession {
 
     const existing = this.file.conversations.find((c) => c.id === opts.conversationId);
     if (existing?.deleted) return; // tombstoned on another device — don't resurrect
+    if (existing && heldBefore(cut)(existing)) return; // from before the record's erase (AC11)
     if (existing) {
       existing.messages = mergeMessages(existing.messages, messages);
-      existing.updatedAt = now;
+      existing.updatedAt = updated;
     } else {
       if (opts.askedMarks) this.pending.set(opts.conversationId, new Set(opts.askedMarks));
       this.file.conversations.push({
         id: opts.conversationId,
         title: opts.isNew ? cutText(opts.userText, 80) : 'Chat', // never half an emoji (US-15 AC26b)
-        createdAt: now,
-        updatedAt: now,
+        createdAt: updated,
+        updatedAt: updated,
         messages,
       });
     }
@@ -339,10 +367,21 @@ export class ChatSession {
     this.fenceSeen = fence;
   }
 
+  private cut(): number {
+    return eraseCut(this.underErase?.());
+  }
+
+  private held(): Held {
+    return heldBefore(this.cut());
+  }
+
   private async persist(deleted = false, own?: MergeStep): Promise<void> {
     let held: string[] = [];
+    const before = this.held();
     const step: MergeStep = (merged, remote) => {
       own?.(merged, remote);
+      // The owed chat erase (AC11): every attempt tombstones what the rule holds back.
+      for (const conv of merged.conversations) if (!conv.deleted && before(conv)) tombstone(conv);
       held = this.checkPending(merged, remote);
     };
     if (this.sync) {

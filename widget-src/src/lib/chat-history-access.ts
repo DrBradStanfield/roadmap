@@ -70,13 +70,15 @@ export function transition(s: ChatHistoryOpen, e: ChatHistoryOpenEvent): ChatHis
   }
 }
 
-let factory: (() => Promise<ChatHistoryStore>) | null = null;
+/** Opens the store; it takes the record's erase identity (US-11 AC11). */
+type Factory = (underErase: () => string) => Promise<ChatHistoryStore>;
+let factory: Factory | null = null;
 let state: ChatHistoryOpen = { phase: 'closed', attempt: 0 };
 const send = (e: ChatHistoryOpenEvent): void => { state = transition(state, e); };
 /** The record's erase identity. */
 let eraseIdentity = (): string => '';
 
-export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | null, identity = (): string => ''): void {
+export function setChatHistoryFactory(f: Factory | null, identity = (): string => ''): void {
   factory = f;
   send({ type: 'reset' });
   eraseIdentity = identity;
@@ -94,7 +96,7 @@ const live = (): Session | null => (state.phase === 'opening' || state.phase ===
 function session(): Session {
   const held = live();
   if (held) return held;
-  const pending = factory!();
+  const pending = factory!(() => eraseIdentity());
   const at = eraseIdentity();
   send({ type: 'open-began', pending, served: pending.catch(() => null), at });
   const { attempt } = state;

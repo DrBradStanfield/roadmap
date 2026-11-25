@@ -16,6 +16,8 @@ import { webRecordHost } from './web-record-host';
 
 export type ChatHistoryStore = ChatSession;
 export const ChatHistoryStore = {
-  /** Load chat history from the given backend and return a ready store. */
-  create: (adapter: StorageAdapter): Promise<ChatHistoryStore> => ChatSession.open(webRecordHost(adapter)),
+  /** Load chat history from the given backend and return a ready store,
+   *  under the record's erase identity when given (US-11 AC11). */
+  create: (adapter: StorageAdapter, underErase?: () => string): Promise<ChatHistoryStore> =>
+    ChatSession.open(webRecordHost(adapter), underErase),
 };
