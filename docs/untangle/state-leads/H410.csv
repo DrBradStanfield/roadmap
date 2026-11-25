@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H410,web sync,"Stopped-write readers read the typed reason 'writes-stopped', not the error class",lead,not started,"Filed 2026-11-26 from the day's reviews: Four readers test instanceof WritesStoppedError: widget-src/src/storage/upload-save-store.ts, widget-src/src/hooks/useErase.ts, and widget-src/src/lib/upload-shared-save.ts twice. US-09 AC58 added the typed reason; build: they read it. (H410)",,no

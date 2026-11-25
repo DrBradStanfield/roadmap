@@ -13,7 +13,7 @@ export const isLive = (expiresAt: number, now: number): boolean => now < expires
 
 /**
  * Keys per limiter map (S-19). An entry measured about 180 bytes (an IPv6 /64
- * key and its count), so a full map is about 9 MB, and the 36 limiter maps all
+ * key and its count), so a full map is about 9 MB, and the 39 maps at this bound all
  * full at once stay near a third of a machine's 1 GB (fly.toml).
  */
 export const MAX_TRACKED_KEYS = 50_000;
