@@ -1,13 +1,13 @@
-// US-14 AC4. Based on Austin Bell's PR #164 (robertaustinbell). Synthetic bytes only.
+// US-14 AC4. Based on Austin Bell's PR #164 (robertaustinbell). Synthetic bytes only. Through the upload's one Save
+// (storage/upload-save-store.ts), the path a person's upload takes.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LAB_ARCHIVE_FLAG } from '@roadmap/health-core/document-rows';
-import { LAB_ARCHIVE_TITLE } from '@roadmap/health-core/document-path';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from './index';
 import { sha256Blob } from '../lib/archive-payloads';
-import { storeBulkSaveDocuments } from '../testing/bulk-save';
+import { uploadThrough, type Picked } from '../testing/upload-save-kit';
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 afterEach(() => vi.restoreAllMocks());
 const payload = () => ({
@@ -16,6 +16,8 @@ const payload = () => ({
   file: new Blob(['synthetic file bytes'], { type: 'application/pdf' }),
 });
 const read = (cloud: MemoryCloud) => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+/** The record's live document rows. */
+const live = (store: RoadmapStore) => store.file.documents.filter((d) => !d.deleted);
 describe('US-14 AC4: a failed original retains its dedup identity', () => {
   it('keeps the computed hash on one metadata-only row for duplicate inputs', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -25,13 +27,13 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     const store = await RoadmapStore.create(adapter);
     const doc = payload();
     const hash = await sha256Blob(doc.file);
-    const result = await storeBulkSaveDocuments(store, [doc, doc]);
+    const result = await uploadThrough(store, [doc, doc]);
     await store.flush();
     expect(adapter.writeDocument).toHaveBeenCalledTimes(1);
-    expect(result.saved).toHaveLength(1);
-    expect(result.saved[0]).toMatchObject({ fileRef: null, contentHash: hash });
+    expect(live(store)).toHaveLength(1);
+    expect(live(store)[0]).toMatchObject({ fileRef: '', contentHash: hash });
     // US-14 AC12: a first failure, with no row held, is counted too, so the done screen says so.
-    expect(result.unstored).toBe(1);
+    expect(result).toMatchObject({ ok: true, outcome: { unstored: 1 } });
     expect(read(cloud).documents).toHaveLength(1);
   });
   it('a later successful retry tombstones the metadata-only row, including after reload', async () => {
@@ -41,17 +43,18 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
     const first = await RoadmapStore.create(adapter);
     const doc = payload();
-    const original = (await storeBulkSaveDocuments(first, [doc])).saved[0];
+    await uploadThrough(first, [doc]);
+    const original = live(first)[0];
     await first.flush();
     const retry = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const result = await storeBulkSaveDocuments(retry, [doc]);
+    const result = await uploadThrough(retry, [doc]);
     await retry.flush();
     const file = read(cloud);
-    expect(result.saved).toHaveLength(1);
+    expect(result).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 0 } });
     expect(file.documents.find(d => d.id === original.id)?.deleted).toBe(true);
     expect(file.documents.filter(d => !d.deleted)).toHaveLength(1);
     expect(file.documents.find(d => !d.deleted)?.fileRef).toBeTruthy();
-    expect((await storeBulkSaveDocuments(retry, [doc])).saved).toHaveLength(0);
+    expect(await uploadThrough(retry, [doc])).toMatchObject({ ok: true, outcome: { documents: 0 } });
   });
   // An original that can never be stored (a size cap) must not trap the user
   // in "Failed to save": a repeat failure is settled, no error, and `unstored`
@@ -63,11 +66,12 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
     const store = await RoadmapStore.create(adapter);
     const doc = payload();
-    const original = (await storeBulkSaveDocuments(store, [doc])).saved[0];
+    await uploadThrough(store, [doc]);
+    const original = live(store)[0];
     await store.flush();
-    const result = await storeBulkSaveDocuments(store, [doc]);
+    const result = await uploadThrough(store, [doc]);
     await store.flush();
-    expect(result).toEqual({ saved: [], errorCount: 0, unstored: 1 });
+    expect(result).toMatchObject({ ok: true, outcome: { documents: 0, unstored: 1 } });
     expect(read(cloud).documents.filter(d => !d.deleted).map(d => d.id)).toEqual([original.id]);
   });
 
@@ -77,16 +81,18 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     const adapter = new MemoryAdapter(cloud);
     adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
     const store = await RoadmapStore.create(adapter);
-    const original = (await storeBulkSaveDocuments(store, [payload()])).saved[0];
+    await uploadThrough(store, [payload()]);
+    const original = live(store)[0];
     await store.flush();
     for (const change of [{ title: 'Reviewed title' }, { documentDate: '2025-02-03' }]) {
-      const result = await storeBulkSaveDocuments(store, [{ ...payload(), ...change }]);
+      const result = await uploadThrough(store, [{ ...payload(), ...change }]);
       await store.flush();
-      expect(result).toMatchObject({ errorCount: 0, unstored: 1, saved: [expect.objectContaining({ fileRef: null, contentHash: original.contentHash })] });
+      expect(result).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 1 } });
+      expect(live(store)).toEqual([expect.objectContaining({ fileRef: '', contentHash: original.contentHash, ...('title' in change ? { title: change.title } : { date: change.documentDate }) })]);
     }
-    const live = read(cloud).documents.filter(d => !d.deleted);
-    expect(live).toHaveLength(1);
-    expect(live[0]).toMatchObject({ title: 'Synthetic letter', date: '2025-02-03', contentHash: original.contentHash, fileRef: '' });
+    const rows = read(cloud).documents.filter(d => !d.deleted);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ title: 'Synthetic letter', date: '2025-02-03', contentHash: original.contentHash, fileRef: '' });
   });
 
   it('a repeat failure behind a connector row settles the same way, whatever its metadata says', async () => {
@@ -96,9 +102,9 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     adapter.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
     const store = await RoadmapStore.create(adapter);
     const doc = { ...payload(), metadata: { importedVia: 'connector' } };
-    await storeBulkSaveDocuments(store, [doc]);
+    await uploadThrough(store, [doc]);
     await store.flush();
-    expect(await storeBulkSaveDocuments(store, [payload()])).toEqual({ saved: [], errorCount: 0, unstored: 1 });
+    expect(await uploadThrough(store, [payload()])).toMatchObject({ ok: true, outcome: { documents: 0, unstored: 1 } });
   });
 
   it('a row of the same bytes merged in during the upload is replaced too', async () => {
@@ -107,7 +113,8 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     const failing = new MemoryAdapter(cloud);
     failing.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
     const first = await RoadmapStore.create(failing);
-    const original = (await storeBulkSaveDocuments(first, [payload()])).saved[0];
+    await uploadThrough(first, [payload()]);
+    const original = live(first)[0];
     await first.flush();
     const adapter = new MemoryAdapter(cloud);
     const retry = await RoadmapStore.create(adapter);
@@ -117,7 +124,7 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
       retry['session'].edit(f => { f.documents.push({ ...f.documents.find(d => d.id === original.id)!, id: 'merged-in' }); });
       return write(ref, file);
     };
-    expect((await storeBulkSaveDocuments(retry, [payload()])).saved).toHaveLength(1);
+    expect(await uploadThrough(retry, [payload()])).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 0 } });
     await retry.flush();
     const after = read(cloud).documents;
     expect(after.filter(d => d.deleted).map(d => d.id).sort()).toEqual([original.id, 'merged-in'].sort());
@@ -129,7 +136,8 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     const failing = new MemoryAdapter(cloud);
     failing.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
     const first = await RoadmapStore.create(failing);
-    const original = (await storeBulkSaveDocuments(first, [payload()])).saved[0];
+    await uploadThrough(first, [payload()]);
+    const original = live(first)[0];
     await first.flush();
     // A second such row, as another device's failed save would leave.
     const stored = cloud.files.get(ROADMAP_FILE_NAME)!;
@@ -137,7 +145,7 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
     file.documents.push({ ...file.documents[0], id: 'other-device', addedAt: '2020-01-01T00:00:00.000Z' });
     cloud.files.set(ROADMAP_FILE_NAME, { ...stored, json: JSON.stringify(file) });
     const retry = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect((await storeBulkSaveDocuments(retry, [payload()])).saved).toHaveLength(1);
+    expect(await uploadThrough(retry, [payload()])).toMatchObject({ ok: true, outcome: { documents: 1, unstored: 0 } });
     await retry.flush();
     const after = read(cloud).documents;
     expect(after.filter(d => d.deleted).map(d => d.id).sort()).toEqual([original.id, 'other-device'].sort());
@@ -147,17 +155,23 @@ describe('US-14 AC4: a failed original retains its dedup identity', () => {
 
 // US-14 AC4 (Brad, 2026-10-19): a re-upload supersedes a failed row only of
 // its own kind. `deleted` is OR-ed on merge, so a wrong tombstone is permanent.
-const labPayload = () => ({ ...payload(), documentType: 'pathology_report', title: LAB_ARCHIVE_TITLE, contentMd: '', metadata: { [LAB_ARCHIVE_FLAG]: true } });
-async function failedThenRetried(first: ReturnType<typeof payload>, second: ReturnType<typeof payload>) {
+/** The same bytes read as a lab report: its value, and the report's hidden archive row with the original. */
+const labPayload = (): Picked => ({ report: 'synthetic.pdf', reportDate: '2026-01-01', file: payload().file, values: [{ name: 'sodium', value: 140, unit: 'mmol/L' }] });
+/** A row of the kind `picked` files: the report's archive row, or the letter. */
+const isArchive = (d: RoadmapFile['documents'][number]) => d.metadata?.[LAB_ARCHIVE_FLAG] === true;
+async function failedThenRetried(first: Picked, second: Picked) {
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   const cloud = new MemoryCloud();
   const failing = new MemoryAdapter(cloud);
   failing.writeDocument = async () => { throw new Error('synthetic quota refusal'); };
   const store = await RoadmapStore.create(failing);
-  const original = (await storeBulkSaveDocuments(store, [first])).saved[0];
+  await uploadThrough(store, [first]);
+  const original = live(store)[0];
   await store.flush();
   const retry = await RoadmapStore.create(new MemoryAdapter(cloud));
-  const saved = (await storeBulkSaveDocuments(retry, [second])).saved;
+  const before = new Set(retry.file.documents.map((d) => d.id));
+  await uploadThrough(retry, [second]);
+  const saved = retry.file.documents.filter((d) => !before.has(d.id) && !d.deleted);
   await retry.flush();
   return { original, saved, documents: read(cloud).documents };
 }
@@ -165,11 +179,13 @@ describe('US-14 AC4: a re-upload replaces a failed row only of its own kind', ()
   it('a letter whose blob failed stays when the same bytes come back read as a lab report', async () => {
     const { original, saved, documents } = await failedThenRetried(payload(), labPayload());
     expect(saved).toHaveLength(1);
+    expect(isArchive(saved[0])).toBe(true);
     expect(documents.find(d => d.id === original.id)?.deleted).toBeFalsy();
     expect(documents.find(d => d.id === saved[0].id)?.fileRef).toBeTruthy();
   });
   it('a lab report whose blob failed stays when the same bytes come back read as a letter', async () => {
     const { original, saved, documents } = await failedThenRetried(labPayload(), payload());
+    expect(isArchive(original)).toBe(true);
     expect(saved).toHaveLength(1);
     expect(documents.find(d => d.id === original.id)?.deleted).toBeFalsy();
   });

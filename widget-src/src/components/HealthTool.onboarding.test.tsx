@@ -48,7 +48,7 @@ vi.mock('./ChatSection', () => ({
 }));
 import { HealthTool } from './HealthTool';
 import { closeSettings, deleteButton, openSettings } from '../testing/settings';
-import { bulkSaveDocuments } from '../testing/bulk-save';
+import { seedOpenDocuments } from '../testing/seed-record';
 
 // Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
 const localToday = () => localDay(new Date());
@@ -650,7 +650,7 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
 });
 
 /** A clinic letter on record: a document the Health Records list shows. */
-const saveLetter = () => bulkSaveDocuments([{
+const saveLetter = () => seedOpenDocuments([{
   documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf',
 }]);
 

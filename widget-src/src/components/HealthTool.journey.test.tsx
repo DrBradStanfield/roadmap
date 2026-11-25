@@ -92,7 +92,7 @@ vi.mock('./UploadModal', () => ({
 import { HealthTool } from './HealthTool';
 import { ERASE_DONE } from '../lib/erase-copy';
 import { deleteButton, openSettings } from '../testing/settings';
-import { bulkSaveLabValues } from '../testing/bulk-save';
+import { seedOpenLabValues } from '../testing/seed-record';
 
 // Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
 const localToday = () => localDay(new Date());
@@ -565,7 +565,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
   // closing the group unmounted it first, taking the correction with it.
   it('US-21 AC5: a correction clicked away onto its group\'s header, which closes the group, is written', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
+    await seedOpenLabValues([{ metricName: 'Feritin', value: 45, unit: 'ug/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);
@@ -584,7 +584,7 @@ describe('the 2026-09-22 feedback: a mistyped "add a blood test"', () => {
 
   it('US-21 AC13: the same test twice on one day offers Replace, and Replace is a correction', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
+    await seedOpenLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${localToday()}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);
@@ -1315,7 +1315,7 @@ describe('another writer changes a value the user is working on', () => {
 
   it('US-21 AC5: a lab value typed into an editor while another device corrects it is not saved over the correction', async () => {
     await guest({ weight: 82 });
-    await bulkSaveLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${RIGHT_DAY}T00:00:00.000Z`, source: 'manual' }]);
+    await seedOpenLabValues([{ metricName: 'ferritin', value: 45, unit: 'µg/L', recordedAt: `${RIGHT_DAY}T00:00:00.000Z`, source: 'manual' }]);
     const view = render(<HealthTool />);
     const wrap = await shown<HTMLElement>(view.container, '.alr-wrap');
     showTables(view.container);

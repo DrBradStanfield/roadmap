@@ -302,8 +302,7 @@ export class RoadmapStore {
 
   /** Correct one saved value, core or lab, by record-edits' one rule: append
    *  the new number on the SAME day with `correctsId`, flip the old row.
-   *  `newValue` is in the unit the row is stored in (SI for a core metric).
-   *  Refused for its erase: `changed`, the record it was opened on is gone, and no retry can land (US-16 AC2a). */
+   *  `newValue` is in the unit the row is stored in (SI for a core metric). An erase refusal is `changed` (US-16 AC2a). */
   correctValue(id: string, newValue: number, erase?: string): CorrectStatus {
     if (this.refuses(erase)) return 'changed';
     const result = correctRecordValue(this.file, { id, newValue, now: new Date().toISOString() });

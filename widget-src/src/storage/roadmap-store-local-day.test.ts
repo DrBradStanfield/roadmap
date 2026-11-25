@@ -14,7 +14,7 @@ process.env.TZ = 'Pacific/Auckland';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
-import { storeBulkSaveDocuments } from '../testing/bulk-save';
+import { uploadThrough } from '../testing/upload-save-kit';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -34,11 +34,12 @@ describe('RoadmapStore — local calendar day', () => {
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-09-01T23:00:00.000Z') });
     const store = await RoadmapStore.create(new MemoryAdapter());
 
-    const { saved: [doc] } = await storeBulkSaveDocuments(store, [{
+    expect(await uploadThrough(store, [{
       documentType: 'lab_result', title: 'Lipid panel', documentDate: null,
       contentMd: '# Lipids', metadata: {}, sourceFileName: 'lipids.pdf',
       file: new Blob(['lipids'], { type: 'application/pdf' }),
-    }]);
+    }])).toMatchObject({ ok: true, outcome: { unstored: 0 } });
+    const [doc] = store.file.documents;
 
     expect(doc.fileRef).toContain('2026-09-02');
     expect(doc.fileRef).not.toContain('2026-09-01');

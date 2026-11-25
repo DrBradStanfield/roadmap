@@ -12,7 +12,7 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { RoadmapStore } from './roadmap-store';
 import { BACKEND_KEY } from './web-record-host';
-import { storeBulkSaveDocuments } from '../testing/bulk-save';
+import { seedDocuments } from '../testing/seed-record';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -28,7 +28,7 @@ async function erasedAndRefilled() {
   expect(store.shownErase).not.toBe(asked);
   store.saveSupplement('omega3', 'Omega-3', 1, 'g');
   const ldl = store.addMeasurement('ldl', 2.1, '2026-08-15');
-  const { saved } = await storeBulkSaveDocuments(store, [{
+  const saved = await seedDocuments(store, [{
     documentType: 'lab_report', title: 'Synthetic report', documentDate: '2026-09-01',
     contentMd: 'Synthetic fixture', metadata: {}, sourceFileName: 'synthetic.pdf',
   }]);

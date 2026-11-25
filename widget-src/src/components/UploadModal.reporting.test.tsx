@@ -9,7 +9,7 @@ import { UploadModal } from './UploadModal';
 import { initRoadmapStore, addMeasurement, correctValue, flushRoadmapStore } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
-import { bulkSaveLabValues } from '../testing/bulk-save';
+import { seedOpenLabValues } from '../testing/seed-record';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 // Extraction and original-file archival are outside this value-save witness.
@@ -36,9 +36,9 @@ it.each([
   await initRoadmapStore(new MemoryAdapter(cloud));
   async function add(value: number) {
     if (lab) {
-      const result = await bulkSaveLabValues([{ metricName: 'Synthetic test', value, unit: 'units', recordedAt: '2024-06-01' }]);
-      expect(result.saved).toHaveLength(1);
-      return result.saved[0].id;
+      const saved = seedOpenLabValues([{ metricName: 'Synthetic test', value, unit: 'units', recordedAt: '2024-06-01' }]);
+      expect(saved).toHaveLength(1);
+      return saved[0].id;
     }
     const result = await addMeasurement('ldl', value, '2024-06-01');
     if (result.status !== 'inserted') throw new Error('fixture failed');

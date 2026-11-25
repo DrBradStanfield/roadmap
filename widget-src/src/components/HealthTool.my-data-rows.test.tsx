@@ -34,7 +34,7 @@ import { HealthTool } from './HealthTool';
 import { trackProductEvent } from '../lib/server-api';
 import { openSettings } from '../testing/settings';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
-import { bulkSaveLabValues } from '../testing/bulk-save';
+import { seedOpenLabValues } from '../testing/seed-record';
 
 // Adversary R7 (2026-11-02): each Add waits on the store's real async save. Under a
 // loaded full run that took longer than waitFor's default 1 s, so two AC10 tests
@@ -75,7 +75,7 @@ async function seed(profile: Record<string, unknown> = { sex: 'male', heightCm: 
     ['systolic_bp', 132, '2026-09-20'], ['diastolic_bp', 84, '2026-09-20'],
     ['systolic_bp', 126, '2026-10-20'], ['diastolic_bp', 80, '2026-10-20'],
   ] as const) await addMeasurement(metric, value, `${day}T00:00:00.000Z`);
-  await bulkSaveLabValues([
+  await seedOpenLabValues([
     { metricName: 'sodium', value: 139, unit: 'mmol/L', referenceLow: 135, referenceHigh: 145, recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
     { metricName: 'vitamin_d', value: 72, unit: 'nmol/L', recordedAt: '2026-10-12T00:00:00.000Z', source: 'manual' },
   ]);
