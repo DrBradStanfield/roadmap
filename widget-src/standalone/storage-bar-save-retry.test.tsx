@@ -36,7 +36,7 @@ vi.mock('./connect', () => ({
 }));
 
 import { StorageBar, SyncControl } from './sync-control';
-import { addMeasurement, currentRetryDue, flushRoadmapStore, initRoadmapStore } from '../src/lib/roadmap-data';
+import { addMeasurement, currentRetryDue, flushRoadmapStore, initRoadmapStore, getShownErase } from '../src/lib/roadmap-data';
 import { trackProductEvent } from '../src/lib/server-api';
 import { GitHubAdapter } from '../src/storage/github';
 
@@ -85,7 +85,7 @@ async function failedSave(error: Error) {
   vi.useFakeTimers();
   render(<StorageBar backend="dropbox" />);
   cloud.fail = error;
-  await act(async () => { await addMeasurement('weight', 80, '2026-06-01'); });
+  await act(async () => { await addMeasurement('weight', 80, '2026-06-01', getShownErase()); });
   await advance(PERSIST_DEBOUNCE_MS);
   expect(cloud.writes).toBe(1);
   expect(line()).toBe('Not synced yet. Your changes are on this device.');
@@ -193,7 +193,7 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
     vi.useFakeTimers();
     render(<StorageBar backend="dropbox" />);
     cloud.failVerify = new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, 'reconnect');
-    await act(async () => { await addMeasurement('weight', 80, '2026-06-01'); });
+    await act(async () => { await addMeasurement('weight', 80, '2026-06-01', getShownErase()); });
     await advance(PERSIST_DEBOUNCE_MS);
     expect(cloud.writes).toBe(1);
     expect(settingsDetail()).toBe(`${WAITING} ${SAFE}`);
@@ -202,7 +202,7 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
   it('once saved, there is no waiting line', async () => {
     const cloud = new TestCloud(new MemoryCloud());
     await initRoadmapStore(cloud);
-    await act(async () => { await addMeasurement('weight', 80, '2026-06-01'); await flushRoadmapStore(); });
+    await act(async () => { await addMeasurement('weight', 80, '2026-06-01', getShownErase()); await flushRoadmapStore(); });
     expect(cloud.writes).toBe(1);
     expect(settingsDetail()).toBeNull();
   });

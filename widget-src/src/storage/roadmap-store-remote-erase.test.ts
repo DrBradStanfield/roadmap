@@ -59,7 +59,7 @@ describe('an erase made on another device clears every off-file kind here (US-11
   async function erasedElsewhere() {
     const cloud = new MemoryCloud();
     const page = await RoadmapStore.create(new MemoryAdapter(cloud));
-    page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    page.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z', page.shownErase);
     await page.flush();
     const otherPage = await RoadmapStore.create(new MemoryAdapter(cloud));
     vi.setSystemTime(new Date('2026-10-21T10:01:00.000Z'));
@@ -78,7 +78,7 @@ describe('an erase made on another device clears every off-file kind here (US-11
   it('by a save', async () => {
     const { otherPage } = await erasedElsewhere();
     vi.setSystemTime(new Date('2026-10-21T10:02:00.000Z'));
-    otherPage.addMeasurement('weight', 81, '2024-02-01T00:00:00.000Z');
+    otherPage.addMeasurement('weight', 81, '2024-02-01T00:00:00.000Z', otherPage.shownErase);
     await otherPage.flush();
     for (const k of Object.keys(OFF_FILE)) expect(localStorage.getItem(k), k).toBeNull();
     for (const [k, v] of Object.entries(KEEP)) expect(localStorage.getItem(k)).toBe(v);

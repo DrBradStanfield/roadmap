@@ -90,7 +90,7 @@ async function userOneFallback() {
 }
 /** User 1's tab saves a weight and is put away. */
 async function saveWeight(fallback: Awaited<ReturnType<typeof userOneFallback>>) {
-  fallback.addMeasurement('weight', USER_ONE_WEIGHT, '2026-01-01');
+  fallback.addMeasurement('weight', USER_ONE_WEIGHT, '2026-01-01', fallback.shownErase);
   await fallback.flush().catch(() => {});
   fallback.flushSync();
 }
