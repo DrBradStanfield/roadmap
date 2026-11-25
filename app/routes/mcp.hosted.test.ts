@@ -1242,7 +1242,7 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
         return result;
       };
       adapter.read = async (...args: Parameters<MemoryAdapter['read']>) => {
-        if (uploaded) throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status);
+        if (uploaded) throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status, undefined, answerOutcome(status));
         return read(...args);
       };
       return adapter;
@@ -1273,7 +1273,7 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
       const { access } = await connect();
       makeAdapter = () => {
         const adapter = new MemoryAdapter(cloud);
-        adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status); };
+        adapter.read = async () => { throw new StorageError(`Dropbox read failed (${status})`, undefined, undefined, status, undefined, answerOutcome(status)); };
         return adapter;
       };
       const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
@@ -1326,7 +1326,7 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
       makeAdapter = () => {
         const adapter = new MemoryAdapter(cloud);
         adapter.write = async () => {
-          throw uncertainWrite(new StorageError(`Dropbox record update failed (${status})`, 'Check the record before you try again.', undefined, status));
+          throw uncertainWrite(new StorageError(`Dropbox record update failed (${status})`, 'Check the record before you try again.', undefined, status, undefined, 'may-have-landed'));
         };
         return adapter;
       };
@@ -1480,7 +1480,7 @@ describe('OpenAI domain verification is gone (its review ended 2026-10-29; Brad 
 import JSZip from 'jszip';
 import { IMPORT_FILES_PER_DAY } from '../lib/mcp-grants.server';
 import { machineFiles } from '../lib/rate-limiter';
-import { StorageError } from '../../packages/health-core/src/adapter';
+import { answerOutcome, StorageError } from '../../packages/health-core/src/adapter';
 import { uncertainWrite } from '../../packages/health-core/src/write-refusal';
 import { recordServerEvent } from '../lib/product-events.server';
 import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab-extraction';
@@ -1806,7 +1806,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     stubImport({ 'labs.pdf': PDF_BYTES }, () => labReport());
     makeAdapter = () => {
       const adapter = new MemoryAdapter(cloud);
-      adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401); };
+      adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401, undefined, 'refused'); };
       return adapter;
     };
     const answer = await callTool(access, 'import_documents', {});
@@ -1911,7 +1911,7 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
     seedRecord(withProfile);
     cloud.docs.set('labs.pdf', new Blob([PDF_BYTES as Uint8Array<ArrayBuffer>]));
     const broken = new MemoryAdapter(cloud);
-    broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500); };
+    broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500, undefined, 'no-answer'); };
     makeAdapter = () => broken;
     const { access } = await connect();
     const failed = await callTool(access, 'get_plan', {});

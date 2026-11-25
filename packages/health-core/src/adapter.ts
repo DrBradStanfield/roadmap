@@ -73,9 +73,10 @@ export class LostUpdateError extends ConflictError {
  * - refused: the provider answered and stored nothing;
  * - may-have-landed: a write went out, and nothing rules out that it was stored;
  * - no-answer: no usable answer to a call that sent no write.
- * Unset: the raiser could not say. A write that throws one may have landed
- * (write-refusal.ts `afterWrite`). A status the table below calls a refusal sets
- * `refused`, and a 401 or 403 its reason, unless the raiser names its own.
+ * Every raise names one (US-10 AC17): the argument is required, so a raise site
+ * that forgets it does not compile. A provider's status picks it only through
+ * `answerOutcome`, which the raise site calls on purpose. A 401 or 403 sets its
+ * reason unless the raiser names its own.
  */
 export type StorageFailureReason = 'storage-full' | 'not-found' | 'reconnect' | 'auth' | 'forbidden' | 'rate-limited';
 export type StorageOutcome = 'refused' | 'may-have-landed' | 'no-answer';
@@ -113,15 +114,15 @@ export function answerOutcome(status: number, upload = false): StorageOutcome {
 export class StorageError extends Error {
   readonly reason?: StorageFailureReason;
   /** Mutable: `uncertainWrite` (write-refusal.ts) marks a failure met after a write. */
-  outcome?: StorageOutcome;
+  outcome: StorageOutcome;
   /** SyncManager's rewrap after a write that landed with a warning: its hint
    *  says what landed first (US-31 AC8a), so it is shown as it is. */
   earlierLanded?: true;
-  constructor(message: string, readonly hint?: string, readonly cause?: unknown, readonly status?: number, reason?: StorageFailureReason, outcome?: StorageOutcome) {
+  constructor(message: string, readonly hint: string | undefined, readonly cause: unknown, readonly status: number | undefined, reason: StorageFailureReason | undefined, outcome: StorageOutcome) {
     super(message);
     this.name = 'StorageError';
     this.reason = reason ?? (status === 401 ? 'auth' : status === 403 ? 'forbidden' : undefined);
-    this.outcome = outcome ?? (status !== undefined && REFUSED_STATUSES.has(status) ? 'refused' : undefined);
+    this.outcome = outcome;
   }
 }
 

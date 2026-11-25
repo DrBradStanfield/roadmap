@@ -60,8 +60,8 @@ class TestCloud extends MemoryAdapter {
   }
 }
 const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
-const OFFLINE = () => new StorageError('Dropbox did not answer', undefined, new TypeError('Failed to fetch'));
-const REVOKED = () => new StorageError('Dropbox call failed (401).', undefined, undefined, 401);
+const OFFLINE = () => new StorageError('Dropbox did not answer', undefined, new TypeError('Failed to fetch'), undefined, undefined, 'may-have-landed');
+const REVOKED = () => new StorageError('Dropbox call failed (401).', undefined, undefined, 401, undefined, 'refused');
 
 const WAITING = 'Some data in this browser is still waiting to sync to your Dropbox.';
 const RETRY_CLAUSE = 'It will upload automatically.';
@@ -192,7 +192,7 @@ describe('US-09 AC30: Settings says a retry will come only when one will (lead A
     await initRoadmapStore(cloud);
     vi.useFakeTimers();
     render(<StorageBar backend="dropbox" />);
-    cloud.failVerify = new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, 'reconnect');
+    cloud.failVerify = new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, 'reconnect', 'refused');
     await act(async () => { await addMeasurement('weight', 80, '2026-06-01', getShownErase()); });
     await advance(PERSIST_DEBOUNCE_MS);
     expect(cloud.writes).toBe(1);

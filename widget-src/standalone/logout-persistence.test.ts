@@ -404,7 +404,7 @@ describe('US-09 AC2c: log-off closes the barrier in every cloud-mode tab on the 
     const mirror = await import('../src/lib/storage');
     // That tab's own StorageError: a class from another module graph is not one to its catch.
     const { StorageError } = await import('@roadmap/health-core/adapter');
-    const outage = new StorageError('synthetic outage', undefined, undefined, 503);
+    const outage = new StorageError('synthetic outage', undefined, undefined, 503, undefined, 'no-answer');
     let store!: Awaited<ReturnType<typeof other.storage.RoadmapStore.create>>;
     await otherConnect.startOnBackend({ adapter: Object.assign(new MemoryAdapter(), { read: async () => { throw outage; } }), backend: 'github' }, async (adapter) => {
       store = await other.storage.RoadmapStore.create(adapter);

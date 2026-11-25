@@ -15,7 +15,7 @@ import type { SaveStatus } from './save-state';
 class FailingStore extends MemoryAdapter {
   failWrites = false;
   async write(...args: Parameters<MemoryAdapter['write']>) {
-    if (this.failWrites) throw new StorageError('unreachable');
+    if (this.failWrites) throw new StorageError('unreachable', undefined, undefined, undefined, undefined, 'may-have-landed');
     return super.write(...args);
   }
 }

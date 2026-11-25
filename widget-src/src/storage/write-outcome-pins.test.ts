@@ -128,7 +128,7 @@ interface Outcome { landed: boolean; refused: boolean; cause: string; told: stri
 /** A device copy whose every write is refused (a full store). */
 class RefusingDevice extends MemoryAdapter {
   async write(): Promise<never> {
-    throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+    throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }), undefined, undefined, 'refused');
   }
 }
 

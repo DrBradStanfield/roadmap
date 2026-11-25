@@ -29,13 +29,13 @@ class TestStore extends MemoryAdapter {
   writes = 0;
   onWrite?: () => void;
   async read(fileName: string) {
-    if (this.failReads) throw new StorageError('unreachable');
+    if (this.failReads) throw new StorageError('unreachable', undefined, undefined, undefined, undefined, 'no-answer');
     return super.read(fileName);
   }
   async write(fileName: string, body: object, expected: string | null) {
     this.writes += 1;
     this.onWrite?.();
-    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }), undefined, undefined, 'refused');
     return super.write(fileName, body, expected);
   }
   // The synchronous face a device tier needs, as localStorage has on the web.
@@ -45,7 +45,7 @@ class TestStore extends MemoryAdapter {
   }
   writeSync(fileName: string, body: object, expected: string | null): WriteResult {
     this.writes += 1;
-    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+    if (this.failWrites) throw new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }), undefined, undefined, 'refused');
     const entry = this.cloud.files.get(fileName);
     if ((entry ? String(entry.version) : null) !== expected) throw new ConflictError('moved');
     const version = (entry?.version ?? 0) + 1;

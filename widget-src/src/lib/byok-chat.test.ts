@@ -402,7 +402,7 @@ describe('US-09 AC2c: a Pages chat answer whose history save the device refuses 
     state.replies = [{ text: 'Synthetic answer', blocks: [] }];
     state.store = {
       getMessages: () => [],
-      recordExchange: vi.fn(() => Promise.reject(new StorageError('Synthetic device refusal'))),
+      recordExchange: vi.fn(() => Promise.reject(new StorageError('Synthetic device refusal', undefined, undefined, undefined, undefined, 'refused'))),
       eraseMarks: () => [],
     };
   });

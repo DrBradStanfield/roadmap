@@ -123,7 +123,7 @@ for (const [clock, now] of Object.entries(CLOCKS)) {
   describe(`TA-2: the on-device copy a failed cloud save writes, browser clock ${clock} (US-09 AC4)`, () => {
     class TokenExpiredAdapter extends MemoryAdapter {
       async write(): Promise<never> {
-        throw new StorageError('Google Drive needs to be reconnected.');
+        throw new StorageError('Google Drive needs to be reconnected.', undefined, undefined, undefined, undefined, 'no-answer');
       }
     }
     beforeEach(() => {

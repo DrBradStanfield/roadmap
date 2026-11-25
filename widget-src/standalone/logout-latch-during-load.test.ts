@@ -143,7 +143,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
       core: await import('@roadmap/health-core/adapter'), // its own StorageError class
     };
     const cloud = new SlowFirstReadCloud();
-    cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503);
+    cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503, undefined, 'no-answer');
     let store!: Awaited<ReturnType<typeof other.storage.RoadmapStore.create>>;
     const starting = other.connect.startOnBackend({ adapter: cloud, backend: 'dropbox' }, async (adapter) => {
       store = await other.storage.RoadmapStore.create(adapter);
@@ -184,7 +184,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
       core: await import('@roadmap/health-core/adapter'),
     };
     const cloud = new SlowFirstReadCloud();
-    cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503);
+    cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503, undefined, 'no-answer');
     let store!: Awaited<ReturnType<typeof other.storage.RoadmapStore.create>>;
     const starting = other.connect.startOnBackend({ adapter: cloud, backend: 'google-drive' }, async (adapter) => {
       store = await other.storage.RoadmapStore.create(adapter);

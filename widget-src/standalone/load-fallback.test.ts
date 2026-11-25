@@ -23,7 +23,7 @@ const PROVIDER_BODY = 'ACCESS_TOKEN_SCOPE_INSUFFICIENT';
 
 class RefusingCloud extends MemoryAdapter {
   async read(): Promise<never> {
-    throw new StorageError(`Google Drive lookup failed (403): ${PROVIDER_BODY}`, undefined, undefined, 403);
+    throw new StorageError(`Google Drive lookup failed (403): ${PROVIDER_BODY}`, undefined, undefined, 403, undefined, 'refused');
   }
 }
 
@@ -75,7 +75,7 @@ describe('startOnBackend (US-09 AC13)', () => {
 
   it('the on-device tier has nothing to fall back to, so its failure still throws', async () => {
     const failing = async (): Promise<void> => {
-      throw new StorageError('Local data is corrupt and could not be read.');
+      throw new StorageError('Local data is corrupt and could not be read.', undefined, undefined, undefined, undefined, 'no-answer');
     };
     await expect(startOnBackend({ adapter: new LocalStorageAdapter(), backend: 'local' }, failing)).rejects.toThrow(/corrupt/);
     expect(captureException).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
 
   class SaveFails extends MemoryAdapter {
     async write(): Promise<never> {
-      throw new StorageError('cloud down');
+      throw new StorageError('cloud down', undefined, undefined, undefined, undefined, 'may-have-landed');
     }
   }
 
@@ -135,7 +135,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
       adapter: await import('@roadmap/health-core/adapter'),
     };
     // This page's own StorageError: a class from another module graph is not one to its catch.
-    const outage = new page.adapter.StorageError('synthetic outage', undefined, undefined, 503);
+    const outage = new page.adapter.StorageError('synthetic outage', undefined, undefined, 503, undefined, 'no-answer');
     let fallback!: Awaited<ReturnType<typeof page.store.RoadmapStore.create>>;
     const cloud = new MemoryAdapter();
     const started = await page.connect.startOnBackend({ adapter: Object.assign(new MemoryAdapter(), { read: async () => { throw outage; } }), backend: 'github' }, async (adapter) => {
