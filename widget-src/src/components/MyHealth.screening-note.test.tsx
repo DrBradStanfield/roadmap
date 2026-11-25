@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * US-62 AC41: where no screening question applies, My health's Cancer screening shows the
- * iPhone's note: alone when no screening card shows, under the cards when one does. Before the
+ * iPhone's note in the questions' place: urgent cards above it, other cards below, as the iPhone. Before the
  * form is full no topic shows, so neither does the note. On both store postures.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -26,6 +26,7 @@ const NOTE = 'No screening questions apply at your age and sex yet.';
 const NOTED: PlanForms = { medications: [], screenings: [], screeningNote: NOTE };
 const ASKED: PlanForms = { medications: [], screenings: [{ id: 'cancer-screening', title: '', intro: '', groups: [] }], screeningNote: null };
 const CARD: Suggestion = { id: 'screening-colorectal-overdue', category: 'screening', priority: 'attention', title: 'Colorectal screening card', description: '' };
+const URGENT: Suggestion = { id: 'screening-lung-followup', category: 'screening', priority: 'urgent', title: 'Lung follow-up card', description: '' };
 
 function slots(fullForm: boolean): FormSlots {
   return {
@@ -64,9 +65,14 @@ describe.each([['the doctor posture', false], ['the brand posture (Shopify, US)'
     expect(screening(NOTED, [])).toEqual([`mh-screening-note: ${NOTE}`]);
   });
 
-  it('no screening question, a screening card: the note under the card', () => {
+  it('no screening question, a screening card: the note above the card, as the iPhone', () => {
     posture();
-    expect(screening(NOTED, [CARD])).toEqual(['card', `mh-screening-note: ${NOTE}`]);
+    expect(screening(NOTED, [CARD])).toEqual([`mh-screening-note: ${NOTE}`, 'card']);
+  });
+
+  it('no screening question, an urgent and another screening card: urgent card, note, other card', () => {
+    posture();
+    expect(screening(NOTED, [CARD, URGENT])).toEqual(['card', `mh-screening-note: ${NOTE}`, 'card']);
   });
 
   it('screening questions apply: the questions, no note', () => {

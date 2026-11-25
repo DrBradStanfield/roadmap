@@ -238,9 +238,9 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-8: screening-breast-due",
     "card mh-card-9: screening-lung-overdue",
-    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "bloodTests: Blood tests",
@@ -285,9 +285,9 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-7: screening-lung-overdue",
     "card mh-card-8: screening-cervical-due",
-    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "bloodTests: Blood tests",
@@ -774,8 +774,8 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
-    "card mh-card-8: screening-colorectal-due",
     "p.mh-screening-note: No screening questions apply at your age and sex yet.",
+    "card mh-card-8: screening-colorectal-due",
   ],
   [
     "bloodTests: Blood tests",
@@ -984,8 +984,8 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
-    "card mh-card-7: screening-cervical-due",
     "p.mh-screening-note: No screening questions apply at your age and sex yet.",
+    "card mh-card-7: screening-cervical-due",
   ],
   [
     "skin: Skin",
@@ -1733,8 +1733,8 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
-    "card mh-card-9: screening-breast-due",
     "p.mh-screening-note: No screening questions apply at your age and sex yet.",
+    "card mh-card-9: screening-breast-due",
   ],
   [
     "bloodTests: Blood tests",
@@ -1908,9 +1908,9 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
+    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
     "card mh-card-10: screening-lung-overdue",
     "card mh-card-11: screening-breast-due",
-    "p.mh-screening-note: No screening questions apply at your age and sex yet.",
   ],
   [
     "bloodTests: Blood tests",
@@ -1952,8 +1952,8 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
   ],
   [
     "screening: Cancer screening",
-    "card mh-card-6: screening-breast-due",
     "p.mh-screening-note: No screening questions apply at your age and sex yet.",
+    "card mh-card-6: screening-breast-due",
   ],
   [
     "bloodTests: Blood tests",
@@ -2419,9 +2419,9 @@ card mh-card-6: med-ezetimibe
 rows: ApoBOptimal <50 · Jan 2026100 (110)100, high, previous 110mg/dL | LDL CholesterolOptimal <55 · Jan 2026120 (131)120, above optimal, previous 131mg/dL | Total CholesterolOptimal <135 · Jan 2026201 (217)201, above optimal, previous 217mg/dL | HDL CholesterolOptimal >50 · Jan 202650 (46)50, previous 46mg/dL | Non-HDLJan 2026 3.13.1mmol/L | TriglyceridesNormal <150 · Jan 2026142 (168)142, previous 168mg/dL | Lp(a)Jan 202624.0 (24.8)24.0, previous 24.8mg/dL
 card mh-card-7: med-statin-dose",
   "screening: Cancer screening
+p.mh-screening-note: No screening questions apply at your age and sex yet.
 card mh-card-8: screening-lung-overdue
-card mh-card-9: screening-cervical-due
-p.mh-screening-note: No screening questions apply at your age and sex yet.",
+card mh-card-9: screening-cervical-due",
   "skin: Skin
 card mh-card-10: skin-sunscreen",
   "bloodTests: Blood tests
@@ -7294,6 +7294,8 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                   <path d="M9 12v2.5a5 5 0 0 0 10 0V12">
                   <circle cx="19" cy="10" r="2">
             "Cancer screening"
+        <p class="mh-screening-note">
+          "No screening questions apply at your age and sex yet."
         <div id="mh-card-8" tabindex="-1" class="mh-card">
           <div class="suggestion-card suggestion-attention suggestion-card--calm">
             <div class="suggestion-header">
@@ -7309,8 +7311,6 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
               <h4 class="suggestion-title">
                 "screening-lung-overdue"
               <p class="suggestion-desc">
-        <p class="mh-screening-note">
-          "No screening questions apply at your age and sex yet."
       <section class="mh-topic" data-topic="bloodTests" aria-labelledby="mh-topic-bloodTests">
         <div class="md-section-head mh-topic-head">
           <h3 class="health-section-title md-section-title" id="mh-topic-bloodTests" tabindex="-1">
@@ -11058,14 +11058,14 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                   <path d="M9 12v2.5a5 5 0 0 0 10 0V12">
                   <circle cx="19" cy="10" r="2">
             "Cancer screening"
+        <p class="mh-screening-note">
+          "No screening questions apply at your age and sex yet."
         <div id="mh-card-8" tabindex="-1" class="mh-card">
           <div class="suggestion-card suggestion-info suggestion-card--calm">
             <div class="suggestion-body">
               <h4 class="suggestion-title">
                 "screening-breast-due"
               <p class="suggestion-desc">
-        <p class="mh-screening-note">
-          "No screening questions apply at your age and sex yet."
       <section class="mh-topic" data-topic="bloodTests" aria-labelledby="mh-topic-bloodTests">
         <div class="md-section-head mh-topic-head">
           <h3 class="health-section-title md-section-title" id="mh-topic-bloodTests" tabindex="-1">

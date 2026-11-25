@@ -167,9 +167,10 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   const toUrgent = () => revealAndFocus(plan.urgent && document.getElementById(plan.urgent.cardId), 'center');
 
   const questionsOf = (q: TopicQuestions | null) => (q === 'weight-medications' ? form.weightMedications(place) : q === 'lipid-medications' ? form.lipidMedications(place)
-    : q === 'supplements' ? form.supplements() : q === 'cancer-screening' && !note ? <>{form.screening(place)}{form.boneDensity(place)}</> : null);
-  /** A topic: its heading, its urgent cards over its rows, its rows (Cancer screening's are its questions), its other cards, then its
-   *  questions. Where no screening question applies, Cancer screening's note under its cards (US-62 AC41, the iPhone's words). */
+    : q === 'supplements' ? form.supplements() : q !== 'cancer-screening' ? null
+    // Where no screening question applies, the note in their place (US-62 AC41, the iPhone's words and place).
+    : note ? <p className="mh-screening-note">{note}</p> : <>{form.screening(place)}{form.boneDensity(place)}</>);
+  /** A topic: its heading, its urgent cards over its rows, its rows (Cancer screening's are its questions or its note), its other cards, then its questions. */
   const topicSection = ({ topic: id, ...t }: PlanTopic<UsSuggestion>) => {
     const rows = rowsOf.get(id) ?? [];
     const questions = questionsOf(t.questions);
@@ -201,7 +202,6 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
         {t.cards.length > 0 && <PlanCardList cards={t.cards} ids={ids?.others ?? []} plan={plan}/>}
         {t.ownershipLine && <p className="us-ownership no-print">{t.ownershipLine}</p>}
         {t.questions !== 'cancer-screening' && questions}
-        {t.questions === 'cancer-screening' && note && <p className="mh-screening-note">{note}</p>}
       </section>
     );
   };

@@ -210,7 +210,8 @@ issue, and nothing private.
 
 2026-11-26, Brad's words in quotes:
 - The web's My health and the iPhone, three differences: "go with the recommendations". Where no screening question
-  applies, the web shows Cancer screening with the iPhone's note, alone or under the screening cards; before the form is
+  applies, the web shows Cancer screening with the iPhone's note, in the iPhone's place (urgent cards above it, others
+  below); before the form is
   complete the web still shows no card. The note's words, one shared copy: "Screening questions appear once your sex,
   birth year and height are in About you.", "Some screening questions depend on your sex. Add it in About you.", "No
   screening questions apply at your age and sex yet." (US-62 AC41).

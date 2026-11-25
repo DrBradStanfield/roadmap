@@ -10,7 +10,7 @@
  * its ownership line), saved vitals and blood tests, conventional units, the blood-test table open,
  * a bone density section and the same suggestions repeated across topics.
  * Since US-62 AC41 (Brad 2026-11-26) the snapshots where no screening question applies show Cancer
- * screening with its note: alone with no screening card, under the cards with one.
+ * screening with its note in the questions' place (urgent cards above, other cards below).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';

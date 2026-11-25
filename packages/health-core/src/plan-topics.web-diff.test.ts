@@ -6,8 +6,8 @@
  * splits it), never planTopics. Each remaining difference is named and expected; any other difference
  * fails. Then examples of each ruling. Since US-62 AC40 the web draws planTopics (pinned by
  * MyHealth.topics-pins.test.tsx). The owner ruled on the differences on 2026-11-26 (US-62 AC41): the
- * web now draws D3, Cancer screening with the shared note (screening-note.ts), alone or under its
- * cards; D9 stays: before the form is full the web shows no card (US-07 AC3).
+ * web now draws D3, Cancer screening with the shared note (screening-note.ts) in the questions'
+ * place; D9 stays: before the form is full the web shows no card (US-07 AC3).
  */
 import { describe, expect, it } from 'vitest';
 import { BLOOD_TEST_METRICS, METRIC_TO_FIELD } from './mappings';
