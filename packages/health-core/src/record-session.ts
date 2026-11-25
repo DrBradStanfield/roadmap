@@ -15,10 +15,10 @@ import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMi
 import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
 import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
-import { ROADMAP_DOC } from './roadmap-doc';
+import { recordSync, ROADMAP_DOC } from './roadmap-doc';
 import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import type { RoadmapFile } from './roadmap-file';
-import { SyncManager, type SyncContext } from './sync-manager';
+import type { SyncContext, SyncManager } from './sync-manager';
 import { mayHaveLanded } from './write-refusal';
 
 export { eraseIdentityOf } from './erase-identity';
@@ -49,7 +49,7 @@ const SAVE_FAILED = 'Cloud sync failed — your latest changes are still on this
  * pre-switch copy-down all go through it.
  */
 export async function saveRecordInto(target: StorageAdapter, body: unknown, ctx: SyncContext): Promise<void> {
-  await new SyncManager(target, ctx.deviceId, ROADMAP_DOC, { now: () => ctx.now }).save(ROADMAP_DOC.migrate(body, ctx));
+  await recordSync(target, ctx.deviceId, ctx.now).save(ROADMAP_DOC.migrate(body, ctx));
 }
 
 /**
@@ -105,7 +105,7 @@ export class RecordSession {
   /** Load the record from the host's store and return a ready session. */
   static async open(host: RecordHost, { cloudUnreachable = false } = {}): Promise<RecordSession> {
     const deviceId = host.deviceId();
-    const sync = new SyncManager(host.store, deviceId, ROADMAP_DOC, { now: () => new Date(host.clock.now()).toISOString() });
+    const sync = recordSync(host.store, deviceId, () => new Date(host.clock.now()).toISOString()); // a clock: the session lives across many writes
     const session = new RecordSession(host, deviceId, sync, cloudUnreachable);
     session.revisionSeen = host.sync?.revision(ROADMAP_FILE_NAME) ?? null; // both before the read
     session.deviceCopySeen = deviceCopyRevision(host);

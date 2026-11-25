@@ -286,8 +286,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // name only; the page re-reads the record as after a correction.
   const moveTest = useMemo<MoveTestApi>(() => ({
     preview: previewMove,
-    move: async (from, to, expectedIds, keep) => {
-      const outcome = await moveBloodTest(from, to, expectedIds, keep);
+    move: async (from, to, expectedIds, keep, erase) => {
+      const outcome = await moveBloodTest(from, to, expectedIds, keep, erase);
       if (outcome.status === 'ok') {
         trackProductEvent('blood_test_moved');
         await ownSave();

@@ -187,8 +187,8 @@ export function markReportEmailCaptured(erase?: string): boolean {
 export function getLpaUnit(): unknown {
   return store?.getLpaUnit();
 }
-export function setLpaUnit(unit: LpaUnit): boolean {
-  return store?.setLpaUnit(unit) ?? false;
+export function setLpaUnit(unit: LpaUnit, erase?: string): boolean {
+  return store?.setLpaUnit(unit, erase) ?? false;
 }
 
 // --- email reminders (§10) — used by the standalone RemindersControl ---
@@ -289,8 +289,8 @@ export async function saveMedication(medicationKey: string, drugName: string, do
 export async function saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string, erase?: string): Promise<boolean> {
   return store ? store.saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt, erase) : false;
 }
-export async function deleteSupplementApi(supplementKey: string): Promise<boolean> {
-  return store ? store.deleteSupplementApi(supplementKey) : false;
+export async function deleteSupplementApi(supplementKey: string, erase?: string): Promise<boolean> {
+  return store ? store.deleteSupplementApi(supplementKey, erase) : false;
 }
 export async function saveScreening(screeningKey: string, value: string, erase?: string): Promise<boolean> {
   return store ? store.saveScreening(screeningKey, value, erase) : false;
@@ -350,8 +350,8 @@ export async function saveUpload(engine: UploadEngine, s: UploadState, now: stri
   countMeasuresAdded(answer.added);
   return answer;
 }
-export async function deleteDocument(documentId: string): Promise<boolean> {
-  return store ? store.deleteDocument(documentId) : false;
+export async function deleteDocument(documentId: string, erase?: string): Promise<boolean> {
+  return store ? store.deleteDocument(documentId, erase) : false;
 }
 /** Standalone: history opens as a lightbox (host listens in standalone/app.tsx). */
 export function openHistoryLightbox(metric: string | null): boolean {

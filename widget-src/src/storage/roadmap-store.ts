@@ -448,13 +448,13 @@ export class RoadmapStore {
     return this.host.store.readDocument(fileRef);
   }
 
-  deleteDocument(documentId: string): boolean {
+  deleteDocument(documentId: string, erase?: string): boolean {
     const doc = this.file.documents.find((d) => d.id === documentId);
-    if (!doc || doc.deleted || this.refuses()) return false;
+    if (!doc || doc.deleted || this.refuses(erase)) return false;
     // Tombstone, never splice — a hard-removed row resurrects from any other
     // copy via the union merge. The blob (if any) stays put as a harmless
     // orphan in the user's own cloud; they can remove it there if they wish.
-    return this.session.edit(() => void (doc.deleted = true));
+    return this.session.edit(() => void (doc.deleted = true), erase);
   }
 
   // ============================================================ reminders (§10)
@@ -496,9 +496,9 @@ export class RoadmapStore {
   }
 
   /** Remember Lp(a)'s field unit: a profile preference, stamped like the others so it syncs (US-05 AC2). */
-  setLpaUnit(unit: LpaUnit): boolean {
+  setLpaUnit(unit: LpaUnit, erase?: string): boolean {
     if (this.file.profile.lpaUnit === unit) return true;
-    return this.session.edit((file) => stampProfile(file, { lpaUnit: unit }, new Date().toISOString()));
+    return this.session.edit((file) => stampProfile(file, { lpaUnit: unit }, new Date().toISOString()), erase);
   }
 
   getReminderOptIn(): FileReminderOptIn | undefined {
