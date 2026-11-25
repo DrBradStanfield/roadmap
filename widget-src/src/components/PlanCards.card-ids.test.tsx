@@ -36,7 +36,7 @@ describe('US-09 AC7d: a card DOM id', () => {
 
   it('is unique per card when the same suggestion shows in two topics and at two priorities', () => {
     const suggestions = [s('fiber', 'nutrition', 'info'), s('fiber', 'nutrition', 'urgent'), s('fiber', 'sleep', 'attention'), s('bp-stage2', 'blood_pressure', 'urgent')];
-    const forms = { medications: [], screenings: [] };
+    const forms = { medications: [], screenings: [], screeningNote: null };
     const { result } = renderHook(() => usePlanView({ results: { suggestions, knownMinor: false } as unknown as HealthResults, shownErase: '', isValid: true, tiles: [], forms, cardsShown: true }));
     const { cardIds, urgent } = result.current;
     expect(Object.fromEntries(cardIds)).toEqual({

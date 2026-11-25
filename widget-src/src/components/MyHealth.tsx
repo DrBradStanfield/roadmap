@@ -110,13 +110,6 @@ export interface MyHealthProps {
   readyTitleRef?: RefObject<HTMLHeadingElement>;
 }
 
-// Where the web draws less than `planTopics` hands it, kept as today until Brad rules (US-62 AC40); true draws the rule.
-/** D3a: Cancer screening with only its note (no screening question applies, no screening card): no topic on the web today. */
-const WEB_DRAWS_NOTE_ONLY_SCREENING_TOPIC = false;
-// D3b: where no screening question applies the rule draws its note as the questions; the web has no note words yet (the iPhone's: ios/engine/my-data-forms.ts:228) and its renderers draw nothing then.
-/** D9: before the form is full, every card in one list, Other, urgent first. The web shows no card until then (US-07 AC3). */
-const WEB_DRAWS_WAITING_OTHER = false;
-
 /** The phone's jump pills (US-62 AC17): ids only, their words TOPICS'. */
 const PILLS: readonly TopicId[] = ['bloodTests', 'cholesterol', 'supplements'];
 const titleOf = (id: TopicId) => TOPICS.find(t => t.topic === id)!.title;
@@ -143,13 +136,13 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
 
   const { ctx, vitals, blood, labs: labValues, withoutWeight } = form.rows;
   // What My health draws is health-core's (US-62 AC39, AC40); the web has no device health source.
-  const screeningNote = plan.forms.screenings.length === 0;
+  const note = plan.forms.screeningNote;
   const layout = useMemo(() => planTopics(plan.sections, plan.forms, {
     formFull: form.fullForm, derived: { whtr: series.whtr.length > 0, nonHdl: tiles.some(t => t.key === 'nonHdl'), egfr: tiles.some(t => t.key === 'egfr') && !!egfrCurrent },
-    weightAskedWithHeight: withoutWeight, labValues, deviceHealth: false, screeningNote,
-  }), [plan.sections, plan.forms, form.fullForm, series, tiles, egfrCurrent, withoutWeight, labValues, screeningNote]);
-  const topics = useMemo(() => (layout.kind === 'topics' ? layout.topics : []).filter(t => t.topic !== 'screening' || !screeningNote
-    || WEB_DRAWS_NOTE_ONLY_SCREENING_TOPIC || t.urgent.length + t.cards.length > 0), [layout, screeningNote]);
+    weightAskedWithHeight: withoutWeight, labValues, deviceHealth: false, screeningNote: note !== null,
+  }), [plan.sections, plan.forms, form.fullForm, series, tiles, egfrCurrent, withoutWeight, labValues, note]);
+  // Before the form is full no topic and no card shows (US-07 AC3; Brad 2026-11-26: the cards come at the onboarding's end).
+  const topics = layout.kind === 'topics' ? layout.topics : [];
   // Rows (US-62 AC21), worked out only when their data changes (one long page, 40+ labs).
   const rowsOf = useMemo(() => {
     const model = rowModels({ ctx, vitals, blood, labs: labValues, tiles, series, egfrCurrent });
@@ -174,8 +167,10 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
   const toUrgent = () => revealAndFocus(plan.urgent && document.getElementById(plan.urgent.cardId), 'center');
 
   const questionsOf = (q: TopicQuestions | null) => (q === 'weight-medications' ? form.weightMedications(place) : q === 'lipid-medications' ? form.lipidMedications(place)
-    : q === 'supplements' ? form.supplements() : q === 'cancer-screening' ? <>{form.screening(place)}{form.boneDensity(place)}</> : null);
-  /** A topic: its heading, its urgent cards over its rows, its rows (Cancer screening's are its questions), its other cards, then its questions. */
+    : q === 'supplements' ? form.supplements() : q !== 'cancer-screening' ? null
+    // Where no screening question applies, the note in their place (US-62 AC41, the iPhone's words and place).
+    : note ? <p className="mh-screening-note">{note}</p> : <>{form.screening(place)}{form.boneDensity(place)}</>);
+  /** A topic: its heading, its urgent cards over its rows, its rows (Cancer screening's are its questions or its note), its other cards, then its questions. */
   const topicSection = ({ topic: id, ...t }: PlanTopic<UsSuggestion>) => {
     const rows = rowsOf.get(id) ?? [];
     const questions = questionsOf(t.questions);
@@ -299,7 +294,6 @@ export function MyHealth({ form, plan, tiles, series, egfrCurrent, storageBar, p
           </div>
         </div>
       )}
-      {layout.kind === 'waiting' && WEB_DRAWS_WAITING_OTHER && <PlanCardList cards={[...layout.urgent, ...layout.other]} ids={[...layout.urgent, ...layout.other].map((_, i) => `mh-card-${i}`)} plan={plan}/>}
       {!form.fullForm && documents.length > 0 && <HealthRecordsSection documents={documents} onDeleted={onDocumentDeleted} />}
       {!settingsOpen && storageCard && <div className="mh-foot-storage" hidden={!storageAtFoot}>{storageCard}</div>}
       {!form.fullForm && plan.pdf}
