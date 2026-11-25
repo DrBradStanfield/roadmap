@@ -216,6 +216,7 @@ orchestrator instead.
 - Survey with a skeleton: function signatures only, so an area fits in context.
 - Script an import graph and rerun it after each move.
 - `git log --name-only` shows how often files change and what changes with them.
+- Check the lead's code still exists before triage ranks it (R25, 26 Nov).
 
 ## Licence of the adapted source
 

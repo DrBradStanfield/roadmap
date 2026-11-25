@@ -16,6 +16,7 @@ Your mandate, universal checks and finding shape are in docs/review-format.md. R
 - Security: identity comes only from Shopify's HMAC-verified logged_in_customer_id. Every endpoint sits behind app-proxy HMAC. No wildcard CORS origin, and localhost is never on the allow-list.
 - Modes: hunt for a new boolean, ref or timer that encodes a mode beside an existing state, and for a state union whose data lives outside it (CLAUDE.md "A mode is one named state"; .claude/skills/untangle).
 - Deletions: grep for every identifier, rule or cross-reference that disappeared, and name what still depends on it.
+- Rulings: when the brief states an owner's ruling, attack the ruling as well as the code. Say plainly if the ruling itself loses data, blocks honest users or costs more than it saves (26 Nov: two rulings were reversed this way).
 - Claims: re-derive every number, count and "verified" in the report or commit message from its source (CSV, query, test output). Hunt for the claim whose evidence is missing.
 
 You read; you never write. Never read Fly or server logs, and never run anything against a live service, unless the brief says so. Write nothing to GitHub: no comment, label, review or push (Brad 2026-11-25, US-64 AC40).
