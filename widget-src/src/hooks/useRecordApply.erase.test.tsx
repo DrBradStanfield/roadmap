@@ -34,7 +34,7 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../storage/roadmap-store', () => ({ REMOTE_CHANGED_EVENT: 'hr:remote-changed' }));
 
 import { trackProductEvent } from '../lib/server-api';
-import { ERASE_DONE, WRITE_REFUSED } from '../lib/erase-copy';
+import { eraseDone, WRITE_REFUSED } from '../lib/erase-copy';
 import { useErase } from './useErase';
 import { useRecordApply } from './useRecordApply';
 
@@ -128,7 +128,7 @@ const PATHS: Path[] = [
     expect(p.now().erase.loaded).toBe(false); // the saves stay off (L2, H37)
   }, { counted: 1, reads: 1 }, false],
   ['H37 (rule R2): this tab\'s erase ends before the first read shows; a later arrival waits for that read', async (p) => {
-    const erase = ownErase(p, { success: true, chatErased: true });
+    const erase = ownErase(p, { success: true, chatErased: true, chat: 'erased' });
     await erase.finish(B); // this tab's erase
     expect(p.now().erase.loaded).toBe(false); // the saves stay off until the first read shows
     await announced(C); // another writer's, above it
@@ -148,10 +148,10 @@ const PATHS: Path[] = [
     await settle();
   }, { counted: 1, reads: 1 }],
   ['it arrives during this tab\'s erase, and wins (own-end at it)', async (p) => {
-    const erase = ownErase(p, { success: true, chatErased: true });
+    const erase = ownErase(p, { success: true, chatErased: true, chat: 'erased' });
     await announced(B);
     await erase.finish();
-    expect(log).toContain(`say ${ERASE_DONE}`);
+    expect(log).toContain(`say ${eraseDone('erased')}`);
   }, { counted: 1, reads: 1 }],
   ['it arrives during this tab\'s erase, whose write moves nothing (own-failed)', async (p) => {
     // The store took B in before this erase began, and announces it a pass late (the two-pass fold, H25).

@@ -74,10 +74,6 @@ issue, and nothing private.
   answer" is said for a server error, which is an answer. Options: (1) approve the new sentence, and let new lines be
   drafted for the three gaps; (2) keep today's words. Recommendation: option 1, because today's sentence can tell a
   person nothing was written when it was.
-- **An erase message needs a truer sentence.** Issue: when an erase partly fails, the iPhone can show an empty or
-  wrong reason, and the web says nothing about the chat step. Draft lines exist for each case. Options: approve the
-  drafts as one set; approve some; keep today's words. Recommendation: approve the set, because today's words can be
-  wrong about what was deleted.
 - **Web sync lines.** Issue: three web cases say too little: a sign-in that did not finish opens as a guest with no
   message; a cloud page whose sign-in ended after a log-off in another tab says only "Not synced yet." and loses edits
   on reload; switching clouds does not say the old cloud keeps its copy, which the iPhone does say. Options: approve
@@ -216,6 +212,12 @@ issue, and nothing private.
   while the App Store review is open.
 
 ## Decided
+
+2026-11-26, Brad's words in quotes:
+- An erase message says what each step did, from one table in the shared engine (US-11 AC13): "this. and use your
+  judement for the sentences. must be succinct, and I approve whatever sentences you suggest". The web uses it now; the
+  iPhone with its next engine release. A record not erased: "Your health record was not deleted: the erase could not be
+  saved.", then "Your chat history was deleted." or "Your chat history could not be reached just now.", then "Try again."
 
 2026-11-23, Brad's words in quotes:
 - Original files are stored in the background after Save, with no action from the person at Save and at every

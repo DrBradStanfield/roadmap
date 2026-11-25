@@ -2,6 +2,7 @@
 import type { AddLabValueRequest, AddLabValueResult, MeasurementRefusal, MoveKeep, MoveRejection, MovePlan } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import { dayOf } from '@roadmap/health-core/merge';
+import type { EraseChatStep } from '@roadmap/health-core/erase-outcome';
 import type { FileReminderOptIn, RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
@@ -365,22 +366,24 @@ export function setPreEraseHook(fn: () => Promise<(() => Promise<void>) | null>)
   preEraseHook = fn;
 }
 
-export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean; chatUnread?: true }> {
-  if (!store) return { success: false, error: 'Data store not initialised', chatErased: false };
+export async function deleteUserData(): Promise<{ success: boolean; error?: string; warning?: string; chatErased: boolean; chat: EraseChatStep | null }> {
+  if (!store) return { success: false, error: 'Data store not initialised', chatErased: false, chat: null };
   eraseBegan(); // a chat reply asked before this is not saved (US-11 AC2h)
   // The order and the best-effort rules are the record session's (health-core
   // deleteAllData): it reads the record first, and an erase that cannot read
   // it is refused before either step runs (US-09 AC23). Chat goes through the
   // singleton, so an open chat panel's instance is the one erased. In the
   // cloud, a history that could not be opened rejects, so the session reports
-  // it and never counts it erased; `chatUnread` tells the page the file could
+  // it and never counts it erased; 'unread' tells the page the file could
   // not be read (US-11 AC2c). On the device the record erase clears
-  // the chat file itself, so a failed open there loses nothing.
-  let chatUnread = false;
-  const chat = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch((error: unknown) => {
-    chatUnread = true;
+  // the chat file itself, so a failed open there loses nothing. `step` stays
+  // null until the chat step begins, so the page says only what ran (US-11 AC13).
+  let step: EraseChatStep | null = null;
+  const open = getBackendKind() === 'local' ? getChatHistory : () => openChatHistory().catch((error: unknown) => {
+    step = 'unread';
     throw error;
   });
+  const chat = () => { step = 'unreached'; return open(); };
   const prepare = preEraseHook;
   let commit = null as (() => Promise<void>) | null;
   const before = store.eraseIdentity;
@@ -388,7 +391,8 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
   // The erased copy stands, landed or held for a retry (useErase's signal): only
   // then does the server step run, once. A refused erase cancels nothing (S59).
   if (store.eraseIdentity !== before) await commit?.();
-  return chatUnread && !result.chatErased ? { ...result, chatUnread: true } : result;
+  const ran = step as EraseChatStep | null; // set in the closures above, which TS's narrowing does not see
+  return { ...result, chat: ran && (result.chatErased ? 'erased' : ran) };
 }
 
 // ---------------------------------------------------------------------------

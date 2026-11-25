@@ -79,8 +79,34 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
     expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).meta.eraseEpoch).toBe(1);
     expect(live(cloud)).toHaveLength(1);
     expect(result.chatErased).toBe(false);
-    expect(result.chatUnread).toBe(true);
+    expect(result.chat).toBe('unread');
     chatReported();
+  });
+
+  it('US-11 AC13: a chat file that opens but cannot be written says unreached, never erased', async () => {
+    const write = MemoryAdapter.prototype.write;
+    vi.spyOn(MemoryAdapter.prototype, 'write').mockImplementation(function (this: MemoryAdapter, fileName, ...rest) {
+      if (fileName === CHAT_FILE) return Promise.reject(new Error('chat cloud unreachable'));
+      return write.call(this, fileName, ...rest);
+    });
+    const result = await data.deleteUserData();
+
+    expect(result.success).toBe(true);
+    expect(result.chat).toBe('unreached');
+    expect(live(cloud)).toHaveLength(1);
+  });
+
+  it('US-11 AC13: an erase refused before its steps (the record cannot be read) says no chat step ran', async () => {
+    const read = MemoryAdapter.prototype.read;
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockImplementation(function (this: MemoryAdapter, fileName, signal) {
+      if (fileName === ROADMAP_FILE_NAME) return Promise.reject(new Error('record cloud unreachable'));
+      return read.call(this, fileName, signal);
+    });
+    const result = await data.deleteUserData();
+
+    expect(result.success).toBe(false);
+    expect(result.chat).toBeNull();
+    expect(live(cloud)).toHaveLength(1);
   });
 
   it('reports only a fixed message, never the open error, which can quote the file', async () => {
@@ -109,7 +135,7 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
 
     expect(result.success).toBe(true);
     expect(result.chatErased).toBe(true);
-    expect(result.chatUnread).toBeUndefined();
+    expect(result.chat).toBe('erased');
     expect(live(cloud)).toHaveLength(0);
     // The erased store is the shared one, so a chat opened next sees the tombstones.
     expect((await getChatHistory())!.listConversations()).toHaveLength(0);
@@ -120,7 +146,7 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
     const result = await data.deleteUserData();
 
     expect(result.chatErased).toBe(true);
-    expect(result.chatUnread).toBeUndefined();
+    expect(result.chat).toBe('erased');
     expect(open!.listConversations()).toHaveLength(0);
     expect(await getChatHistory()).toBe(open);
     expect(live(cloud)).toHaveLength(0);
@@ -131,7 +157,7 @@ describe('US-11 AC2c: an erase whose chat history could not be opened', () => {
     const result = await data.deleteUserData();
 
     expect(result.chatErased).toBe(true);
-    expect(result.chatUnread).toBeUndefined();
+    expect(result.chat).toBe('erased');
     expect(Sentry.captureException).not.toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ tags: expect.objectContaining({ area: 'chat-history' }) }),
