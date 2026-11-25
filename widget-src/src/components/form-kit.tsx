@@ -6,7 +6,7 @@ import { describedBy } from '../lib/aria';
 import type { useRangeWait } from '../lib/useRangeWait';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import type { FormOption } from '@roadmap/health-core/input-form';
+import { optionsShowing, type FormOption } from '@roadmap/health-core/input-form';
 
 /** Every surface opens metric history in the local lightbox. */
 export const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -26,6 +26,24 @@ export function errorAria(errorId: string, errors: unknown[], also?: string) {
 /** Option data (health-core's input-form) as <option> elements. */
 export const optionElements = (options: FormOption[]) =>
   options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>);
+
+/** The key of a recorded answer the list has no option for: never the answer's own text (US-09 AC7l). */
+const OFF_LIST = 'recorded-off-list';
+
+/**
+ * A select showing what the record holds (health-core's optionsShowing): its value, its change
+ * and its options. An answer off the list shows as its "Other (recorded)" option under a fixed
+ * key, and picking that key writes nothing, since it is what the record already holds.
+ */
+export function recordedChoice(listed: ReadonlyArray<{ value: string; label: string }>, recorded: string, pick: (value: string) => void, unrecorded?: string) {
+  const offList = recorded !== '' && !listed.some(opt => opt.value === recorded);
+  const key = (value: string) => (offList && value === recorded ? OFF_LIST : value);
+  return {
+    value: key(recorded),
+    onChange: (e: React.ChangeEvent<HTMLSelectElement>) => { if (e.target.value !== OFF_LIST) pick(e.target.value); },
+    children: optionsShowing(listed, recorded, unrecorded).map(opt => <option key={opt.value} value={key(opt.value)} disabled={opt.disabled}>{opt.label}</option>),
+  };
+}
 
 export interface FormKit {
   inputs: Partial<HealthInputs>;

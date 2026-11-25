@@ -18,6 +18,7 @@ import {
 } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { deleteButton, openSettings } from '../testing/settings';
+import { rowTitle } from '../testing/plan-on-page';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { trackProductEvent } from '../lib/server-api';
 
@@ -110,7 +111,7 @@ function titled(title: string) {
 /** The suggestions a card draws, by their titles. */
 const cardSuggestions = (card: Element) => [...card.querySelectorAll('.suggestion-title')].map(t => titled(t.textContent!));
 /** The suggestion a row draws, by its info button's name. */
-const rowSuggestion = (row: Element) => titled(row.querySelector('.mh-info-btn')!.getAttribute('aria-label')!.replace(/^About: /, ''));
+const rowSuggestion = (row: Element) => titled(rowTitle(row));
 /** Each suggestion id drawn as a card, and on a row. */
 function drawn(view: RenderResult) {
   const cards = [...view.container.querySelectorAll('.mh-sections .mh-card')].flatMap(c => cardSuggestions(c).map(s => s.id));

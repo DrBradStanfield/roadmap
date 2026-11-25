@@ -15,13 +15,16 @@ an engine release, so it cannot land on CI alone.
    - H70
 3. **R3** Erase side steps (chat tombstones) run only after the record write lands; design note first. [record erase] `record-session-erase.ts`
    - S59a
+   - Design: docs/drafts/s59a-chat-erase-order-design.md
 4. **R5** Every store write takes its erase as a required argument, then the store mark goes; pins first, then types, then delete the mark (3 PRs). Design: docs/drafts/h18-h24-erase-by-type-design.md. [record save/erase] `roadmap-store.ts`, `record-session.ts`, `standalone/reminders.ts`, upload and list-save hooks, `roadmap-data.ts`, `HealthTool.tsx`, `MatrixSavedCells.tsx`
    - H18 H18b H18c H18d H19 H20 H21 H22 H23 H24 H107 H109
 5. **R4** Each off-file leftover (matrix draft, stored original, Lp(a) answer) carries the erase it was written under; a clear removes only older ones; one report per failed clear. [record erase] `record-session.ts`, `record-session-erase.ts`, `cleared-erase.ts`, `roadmap-data.ts`, `roadmap-store.ts`
    - A23
+   - Design: docs/drafts/r4-leftover-stamps-design.md
 6. **R6** Every storage failure carries a typed reason, set where it is raised (definite, may have landed, no answer); nothing reads words. Two halves. [record save/merge] health-core: `write-refusal.ts`, `save-state.ts`, `drive-rest-*.ts`, `sync-manager.ts`, `dropbox.ts`; phone: `ios/engine/cloud-adapters.ts`, `shim.ts`, `EngineNatives.swift`, `OAuthClient.swift`
    - health-core half: S62b S57c H127 M8 (web)
    - phone half: H134 M6 M8 (phone) S57d
+   - Design: docs/drafts/r6-typed-storage-outcome-design.md
 7. **R7** The iPhone stores the landed record's erase epoch apart from its drawing; an engine door reads a refused file's raw eraseEpoch. [phone, privacy] `RecordStore+*.swift`, `AppleHealthSync.swift`, `DataEraser.swift`, `ios/engine/cloud.ts`
    - H113 H130 H200
 8. **R8** The unsent erase is one persisted owed state; Disconnect reads it, a landed erase clears it. [phone, privacy] `ios/engine/cloud.ts`, `CloudSync.swift`
@@ -32,8 +35,10 @@ an engine release, so it cannot land on CI alone.
     - H115
 11. **R13** One record-apply hold state that ends on the next edit, read by the page and the chat. [record read] `useRecordApply.ts`, `ChatEdits.tsx`, `HealthTool.tsx`
     - H14 H15 H16
+    - Design: docs/drafts/r13-record-apply-hold-design.md
 12. **R14** A malformed Observation meta or effectivePeriod is refused or flagged, never re-dated to issued. [FHIR import; the orchestrator's call] `health-records-fhir.ts`
     - H35
+    - Design: docs/drafts/h35-malformed-observation-dates-design.md
 13. **R22** The value page's Add fields are read-only while the save runs. [UI, typed text lost] `ValuePage.tsx`
     - H301
 14. **R10** Delete all my data and Log off are reachable from every failure screen. [privacy] `RecordStore.swift`, `DataEraser.swift`, `HealthRoadmapApp.swift`, `standalone/app.tsx`, `ErrorBoundary.tsx`
@@ -48,6 +53,7 @@ an engine release, so it cannot land on CI alone.
     - A4 H116
 19. **R21** One page-hide path: every cell stages, then one flush. [record save] `HealthTool.tsx`, `MatrixSavedCells.tsx`, `roadmap-data.ts`
     - H92
+    - Design: docs/drafts/r21-one-page-hide-path-design.md
 20. **R20** A save failure is reported once per cause and grant, also on a closed page. [save status] `record-session.ts`, `record-host.ts`, `web-record-host.ts`, `ios/engine/cloud.ts`
     - A22 A25
 21. **R23** Upload review default ticks and save-all stop causes come from one engine rule. [Android share] `review-matrix.ts`, `LabReportSave.swift`, `RecordStore.swift`

@@ -5,7 +5,7 @@
  * pure relay and the component only wires it up.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { createRemoteChangeRelay } from './remote-replay';
+import { createRemoteChangeRelay, transition, type HoldEvent, type HoldRead, type HoldState } from './remote-replay';
 
 /** A relay whose page has shown its first read. */
 const ready = <T,>(apply: (remote: boolean) => T) => { const relay = createRemoteChangeRelay(apply); relay.loaded(); return relay; };
@@ -163,5 +163,112 @@ describe('US-34 AC4 — createRemoteChangeRelay', () => {
     const relay = loaded ? ready(apply) : createRemoteChangeRelay(apply);
     steps(relay);
     expect(apply.mock.calls).toEqual(calls);
+  });
+});
+
+// US-34 AC4 (R13 PR 1): the hold is one state, changed only through `transition`. Every state crossed
+// with every event names the state that follows and the read it asks for (- for none).
+const STATES: Record<string, HoldState> = {
+  loading: { phase: 'loading' },
+  'loading-held+': { phase: 'loading-held', counts: true },
+  'loading-held-': { phase: 'loading-held', counts: false },
+  idle: { phase: 'idle' },
+  'held+': { phase: 'held', counts: true },
+  'held-': { phase: 'held', counts: false },
+};
+const EVENTS: Record<string, HoldEvent> = {
+  'arrived dirty': { type: 'arrived', formDirty: true, counts: true },
+  'arrived clean': { type: 'arrived', formDirty: false, counts: true },
+  'echo dirty': { type: 'arrived', formDirty: true, counts: false },
+  'echo clean': { type: 'arrived', formDirty: false, counts: false },
+  loaded: { type: 'loaded' },
+  saved: { type: 'saved' },
+  reread: { type: 'reread' },
+  shows: { type: 'shows' },
+};
+type Row = [state: string, event: string, next: string, read: HoldRead | '-'];
+const TABLE: Row[] = [
+  ['loading', 'arrived dirty', 'loading-held+', '-'],
+  ['loading', 'arrived clean', 'loading-held+', '-'],
+  ['loading', 'echo dirty', 'loading-held-', '-'],
+  ['loading', 'echo clean', 'loading-held-', '-'],
+  ['loading', 'loaded', 'idle', '-'],
+  ['loading', 'saved', 'loading', '-'], // early save: nothing held yet
+  ['loading', 'reread', 'loading', 'own'],
+  ['loading', 'shows', 'loading', 'own'],
+  ['loading-held+', 'arrived dirty', 'loading-held+', '-'],
+  ['loading-held+', 'arrived clean', 'loading-held+', '-'],
+  ['loading-held+', 'echo dirty', 'loading-held+', '-'], // a counting change waits beside the echo
+  ['loading-held+', 'echo clean', 'loading-held+', '-'],
+  ['loading-held+', 'loaded', 'idle', 'remote'],
+  ['loading-held+', 'saved', 'loading-held+', '-'], // out of order: a save before the first read keeps the wait
+  ['loading-held+', 'reread', 'loading-held+', 'own'], // the first read, still to come, takes the change in
+  ['loading-held+', 'shows', 'loading', 'own'],
+  ['loading-held-', 'arrived dirty', 'loading-held+', '-'],
+  ['loading-held-', 'arrived clean', 'loading-held+', '-'],
+  ['loading-held-', 'echo dirty', 'loading-held-', '-'],
+  ['loading-held-', 'echo clean', 'loading-held-', '-'],
+  ['loading-held-', 'loaded', 'idle', 'uncounted'],
+  ['loading-held-', 'saved', 'loading-held-', '-'],
+  ['loading-held-', 'reread', 'loading-held-', 'own'],
+  ['loading-held-', 'shows', 'loading', 'own'],
+  ['idle', 'arrived dirty', 'held+', '-'],
+  ['idle', 'arrived clean', 'idle', 'remote'],
+  ['idle', 'echo dirty', 'held-', '-'],
+  ['idle', 'echo clean', 'idle', 'uncounted'],
+  ['idle', 'loaded', 'idle', '-'], // late: a second first-read signal reads nothing
+  ['idle', 'saved', 'idle', '-'], // late: a second save reads nothing
+  ['idle', 'reread', 'idle', 'own'],
+  ['idle', 'shows', 'idle', 'own'],
+  ['held+', 'arrived dirty', 'held+', '-'],
+  ['held+', 'arrived clean', 'idle', 'remote'],
+  ['held+', 'echo dirty', 'held+', '-'],
+  ['held+', 'echo clean', 'idle', 'remote'], // one read, counted once
+  ['held+', 'loaded', 'held+', '-'], // late: the first read was shown long ago
+  ['held+', 'saved', 'idle', 'remote'],
+  ['held+', 'reread', 'idle', 'remote'],
+  ['held+', 'shows', 'idle', 'own'], // the erase machine counts its own read
+  ['held-', 'arrived dirty', 'held+', '-'],
+  ['held-', 'arrived clean', 'idle', 'remote'],
+  ['held-', 'echo dirty', 'held-', '-'],
+  ['held-', 'echo clean', 'idle', 'uncounted'],
+  ['held-', 'loaded', 'held-', '-'],
+  ['held-', 'saved', 'idle', 'uncounted'],
+  ['held-', 'reread', 'idle', 'uncounted'],
+  ['held-', 'shows', 'idle', 'own'],
+];
+
+describe('US-34 AC4 — the hold transition table', () => {
+  it('has one row for every state crossed with every event', () => {
+    const pairs = TABLE.map(([state, event]) => `${state} x ${event}`);
+    expect(new Set(pairs).size).toBe(pairs.length);
+    expect(pairs.length).toBe(Object.keys(STATES).length * Object.keys(EVENTS).length);
+  });
+
+  it.each(TABLE)('%s + %s -> %s, read %s', (state, event, next, read) => {
+    expect(transition(STATES[state], EVENTS[event])).toEqual({ state: STATES[next], read: read === '-' ? null : read });
+  });
+
+  // Late and out-of-order sequences from a fresh page (loading), folded through the transition alone.
+  it.each<[string, string[], string, (HoldRead | '-')[]]>([
+    ['a change before the first read, a save, then the read shown: applies once, at the read',
+      ['arrived clean', 'saved', 'loaded', 'saved'], 'idle', ['-', '-', 'remote', '-']],
+    ['the first-read signal twice: the second reads nothing', ['loaded', 'loaded'], 'idle', ['-', '-']],
+    ['a hold, then the erase machine\'s read, then the late save: the save reads nothing',
+      ['loaded', 'arrived dirty', 'shows', 'saved'], 'idle', ['-', '-', 'own', '-']],
+    ['the erase machine\'s read before the first read: still loading, so a later change waits',
+      ['shows', 'arrived clean', 'loaded'], 'idle', ['own', '-', 'remote']],
+    ['an echo held, then a counting change: one read at the save, counted',
+      ['loaded', 'echo dirty', 'arrived dirty', 'saved'], 'idle', ['-', '-', '-', 'remote']],
+  ])('%s', (_name, events, last, reads) => {
+    let state = STATES.loading;
+    const seen: (HoldRead | '-')[] = [];
+    for (const name of events) {
+      const step = transition(state, EVENTS[name]);
+      state = step.state;
+      seen.push(step.read ?? '-');
+    }
+    expect(seen).toEqual(reads);
+    expect(state).toEqual(STATES[last]);
   });
 });

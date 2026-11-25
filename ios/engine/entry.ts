@@ -362,7 +362,7 @@ export async function documentOriginal(id: string): Promise<ArrayBuffer> {
 
 /** The cloud no longer holds the original (PR 1051 review R1): any 404; Dropbox answers a download
  *  of a missing path 409 (path/not_found; dropbox-rest.ts `dropboxDownload` keeps the status, not
- *  the body, so every download 409 counts); Drive finds no file of that name (drive-rest.ts
+ *  the body, so every download 409 counts); Drive finds no file of that name (drive-rest-files.ts
  *  `driveDownloadDocument`, which sets no status but the reason not-found, #979). */
 function originalGone(error: unknown): boolean {
   return error instanceof StorageError && (error.status === 404 || error.status === 409 || error.reason === 'not-found');
