@@ -1,5 +1,5 @@
 /**
- * US-15 AC66 (root fix R15, leads A2 and C26b): the chat-history open is one
+ * US-15 AC69 (root fix R15, leads A2 and C26b): the chat-history open is one
  * named state. A failed open is tried again on the next turn or read, never on
  * its own; one open is in flight at a time; a result names the attempt it
  * began under; and while a history layer exists, no read goes to the server.
@@ -39,7 +39,7 @@ const answer = () => new Response(JSON.stringify({ success: true, conversationId
   headers: { 'Content-Type': 'application/json' },
 });
 
-describe('US-15 AC66: the chat-history open transition', () => {
+describe('US-15 AC69: the chat-history open transition', () => {
   const pending = Promise.resolve(asStore(fakeStore()));
   const store = asStore(fakeStore());
   const closed: ChatHistoryOpen = { phase: 'closed', attempt: 0 };
@@ -73,7 +73,7 @@ describe('US-15 AC66: the chat-history open transition', () => {
   });
 });
 
-describe('US-15 AC66: a failed chat-history open is tried again on the next turn or read', () => {
+describe('US-15 AC69: a failed chat-history open is tried again on the next turn or read', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   beforeEach(() => {
     fetchMock = vi.fn(async () => answer());
@@ -171,7 +171,7 @@ describe('US-15 AC66: a failed chat-history open is tried again on the next turn
   });
 });
 
-describe('US-15 AC66: while a history layer exists, no read goes to the server path', () => {
+describe('US-15 AC69: while a history layer exists, no read goes to the server path', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   beforeEach(() => {
     fetchMock = vi.fn(async () => answer());

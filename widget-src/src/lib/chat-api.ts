@@ -141,7 +141,7 @@ export function getChatGate(): ChatGate | null {
  * when there's no history layer (never rejects — see chat-history-access.ts),
  * and only then do callers use the server CRUD path. 'unavailable': a layer
  * exists but its file could not be opened, so the call fails as a failed read
- * and the next one opens again, never the server path (US-15 AC66). The
+ * and the next one opens again, never the server path (US-15 AC69). The
  * LOCAL_FIRST check is redundant defense — the registry is only ever populated
  * on local-first builds — kept as a one-line belt against future registry callers.
  */

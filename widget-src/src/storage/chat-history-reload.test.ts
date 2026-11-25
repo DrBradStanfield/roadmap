@@ -157,7 +157,7 @@ describe('the page\'s chat history follows the record\'s erase identity (US-11 A
     expect(await storedLive(cloud)).toEqual([]);
   });
 
-  // US-15 AC66 (R15): before, the failed open was kept for the page's life.
+  // US-15 AC69 (R15): before, the failed open was kept for the page's life.
   it('a failed open is not kept: the next chat caller opens again; the erase\'s first open tries once', async () => {
     const cloud = new MemoryCloud();
     const identity = { now: 'erase-1' };

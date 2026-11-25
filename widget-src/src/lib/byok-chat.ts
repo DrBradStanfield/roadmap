@@ -70,7 +70,7 @@ export function getChatGate(): ChatGate | null {
 // construction — see chat-history-access.ts): if the store isn't available,
 // chat still answers, it just doesn't remember.
 
-/** No store is a failed read, never an empty list, so the next open reads again (US-15 AC64a, AC66). */
+/** No store is a failed read, never an empty list, so the next open reads again (US-15 AC64a, AC69). */
 export async function listConversations(): Promise<ChatListResult | null> {
   const store = await getChatHistory();
   return store ? { conversations: store.listConversations(), isGuest: false } : null;

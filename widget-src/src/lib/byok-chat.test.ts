@@ -332,7 +332,7 @@ describe('US-15 AC34: a Pages chat reply cut off before any text is an error, no
 });
 
 // US-15 AC47a: getChatHistory() resolves null when the history file could not
-// be opened (since AC66 the next call opens it again). The Pages chat read a follow-up's earlier turns only from the
+// be opened (since AC69 the next call opens it again). The Pages chat read a follow-up's earlier turns only from the
 // store, so every follow-up then went to the model alone, while the thread on
 // screen carried on.
 describe('US-15 AC47a: a Pages chat follow-up keeps its conversation when the history file is not open', () => {
@@ -351,7 +351,7 @@ describe('US-15 AC47a: a Pages chat follow-up keeps its conversation when the hi
     state.store = null;
   });
 
-  it('US-15 AC66: the History list is a failed read, never an empty list, so the next open reads it again', async () => {
+  it('US-15 AC69: the History list is a failed read, never an empty list, so the next open reads it again', async () => {
     await expect(listConversations()).resolves.toBeNull();
   });
 

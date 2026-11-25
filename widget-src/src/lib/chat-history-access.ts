@@ -15,14 +15,14 @@
  * boot), and a failed create resolves to null (chat still answers, history
  * just doesn't persist) — consumers never need their own catch. A failed open
  * is not kept: the next caller (a turn, a list or thread read) opens again,
- * never a timer (US-15 AC66).
+ * never a timer (US-15 AC69).
  */
 import * as Sentry from '@sentry/react';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 import { recordFailure } from './error-diagnostics';
 
 /**
- * The page's one open of the chat-history file (US-15 AC66). `attempt` only
+ * The page's one open of the chat-history file (US-15 AC69). `attempt` only
  * grows, so a result names the attempt it began under and a late one from an
  * older attempt changes nothing. One open is in flight at a time and an open
  * session is replaced only by a reset, so the page never holds two sessions
@@ -76,7 +76,7 @@ export function setChatHistoryFactory(f: (() => Promise<ChatHistoryStore>) | nul
   eraseIdentity = identity;
 }
 
-/** Whether a history layer is registered: then chat never reads the server's history (US-15 AC66). */
+/** Whether a history layer is registered: then chat never reads the server's history (US-15 AC69). */
 export function hasChatHistoryLayer(): boolean {
   return factory !== null;
 }
