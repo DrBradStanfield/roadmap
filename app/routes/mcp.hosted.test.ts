@@ -932,7 +932,7 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
       expect(confirmFrom).toBe(at(25));
       makeAdapter = () => new MemoryAdapter(cloud);
       const early = await callTool(access, 'correct_value', { ...args, confirm, approval: APPROVED }, at(15));
-      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(25)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used in 10 seconds (from ${at(25)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
       expect((await callTool(access, 'correct_value', { ...args, confirm, approval: APPROVED }, at(25))).isError).toBe(false);
     } finally {
       vi.useRealTimers();
@@ -1321,6 +1321,25 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
     });
   }
 
+  // US-10 AC20: the save's own read answered before its upload was refused, so "nothing was read" would be untrue.
+  for (const status of [401, 403] as const) {
+    it(`a ${status} refusing the save's upload says nothing was written, not that nothing was read`, async () => {
+      seedRecord();
+      const { access } = await connect();
+      makeAdapter = () => {
+        const adapter = new MemoryAdapter(cloud);
+        adapter.write = async () => { throw new StorageError(`Dropbox write failed (${status})`, undefined, undefined, status, undefined, answerOutcome(status, true)); };
+        return adapter;
+      };
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
+      expect(answer.isError).toBe(true);
+      expect(answer.text).toBe(
+        'Dropbox refused this connection’s access to the record. Nothing was written. ' +
+          'Ask the user to reconnect the connector, which grants it again.',
+      );
+    });
+  }
+
   // US-10 AC16: chosen by the typed reason. A Drive rate limit (a 403) passes: it is never refused access.
   it('a typed rate limit on a read is not told as refused access, nor "reconnect"', async () => {
     seedRecord();
@@ -1333,7 +1352,8 @@ describe('US-10 AC4a: a 401 or 403 after the upload is not "nothing was written"
     const answer = await callTool(access, 'read_record', {});
     expect(answer.isError).toBe(true);
     expect(answer.text).not.toMatch(/refused this connection|reconnect/i);
-    expect(answer.text).toBe('The record in Dropbox did not answer. Nothing was written. Try once more; if it keeps failing, check that the record is reachable.');
+    // A refusal is never worded "did not answer" (US-10 AC20).
+    expect(answer.text).toBe('The record in Dropbox refused the request. Nothing was written. Try once more; if it keeps failing, check that the record is reachable.');
   });
 
   // A full Drive (a 403) has no true sentence of its own yet: it keeps today's text (listed for the owner).
@@ -1647,7 +1667,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
       // Committed the moment the receipt came back: early, measured from the hand-back at 15 s.
       const early = await commit(15);
       expect(early.isError).toBe(true);
-      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used from ${at(25)}, after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
+      expect(early.text).toBe(`That confirm receipt is not valid yet: it can be used in 10 seconds (from ${at(25)}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`);
       expect(pendingFiles()).toHaveLength(1);
       expect((await commit(25)).isError).toBe(false);
     } finally {

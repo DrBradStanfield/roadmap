@@ -13,7 +13,9 @@ import type { ListPage } from '@roadmap/health-core/upload-list-page';
 import type { CellUnit } from '@roadmap/health-core/cell-unit';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import type { UploadView } from '@roadmap/health-core/upload-view';
+import { ROW_NAME_PARTS } from '@roadmap/health-core/upload-text';
 import { transition, type Draft, type DraftEvent } from '../lib/upload-list-draft';
+import type { ListNameIds } from '../lib/upload-list-names';
 import { UploadListRow, type RowEvents } from './UploadListRow';
 import { DayHeader } from './UploadListDays';
 import { titleKey, UploadListDocuments } from './UploadListDocuments';
@@ -82,6 +84,14 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
   }
   const root = useRef<HTMLDivElement>(null);
   const rowsId = useId();
+  // What each value and day control is named with (US-13 AC28): `rowName`'s words, drawn once and hidden, each file's name
+  // in Files and each day control's shown day, by their place in the engine's lists.
+  const namesId = useId();
+  const names = useMemo((): ListNameIds => {
+    const file = new Map(view.files.rows.map((f, i) => [f.fileId, `${namesId}f${i}`]));
+    const day = new Map(list.days.map((d, i) => [d.key, `${namesId}d${i}`]));
+    return { valueFrom: `${namesId}v`, commas: [`${namesId}c0`, `${namesId}c1`], again: `${namesId}a`, file: (id) => file.get(id) ?? '', day: (key) => day.get(key) ?? '' };
+  }, [namesId, view.files.rows, list.days]);
   const byKey = useMemo(() => new Map(list.rows.map((r) => [r.key, r])), [list]);
   const editable = view.editable ?? false;
   const open = latch.open ?? (list.rows.length > 0 ? false : null);
@@ -144,6 +154,9 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
       {/* The list's one announcement: an error text the person's last step made, said once (adversary F8, R3); polite, so
           a check after a blur never cuts off the next field's name. */}
       <div className="hr-sr-only" aria-live="polite">{said.text && <p key={said.n}>{said.text}</p>}</div>
+      <span id={names.valueFrom} hidden>{ROW_NAME_PARTS.valueFrom}</span>
+      {names.commas.map((id) => <span key={id} id={id} hidden>,</span>)}
+      <span id={names.again} hidden>{`, ${ROW_NAME_PARTS.again}`}</span>
       <p className="review-summary">{view.summary}</p>
       {view.alreadySaved && <p className="review-overview-line">{view.alreadySaved}</p>}
       {view.refused && <p className="upload-error">{view.refused}</p>}
@@ -161,11 +174,11 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
           const control = days.get(g.key);
           return (
             <section key={g.key} className="upload-list-group" data-section={g.key}>
-              {control && <DayHeader control={control} editable={editable} choose={pick} />}
+              {control && <DayHeader control={control} editable={editable} choose={pick} shownId={names.day(control.key)} commas={names.commas} />}
               <ul className="upload-list-rows">
                 {g.rows.map((row) => (
                   <UploadListRow
-                    key={row.key} row={row} on={on} editable={editable} hidden={!shown(row)}
+                    key={row.key} row={row} on={on} editable={editable} hidden={!shown(row)} names={names}
                     value={draft?.key === row.key ? draft.text : row.typed?.text ?? row.shown.text}
                     draftLabel={draft?.key === row.key ? draft.unitLabel ?? row.unit.label : null}
                   />
@@ -190,7 +203,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
         />
       )}
       {notSaved?.kind === 'notSaved' && <NotSaved section={notSaved} />}
-      <Files files={view.files} failed={failed?.kind === 'failed' ? failed : undefined} retry={retry} />
+      <Files files={view.files} failed={failed?.kind === 'failed' ? failed : undefined} retry={retry} nameId={names.file} />
       <div className="review-actions upload-list-actions">
         <div className="upload-list-save-line" role="status">
           {view.save.why && <p className="upload-list-why">{view.save.why}</p>}

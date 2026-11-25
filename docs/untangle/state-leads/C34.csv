@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C34,web sync,Sign-in return: say when this browser could not store the sign-in,gap,not started,"A sign-in whose exchange this browser refuses to store with no log-off (a full device store; setSignIns false in widget-src/src/storage/dropbox.ts and drive.ts completeRedirect) opens as a guest with no line, and resolveBackend (widget-src/standalone/resolve-backend.ts) shows none when rememberSignIn refuses after a saved exchange. Both are US-09 AC60 limits; a line would need its own words.",,yes

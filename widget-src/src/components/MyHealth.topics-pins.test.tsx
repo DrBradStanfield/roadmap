@@ -9,6 +9,8 @@
  * The varied worlds add what the plain ones lack: the Shopify surface (the US product overlay and
  * its ownership line), saved vitals and blood tests, conventional units, the blood-test table open,
  * a bone density section and the same suggestions repeated across topics.
+ * Since US-62 AC41 (Brad 2026-11-26) the snapshots where no screening question applies show Cancer
+ * screening with its note in the questions' place (urgent cards above, other cards below).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
@@ -32,6 +34,8 @@ afterEach(cleanup);
 afterEach(() => { flags.shopify = false; setMarketCountry(null); });
 
 const DAY = '2026-01-15';
+/** Cancer screening's note where the fixture's screening form is empty (US-62 AC41): one of the shared rule's words. */
+const NOTE = 'No screening questions apply at your age and sex yet.';
 const tile = (key: StatTile['key'], label: string, value: string, unit: string): StatTile => ({ key, label, value, unit, about: '' });
 
 /** What a world is drawn with beyond the fixture: none of it in the plain worlds. */
@@ -120,7 +124,7 @@ function slots(w: World, v: Variant): FormSlots {
 function Page({ w, v }: { w: World; v: Variant }) {
   const d = w.facts.derived;
   const tiles = [...(d.nonHdl ? [tile('nonHdl', 'Non-HDL', '3.1', 'mmol/L')] : []), ...(d.egfr ? [tile('egfr', 'eGFR', '82', 'mL/min')] : [])];
-  const plan = usePlanView({ results: { suggestions: w.suggestions, knownMinor: false, age: 55 } as unknown as HealthResults, shownErase: '', isValid: true, tiles, forms: w.forms, cardsShown: true });
+  const plan = usePlanView({ results: { suggestions: w.suggestions, knownMinor: false, age: 55 } as unknown as HealthResults, shownErase: '', isValid: true, tiles, forms: { ...w.forms, screeningNote: w.forms.screenings.length === 0 ? NOTE : null }, cardsShown: true });
   return (
     <OpenEvidenceContext.Provider value={plan.evidence}>
       <MyHealth form={slots(w, v)} plan={plan} tiles={tiles} series={{ whtr: d.whtr ? [{ id: 'w', day: DAY, ratio: 0.52 }] : [], egfr: [] }}
