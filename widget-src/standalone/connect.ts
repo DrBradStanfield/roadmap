@@ -312,9 +312,13 @@ export async function prepareSwitch(current: Backend): Promise<void> {
     // saves, and any still waiting (US-09 AC2g).
     await copyRecordToDevice();
   } catch (error) {
-    console.warn('Copy-down before switch failed');
-    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend: current } });
-    throw new Error(switchStopMessage(switchStopCause(error, healthWritesAllowed()), PROVIDERS[current].label));
+    const stop = switchStopCause(error, healthWritesAllowed());
+    // A log-off elsewhere is not a defect, so it is not reported (as US-09 AC58, AC59 keep it out).
+    if (stop.kind !== 'writesRefused') {
+      console.warn('Copy-down before switch failed');
+      Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend: current } });
+    }
+    throw new Error(switchStopMessage(stop, PROVIDERS[current].label));
   }
   await adapter.disconnect();
   preparedFrom = current;

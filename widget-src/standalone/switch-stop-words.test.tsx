@@ -6,7 +6,9 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
 
-vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+const capture = vi.hoisted(() => vi.fn());
+vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: capture } }));
+const copyDownReports = () => capture.mock.calls.filter(([, ctx]) => (ctx as { tags?: { op?: string } } | undefined)?.tags?.op === 'copy-down').length;
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 
 let BackendPickerModal: typeof import('./backend-picker').BackendPickerModal;
@@ -29,6 +31,7 @@ beforeEach(async () => {
     accessToken: 'sl.SYNTHETIC_ACCESS', refreshToken: 'SYNTHETIC_REFRESH', expiresAt: Date.now() + 3_600_000,
   }));
   downloads = 0;
+  capture.mockClear();
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input instanceof Request ? input.url : input);
     if (url.startsWith('https://content.dropboxapi.com/2/files/download')) {
@@ -60,18 +63,21 @@ describe('US-09 AC56: the stopped switch says why, one sentence per cause', () =
       'Dropbox could not be reached, so your record there could not be copied to this browser. Try again once it answers.',
     );
     expect(downloads).toBe(1);
+    expect(copyDownReports()).toBe(1);
   });
 
   it('signInRefused: this browser holds no Dropbox sign-in', async () => {
     localStorage.removeItem(DROPBOX_TOKENS);
     expect(await switchToDrive()).toBe('Dropbox did not connect, so nothing changed. Please try again.');
     expect(downloads).toBe(0);
+    expect(copyDownReports()).toBe(1);
   });
 
-  it('writesRefused: another tab logged this browser off', async () => {
+  it('writesRefused: another tab logged this browser off, and it is not reported', async () => {
     vi.resetModules(); // the other tab: its own module graph, sharing this localStorage
     await (await import('./connect')).logOff('dropbox');
-    expect(await switchToDrive()).toBe('This browser was logged off in another tab. Reload this page to carry on.');
+    expect(await switchToDrive()).toBe('This browser was logged off in another tab. Reload this page to carry on. Changes not yet saved will be lost.');
+    expect(copyDownReports()).toBe(0); // a log-off elsewhere is not a defect
     expect(reload).toHaveBeenCalledTimes(1); // the other tab's own reload, not this page's
   });
 });

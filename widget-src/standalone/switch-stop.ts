@@ -31,7 +31,7 @@ export function didNotConnect(label: string): string {
 export function switchStopMessage(stop: SwitchStop, label: string): string {
   switch (stop.kind) {
     case 'writesRefused':
-      return 'This browser was logged off in another tab. Reload this page to carry on.';
+      return 'This browser was logged off in another tab. Reload this page to carry on. Changes not yet saved will be lost.';
     case 'signInRefused':
       return didNotConnect(label);
     case 'unreachable':
