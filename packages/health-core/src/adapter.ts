@@ -67,6 +67,8 @@ export class LostUpdateError extends ConflictError {
  * (`reconnect`: only a new sign-in mends it, so a failed save is not retried, US-09 AC30),
  * a token refused (`auth`, a 401), access refused (`forbidden`, a 403 that is not a limit),
  * or a provider's rate or daily limit (`rate-limited`: it passes, so it is retried).
+ * `writes-stopped`: a device write refused because this page may no longer write
+ * health files here (a log-off, US-09 AC2c); it is expected, and not reported.
  *
  * `outcome` (root fix R6, US-10 AC16) is what the failure says about a write, set where
  * it is raised, so no reader decides from a status, a name or the words:
@@ -78,7 +80,7 @@ export class LostUpdateError extends ConflictError {
  * `answerOutcome`, which the raise site calls on purpose. A 401 or 403 sets its
  * reason unless the raiser names its own.
  */
-export type StorageFailureReason = 'storage-full' | 'not-found' | 'reconnect' | 'auth' | 'forbidden' | 'rate-limited';
+export type StorageFailureReason = 'storage-full' | 'not-found' | 'reconnect' | 'auth' | 'forbidden' | 'rate-limited' | 'writes-stopped';
 export type StorageOutcome = 'refused' | 'may-have-landed' | 'no-answer';
 
 /**
@@ -124,6 +126,18 @@ export class StorageError extends Error {
     this.reason = reason ?? (status === 401 ? 'auth' : status === 403 ? 'forbidden' : undefined);
     this.outcome = outcome;
   }
+}
+
+/** A failure's HTTP status as one tag from a closed list, never the body (US-09 AC6c): the
+ *  status a StorageError carries, else `none`. */
+export const HTTP_STATUS_TAGS = ['401', '403', '404', '409', '429', '4xx', '5xx', 'none'];
+export function httpStatusTag(error: unknown): string {
+  const status = error instanceof StorageError ? error.status : undefined;
+  return status === undefined ? 'none'
+    : HTTP_STATUS_TAGS.includes(String(status)) ? String(status)
+    : status >= 400 && status < 500 ? '4xx'
+    : status >= 500 && status < 600 ? '5xx'
+    : 'none';
 }
 
 /** A document write the provider refused as busy (Dropbox: another write held the folder's lock, or too many

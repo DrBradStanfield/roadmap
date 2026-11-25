@@ -43,7 +43,8 @@ import { BT_TIMELINE_DRAFT_KEY, DRAFTS_CLEARED_EVENT, MIRROR_CHANGED_EVENT } fro
 import { ERASE_STALE_TAB } from '@roadmap/health-core/record-session';
 import { BACKEND_KEY } from '../storage/web-record-host';
 import { trackProductEvent } from '../lib/server-api';
-import { ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { ERASE_DONE, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { Sentry } from '../lib/sentry';
 import { openAboutYou, seedGuest, showTables, useHealthToolLifecycle, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 import { deleteButton } from '../testing/settings';
 
@@ -418,6 +419,29 @@ describe('US-16 AC2a, US-11 AC6: this tab\'s erase whose write fails (useErase e
     }
     await initRoadmapStore(new MemoryAdapter(cloud)); // the next load
     expect(localStorage.getItem(BT_TIMELINE_DRAFT_KEY)).toBeNull();
+  });
+
+  it('US-11 AC12: the write lands and both clears fail (the session\'s, then the page\'s): one report, and the done message carries no warning', async () => {
+    const cloud = new MemoryCloud();
+    const view = await cloudGuest(new HeldCloud(cloud));
+    await matrixHoldsDraft(view);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(Sentry.captureException).mockClear();
+    const remove = Storage.prototype.removeItem;
+    const refusing = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(function (this: Storage, key: string) {
+      if (key === BT_TIMELINE_DRAFT_KEY) return; // refused, silently: each clear fails to read back
+      remove.call(this, key);
+    });
+    try {
+      fireEvent.click(await waitFor(() => deleteButton()));
+      await waitFor(() => expect(alerts).toHaveLength(1), { timeout: 3000 });
+      await settle(50);
+    } finally {
+      refusing.mockRestore();
+    }
+    const clearReports = vi.mocked(Sentry.captureException).mock.calls.filter(([, ctx]) => (ctx as { tags?: { op?: string } } | undefined)?.tags?.op === 'clear-off-file');
+    expect(clearReports).toHaveLength(1);
+    expect(alerts).toEqual([ERASE_DONE]);
   });
 });
 

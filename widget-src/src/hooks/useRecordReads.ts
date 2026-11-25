@@ -1,25 +1,23 @@
 import { useCallback, useRef } from 'react';
 import { labEgfrOf } from '@roadmap/health-core/plan';
-import { planPsa } from '@roadmap/health-core/measurement-history';
-import { screeningsToInputs } from '@roadmap/health-core/mappings';
 import type { LatestMeasurementsResult } from '../lib/api-types';
-import { loadAllHistory, loadAllHistorySync, loadLabValues, loadLatestMeasurements } from '../lib/roadmap-data';
-import { loadFromLocalStorage, patchMirror, saveToLocalStorage } from '../lib/storage';
+import { loadAllHistory, loadLabValues, loadLatestMeasurements } from '../lib/roadmap-data';
+import { loadFromLocalStorage } from '../lib/storage';
+import { writeMirror } from '../lib/chat-mirror';
 import type { useRecordState } from './useRecordState';
 
 type RecordSetters = Pick<ReturnType<typeof useRecordState>, 'setPreviousMeasurements' | 'setHistory' | 'setLabValueHistory'>;
 
 /** The chat mirror (US-15 AC10): the record as read, for the storefront chat
  *  embed and the bubble, with the lab eGFR and the newest usable PSA, its
- *  `raisedBefore` worked out here from the full record (US-06 AC21 item 6).
+ *  `raisedBefore` worked out from the full record (US-06 AC21 item 6, lib/chat-mirror).
  *  `shown` is asked as the mirror is written, after the lab read (US-34 AC9, AC10). */
 export async function mirrorRecord(result: LatestMeasurementsResult, shown?: ShownCopy): Promise<void> {
-  const labEgfr = labEgfrOf(await loadLabValues() ?? []);
+  const labRows = await loadLabValues() ?? [];
   const copy = shown?.();
   if (copy === null) return;
   const { inputs, medications, screenings } = copy ?? result;
-  saveToLocalStorage(inputs, result.previousMeasurements, medications, screenings, undefined,
-    labEgfr, planPsa(loadAllHistorySync(), new Date(), screeningsToInputs(screenings)));
+  writeMirror({ profile: inputs, latest: result.previousMeasurements, medications, screenings, labRows });
 }
 
 /** What a read writes beside its values, decided as it writes: undefined, the record read; the page's saved profile
@@ -43,9 +41,8 @@ export function useRecordReads({ setPreviousMeasurements, setHistory, setLabValu
       if (rows && read === labReads.current && !moved()) {
         setLabValueHistory(rows);
         // A lab eGFR added by hand reaches the other chats too (US-07 AC7).
-        const labEgfr = labEgfrOf(rows);
         const cached = loadFromLocalStorage();
-        if (cached && JSON.stringify(cached.labEgfr) !== JSON.stringify(labEgfr)) patchMirror({ labEgfr });
+        if (cached && JSON.stringify(cached.labEgfr) !== JSON.stringify(labEgfrOf(rows))) writeMirror({ labRows: rows });
       }
     }).catch(() => {});
   }, [setLabValueHistory]);

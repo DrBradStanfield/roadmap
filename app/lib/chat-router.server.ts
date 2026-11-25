@@ -296,12 +296,16 @@ export async function routeQuery(
 }
 
 
-/** Web-route telemetry excludes the raw parsing error kept in the result. */
-export function reportRouterFailure(result: RouterResult | null): void {
+/**
+ * One router failure, reported per turn (web, Discord), passed to runRouter
+ * (chat-router-stage.server.ts). YouTube counts its failures per tick instead
+ * (reportTickFallbacks). Telemetry excludes the raw parsing error kept in the result.
+ */
+export function reportRouterFailure(result: RouterResult | null, platform: 'shopify' | 'discord'): void {
   if (!result?.error) return;
   Sentry.captureMessage('Router: request or output failure', {
     level: 'warning',
-    tags: { feature: 'chat', subsystem: 'router' },
+    tags: { feature: 'chat', subsystem: 'router', platform },
     extra: { latencyMs: result.latencyMs, cacheHit: result.cacheHit },
   });
 }

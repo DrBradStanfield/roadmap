@@ -21,7 +21,7 @@ import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { currentSignIn, lostSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
 import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
-import { signInRefused } from './switch-stop';
+import { didNotConnect, signInRefused, switchStopCause, switchStopMessage } from './switch-stop';
 import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
 import { clearLocalStorage, clearOffFileHealthData, healthWritesAllowed, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
@@ -165,7 +165,7 @@ export function reportConnectFailure(error: unknown, backend: 'dropbox' | 'googl
   Sentry.captureException(recordFailure(error, 'Cloud connect failed'), {
     tags: { area: 'cloud-connect', backend, ...failureTags(error) },
   });
-  return `${PROVIDERS[backend].label} did not connect, so nothing changed. Please try again.`;
+  return didNotConnect(PROVIDERS[backend].label);
 }
 
 /**
@@ -314,9 +314,7 @@ export async function prepareSwitch(current: Backend): Promise<void> {
   } catch (error) {
     console.warn('Copy-down before switch failed');
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend: current } });
-    throw new Error(
-      `${PROVIDERS[current].label} could not be reached, so your record there could not be copied to this browser. Try again once it answers.`,
-    );
+    throw new Error(switchStopMessage(switchStopCause(error, healthWritesAllowed()), PROVIDERS[current].label));
   }
   await adapter.disconnect();
   preparedFrom = current;

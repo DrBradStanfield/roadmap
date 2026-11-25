@@ -133,6 +133,19 @@ export function rowsOn(day: string): Ids {
   return { sys: at('sys'), dia: at('dia') };
 }
 
+/** The widget's saves (AC5): each edit is numbered; `kept` is the newest the store kept, `dropped` the newest
+ *  whose save met a changed row or a newer erase, so it and every save asked before it go. Typing while an edit
+ *  waits on neither; settled otherwise. */
+export type Saves = { kind: 'settled' | 'typing'; edits: number; kept: number; dropped: number };
+export type SavesEvent = { type: 'typed' } | { type: 'kept'; seq: number } | { type: 'dropped'; seq: number };
+export const NO_SAVES: Saves = { kind: 'settled', edits: 0, kept: 0, dropped: 0 };
+
+export function transition(s: Saves, e: SavesEvent): Saves {
+  if (e.type === 'typed') return { kind: 'typing', edits: s.edits + 1, kept: s.kept, dropped: s.dropped };
+  const counts = { edits: s.edits, kept: e.type === 'kept' ? Math.max(s.kept, e.seq) : s.kept, dropped: e.type === 'dropped' ? Math.max(s.dropped, e.seq) : s.dropped };
+  return { ...counts, kind: counts.edits > Math.max(counts.kept, counts.dropped) ? 'typing' : 'settled' };
+}
+
 /** How a save ended: kept (with the rows now holding the pair), a slot changed since the page showed it, or
  *  not kept. A write the store took but could not yet keep names its rows: they are this page's own, and the
  *  next save, which retries the flush, expects them. */
@@ -143,7 +156,7 @@ export type SaveOutcome = { kind: 'kept'; ids: Ids } | { kind: 'changed' } | { k
  * empty slot). Both halves or neither: the batch is first run on the record as written, unreadable rows
  * included, and written only if every half would land, in the same turn, so nothing changes between.
  * A half the record already holds exactly is not written again: compared exactly, never by display.
- * `erase`: the erase the page showed when the save was asked; a record at another one takes nothing (US-16 AC2a).
+ * `erase`: the erase the widget's tree was mounted under (AC8); a record at another one takes nothing (US-16 AC2a).
  */
 export async function savePair(pair: Pair, day: string, expected: Ids, erase: string): Promise<SaveOutcome> {
   if (getBackendKind() === 'local' && !healthWritesAllowed()) return { kind: 'failed' };

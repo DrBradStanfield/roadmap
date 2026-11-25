@@ -21,3 +21,20 @@ export function switchStopCause(error: unknown, writesAllowed: boolean): SwitchS
   if (signInRefused(error)) return { kind: 'signInRefused' };
   return { kind: 'unreachable' };
 }
+
+/** The line a cloud sign-in that did not take shows (US-09 AC1a); a refused sign-in stops a switch in it too. */
+export function didNotConnect(label: string): string {
+  return `${label} did not connect, so nothing changed. Please try again.`;
+}
+
+/** What the stopped switch says, one sentence per cause (US-09 AC56; words Brad 2026-11-26). */
+export function switchStopMessage(stop: SwitchStop, label: string): string {
+  switch (stop.kind) {
+    case 'writesRefused':
+      return 'This browser was logged off in another tab. Reload this page to carry on.';
+    case 'signInRefused':
+      return didNotConnect(label);
+    case 'unreachable':
+      return `${label} could not be reached, so your record there could not be copied to this browser. Try again once it answers.`;
+  }
+}

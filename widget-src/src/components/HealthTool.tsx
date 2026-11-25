@@ -32,10 +32,8 @@ import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
 import { activeCellIn } from './NumericInputCell';
 import { inPsaRow } from './ScreeningQuestions';
-import {
-  saveToLocalStorage,
-  clearLocalStorage,
-} from '../lib/storage';
+import { clearLocalStorage } from '../lib/storage';
+import { NO_RECORD, writeMirror } from '../lib/chat-mirror';
 import {
   loadLatestMeasurements,
   hasSavedRecord,
@@ -176,7 +174,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       } else {
         // Nothing on record: a new visitor, or another device erased it. The
         // bubble and the embed must not keep sending the old copy (US-11).
-        saveToLocalStorage({}, [], [], []);
+        writeMirror(NO_RECORD);
       }
       firstReadShown(); // the saves open (the erase machine's `read`, ledger H37)
     }
