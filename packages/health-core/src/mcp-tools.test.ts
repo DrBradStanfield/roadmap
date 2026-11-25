@@ -1839,6 +1839,41 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
     expect(seen[0].title.length).toBe(MAX_NAME_LENGTH);
   });
 
+  // US-32 AC9b: the guard reads the title as it is filed, so the cap cannot cut a title into a value.
+  it('US-32 AC9b — refuses a title the cap would cut into a value, and files its control', async () => {
+    // The detail is filed whole, so it reads a string as the guard does with no cut.
+    const unsafeTitle = (text: string) => {
+      const outcome = reportFeedback({ ...GOOD, detail: text }, NOW);
+      return outcome.status === 'rejected' && outcome.reason === 'health-value';
+    };
+    const room = MAX_NAME_LENGTH - '[connector] '.length;
+    const lead = (tail: string) => `${'the plan page shows rows '.repeat(5)}`.slice(0, room - tail.length - 1) + ` ${tail}`;
+    for (const [cut, rest] of [['140 mg', 'x rows'], ['2 kg', 'x'], ['ldl a1', 'b']]) {
+      const title = lead(cut) + rest;
+      expect(unsafeTitle(title), title).toBe(false);
+      expect(unsafeTitle(title.slice(0, room)), title).toBe(true);
+      const { seen, filer } = spy();
+      expect(await fileFeedback({ ...GOOD, title }, NOW, filer), title).toMatchObject({ status: 'rejected', reason: 'health-value' });
+      expect(seen).toHaveLength(0);
+    }
+    const { seen, filer } = spy();
+    const control = lead('140 mmol') + 'ar';
+    expect([unsafeTitle(control), unsafeTitle(control.slice(0, room))]).toEqual([false, false]);
+    expect(await fileFeedback({ ...GOOD, title: control }, NOW, filer)).toMatchObject({ status: 'ok' });
+    expect(seen[0].title).toBe(`[connector] ${control.slice(0, room)}`);
+  });
+
+  it('US-32 AC9b — a filed title, cut wherever the cap falls, holds nothing the error-report scrub would redact', async () => {
+    const room = MAX_NAME_LENGTH - '[connector] '.length;
+    const { seen, filer } = spy();
+    for (const [i, text] of generateFeedbackStrings(20_2026_11_25, 20_000).entries()) {
+      // A lead that puts the cap 1 to 12 characters into the generated text.
+      await fileFeedback({ ...GOOD, title: `${'z '.repeat(room)}`.slice(0, room - 1 - (i % 12)) + ` ${text}` }, NOW, filer);
+    }
+    expect(seen.length).toBeGreaterThan(1000);
+    expect(seen.map((issue) => issue.title).filter((title) => scrubText(title).includes('[value]'))).toEqual([]);
+  }, 60_000);
+
   /**
    * The issue is public and nobody reviews it first, so the detail is fenced:
    * a heading, an image or an `@name` in a model's prose must not render, and
