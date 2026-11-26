@@ -135,3 +135,5 @@ which waits for Brad's look.
 - **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR 2188, held).
   H127's other web checks (transport silence, refused Drive grant, busy write, corrupt device copy) need a typed
   field that does not exist yet: a design first. The Drive grant check sits in files held PR 2099 edits.
+- **R29** built (US-52 AC17, lead C24): the iPhone's conversation read is one `ChatThreadRead` state; a failed read
+  says so in the web's words and keeps Send locked. Swift tests written, not yet run in the simulator.
