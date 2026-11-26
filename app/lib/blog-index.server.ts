@@ -32,25 +32,31 @@ export const isMaster = (entry: BlogIndexEntry) => entry.type === 'reference' &&
 /** A condition guide (US-70 AC1): a guideline marked `kind: condition`. */
 export const isConditionGuide = (entry: BlogIndexEntry | undefined) => entry?.type === 'guideline' && entry.kind === 'condition';
 
-const INDEX_PATH = path.join(process.cwd(), 'docs/blog/index.json');
+export const BLOG_INDEX_FILE = 'docs/blog/index.json';
+
+/**
+ * Read and parse `<root>/docs/blog/index.json`, uncached. Returns `[]` if the
+ * file is missing or malformed (warning logged). The chat docs read it through
+ * loadBlogIndex (chat-system-prompt.server.ts), tests from their own root.
+ */
+export function readBlogIndex(root: string): BlogIndexEntry[] {
+  const file = path.join(root, BLOG_INDEX_FILE);
+  try {
+    return JSON.parse(readFileSync(file, 'utf-8')) as BlogIndexEntry[];
+  } catch {
+    console.warn(`docs/blog/index.json not found at ${file} — features depending on blog data will be empty`);
+    return [];
+  }
+}
 
 let cached: BlogIndexEntry[] | null = null;
 
 /**
- * Read and parse `docs/blog/index.json`. Cached for the lifetime of the process —
- * the file is rebuilt at deploy time, and process restarts pick up new entries.
- *
- * Returns `[]` if the file is missing or malformed (warning logged once).
+ * The working directory's index, cached for the lifetime of the process — the
+ * file is rebuilt at deploy time, and process restarts pick up new entries.
  */
 export function loadBlogIndex(): BlogIndexEntry[] {
-  if (cached) return cached;
-  try {
-    cached = JSON.parse(readFileSync(INDEX_PATH, 'utf-8')) as BlogIndexEntry[];
-  } catch {
-    console.warn(`docs/blog/index.json not found at ${INDEX_PATH} — features depending on blog data will be empty`);
-    cached = [];
-  }
-  return cached;
+  return (cached ??= readBlogIndex(process.cwd()));
 }
 
 /**
