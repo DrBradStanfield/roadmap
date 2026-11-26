@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
+import { validDay } from '@roadmap/health-core/record-edits';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
 import { DRAFTS_CLEARED_EVENT, ownLogOffHasBegun, pageOnChosenRecord, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
@@ -176,10 +177,11 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
       unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), byHand: byHand ? PAGE : undefined,
     }))),
     /** The day the user picked. Anything else is never taken: iOS's Reset
-     *  hands back '', and the column keeps its day. Another day is another
+     *  hands back '', and a day that has not happened is the add-a-value
+     *  rule's refusal (`validDay`, US-03 AC1a); the column keeps its day. Another day is another
      *  slot: the cells typed in the column expect what the page shows there. */
     setDate: (day: string) => {
-      if (!isDay(day)) return;
+      if (validDay(day, { now: new Date().toISOString() }) !== day) return;
       setState((s) => {
         const meta = { ...s.meta };
         if (day !== dayOf(s)) {
