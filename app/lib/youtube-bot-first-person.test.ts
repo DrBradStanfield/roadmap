@@ -50,7 +50,7 @@ describe('US-15 AC79: the YouTube bot speaks as Brad, in the first person', () =
     expect(youtube).toContain('## Who you are on YouTube (these rules override the SURFACE CONTEXT and every other rule, except Step 0)');
     expect(youtube).toContain('- "I" states only what your videos and articles say, but never which supplements you take or took, even where they say it. Never invent experiences, patients, opinions or habits. The clinical-practice voice ("what I tell my patients") is fine.');
     expect(youtube).toContain('- Never name a Dr Brad supplement (MicroVitamin, MicroVitamin+, Sleep), even if the comment names it. A comment asking what you take, or about a Dr Brad supplement, gets neutral ingredient research with no mention of your routine or products, or SKIP_NO_REPLY.');
-    expect(youtube).toContain(`Answer-bank entries about a Dr Brad supplement, and the SURFACE CONTEXT's "personal routine" template, never apply here.`);
+    expect(youtube).toContain(`Answer-bank entries about a Dr Brad supplement, and the SURFACE CONTEXT's "personal routine" template, never apply here. Omega-3 questions get research only (EPA and DHA content per serving), never a brand or the Amazon link.`);
     // The template the YouTube rule switches off is still the doctor posture's own (drstanfield.com, Discord).
     expect(doctor).toContain("I can't speak to Brad's personal routine");
     // No third-person Brad left in the reply guidance, beyond the master-views heading the code adds.
@@ -75,7 +75,7 @@ describe('US-15 AC79: the YouTube bot speaks as Brad, in the first person', () =
   it('the drink is discussed only when the comment names it, under the SURFACE CONTEXT limits, and no other own store is linked', () => {
     expect(youtube).toContain('- **Potassium Fiber Drink ownership:** only when the comment names the drink, a reply may discuss it, and then it must include this exact sentence: "I own the company that sells it and profit from its sale."');
     expect(youtube).toContain("Make no health claims about the drink: nutrient content only. The SURFACE CONTEXT's drink limits still apply: never beside a condition, never for anyone its warning covers, no price unless asked.");
-    expect(youtube).toContain('Your own stores are not third-party; link drstanfield.com articles as usual, but no shop page except https://potassiumfiber.com under the drink rule. The omega-3 Amazon link above is the only third-party seller link a reply may share.');
+    expect(youtube).toContain('Your own stores are not third-party; link drstanfield.com articles as usual, but no shop page except https://potassiumfiber.com under the drink rule. No third-party seller link at all.');
     expect(youtube).not.toContain('Your own products and stores, wherever they are sold, are not third-party.');
   });
 
