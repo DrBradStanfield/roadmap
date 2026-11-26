@@ -503,26 +503,68 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertEqual(try rows(store, source: "manual").count, 1, "the typed weight")
     }
 
-    /// AC18 through the engine: a result whose date is unreal lands nothing, and Settings says
-    /// "Some results could not be read." A pass with no new results keeps it; a pass whose
-    /// results all had a readable date clears it. The status line stays "Up to date".
-    func testAResultWithABadDateIsSkippedAndSaidUntilACleanPass_US72_AC18() async throws {
+    // MARK: AC18: a result skipped for a bad date, said until seen
+
+    /// A batch of only a bad-dated result changes nothing in the record, yet the engine's counts
+    /// still reach the sync (Codex R1: the unchanged path dropped them), so Settings says it.
+    func testABatchOfOnlyABadDateChangesNothingYetIsSaid_US72_AC18() async throws {
         let health = FakeHealthStore()
         health.supportsHealthRecords = true
         health.pendingRecords = [Self.hba1c(drawn: "2026-02-30")]
         let (store, sync, _) = try parts(health)
         await sync.connect()
         XCTAssertTrue(try rows(store).isEmpty, "never dated by a fall-back")
-        XCTAssertTrue(sync.run.undated)
+        XCTAssertTrue(sync.undatedFooter)
+        XCTAssertTrue(memory.labResultsUndated, "stored, not only on screen")
         guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
+    }
 
-        await sync.refresh()
-        XCTAssertTrue(sync.run.undated, "a pass that read no new results keeps it")
+    /// A batch that lands one result and skips another sets it too.
+    func testABatchThatChangesTheRecordAndSkipsOneIsSaid_US72_AC18() async throws {
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.pendingRecords = [Self.hba1c(), Self.hba1c(id: "obs-2", drawn: "2026-02-30")]
+        let (store, sync, _) = try parts(health)
+        await sync.connect()
+        XCTAssertEqual(try rows(store).count, 1)
+        XCTAssertTrue(sync.undatedFooter)
+    }
+
+    /// Kept over a restart (a new sync over the same defaults) and over a clean pass, which cannot
+    /// bring the skipped result back; cleared once Settings showed it and the person left.
+    func testTheNoticeSurvivesARestartAndACleanPassUntilSeen_US72_AC18() async throws {
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.pendingRecords = [Self.hba1c(drawn: "2026-02-30")]
+        let (store, sync, _) = try parts(health)
+        await sync.connect()
+
+        let restarted = AppleHealthSync(store: store, engine: try HealthEngine(), client: health, memory: memory)
+        XCTAssertTrue(restarted.undatedFooter, "a restart keeps it")
 
         health.pendingRecords = [Self.hba1c(id: "obs-2")]
-        await sync.refresh()
+        await restarted.refresh()
         XCTAssertEqual(try rows(store).count, 1)
-        XCTAssertFalse(sync.run.undated, "a pass that read results, none undated, clears it")
+        XCTAssertTrue(restarted.undatedFooter, "a clean pass does not clear it")
+
+        restarted.undatedSeen()
+        XCTAssertFalse(restarted.undatedFooter)
+        XCTAssertFalse(memory.labResultsUndated)
+        XCTAssertFalse(AppleHealthSync(store: store, engine: try HealthEngine(), client: health, memory: memory).undatedFooter)
+        XCTAssertEqual(AppleHealthSection.undated, "Some results could not be read.")
+    }
+
+    /// An erase disconnects Apple Health and drops the notice with the lab results anchor (AC10).
+    func testAnEraseClearsTheNotice_US72_AC18() async throws {
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.pendingRecords = [Self.hba1c(drawn: "2026-02-30")]
+        let (_, sync, _) = try parts(health)
+        await sync.connect()
+        XCTAssertTrue(sync.undatedFooter)
+        _ = await sync.erased(wasConnected: true)
+        XCTAssertFalse(sync.undatedFooter)
+        XCTAssertFalse(memory.labResultsUndated)
     }
 
     /// Lab results alone count as access: the section never says Health isn't connected.

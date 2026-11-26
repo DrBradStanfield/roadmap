@@ -91,6 +91,9 @@ Not ruled. Both options stand for the owner.
    used, as before. An empty string is present and unusable.
 9. A new version of a result already in the record keeps that result's day when its own date is unusable (AC3's
    `issued`-only rule, extended); only a result with no earlier version is skipped as undated.
+10. Persisted until seen (Brad, 27 Nov 2026; replaces ruling 4's memory-only line): one stored Bool in
+    `HealthSyncMemory`, set by any batch reporting `undated`, cleared when Settings showed the line and the
+    person left, and by an erase's disconnect. A clean batch does not clear it.
 
 Open question: skip a malformed result silently (option A; the HealthKit anchor moves on, so it does not come back
 unless the lab amends it), or keep today's fall-back to the issued date (option B)? A third path is to hold A until

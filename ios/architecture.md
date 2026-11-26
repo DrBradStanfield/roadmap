@@ -976,12 +976,14 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   missing) skips the result, counted in `notRead` and `undated` once its test reads; fields not
   chosen are ignored; JSON null is absent. A new version of a result already held keeps its day
   when its own date is unusable (AC3's `issued` rule, extended). Before, a malformed period read as
-  absent and fell back to `issued` or the report's day. `meta` stays lenient. Why: a wrong day in the record is worse than a
-  missing result, and the person should learn one was skipped. Settings' footer says "Some
-  results could not be read." while the run state carries it (`Run.idle`/`.running`'s `undated`,
-  set only by the pass's `labResults` event through `Run.transition`, never a flag beside it).
-  Memory only, by ruling: a restart or an erase disconnect drops it, and a pass that reads no new
-  results keeps it. No rules-version bump and no schema change.
+  absent and fell back to `issued` or the report's day. `meta` stays lenient. Why: a wrong day
+  in the record is worse than a missing result, and the person should learn one was skipped. Settings' footer says "Some
+  results could not be read." until seen (Brad, 27 Nov 2026): one stored Bool,
+  `HealthSyncMemory.labResultsUndated`, set by any batch whose counts report `undated`, cached for
+  the view as `undatedFooter` (as `owedFooter` is), cleared when the drawn line leaves the screen
+  and in `disconnect` beside the lab results anchor. A clean batch keeps it. A batch that changes
+  nothing still returns its counts (`PhoneApply.unchanged`, `RecordStore.shown`). No rules-version
+  bump and no schema change.
 - **The import is the source of truth (Brad 2026-11-02, US-72 AC3, AC6, AC8, AC9):** the
   day is `effectiveDateTime`, else `effectivePeriod.start`, else `issued`. A result whose
   day holds a typed, uploaded, hand-corrected or Apple Health row with another value, unit

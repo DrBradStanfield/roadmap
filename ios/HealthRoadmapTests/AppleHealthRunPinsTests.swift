@@ -130,7 +130,7 @@ final class AppleHealthRunPinsTests: XCTestCase {
         await reconnecting.value
         _ = await erase.value
 
-        guard case .idle(.upToDate, _) = sync.run else { return XCTFail("run \(sync.run)") }
+        guard case .idle(.upToDate) = sync.run else { return XCTFail("run \(sync.run)") }
         guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
         let reads = health.sampleAnchors[.weight] ?? []
         XCTAssertEqual(reads.count, readsBefore + 1, "the reconnect's own pass read Health")
