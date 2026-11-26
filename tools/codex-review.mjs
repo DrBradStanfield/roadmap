@@ -1010,7 +1010,7 @@ work = mkdtempSync(join(tmpdir(), "codex-review-"));
 // --record: verify the local record BEFORE anything can read it (a wrong
 // account must never be disclosed, not merely detected afterwards).
 if (RECORD) {
-  const how = `Download health-roadmap.json from Brad's scratch account's Dropbox (Apps/Health Roadmap) to ${SCRATCH_RECORD.path}.`;
+  const how = `Download health-roadmap.json from Brad's scratch account's Dropbox (Apps/Health Roadmap; which account: docs/claude-codex.md, "The record is always the scratch one") to ${SCRATCH_RECORD.path}.`;
   if (!existsSync(SCRATCH_RECORD.path)) finish(incomplete(`E_NO_SCRATCH_RECORD: no local scratch record. ${how}`), "0.0");
   // One read: the bytes that are verified are the bytes that are served. A
   // directory, an unreadable file, or non-JSON is a bounded incomplete, not a crash.
