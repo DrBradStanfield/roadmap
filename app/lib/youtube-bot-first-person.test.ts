@@ -25,7 +25,7 @@ vi.mock('./chat.server', async (orig) => ({
 
 import { runPipeline } from './youtube-bot.server';
 import { addressReply, postReply } from './youtube-bot-api.server';
-import { getChatCompletion, buildSystemBlocks, DOCTOR_POSTURE, BRAND_POSTURE } from './chat.server';
+import { getChatCompletion, buildSystemBlocks, surfacePosture } from './chat.server';
 import { SAVED_CHAT_BY_RETENTION, savedChatBlock } from './chat-save-answers';
 import { MASTER_VIEWS_HEADING } from './youtube-context';
 
@@ -103,7 +103,7 @@ describe('US-15 AC79: the YouTube bot speaks as Brad, in the first person', () =
 describe('US-15 AC79: the web chat and Discord keep their voice and link rules', () => {
   it('the brand posture still says it is not Dr Brad and links the drink only on microvitamin.com', () => {
     expect(brand).toContain('- You are **NOT Dr Brad.** Never refer to yourself as Dr Brad or "Dr Brad\'s assistant"');
-    const brandPrompt = buildSystemBlocks('{}', { surfaceContext: BRAND_POSTURE, savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript) }).map(b => b.text).join('\n\n');
+    const brandPrompt = buildSystemBlocks('{}', { surfaceContext: surfacePosture('brand'), savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript) }).map(b => b.text).join('\n\n');
     expect(brandPrompt).not.toContain('Platform: YouTube — you are Dr Brad Stanfield');
     expect(brandPrompt).toContain('You are **NOT Dr Brad.**');
   });
@@ -114,7 +114,7 @@ describe('US-15 AC79: the web chat and Discord keep their voice and link rules',
     expect(doctor).toContain("when the user's message names it, you may name and describe it from the PRODUCTS section and link https://potassiumfiber.com. Never name or link microvitamin.com for it.");
     expect(doctor).toContain('Every time you discuss it, say that Brad owns the company that sells it and profits from its sale.');
     expect(discordSrc).toContain("Platform: Discord — you are Dr Brad's AI assistant");
-    const doctorPrompt = buildSystemBlocks('{}', { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript) }).map(b => b.text).join('\n\n');
+    const doctorPrompt = buildSystemBlocks('{}', { surfaceContext: surfacePosture('doctor'), savedChat: savedChatBlock(SAVED_CHAT_BY_RETENTION.transcript) }).map(b => b.text).join('\n\n');
     expect(doctorPrompt).not.toContain('Platform: YouTube — you are Dr Brad Stanfield');
   });
 });
