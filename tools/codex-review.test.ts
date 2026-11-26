@@ -60,6 +60,8 @@ process.exit(cfg.exit);
 }
 
 let outJson: string;
+/** An email-shaped string: the wrapper's hard-coded scratch-account address is gone, so its own --record text carries none (US-40 AC6). */
+const EMAIL_SHAPE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
 function runWrapper(bin: string, extra: string[] = [], cwd = repo) {
   extra = [...extra, '--out', outJson];
   return spawnSync('node', [WRAPPER, '--codex', bin, ...extra], { cwd, encoding: 'utf8', env: childEnv({ CANARY_SECRET: 'canary-value' }) });
@@ -441,9 +443,16 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
       const r = runWrapper(f.bin, ['--record', '--record-file', file]);
       expect(r.status).toBe(3);
       expect(r.stdout).toContain(code);
-      expect(r.stdout).toContain('brad@microvitamin.com');
+      expect(r.stdout).toContain("Brad's scratch account"); // the hard-coded address is gone from the how-to
+      expect(r.stdout + r.stderr).not.toMatch(EMAIL_SHAPE);
       expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     }
+  });
+  it("the wrapper's hard-coded scratch-account address is gone: a --record run that serves the record shows no email-shaped string in its output, report or prompt", () => {
+    const f = fake({ output: CLEAN });
+    const r = runWrapper(f.bin, ['--record', '--record-file', scratchFile]);
+    expect(r.status).toBe(0);
+    for (const text of [r.stdout, r.stderr, readFileSync(outJson, 'utf8'), f.read('stdin.txt')]) expect(text).not.toMatch(EMAIL_SHAPE);
   });
   it('the right record is served from a COPY through the stdio server via the checkout\'s own tsx, read tools only, no URL, no launcher', () => {
     const f = fake({ output: CLEAN });
