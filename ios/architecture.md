@@ -2173,8 +2173,10 @@ SwiftUI text by `DocumentText` (no web view; links lose their target, since the 
 uploaded file), and "View original file", which reads the original by document id through the
 optional door `documentOriginal` (`RecordStore.original(of:)`, only with a cloud open) into a
 temporary file for Quick Look, removed when the preview closes; the read is cancelled if the page
-goes, and `DocumentPage.sweep` clears leftovers when a page opens. Only the web's passive kinds open
-(`DocumentPage.previewName`, mirroring `file-kinds.ts` `VIEWABLE_TYPES`, US-14 AC3). The engine
+goes, and `DocumentPage.sweep` clears leftovers when a page opens. Only the web's passive kinds open,
+by one rule both clients use (health-core `file-kinds.ts` `originalPreview`, US-14 AC14): the engine
+sends each original's `previewName`, and Swift keeps no table; with no name (an older engine) nothing
+opens, stricter than the rule, never looser. The engine
 completes legacy rows with the web's defaults and Swift decodes the list row by row (review R1). No delete on the phone yet: the engine has no
 document delete door, and the web's delete is its store's own tombstone (Brad's call).
 

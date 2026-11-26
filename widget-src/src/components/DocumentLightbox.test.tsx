@@ -14,9 +14,9 @@ import type { ApiDocument } from '../lib/api-types';
 vi.mock('../lib/roadmap-data', () => ({ readDocumentFile: vi.fn(), deleteDocument: vi.fn(), getShownErase: () => 'erase-shown' }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 
-const doc = (fileRef: string): ApiDocument => ({
+const doc = (fileRef: string, mimeType: string | null = null): ApiDocument => ({
   id: 'd1', documentType: 'other', title: 'Scan', documentDate: '2024-06-01', contentMd: 'text',
-  metadata: {}, sourceFileName: 'scan', createdAt: '2024-06-01T00:00:00Z', fileRef, contentHash: 'sha256-x',
+  metadata: {}, sourceFileName: 'scan', createdAt: '2024-06-01T00:00:00Z', fileRef, contentHash: 'sha256-x', mimeType,
 });
 
 let opened: Blob[];
@@ -37,9 +37,9 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
-async function viewOriginal(fileRef: string, blob: Blob) {
+async function viewOriginal(fileRef: string, blob: Blob, mimeType: string | null = null) {
   vi.mocked(readDocumentFile).mockResolvedValue(blob);
-  render(<DocumentLightbox doc={doc(fileRef)} onClose={() => {}} />);
+  render(<DocumentLightbox doc={doc(fileRef, mimeType)} onClose={() => {}} />);
   fireEvent.click(screen.getByText('View original file'));
   await waitFor(() => expect(opened).toHaveLength(1));
 }
@@ -70,6 +70,48 @@ describe('US-14 AC3: View original never opens an active type', () => {
     expect(open).toHaveBeenCalledWith('blob:x', '_blank', 'noopener');
     expect(opened[0].type).toBe('application/pdf');
     expect(click).not.toHaveBeenCalled();
+  });
+});
+
+// US-14 AC14: the web and the iPhone decide by one rule (health-core originalPreview): the
+// extension decides; with none, the row's stored type does, and only a passive kind opens.
+describe('US-14 AC14: View original follows the shared rule', () => {
+  it('opens an original with no extension by its stored passive type, typed by the table', async () => {
+    await viewOriginal('Other documents/2024-06-01 Scan', new Blob(['png']), 'IMAGE/PNG; charset=binary');
+    expect(open).toHaveBeenCalledWith('blob:x', '_blank', 'noopener');
+    expect(opened[0].type).toBe('image/png');
+    expect(click).not.toHaveBeenCalled();
+  });
+
+  it('downloads an original with no extension whose stored type can carry script', async () => {
+    await viewOriginal('Other documents/2024-06-01 Scan', new Blob(['<svg/>']), 'image/svg+xml');
+    expect(open).not.toHaveBeenCalled();
+    expect(opened[0].type).toBe('application/octet-stream');
+    expect(downloads).toEqual(['2024-06-01 Scan']);
+  });
+
+  it('downloads an original with no extension and no stored type', async () => {
+    await viewOriginal('Other documents/2024-06-01 Scan', new Blob(['x'], { type: 'image/png' }));
+    expect(open).not.toHaveBeenCalled();
+    expect(opened[0].type).toBe('application/octet-stream');
+  });
+
+  it('downloads when the served bytes disagree with a passive stored type', async () => {
+    await viewOriginal('Other documents/2024-06-01 Scan', new Blob(['<svg/>'], { type: 'image/svg+xml' }), 'image/png');
+    expect(open).not.toHaveBeenCalled();
+    expect(opened[0].type).toBe('application/octet-stream');
+  });
+
+  it('a passive stored type never rescues an unknown or active extension', async () => {
+    await viewOriginal('Other documents/2024-06-01 Scan.svg', new Blob(['<svg/>']), 'image/png');
+    expect(open).not.toHaveBeenCalled();
+    expect(downloads).toEqual(['2024-06-01 Scan.svg']);
+  });
+
+  it('downloads when the stored type is not the extension\'s own', async () => {
+    await viewOriginal('Lab reports/2024-06-01 Panel.pdf', new Blob(['%PDF-1.4']), 'image/png');
+    expect(open).not.toHaveBeenCalled();
+    expect(opened[0].type).toBe('application/octet-stream');
   });
 });
 

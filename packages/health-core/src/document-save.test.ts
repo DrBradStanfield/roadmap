@@ -194,6 +194,7 @@ describe('documentView', () => {
     expect(documentView(row({ contentHash: '', metadata: undefined, sourceFileName: undefined }))).toEqual({
       id: 'held', documentType: 'clinic_letter', title: 'Synthetic letter', documentDate: '2026-01-01', contentMd: 'Synthetic note',
       metadata: {}, sourceFileName: null, createdAt: '2026-01-01T00:00:00.000Z', fileRef: null, contentHash: null,
+      mimeType: null,
     });
   });
 });
