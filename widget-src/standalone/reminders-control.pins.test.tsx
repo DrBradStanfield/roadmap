@@ -16,7 +16,7 @@ const { cancelReminders, optInToReminders, ReminderEmailNeeded } = vi.hoisted(()
   cancelReminders: vi.fn(),
   optInToReminders: vi.fn(),
   ReminderEmailNeeded: class extends Error {
-    constructor() { super('We could not read the email on your cloud account — type the address reminders should go to.'); }
+    constructor() { super('We could not read the email from your cloud storage. Type the address reminders should go to.'); }
   },
 }));
 vi.mock('../src/lib/roadmap-data', () => ({ getReminderOptIn: () => recordOptIn }));
@@ -37,7 +37,7 @@ const ACTIVE: FileReminderOptIn = {
 };
 const ON_LINE = `✓ Email health reminders on → ${ADDRESS}`;
 const OFF_LINE = 'Get an email when a check-up or blood test comes due.';
-const NEEDS_EMAIL = 'We could not read the email on your cloud account — type the address reminders should go to.';
+const NEEDS_EMAIL = 'We could not read the email from your cloud storage. Type the address reminders should go to.';
 const BAD_MARKETING = 'That email doesn’t look right — please check it (or untick the box).';
 const BAD_REMINDER = 'That email doesn’t look right — please check it.';
 const REFRESHED = `Reminders are already set up for ${ADDRESS} — we refreshed your schedule. To turn them off, use the link in any reminder email.`;
@@ -74,7 +74,7 @@ describe('US-17 AC18: turn on', () => {
     const call = deferred<{ email: string; refreshed: boolean }>();
     optInToReminders.mockReturnValue(call.promise);
     const view = open();
-    expect(text(view)).toContain('Reminders go to the email on your connected cloud account.');
+    expect(text(view)).toContain('Reminders go to the email address of your connected cloud storage.');
     expect((view.getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
     expect(view.queryByRole('textbox')).toBeNull();
     fireEvent.click(button(view, 'Turn on reminders'));
