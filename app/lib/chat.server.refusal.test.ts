@@ -37,13 +37,38 @@ afterEach(() => {
 describe('US-15 AC13: the answer body comes from the model pin', () => {
   it('sends Sonnet 5.5 with adaptive thinking (summarized), effort medium, no sampling param', async () => {
     const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
-    await getChatCompletion([], [{ role: 'user', content: 'hi' }], true);
+    await getChatCompletion([], [{ role: 'user', content: 'hi' }], true, undefined, { purpose: 'CHAT' });
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.model).toBe('claude-sonnet-5-5');
     expect(body.max_tokens).toBe(4096);
     expect(body.thinking).toEqual({ type: 'adaptive', display: 'summarized' });
     expect(body.output_config).toEqual({ effort: 'medium' });
     expect(body).not.toHaveProperty('temperature');
+  });
+
+  it('US-15 AC78: with no model given, the body and the result name CHAT_MODEL', async () => {
+    const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'hi' }], false, undefined, { purpose: 'CHAT' });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).model).toBe('claude-sonnet-5-5');
+    expect(result.model).toBe('claude-sonnet-5-5');
+  });
+
+  it('US-15 AC78: opts.model sends that model with the same effort and cap, and the result names it', async () => {
+    const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'hi' }], false, undefined, { purpose: 'YOUTUBE', model: 'claude-haiku-5-5' });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.model).toBe('claude-haiku-5-5');
+    expect(body.max_tokens).toBe(4096);
+    expect(body.thinking).toEqual({ type: 'adaptive', display: 'summarized' });
+    expect(body.output_config).toEqual({ effort: 'medium' });
+    expect(body).not.toHaveProperty('temperature');
+    expect(result).toMatchObject({ content: 'An answer.', isFallback: false, model: 'claude-haiku-5-5' });
+  });
+
+  it('US-15 AC78: a failed call still names the model it was sent to', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('network down')) as unknown as typeof fetch;
+    const result = await getChatCompletion([], [{ role: 'user', content: 'hi' }], false, undefined, { purpose: 'YOUTUBE', model: 'claude-haiku-5-5' });
+    expect(result).toMatchObject({ isFallback: true, failureMode: 'api-error', model: 'claude-haiku-5-5' });
   });
 });
 
@@ -52,8 +77,8 @@ describe('US-15 AC19: tools only where a client can apply them', () => {
   it('canApplyEdits: true sends the form tools, and run_roadmap when the message has a digit (US-15 AC33)', async () => {
     const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
     // profileEdits: the widget that applies a profile edit (US-16 AC2); without it, no profile tool (run-roadmap test).
-    await getChatCompletion([], [{ role: 'user', content: 'hi' }], true, undefined, { profileEdits: true });
-    await getChatCompletion([], [{ role: 'user', content: 'LDL 4.1 mmol/L, how is that?' }], true, undefined, { profileEdits: true });
+    await getChatCompletion([], [{ role: 'user', content: 'hi' }], true, undefined, { purpose: 'CHAT', profileEdits: true });
+    await getChatCompletion([], [{ role: 'user', content: 'LDL 4.1 mmol/L, how is that?' }], true, undefined, { purpose: 'CHAT', profileEdits: true });
     const names = (i: number) => JSON.parse(fetchMock.mock.calls[i][1].body).tools.map((t: { name: string }) => t.name);
     expect(names(0)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit']);
     expect(names(1)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
@@ -61,7 +86,7 @@ describe('US-15 AC19: tools only where a client can apply them', () => {
 
   it('canApplyEdits: false sends no tools', async () => {
     const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
-    await getChatCompletion([], [{ role: 'user', content: 'hi' }], false);
+    await getChatCompletion([], [{ role: 'user', content: 'hi' }], false, undefined, { purpose: 'CHAT' });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('tools');
   });
 });
@@ -73,7 +98,7 @@ describe('US-67 AC3: the app\'s tools and tool-only line', () => {
 
   it('US-67 AC3: app: true sends the app\'s tool words, and the tool-only line says ready to save', async () => {
     const fetchMock = respond('end_turn', [ldl]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { profileEdits: true, app: true });
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { purpose: 'CHAT', profileEdits: true, app: true });
     const tools = JSON.parse(fetchMock.mock.calls[0][1].body).tools;
     expect(tools.map((t: { name: string }) => t.name)).toEqual(['propose_field_edit', 'propose_medication_edit', 'propose_profile_edit', 'run_roadmap']);
     expect(tools[0].description).toMatch(/banner/);
@@ -83,7 +108,7 @@ describe('US-67 AC3: the app\'s tools and tool-only line', () => {
 
   it('US-67 AC3: without app the web\'s words and line are unchanged', async () => {
     const fetchMock = respond('end_turn', [ldl]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { profileEdits: true });
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mmol/L' }], true, undefined, { purpose: 'CHAT', profileEdits: true });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).tools[0].description).toMatch(/^Pre-fill a value/);
     expect(result.content).toBe("I've pre-filled that in your form — review the highlighted value and press Save.");
   });
@@ -99,7 +124,7 @@ describe('US-67 AC2: the server asks about a value that looks like the wrong uni
       .mockResolvedValueOnce(reply([suspect]))
       .mockResolvedValueOnce(reply([{ type: 'text', text: 'Did you mean 3.4 mmol/L?' }]));
     global.fetch = fetchMock as unknown as typeof fetch;
-    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mg/dL' }], true, undefined, { profileEdits: true, ...flags });
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 3.4 mg/dL' }], true, undefined, { purpose: 'CHAT', profileEdits: true, ...flags });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const second = JSON.parse(fetchMock.mock.calls[1][1].body);
     expect(second.tool_choice).toEqual({ type: 'none' });
@@ -112,7 +137,7 @@ describe('US-67 AC2: the server asks about a value that looks like the wrong uni
 
   it('US-67 AC2: LDL 130 mg/dL goes through in one call', async () => {
     const fetchMock = respond('end_turn', [{ ...suspect, input: { field: 'ldlC', value: 130, unit: 'mg/dL' } }]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 130 mg/dL' }], true, undefined, { profileEdits: true, app: true });
+    const result = await getChatCompletion([], [{ role: 'user', content: 'my LDL is 130 mg/dL' }], true, undefined, { purpose: 'CHAT', profileEdits: true, app: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.proposedEdits).toEqual([{ kind: 'field', field: 'ldlC', displayValue: 130, unitSystem: 'conventional', date: null }]);
   });
@@ -128,7 +153,7 @@ describe('US-15 AC14: a refusal is its own outcome', () => {
     ['frontier_llm', REFUSAL_RESPONSES.request],
   ])('category %s gets its line; the partial text is discarded', async (category, line) => {
     refusal(category);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, undefined, { purpose: 'CHAT' });
     expect(result.isRefusal).toBe(true);
     expect(result.isFallback).toBe(false);
     expect(result.failureMode).toBe('refusal');
@@ -148,7 +173,7 @@ describe('US-15 AC14: a refusal is its own outcome', () => {
   it('a max_tokens stop keeps the answer, appends nothing, and logs only the stop reason', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     respond('max_tokens', [{ type: 'text', text: 'An answer cut off mid' }]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, undefined, { purpose: 'CHAT' });
     expect(result.content).toBe('An answer cut off mid');
     expect(result.isFallback).toBe(false);
     expect(result.isRefusal).toBeUndefined();
@@ -160,7 +185,7 @@ describe('US-15 AC14: a refusal is its own outcome', () => {
 
   it('Sentry gets a warning tagged with the stop reason and category only', async () => {
     refusal('bio');
-    const completion = await getChatCompletion([], [{ role: 'user', content: 'q' }], true);
+    const completion = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, undefined, { purpose: 'CHAT' });
     reportChatFallback({ completion, platform: 'shopify', latencyMs: 12, conversationId: null });
     expect(Sentry.captureException).not.toHaveBeenCalled();
     expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
@@ -195,7 +220,7 @@ describe('US-15 AC16: getChatCompletion streams when given onEvent', () => {
   it('sends stream: true, forwards the deltas, and returns the answer', async () => {
     const fetchMock = streamed([start, ...textBlock('An answer.'), ...end('end_turn')]);
     const onEvent = vi.fn();
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, onEvent);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, onEvent, { purpose: 'CHAT' });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).stream).toBe(true);
     expect(onEvent).toHaveBeenCalledWith({ type: 'text', text: 'An answer.' });
     expect(result).toMatchObject({ content: 'An answer.', isFallback: false, stopReason: 'end_turn' });
@@ -203,13 +228,13 @@ describe('US-15 AC16: getChatCompletion streams when given onEvent', () => {
 
   it('a refusal after text streamed is still the refusal line', async () => {
     streamed([start, ...textBlock(PARTIAL), ...end('refusal', { type: 'refusal', category: 'bio', explanation: 'x' })]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn());
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn(), { purpose: 'CHAT' });
     expect(result).toMatchObject({ isRefusal: true, content: REFUSAL_RESPONSES.clinical, failureMode: 'refusal' });
   });
 
   it('a stream that breaks after text streamed is the api-error fallback', async () => {
     streamed([start, ...textBlock(PARTIAL)]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn());
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn(), { purpose: 'CHAT' });
     expect(result).toMatchObject({ isFallback: true, failureMode: 'api-error', content: FALLBACK_RESPONSE });
   });
 
@@ -220,7 +245,7 @@ describe('US-15 AC16: getChatCompletion streams when given onEvent', () => {
       { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'Weighing it up' } },
       { type: 'content_block_stop', index: 0 },
       ...end('max_tokens')]);
-    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn());
+    const result = await getChatCompletion([], [{ role: 'user', content: 'q' }], true, vi.fn(), { purpose: 'CHAT' });
     expect(result).toMatchObject({ isFallback: true, failureMode: 'empty-response', stopReason: 'max_tokens', content: FALLBACK_RESPONSE });
     expect(warn).toHaveBeenCalledWith(JSON.stringify({ evt: 'chat_truncated', stopReason: 'max_tokens' }));
     warn.mockRestore();
@@ -228,7 +253,7 @@ describe('US-15 AC16: getChatCompletion streams when given onEvent', () => {
 
   it('without onEvent the request is not streamed', async () => {
     const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
-    await getChatCompletion([], [{ role: 'user', content: 'q' }], true);
+    await getChatCompletion([], [{ role: 'user', content: 'q' }], true, undefined, { purpose: 'CHAT' });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).not.toHaveProperty('stream');
   });
 });

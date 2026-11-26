@@ -92,7 +92,7 @@ Leaving that question aside, though, extending lifespan wasn’t the reason I st
 
 And in this case, research has uncovered some intriguing benefits. For instance, a new study published last year looked at measures related to metabolic syndrome. Metabolic syndrome is a significant health concern because it increases the risks of heart disease, strokes, type 2 diabetes, and chronic inflammation \[4\].
 
-Despite numerous clinical studies that show the diverse health benefits of taurine, there are inconsistencies. That makes it a challenge to say for sure whether taurine reduces the risk of metabolic syndrome. And that’s why this new study was done. The authors wanted to clarify taurine’s effectiveness.
+Despite numerous clinical studies that show the diverse health [benefits of taurine](/blogs/articles/taurine-benefits-forms-dosing-and-side-effects), there are inconsistencies. That makes it a challenge to say for sure whether taurine reduces the risk of metabolic syndrome. And that’s why this new study was done. The authors wanted to clarify taurine’s effectiveness.
 
 So they conducted a meta-analysis of 25 randomized clinical trials involving over 1,000 participants. It found that taurine decreased fasting blood sugar levels, blood pressure, triglycerides, LDL cholesterol, HbA1c, and insulin levels \[4\].
 

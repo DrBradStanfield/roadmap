@@ -12,7 +12,7 @@ import type { SyncStorage } from './record-host';
 import type { RecordSession } from './record-session';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
-import { isDefiniteRefusal, mayHaveLanded, uncertainWrite } from './write-refusal';
+import { afterWrite, mayHaveLanded } from './write-refusal';
 
 /** What an erase that cannot read the cloud record says. It cannot list what
  *  it removes, so it removes nothing (US-09 AC23). */
@@ -210,8 +210,8 @@ export async function replaceUnreadableSession(s: RecordSession, store: SyncStor
     s.revisionSeen = store.writeSync(ROADMAP_FILE_NAME, s.current, revision).version;
     s.dispatch({ type: 'synced' });
   } catch (error) {
-    // Marked as SyncManager marks a write that threw: only a definite refusal stored nothing (S69).
-    if (!(error instanceof ConflictError)) throw typeof error === 'object' && error !== null && !isDefiniteRefusal(error) ? uncertainWrite(error) : error;
+    // Read as SyncManager reads a write that threw: its outcome, or may have landed when unnamed (S69).
+    if (!(error instanceof ConflictError)) throw afterWrite(error);
     await s.flush();
   }
 }

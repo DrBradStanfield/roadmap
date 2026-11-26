@@ -81,3 +81,35 @@ describe("CI reviewer boundary (US-40 AC16)", () => {
     expect(yaml).not.toMatch(/^\s*allowed_non_write_users:/m);
   });
 });
+
+// US-40 AC16a: the prompt tells the reviewer what its verdict does. auto-ship.yml
+// can merge a claude/* PR on an APPROVE for its head sha, so the prompt must not
+// call the verdict advisory or name a human approver the pipeline no longer has.
+describe("the reviewer's prompt states what its verdict does (US-40 AC16a)", () => {
+  const prompt = (() => {
+    const m = yaml.match(/^(\s*)prompt: \|\n([\s\S]*?)^\s*claude_args:/m);
+    expect(m, "prompt block").not.toBeNull();
+    return m![2].replace(/\s+/g, " ");
+  })();
+
+  it("reads the model-facing prompt (guards against an empty match)", () => {
+    expect(prompt).toContain("You are the INDEPENDENT REVIEWER");
+    expect(prompt).toContain("VERDICT: APPROVE");
+  });
+
+  it("does not call the verdict advisory or name a human approver", () => {
+    expect(prompt).not.toMatch(/advisory comment|human approver/i);
+    expect(prompt).not.toMatch(/(?<!not )advisory/i);
+  });
+
+  it("says the verdict is not advisory and that auto-ship can merge on an APPROVE, after a veto window", () => {
+    expect(prompt).toContain("Your verdict is not advisory");
+    expect(prompt).toMatch(/auto-ship\.yml can merge this PR on your APPROVE for its head sha/);
+    expect(prompt).toMatch(/30-minute veto window/);
+    expect(prompt).toMatch(/no human approves it first/);
+  });
+
+  it("agrees with the workflow header", () => {
+    expect(yaml).toMatch(/^# as a comment\. It is not advisory: auto-ship\.yml merges a claude\/\* PR on this$/m);
+  });
+});

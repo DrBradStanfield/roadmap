@@ -27,7 +27,7 @@ describe('an out-of-range value in conflict with a saved one', () => {
   it('Replace off: Save is enabled and writes the HDL alone', async () => {
     const s = open(NO_CHOICES);
     expect(viewOf(s).save).toMatchObject({ enabled: true, why: null });
-    const out = await uploadSave(transition(s, { type: 'saveStarted' }).state, record, NOW, false, { holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW });
+    const out = await uploadSave(transition(s, { type: 'saveStarted' }).state, record, NOW, false, { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW });
     if (!out.ok) throw new Error(out.reason);
     const { file } = out.commit(record);
     expect(file.labValues.filter((l) => l.status === 'active').map((l) => [l.metricName, l.value]).sort()).toEqual([['hdl', 1.4], ['ldl', 2.5]]);

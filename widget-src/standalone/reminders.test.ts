@@ -540,7 +540,7 @@ describe('US-17 AC12 — a switch to a cloud with the same email keeps the row',
 
     expect(f).not.toHaveBeenCalled();
     expect(setReminderOptIn).toHaveBeenCalledTimes(1);
-    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'active', token: 'cap-token', email, provider: to }));
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ status: 'active', token: 'cap-token', email, provider: to }), '[0,null]');
     expect(flushRoadmapStore).toHaveBeenCalledTimes(1);
     expect(trackProductEvent).not.toHaveBeenCalled();
 
@@ -571,7 +571,7 @@ describe('US-17 AC12 — the same-address shortcut, to Drive and across an erase
     await autoEnrolReminders('google-drive');
 
     expect(f).not.toHaveBeenCalled();
-    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ token: 'cap-token', provider: 'google-drive' }));
+    expect(setReminderOptIn).toHaveBeenCalledWith(expect.objectContaining({ token: 'cap-token', provider: 'google-drive' }), '[0,null]');
   });
 
   it('an erase that lands while the identity lookup is pending is not overwritten', async () => {

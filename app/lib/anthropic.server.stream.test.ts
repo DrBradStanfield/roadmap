@@ -125,7 +125,7 @@ describe('US-15 AC16/AC17 — streamAnthropicWithUsage', () => {
   it('sends stream: true and forwards thinking then text deltas in order', async () => {
     const fetchMock = mockFetch(sse([...HEAD, ...TEXT_END, ...stop('end_turn')]));
     const { events, onEvent } = collect();
-    await streamAnthropicWithUsage({ model: 'claude-sonnet-5-5', messages: [] }, onEvent);
+    await streamAnthropicWithUsage({ model: 'claude-sonnet-5-5', messages: [] }, onEvent, 'CHAT');
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).stream).toBe(true);
     expect(events.map((e) => e.type)).toEqual(['thinking', 'thinking', 'thinking', 'text', 'text']);
     expect(joined(events, 'thinking')).toBe('I need a');
@@ -134,7 +134,7 @@ describe('US-15 AC16/AC17 — streamAnthropicWithUsage', () => {
 
   it('returns exactly the non-streaming result shape: text, blocks with parsed tool input, usage, stop reason', async () => {
     mockFetch(sse([...HEAD, ...TEXT_END, ...TOOL, ...stop('tool_use')]));
-    const result = await streamAnthropicWithUsage({}, () => {});
+    const result = await streamAnthropicWithUsage({}, () => {}, 'CHAT');
     expect(result).toEqual({
       content: '2 9 4\n7 5 3',
       contentBlocks: [
@@ -151,7 +151,7 @@ describe('US-15 AC16/AC17 — streamAnthropicWithUsage', () => {
     for (const size of [1, 7, 4096]) {
       mockFetch(sse([...HEAD, ...TEXT_END, ...TOOL, ...stop('tool_use')], size));
       const { events, onEvent } = collect();
-      const result = await streamAnthropicWithUsage({}, onEvent);
+      const result = await streamAnthropicWithUsage({}, onEvent, 'CHAT');
       expect(result.content).toBe('2 9 4\n7 5 3');
       expect(joined(events, 'thinking')).toBe('I need a');
     }
@@ -160,7 +160,7 @@ describe('US-15 AC16/AC17 — streamAnthropicWithUsage', () => {
   it('a refusal mid-stream: the deltas already went out, the result is the empty refusal', async () => {
     mockFetch(sse([...HEAD, ...TEXT_END, ...stop('refusal', '{"type":"refusal","category":"bio","explanation":"declined"}')]));
     const { events, onEvent } = collect();
-    const result = await streamAnthropicWithUsage({}, onEvent);
+    const result = await streamAnthropicWithUsage({}, onEvent, 'CHAT');
     expect(joined(events, 'text')).toBe('2 9 4\n7 5 3');
     expect(result).toEqual({
       content: '', contentBlocks: [], stopReason: 'refusal', refusalCategory: 'bio',
@@ -170,14 +170,14 @@ describe('US-15 AC16/AC17 — streamAnthropicWithUsage', () => {
 
   it('an unknown refusal category is "other"', async () => {
     mockFetch(sse([...HEAD, ...stop('refusal', '{"type":"refusal","category":"brand_new","explanation":"x"}')]));
-    expect((await streamAnthropicWithUsage({}, () => {})).refusalCategory).toBe('other');
+    expect((await streamAnthropicWithUsage({}, () => {}, 'CHAT')).refusalCategory).toBe('other');
   });
 
   it('retries a transient status before the first byte, and discards the error body', async () => {
     const cancel = vi.fn();
     const err503 = { ok: false, status: 503, body: { cancel }, json: async () => ({}), text: async () => 'echo' } as unknown as Response;
     const fetchMock = mockFetch(err503, sse([...HEAD, ...TEXT_END, ...stop('end_turn')]));
-    const result = await streamAnthropicWithUsage({}, () => {});
+    const result = await streamAnthropicWithUsage({}, () => {}, 'CHAT');
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(cancel).toHaveBeenCalled();
     expect(result.content).toBe('2 9 4\n7 5 3');
@@ -185,7 +185,7 @@ describe('US-15 AC16/AC17 — streamAnthropicWithUsage', () => {
 
   it('an error event after streaming began throws without a retry and without quoting the provider', async () => {
     const fetchMock = mockFetch(sse([...HEAD, 'event: error', 'data: {"type":"error","error":{"type":"overloaded_error","message":"echo of user text"}}', '']));
-    const err = await streamAnthropicWithUsage({}, () => {}).catch((e) => e);
+    const err = await streamAnthropicWithUsage({}, () => {}, 'CHAT').catch((e) => e);
     expect(err).toBeInstanceOf(Error);
     expect(err.message).toBe('Anthropic stream error (overloaded_error)');
     expect(err.message).not.toContain('echo');
@@ -194,19 +194,19 @@ describe('US-15 AC16/AC17 — streamAnthropicWithUsage', () => {
 
   it('a stream that ends before message_stop throws, not a partial answer', async () => {
     const fetchMock = mockFetch(sse(HEAD));
-    await expect(streamAnthropicWithUsage({}, () => {})).rejects.toThrow('Anthropic stream ended early');
+    await expect(streamAnthropicWithUsage({}, () => {}, 'CHAT')).rejects.toThrow('Anthropic stream ended early');
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('a 200 with no text and no tool use is "No text in Anthropic response", as today', async () => {
     mockFetch(sse([HEAD[0], HEAD[1], '', ...stop('end_turn')]));
-    await expect(streamAnthropicWithUsage({}, () => {})).rejects.toThrow('No text in Anthropic response');
+    await expect(streamAnthropicWithUsage({}, () => {}, 'CHAT')).rejects.toThrow('No text in Anthropic response');
   });
 
   // Codex R2 / adversary R7: max_tokens can cut a tool's input mid-JSON.
   it('text then a tool input cut off by max_tokens: keeps the text, drops the tool block, does not throw', async () => {
     const cut = [...TOOL.slice(0, 12), ...TOOL.slice(15)]; // the last input delta never arrives
-    const result = await (mockFetch(sse([...HEAD, ...TEXT_END, ...cut, ...stop('max_tokens')])), streamAnthropicWithUsage({}, () => {}));
+    const result = await (mockFetch(sse([...HEAD, ...TEXT_END, ...cut, ...stop('max_tokens')])), streamAnthropicWithUsage({}, () => {}, 'CHAT'));
     expect(result.content).toBe('2 9 4\n7 5 3');
     expect(result.stopReason).toBe('max_tokens');
     expect(result.contentBlocks.some((b) => b.type === 'tool_use')).toBe(false);
@@ -214,13 +214,13 @@ describe('US-15 AC16/AC17 — streamAnthropicWithUsage', () => {
 
   it('thinking only, then max_tokens: an empty result carrying the stop reason, not "No text"', async () => {
     mockFetch(sse([...HEAD.slice(0, 24), ...stop('max_tokens')]));
-    const result = await streamAnthropicWithUsage({}, () => {});
+    const result = await streamAnthropicWithUsage({}, () => {}, 'CHAT');
     expect(result).toMatchObject({ content: '', stopReason: 'max_tokens' });
   });
 
   it('an overloaded_error stream event classifies as overloaded_529', async () => {
     mockFetch(sse([...HEAD, 'event: error', 'data: {"type":"error","error":{"type":"overloaded_error","message":"x"}}', '']));
-    const err = await streamAnthropicWithUsage({}, () => {}).catch((e) => e);
+    const err = await streamAnthropicWithUsage({}, () => {}, 'CHAT').catch((e) => e);
     expect(classifyChatError(err)).toBe('overloaded_529');
   });
 
@@ -234,7 +234,7 @@ describe('US-15 AC16/AC17 — streamAnthropicWithUsage', () => {
       },
     }), { status: 200 }));
     global.fetch = fetchMock as unknown as typeof fetch;
-    const pending = streamAnthropicWithUsage({}, () => {}).catch((e) => e);
+    const pending = streamAnthropicWithUsage({}, () => {}, 'CHAT').catch((e) => e);
     await vi.advanceTimersByTimeAsync(29_000);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(2_000);

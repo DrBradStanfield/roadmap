@@ -112,7 +112,7 @@ describe('RecordSession.deleteAllData: the teardown sees the stored opt-in (US-1
     const cloud = new MemoryCloud();
     const session = await RecordSession.open(host(cloud));
     // This tab opted in before another device erased; its stamp runs ahead.
-    session.edit((file) => { file.reminderOptIn = { ...active(9, 'dropbox'), token: 'stale' }; });
+    session.edit((file) => { file.reminderOptIn = { ...active(9, 'dropbox'), token: 'stale' }; }, session.shownErase);
     const other = record();
     other.meta.eraseEpoch = 1;
     other.reminderOptIn = { ...active(2, 'github'), token: 'fresh' };
@@ -130,7 +130,7 @@ describe('RecordSession.deleteAllData: the teardown sees the stored opt-in (US-1
     it(`an erase this copy missed, holding ${label}, never takes this copy's active opt-in away`, async () => {
       const cloud = new MemoryCloud();
       const session = await RecordSession.open(host(cloud));
-      session.edit((file) => { file.reminderOptIn = { ...active(1, 'dropbox'), token: 'mine' }; });
+      session.edit((file) => { file.reminderOptIn = { ...active(1, 'dropbox'), token: 'mine' }; }, session.shownErase);
       const other = record();
       other.meta.eraseEpoch = 1;
       if (theirs) other.reminderOptIn = theirs as FileReminderOptIn;
@@ -150,7 +150,7 @@ describe('RecordSession.deleteAllData: the teardown sees the stored opt-in (US-1
     old.reminderOptIn = { ...active(1), status: 'cancelled', token: '', email: '' };
     cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(old), version: 1 });
     const session = await RecordSession.open(host(cloud));
-    session.edit((file) => { file.reminderOptIn = active(7, 'github'); });
+    session.edit((file) => { file.reminderOptIn = active(7, 'github'); }, session.shownErase);
 
     let seen: FileReminderOptIn | undefined;
     await session.deleteAllData({ teardown: async () => { seen = session.file.reminderOptIn; } });

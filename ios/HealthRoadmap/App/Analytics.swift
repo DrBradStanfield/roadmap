@@ -99,6 +99,8 @@ final class Analytics {
         /// US-12 AC30: an upload skipped a file already in the record, and its first file was read
         /// within 30 seconds of the pick. Once a pick; never a count, a name or a hash.
         case labUploadKnownSkipped = "Lab upload known skipped", labUploadFirstReadUnder30s = "Lab upload first read under 30 s"
+        /// US-73 AC14: a heading's "Upload labs" pressed, naming the heading (`HealthTopic.uploadLabsEvent`). Never a value.
+        case uploadLabsWeight = "Upload labs weight", uploadLabsCholesterol = "Upload labs cholesterol", uploadLabsBloodTests = "Upload labs blood tests"
 
         /// A tour tip closed (its Next or Done, a tap outside it, leaving it, its action, or no anchor) or skipped.
         static func tip(_ step: TourStep, skipped: Bool) -> Event? {

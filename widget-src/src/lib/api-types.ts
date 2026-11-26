@@ -13,24 +13,13 @@ import type { HealthInputs } from '@roadmap/health-core/types';
 import type { DocumentType } from '@roadmap/health-core/validation';
 import type { ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core/mappings';
 import type { MedicationChange } from '@roadmap/health-core/medication-annotations';
-import type { LabUnitRefusal, MeasurementRefusal } from '@roadmap/health-core/record-edits';
+import type { MeasurementRefusal } from '@roadmap/health-core/record-edits';
 import type { RefusedLabValue, UnreadLabValue } from '@roadmap/health-core/lab-extraction';
 import type { ExtractionStopCode } from '@roadmap/health-core/models';
 
 export interface ApiReminderPreference {
   reminderCategory: string;
   enabled: boolean;
-}
-
-/** Snapshot of the user's saved data needed by the upload review modal
- *  for dedup badges + matrix context columns. One object, not three
- *  separate props, so call sites don't grow with each new history
- *  dimension. */
-export interface UploadHistory {
-  /** Every active measurement: the review seeds blood tests and BP (US-12 AC11). */
-  measurements: ApiMeasurement[];
-  labValues: ApiLabValue[];
-  documents: ApiDocument[];
 }
 
 /** Result from loading latest measurements: pre-fill inputs + raw measurements for "Previous:" labels. */
@@ -197,16 +186,3 @@ export interface BulkSaveResult {
   labRows?: Array<string | null>;
 }
 
-export interface BulkLabValuesResult {
-  saved: ApiLabValue[];
-  /** How many rows were already present (active) at this (user, metric_name, recorded_at). */
-  skippedDuplicates: number;
-  /** How many rows hit a server error. */
-  errorCount: number;
-  /** Rows refused for their unit — never silently dropped. */
-  refused: LabUnitRefusal[];
-  /** Core values (a core test's name, US-66 AC6) refused for their number — shown, never dropped. */
-  measurementRefusals?: MeasurementRefusal[];
-  /** As `BulkSaveResult.labRows`. */
-  labRows?: Array<string | null>;
-}

@@ -14,6 +14,17 @@ enum HealthTopic: String, CaseIterable, Identifiable {
     /// The jump pills (Brad, round 6): only these three.
     static let pills: [HealthTopic] = [.bloodTests, .cholesterol, .supplements]
 
+    /// The headings that carry "Upload labs" (US-73 AC14, Brad 2026-11-23), each with the event
+    /// that names it; nil for the rest. The web's list: health-core `UPLOAD_LABS_PLACEMENTS`.
+    var uploadLabsEvent: Analytics.Event? {
+        switch self {
+        case .weight: .uploadLabsWeight
+        case .cholesterol: .uploadLabsCholesterol
+        case .bloodTests: .uploadLabsBloodTests
+        default: nil
+        }
+    }
+
     /// The Apple Health cards in this topic (US-56 AC6): sleep under Sleep; VO2 max, resting
     /// heart rate and steps under Fitness (no heart rate card, Brad round 4).
     var liveMetrics: [LiveMetric] {

@@ -17,6 +17,7 @@
 import crypto from 'node:crypto';
 import { resourceUrl, sealKeys } from './mcp-config.server';
 import { isProvider, type McpProvider } from './mcp-providers.server';
+import { GEMINI_CLIENT_ID, geminiEnabled } from './mcp-gemini.server';
 
 /** The blobs that carry a credential. A two-call step is not one of them: it is MACed (`mcp-step.server.ts`). */
 export type BlobType = 'state' | 'code' | 'access' | 'refresh';
@@ -194,6 +195,8 @@ export function unpackSealed<T extends { clientId: string }>(
   // The AAD already proves this; the explicit check keeps the invariant
   // readable at every call site that depends on it.
   if (!payload || payload.clientId !== clientId) return null;
+  // The Gemini switch off ends every Gemini state, code and token (US-32 AC63).
+  if (clientId === GEMINI_CLIENT_ID && !geminiEnabled()) return null;
   // Phase-1 blobs carry no `provider` — the hosted server had one backend and
   // did not need to say so. They are live in vendor token stores right now, and
   // a blob a vendor holds can never be updated by us (§7), so refusing them, or

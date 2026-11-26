@@ -1,2 +1,2 @@
 id,area,title,kind,status,evidence,pr,needs_brad
-C19,hosted mcp,"Hosted MCP two-phase write: security class, detail private",implicit state,not started,Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: ledger only for now; security class; detail private,,yes
+C19,hosted mcp,"Hosted MCP two-phase write: security class, detail private",implicit state,not started,Root fix R33 (triage 2026-11-25): security track (ids only). Survey 2026-11-12 (main 5187412d5); Fable ruled 2026-11-12: ledger only for now; security class; detail private,,yes

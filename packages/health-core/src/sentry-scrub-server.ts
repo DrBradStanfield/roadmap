@@ -1,8 +1,8 @@
 /**
  * The server's Sentry scrub (beforeSend and beforeSendTransaction), moved
  * verbatim from instrument-scrub.mjs with types added and nothing else (audit
- * A2-6/A3-1). A later change generates instrument-scrub.mjs from this file;
- * until then sentry-scrub-server-parity.test.ts holds the two to the same output.
+ * A2-6/A3-1). instrument-scrub.mjs is generated from this file;
+ * tools/generate-instrument-scrub.test.ts fails when it is stale (US-09 AC7j).
  *
  * Helpers whose .mjs code matches sentry-scrub.ts are imported from there.
  * The three whose .mjs code differs in form (isSensitiveKey, scrubSensitiveData,

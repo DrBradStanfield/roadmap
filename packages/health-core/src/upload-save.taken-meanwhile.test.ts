@@ -20,7 +20,7 @@ import { uploadView } from './upload-view';
 const report: UnifiedExtractionResult = { classification: 'lab_report', reportDate: DAY, values: [core()], additionalValues: [extra()], unrecognized: [], document: null };
 const open: Extract<UploadState, { phase: 'open' }> = { phase: 'open', platform: 'web', run: 1, started: NOW, firstRead: NOW,
   files: [{ id: 'f', name: 'labs.pdf', bytes: 1, hash: 'h-labs', pages: null, status: { s: 'read', extraction: report, choices: NO_CHOICES } }] };
-const off = { holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW };
+const off = { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW };
 
 /** The person reviews on `reviewed`, presses Save, and Save runs on `atSave`. */
 async function saveAfter(reviewed: RoadmapFile, atSave: RoadmapFile) {

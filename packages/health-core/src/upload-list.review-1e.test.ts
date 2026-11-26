@@ -163,6 +163,18 @@ describe('4. the Save and close buttons\' words (moved from ReviewTable.tsx and 
     expect(page(saving)).toMatchObject({ save: 'Saving...', close: 'Cancel' });
   });
 
+  // US-12 AC6: "its indicator distinguishes saving". The shared view's label is the one the iPhone draws on its Save button.
+  it('US-12 AC6: the shared view\'s Save label is "Saving..." while saving, on the phone and the web, and the pre-save words otherwise', () => {
+    for (const platform of ['phone', 'web'] as const) {
+      const before = { ...s, platform };
+      const review = uploadReview(before, EMPTY, NOW);
+      const label = uploadView(before, EMPTY, NOW, review, false).save.label;
+      expect(label, platform).toBe('Save 1 value');
+      const saving = transition(before, { type: 'saveStarted', reviewed: uploadView(before, EMPTY, NOW, review, false).reviewed }).state;
+      expect(uploadView(saving, EMPTY, NOW, uploadReview(saving, EMPTY, NOW), false).save.label, platform).toBe(UPLOAD_TEXT.saving);
+    }
+  });
+
   it('close says "Close" when nothing could be saved, "Cancel" while a value is offered though cleared, and while a file is read', () => {
     expect(page(open([labRead('f0', {})])).close).toBe('Close');
     expect(page(chose(s, 'f0', { tick: 'v0', on: false })).close).toBe('Cancel');
@@ -175,7 +187,7 @@ describe('4. the Save and close buttons\' words (moved from ReviewTable.tsx and 
   });
 
   // Owner ruling on PR 1951: one source per phase. While saving the review's close button still shows, disabled
-  // (ReviewTable.tsx:471-473); once done, the done screen's own button.
+  // (the web's old ReviewTable.tsx, gone in mount 3b); once done, the done screen's own button.
   it('close in every phase', () => {
     const review = uploadReview(s, EMPTY, NOW);
     const reviewed = uploadView(s, EMPTY, NOW, review, false).reviewed;

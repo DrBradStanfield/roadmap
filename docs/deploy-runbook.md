@@ -124,7 +124,7 @@ fly status -c fly.edu.toml  # health-tool-edu
 (b) Apply, as postgres in one transaction, the `handle_new_user` change and the profiles section of `supabase/rls-policies.sql` (trigger reads `raw_app_meta_data`; drop the "Users can update own profile" policy; `REVOKE ALL ON profiles FROM anon, authenticated`; `GRANT SELECT ON profiles TO authenticated`). Check that the trigger reads only `raw_app_meta_data` and that only `authenticated | SELECT` remains.
 (c) From the main checkout, at exactly `origin/main` with no tracked change (`tools/write-gate.mjs` refuses `--execute` otherwise; docs/git-workflow.md): `npx tsx --env-file=.env tools/backfill-shopify-link-proof.ts` (dry run: expect `to_write` = `confirmed` = `linked_profiles` and every skip 0; investigate any skip first), then the same with `--execute` (expect `verified` = `written`, `write_failed` 0). A second dry run shows `already_proven` = `linked_profiles`.
 (d) Deploy both Fly apps.
-(e) Once every machine of both apps runs the new code (`fly status` for each), run the dry run again: an old machine may have linked a new customer between (c) and (d) without `app_metadata`. If `to_write` > 0, run `--execute`. Then check `audit_logs` for `PAID_ORDER_UNPROVEN_LINK` rows: each is a paid message pack the webhook did not credit (order id and profile id, no customer id); credit it by hand once the link is proven. Sentry should show no "Shopify link without admin-written proof" warnings.
+(e) Once every machine of both apps runs the new code (`fly status` for each), run the dry run again: an old machine may have linked a new customer between (c) and (d) without `app_metadata`. If `to_write` > 0, run `--execute`. Then check `audit_logs` for `PAID_ORDER_UNPROVEN_LINK` rows: each is a paid message pack the webhook did not credit (order id and profile id, no customer id); credit it by hand once the link is proven. Since US-09 AC63 the webhook is gone and writes no such row. Sentry should show no "Shopify link without admin-written proof" warnings.
 
 ### Local-first (v2) builds & build flags
 
@@ -266,6 +266,8 @@ to both — deploy twice, see "Shopify app configs".**)
   **Chat surface (2026-09-29):** the site-chat FAB's title, subtitle and empty state come from a
   second shop metafield, `health_roadmap.chat_surface` (`doctor` default | `brand`), emitted as
   `data-surface` by `chat-embed.liquid` and read by `resolveChatSurface` in `assistant-config.ts`.
+  The inline chat panel (`ChatEmbed`) takes the same words from the same table (`chat-copy.ts`,
+  US-15 AC77); the tool page and the chatbot embed block emit no `data-surface`, so they read as `doctor`.
   `microvitamin.com` is set to `brand` ("Ask MicroVitamin", products copy); `drstanfield.com` is
   unset. Same `metafieldsSet` call as the name; no redeploy needed after the extension is live.
 
@@ -291,12 +293,27 @@ Moved out of CLAUDE.md 2026-09-24 (entropy pass). `.env` has all of them.
   URL; production refuses to start without a TLS mode, US-09 AC31), SENTRY_*, RESEND_*,
   ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (the same
   MicroVitamin pair on both apps, by decision 2026-09-28).
+- **Anthropic key per purpose** (optional; an unset or empty one falls back to ANTHROPIC_API_KEY), so the
+  Console shows spend by feature (`anthropicKey` in `app/lib/anthropic.server.ts`):
+  - `ANTHROPIC_API_KEY_CHAT`: web chat on both storefronts and the iPhone app's chat (classifier, router, answer). Both apps.
+  - `ANTHROPIC_API_KEY_YOUTUBE`: the YouTube comment bot's classifier, router and answer. health-tool-app.
+  - `ANTHROPIC_API_KEY_DISCORD`: the Discord bot's classifier, router and answer. health-tool-app.
+  - `ANTHROPIC_API_KEY_PURGE`: the chat-purge cron's question scrub (`RUN_SHARED_CRONS`). health-tool-app.
+  - `ANTHROPIC_API_KEY_LABS`: lab file reads from the website and the iPhone app. Both apps.
+  - `ANTHROPIC_API_KEY_CONNECTOR`: the hosted MCP's `import_documents`. health-tool-edu.
+  Keep them in one Console workspace: prompt caches are not shared across workspaces. A purpose key that is
+  set but wrong breaks that surface (no fallback), so check the surface after setting it. Console key names,
+  all in the Default workspace, follow `roadmap-<commerce|edu>-<purpose>`: roadmap-commerce-chat,
+  roadmap-commerce-youtube, roadmap-commerce-discord, roadmap-commerce-purge, roadmap-commerce-labs,
+  roadmap-edu-chat, roadmap-edu-labs, roadmap-edu-connector. Spend by key: `tools/anthropic-spend.mjs`
+  ([docs/ops/anthropic-spend.md](ops/anthropic-spend.md)). Story: US-76.
 - **Fly-only**: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
   GITHUB_ISSUES_TOKEN (edu; the connector files bug
   reports with it, and without it hands the user a link), DROPBOX_APP_KEY/SECRET,
   GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the
   widget's Google exchange, edu for the MCP's Drive leg). Setup and rotation:
   [deploy-runbook-mcp.md](deploy-runbook-mcp.md).
+- **`MCP_GEMINI` (edu app, the hosted MCP; not a secret):** exactly `on` accepts Gemini's custom connector as the pinned `gemini` client (US-32 AC59-AC65). Anything else, unset included, is off: Gemini registrations are refused, the `gemini` client is unknown, and every Gemini code and token stops opening. Off by default; Brad sets it himself, only after the cross-account check in [agent-access.md](agent-access.md) § The hosted path.
 - **Per-app secrets diverge post-split**: each app has its own SHOPIFY_ pair;
   KLAVIYO_ is shared (every sign-up joins the MicroVitamin list; the drstanfield
   Klaviyo account is shut down, Brad 2026-09-28); edu omits the Discord and

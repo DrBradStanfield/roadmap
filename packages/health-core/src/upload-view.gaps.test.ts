@@ -38,7 +38,7 @@ const held = (rows: BulkRow[]) => bulkAppendValues(EMPTY, rows, NOW).file;
 const LDL = (value: number, recordedAt = DAY): BulkRow => ({ kind: 'measurement', metricType: 'ldl', value, recordedAt, source: 'manual' });
 const rows = (view: UploadView): ValueRow[] => [...view.sections.flatMap((x) => (x.kind === 'unsure' ? x.rows : [])), ...(view.sure?.rows ?? [])];
 const notSaved = (view: UploadView) => view.sections.flatMap((x) => (x.kind === 'notSaved' ? x.lines : []));
-const off = { holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW };
+const off = { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW };
 
 /** Save as the platform runs it, committed on `atCommit` (the record, or one another writer changed), then the done view. */
 async function saved(s: UploadState, record: RoadmapFile, atCommit = record) {

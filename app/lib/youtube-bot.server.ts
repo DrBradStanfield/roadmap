@@ -63,12 +63,16 @@ import {
   persistYouTubeTurn,
   cleanupSkippedRows,
   fetchRecentPostedThreads,
+  readFollowUpClaims,
+  finishClaim,
+  type FollowUpClaim,
 } from './youtube-bot-store.server';
 import {
   loadVideoBody,
   filterThread,
   assessThreadFollowUp,
   buildThreadHistory,
+  buildRouterThreadHistory,
   shouldUnclaim,
   runPipeline,
   reportTickFallbacks,
@@ -78,6 +82,7 @@ import { safeErrorFields } from './safe-error-fields.server';
 import { postClaimed, countSent } from './youtube-bot-post.server';
 import { nextPosting, OPEN_POSTING, type Posting } from './youtube-bot-post-result';
 import { CHAT_PROMPT } from './chat-system-prompt.server';
+import { transition, type Effect, type Lifecycle, type LifecycleEvent } from './youtube-bot-lifecycle';
 
 // The pipeline names this file exported before the split (issue #429).
 export {
@@ -94,22 +99,26 @@ export {
 // Module state
 // ---------------------------------------------------------------------------
 
-let isRunning = false;
-/** One tick at a time per machine: a tick reads the daily cap at its start (US-27 AC3). */
-let tickInFlight = false;
-let cronIntervalId: ReturnType<typeof setInterval> | null = null;
-let firstTickId: ReturnType<typeof setTimeout> | null = null;
+type Handle = ReturnType<typeof setTimeout>;
+/** One tick at a time per machine: a tick reads the daily cap at its start (US-27 AC3; US-15 AC71). */
+let lifecycle: Lifecycle<Handle> = { kind: 'stopped' };
+
+function send(event: LifecycleEvent<Handle>): Effect<Handle> {
+  const step = transition(lifecycle, event);
+  lifecycle = step.state;
+  if (step.effect.kind === 'clear') {
+    const { first, interval } = step.effect.timers;
+    if (first) clearTimeout(first);
+    clearInterval(interval);
+  }
+  return step.effect;
+}
 
 // ---------------------------------------------------------------------------
 // Startup / shutdown
 // ---------------------------------------------------------------------------
 
 export function startYouTubeBot(): void {
-  if (isRunning) {
-    console.log('YouTube bot already running — skip start');
-    return;
-  }
-
   if (!CHANNEL_ID || !CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
     console.log('YouTube bot: required env not set (YOUTUBE_BOT_CHANNEL_ID/CLIENT_ID/CLIENT_SECRET/REFRESH_TOKEN) — bot disabled');
     return;
@@ -121,7 +130,7 @@ export function startYouTubeBot(): void {
   }
 
   if (CHAT_PROMPT.kind === 'missing') {
-    console.warn('YouTube bot: chat system prompt missing — bot disabled');
+    console.warn(`YouTube bot: chat docs missing (${CHAT_PROMPT.files.join(', ')}) — bot disabled`);
     return;
   }
 
@@ -137,43 +146,34 @@ export function startYouTubeBot(): void {
     return;
   }
 
+  // Run first tick after a short delay to avoid blocking app boot. A start while running clears these at once.
+  const effect = send({ type: 'start', timers: {
+    first: setTimeout(() => { runTick(true).catch(logTickError); }, 30_000),
+    interval: setInterval(() => { runTick(false).catch(logTickError); }, POLL_INTERVAL_MS),
+  } });
+  if (effect.kind === 'clear') {
+    console.log('YouTube bot already running — skip start');
+    return;
+  }
   console.log(`YouTube bot started (cron every ${POLL_INTERVAL_MS / 60_000} min, daily cap ${DAILY_REPLY_CAP})`);
-
-  // Run first tick after a short delay to avoid blocking app boot.
-  firstTickId = setTimeout(() => { firstTickId = null; runTick().catch(logTickError); }, 30_000);
-
-  cronIntervalId = setInterval(() => {
-    runTick().catch(logTickError);
-  }, POLL_INTERVAL_MS);
-
-  isRunning = true;
 }
 
 export function stopYouTubeBot(): void {
   // A stop in the first 30 s (SIGTERM at boot) must not leave the first tick armed (US-27 AC5).
-  if (firstTickId) {
-    clearTimeout(firstTickId);
-    firstTickId = null;
-  }
-  if (cronIntervalId) {
-    clearInterval(cronIntervalId);
-    cronIntervalId = null;
-  }
-  isRunning = false;
+  send({ type: 'stop' });
   console.log('YouTube bot stopped');
 }
 
-async function runTick(): Promise<void> {
-  if (tickInFlight) {
-    console.log('YouTube bot: previous tick still running, skipping this one');
-    return;
-  }
-  tickInFlight = true;
+async function runTick(first: boolean): Promise<void> {
+  const effect = send({ type: 'due', first });
+  if (effect.kind === 'busy') console.log('YouTube bot: previous tick still running, skipping this one');
+  if (effect.kind !== 'tick') return;
   try {
     await tick();
   } finally {
+    // done first: a throwing report must not leave the bot ticking, skipping every later tick as busy.
+    send({ type: 'done' });
     reportTickFallbacks();
-    tickInFlight = false;
   }
 }
 
@@ -217,12 +217,21 @@ async function processFollowUps(
       continue;
     }
 
+    let claims: Map<string, FollowUpClaim>;
+    try {
+      claims = await readFollowUpClaims(replies.filter(r => r.authorChannelId !== CHANNEL_ID).map(r => r.id));
+    } catch (err) {
+      logTickError(err);
+      continue;
+    }
+
     const decision = assessThreadFollowUp({
       replies,
       botPostedIds: recent.botPostedIds,
       channelId: CHANNEL_ID!,
       originalAuthor: meta.originalAuthor,
       channelHandle,
+      claims,
     });
     if ('skip' in decision) {
       gate(decision.skip);
@@ -243,6 +252,7 @@ async function processFollowUps(
 
     const video = loadVideoBody(meta.videoId);
     if (!video) {
+      await finishClaim(reply.id, claimRowId, 'NO_VIDEO'); // internal marker: done, so it does not hold the thread
       tally.skipped++;
       continue;
     }
@@ -264,7 +274,7 @@ async function processFollowUps(
 
     let outcome: PipelineOutcome;
     try {
-      outcome = await runPipeline(pseudoThread, video.entry, video.body, history);
+      outcome = await runPipeline(pseudoThread, video.entry, video.body, history, buildRouterThreadHistory(meta.originalComment, replies, reply));
     } catch (err) {
       logTickError(err);
       await unclaimComment(reply.id, claimRowId);
@@ -275,6 +285,7 @@ async function processFollowUps(
     if (!outcome.posted) {
       await persistYouTubeTurn({ thread: pseudoThread, outcome, postedYoutubeId: null, followUpCommentId: reply.id });
       if (shouldUnclaim(outcome)) await unclaimComment(reply.id, claimRowId);
+      else await finishClaim(reply.id, claimRowId, outcome.classification ?? 'ERROR');
       tally.skipped++;
       continue;
     }

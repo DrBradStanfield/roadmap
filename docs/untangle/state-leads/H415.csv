@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H415,chat server,"One rule for what history the router and classifier are given on a follow-up, across chat surfaces",lead,done,"routerTurn in app/lib/chat-router-stage.server.ts builds the classifier's and router's input on web, Discord and YouTube; a YouTube follow-up passes its parent comment and its author's own earlier replies (US-15 AC75, Brad 2026-11-26). (H415)",2145,yes

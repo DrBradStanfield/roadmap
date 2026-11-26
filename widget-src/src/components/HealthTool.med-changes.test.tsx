@@ -14,7 +14,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, waitFor, fireEvent, act } from '@testing-library/react';
 import type { ProposedEdit, ProposedMedicationEdit } from '@roadmap/health-core/chat-edits';
-import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, loadMedicationHistory } from '../lib/roadmap-data';
+import { addMeasurement, deleteUserData, flushRoadmapStore, initRoadmapStore, loadLatestMeasurements, loadMedicationHistory, getShownErase } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
@@ -23,8 +23,6 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
   trackProductEvent: vi.fn(),
-  trackABImpression: vi.fn(),
-  trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 // The chat's edits reach the page through the embed's onProposeEdit.
@@ -545,7 +543,7 @@ describe('US-16 AC2 / US-09: erasing the data clears the pending chat Undo', () 
     act(() => propose([{ kind: 'medication', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }]));
     await settle();
     // A re-read of a record that still holds the medication keeps the banner.
-    await act(async () => { await addMeasurement('weight', 81, '2026-09-02'); });
+    await act(async () => { await addMeasurement('weight', 81, '2026-09-02', getShownErase()); });
     act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await settle();
     expect(document.querySelector('.chat-med-undo-btn')).not.toBeNull();

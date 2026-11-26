@@ -19,6 +19,7 @@ import { authenticate } from '../shopify.server';
 import { getCustomerId } from '../lib/route-helpers.server';
 import { BODY_TOO_LARGE, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import { createRateLimiter } from '../lib/rate-limiter';
+import type { PlainKey } from '../lib/ip-key.server';
 import { recordServerEvent } from '../lib/product-events.server';
 import {
   subscriptionActionsEnabled,
@@ -28,7 +29,7 @@ import {
 } from '../lib/subscription-gateway.server';
 
 // The gateway has the real limits (3 changes a day); this only stops a loop hammering it.
-const checkRateLimit = createRateLimiter(10, 60 * 60_000, 10 * 60_000, { name: 'subscription actions per customer' });
+const checkRateLimit = createRateLimiter<PlainKey>(10, 60 * 60_000, 10 * 60_000, { name: 'subscription actions per customer' });
 
 const bodySchema = z.object({
   token: z.string().min(20).max(1300),

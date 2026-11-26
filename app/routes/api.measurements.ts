@@ -6,17 +6,18 @@ import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { sendPlanReadyEmail } from '../lib/email.server';
 import { buildUnsubscribeUrl, emailLimiterKey, enrolByEmail, scheduleSchema, type Enrolment } from '../lib/reminder-v2.server';
 import { recordServerEvent } from '../lib/product-events.server';
-import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { BODY_TOO_LARGE, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { clientKey, type IpKey, type PlainKey } from '../lib/ip-key.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { safeErrorFields } from '../lib/safe-error-fields.server';
 
-const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000, { name: 'email capture per email' }); // 5/day per email
+const checkGuestReportLimit = createRateLimiter<PlainKey>(5, 24 * 60 * 60_000, 30 * 60_000, { name: 'email capture per email' }); // 5/day per email
 // Per-IP as well as per-victim-email: the email limiter bounds harm to ONE
 // address but nothing stopped one client enrolling a whole address LIST
 // (N strangers' emails at rest + N sends from our domain). Best-effort — the
 // proxy's forwarded IP and a per-process Map — but it turns bulk abuse from
 // free into work (review 2026-08-14).
-const checkCaptureIpLimit = createRateLimiter(20, 60 * 60_000, 30 * 60_000, { name: 'email capture per IP' }); // 20/hour per IP
+const checkCaptureIpLimit = createRateLimiter<IpKey>(20, 60 * 60_000, 30 * 60_000, { name: 'email capture per IP' }); // 20/hour per IP
 
 // ---------------------------------------------------------------------------
 // Klaviyo capture (local-first v2) — the "Get Your Personalized Plan" button.
@@ -43,7 +44,7 @@ const klaviyoCaptureSchema = z.object({
 // US-22: the plan-ready send lives in email.server so the template and the
 // send stay together (and so the no-health-data test can target the builder).
 
-async function handleKlaviyoCapture(data: unknown, clientIp: string) {
+async function handleKlaviyoCapture(data: unknown, clientIp: IpKey) {
   try {
     const parsed = klaviyoCaptureSchema.safeParse(data);
     if (!parsed.success) {
@@ -122,7 +123,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const body = await parseSimpleRequestJson(request) as { klaviyoCapture?: unknown } | typeof BODY_TOO_LARGE | null;
   if (body === BODY_TOO_LARGE) return Response.json({ success: false, error: 'Request too large' }, { status: 413 });
   if (body?.klaviyoCapture) {
-    return handleKlaviyoCapture(body.klaviyoCapture, getClientIp(request, 'shopify'));
+    return handleKlaviyoCapture(body.klaviyoCapture, clientKey(request, 'shopify'));
   }
   return Response.json({ success: false, error: 'Unsupported request' }, { status: 400 });
 }

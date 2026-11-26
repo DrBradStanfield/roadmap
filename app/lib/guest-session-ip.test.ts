@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import crypto from 'node:crypto';
+import { ipKeyedLimitCases } from './ip-key.test-helpers';
 
 // US-15 AC7 (2026-09-10): a guest session holds a hashed address, never the
 // caller's IP. Nothing written to Supabase — the session row or the audit log —
@@ -93,10 +94,60 @@ describe('guest session IP hashing (US-15 AC7)', () => {
     expect(audit?.row.metadata).toBeNull();
   });
 
+  // US-15 AC67: the per-IP limit holds on the shared bounded limiter.
+  it('creates 10 sessions per address per hour, refuses the 11th, and serves another address', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const ip = '192.0.2.10';
+      for (let i = 0; i < 10; i++) await getOrCreateGuestSession(ip);
+      await expect(getOrCreateGuestSession(ip)).rejects.toThrow('Too many requests');
+      await expect(getOrCreateGuestSession('192.0.2.11')).resolves.toMatchObject({ sessionId: 'guest-uuid' });
+      vi.setSystemTime(Date.now() + 60 * 60_000 - 1);
+      await expect(getOrCreateGuestSession(ip)).rejects.toThrow('Too many requests'); // a refusal does not stretch the hour
+      vi.setSystemTime(Date.now() + 1);
+      await expect(getOrCreateGuestSession(ip)).resolves.toMatchObject({ sessionId: 'guest-uuid' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps an address at its limit until 50,000 other addresses are live in the hour', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const ip = '192.0.2.20';
+      for (let i = 0; i < 10; i++) await getOrCreateGuestSession(ip);
+      // The map already holds the earlier cases' addresses, so fewer than 50,000 new ones fill it.
+      for (let i = 0; i < 49_990; i++) await getOrCreateGuestSession(`10.${i >> 16}.${(i >> 8) & 255}.${i & 255}`);
+      await expect(getOrCreateGuestSession(ip)).rejects.toThrow('Too many requests'); // still held
+      for (let i = 0; i < 20; i++) await getOrCreateGuestSession(`10.200.0.${i}`);
+      // Only now, with 50,000 newer live addresses, has the oldest entry made room.
+      await expect(getOrCreateGuestSession(ip)).resolves.toMatchObject({ sessionId: 'guest-uuid' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('matches a returning guest against the stored hash, not the raw IP', async () => {
     db.session = { id: 'guest-uuid', session_token: 'tok', ip_address: hashClientIp(IP) };
     const result = await getOrCreateGuestSession(IP, 'tok');
     expect(result).toEqual({ sessionId: 'guest-uuid', sessionToken: 'tok' });
     expect(db.inserts).toHaveLength(0);
+  });
+
+  // US-52 AC4k (owner ruling 2a): the limit moves onto the bucket; the session stays bound to the address.
+  it('binds a session to the address, not its /64', async () => {
+    db.session = { id: 'guest-uuid', session_token: 'tok', ip_address: hashClientIp('2001:db8:5e::1') };
+    await getOrCreateGuestSession('2001:db8:5e::2', 'tok');
+    expect(db.inserts.some((i) => i.table === 'guest_chat_sessions')).toBe(true);
+  });
+
+  describe('US-52 AC4k: the new-session limit keys on the one per-IP bucket, 10 an hour (30 for an IPv6 /64)', () => {
+    ipKeyedLimitCases({
+      limit: 10, v6Limit: 30, windowMs: 60 * 60_000, v6: '2001:db8:5e', v4: '100.79',
+      allowed: (ip) => getOrCreateGuestSession(ip).then(() => true, (error: Error) => {
+        if (error.message !== 'Too many requests') throw error;
+        return false;
+      }),
+    });
   });
 });

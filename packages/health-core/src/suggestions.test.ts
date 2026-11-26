@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +21,8 @@ const hdl = (mgdl: number) => toCanonicalValue('hdl', mgdl, 'conventional');
 const trig = (mgdl: number) => toCanonicalValue('triglycerides', mgdl, 'conventional');
 const totalChol = (mgdl: number) => toCanonicalValue('total_cholesterol', mgdl, 'conventional');
 const apoB = (mgdl: number) => toCanonicalValue('apob', mgdl, 'conventional');
+// The screening cases pass a birth year and its 2026 age, and the cards read the age at the clock (US-23 AC6c): one 2026 instant.
+const SCREENING_NOW = new Date(Date.UTC(2026, 9, 14, 12)), pinScreeningClock = () => { beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'], now: SCREENING_NOW }); }); afterEach(() => { vi.useRealTimers(); }); };
 
 // Helper to create base inputs and results
 function createTestData(
@@ -110,13 +112,9 @@ describe('generateSuggestions', () => {
       expect(hba1cSuggestion?.priority).toBe('attention');
     });
 
-    it('generates normal suggestion for HbA1c < 5.7% (<38.8 mmol/mol)', () => {
+    it('US-07 AC18: no card for HbA1c < 5.7% (<38.8 mmol/mol)', () => {
       const { inputs, results } = createTestData({ hba1c: hba1c(5.2) });
-      const suggestions = generateSuggestions(inputs, results);
-
-      const hba1cSuggestion = suggestions.find(s => s.id === 'hba1c-normal');
-      expect(hba1cSuggestion).toBeDefined();
-      expect(hba1cSuggestion?.priority).toBe('info');
+      expect(generateSuggestions(inputs, results).filter(s => s.id.startsWith('hba1c-'))).toEqual([]);
     });
   });
 
@@ -1442,6 +1440,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('Cancer screening suggestions', () => {
+    pinScreeningClock();
     // Colorectal
     it('suggests colorectal screening for age 35+ with no method selected', () => {
       const { inputs, results } = createTestData({ birthYear: 1985, birthMonth: 1 }, { age: 41 });
@@ -1678,6 +1677,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('Screening follow-up pathways', () => {
+    pinScreeningClock();
     // --- Colorectal ---
     it('shows urgent follow-up when colorectal result is abnormal and no follow-up organized', () => {
       const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
@@ -2714,6 +2714,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('DEXA bone density screening suggestions', () => {
+    pinScreeningClock();
     it('suggests DEXA for female age 50+', () => {
       const { inputs, results } = createTestData({ sex: 'female', birthYear: 1975, birthMonth: 1 }, { age: 51 });
       const scr: ScreeningInputs = {};
@@ -2888,14 +2889,9 @@ describe('generateSuggestions', () => {
       expect(generateSuggestions(inputs, results).find(s => s.id === 'lpa-elevated')?.description).toContain(line);
     });
 
-    it('generates normal suggestion for Lp(a) < 75 nmol/L', () => {
+    it('US-07 AC18: no card for Lp(a) < 75 nmol/L', () => {
       const { inputs, results } = createTestData({ lpa: 30 });
-      const suggestions = generateSuggestions(inputs, results);
-      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-normal');
-      expect(lpaSuggestion).toBeDefined();
-      expect(lpaSuggestion?.priority).toBe('info');
-      expect(lpaSuggestion?.description).toContain('normal range');
-      expect(lpaSuggestion?.description).toContain('one-time test');
+      expect(generateSuggestions(inputs, results).filter(s => s.id.startsWith('lpa-'))).toEqual([]);
     });
 
     it('generates borderline suggestion for Lp(a) 75-124 nmol/L', () => {
@@ -2984,11 +2980,11 @@ describe('generateSuggestions', () => {
     });
 
     it('shows same unit (nmol/L) in both SI and conventional', () => {
-      const { inputs, results } = createTestData({ lpa: 50 });
+      const { inputs, results } = createTestData({ lpa: 100 });
       const siSuggestions = generateSuggestions(inputs, results, 'si');
       const convSuggestions = generateSuggestions(inputs, results, 'conventional');
-      expect(siSuggestions.find(s => s.id === 'lpa-normal')?.title).toContain('nmol/L');
-      expect(convSuggestions.find(s => s.id === 'lpa-normal')?.title).toContain('nmol/L');
+      expect(siSuggestions.find(s => s.id === 'lpa-borderline')?.title).toContain('nmol/L');
+      expect(convSuggestions.find(s => s.id === 'lpa-borderline')?.title).toContain('nmol/L');
     });
 
     it('uses LDL when ApoB is unavailable in checklist', () => {
@@ -3024,7 +3020,6 @@ describe('generateSuggestions', () => {
       const { inputs, results } = createTestData({ lpa: 75 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'lpa-borderline')).toBeDefined();
-      expect(suggestions.find(s => s.id === 'lpa-normal')).toBeUndefined();
     });
 
     it('handles exact boundary at 125 nmol/L (elevated)', () => {
@@ -3382,7 +3377,7 @@ describe('Evidence attachment', () => {
       { bmi: 22, age: 56 },
     );
     const screenings: ScreeningInputs = { colorectalMethod: 'not_yet_started' };
-    const suggestions = generateSuggestions(inputs, results, 'si', undefined, screenings);
+    const suggestions = generateSuggestions(inputs, results, 'si', undefined, screenings, undefined, SCREENING_NOW);
     const colorectal = suggestions.find(s => s.id.startsWith('screening-colorectal'));
     expect(colorectal).toBeDefined();
     expect(colorectal!.reason).toBeDefined();
