@@ -57,7 +57,7 @@ export function loadedHandles(routerHandles: string[], matched: { skipped: strin
   return matched ? routerHandles.filter(h => !matched.skipped.includes(h)) : [];
 }
 
-export const MASTER_VIEWS_HEADING = "## Brad's current view and safety notes on this video's topics (added automatically for this video; not router-matched content)";
+export const MASTER_VIEWS_HEADING = "## Your current view and safety notes on this video's topics (added automatically for this video; not router-matched content)";
 
 /**
  * What the master views add (US-50 AC6, AC12). Each named master adds its

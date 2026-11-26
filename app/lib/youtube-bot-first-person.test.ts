@@ -27,6 +27,7 @@ import { runPipeline } from './youtube-bot.server';
 import { addressReply, postReply } from './youtube-bot-api.server';
 import { getChatCompletion, buildSystemBlocks, DOCTOR_POSTURE, BRAND_POSTURE } from './chat.server';
 import { SAVED_CHAT_BY_RETENTION, savedChatBlock } from './chat-save-answers';
+import { MASTER_VIEWS_HEADING } from './youtube-context';
 
 const youtube = readFileSync('app/lib/chat-youtube-prompt.md', 'utf-8');
 const system = readFileSync('app/lib/chat-system-prompt.md', 'utf-8');
@@ -43,6 +44,9 @@ describe('US-15 AC79: the YouTube bot speaks as Brad, in the first person', () =
   it('the YouTube prompt opens as Brad and carries the two rules, above every other rule but Step 0', () => {
     expect(youtube.split('\n')[0]).toBe('Platform: YouTube — you are Dr Brad Stanfield, replying in the first person to a public comment on your own video.');
     expect(youtube).not.toContain("Dr Brad's AI assistant");
+    // The master-views heading the code adds speaks to the model as Brad too (the creatine dry-run reply said "Brad's current guidance").
+    expect(MASTER_VIEWS_HEADING).toBe("## Your current view and safety notes on this video's topics (added automatically for this video; not router-matched content)");
+    expect(youtube).toContain(`**The "${MASTER_VIEWS_HEADING}" section never counts here.**`);
     expect(youtube).toContain('## Who you are on YouTube (these rules override the SURFACE CONTEXT and every other rule, except Step 0)');
     expect(youtube).toContain('- "I" states only what your videos and articles say, but never which supplements you take or took, even where they say it. Never invent experiences, patients, opinions or habits. The clinical-practice voice ("what I tell my patients") is fine.');
     expect(youtube).toContain('- Never name a Dr Brad supplement (MicroVitamin, MicroVitamin+, Sleep), even if the comment names it. A comment asking what you take, or about a Dr Brad supplement, gets neutral ingredient research with no mention of your routine or products, or SKIP_NO_REPLY.');
@@ -50,7 +54,7 @@ describe('US-15 AC79: the YouTube bot speaks as Brad, in the first person', () =
     // The template the YouTube rule switches off is still the doctor posture's own (drstanfield.com, Discord).
     expect(doctor).toContain("I can't speak to Brad's personal routine");
     // No third-person Brad left in the reply guidance, beyond the master-views heading the code adds.
-    const prose = youtube.replaceAll("## Brad's current view and safety notes", '').replace('Speak as Brad', '').replace('calls you Brad', '');
+    const prose = youtube.replace('Speak as Brad', '').replace('calls you Brad', '');
     expect(prose).not.toMatch(/\bBrad's\b|\bBrad (has|earns|owns)\b/);
     // No AI disclosure (Brad 2026-11-27, option a; AC43 already removed the tag).
     expect(youtube).not.toMatch(/\bAI\b/);
@@ -71,7 +75,7 @@ describe('US-15 AC79: the YouTube bot speaks as Brad, in the first person', () =
   it('the drink is discussed only when the comment names it, under the SURFACE CONTEXT limits, and no other own store is linked', () => {
     expect(youtube).toContain('- **Potassium Fiber Drink ownership:** only when the comment names the drink, a reply may discuss it, and then it must include this exact sentence: "I own the company that sells it and profit from its sale."');
     expect(youtube).toContain("Make no health claims about the drink: nutrient content only. The SURFACE CONTEXT's drink limits still apply: never beside a condition, never for anyone its warning covers, no price unless asked.");
-    expect(youtube).toContain('Your own stores are not third-party, but you link none of them except https://potassiumfiber.com under the drink rule.');
+    expect(youtube).toContain('Your own stores are not third-party; link drstanfield.com articles as usual, but no shop page except https://potassiumfiber.com under the drink rule. The omega-3 Amazon link above is the only third-party seller link a reply may share.');
     expect(youtube).not.toContain('Your own products and stores, wherever they are sold, are not third-party.');
   });
 
