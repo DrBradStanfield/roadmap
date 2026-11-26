@@ -21,7 +21,7 @@ an engine release, so it cannot land on CI alone.
 5. **R4** Each off-file leftover (matrix draft, stored original, Lp(a) answer) carries the erase it was written under; a clear removes only older ones; one report per failed clear. [record erase] `record-session.ts`, `record-session-erase.ts`, `cleared-erase.ts`, `roadmap-data.ts`, `roadmap-store.ts`
    - A23
    - Design: docs/drafts/r4-leftover-stamps-design.md
-   - Status: PR 1 done (US-11 AC12); PR 2, test-only pins of what each clear removes, in review; PRs 3 and 4 wait for R5.
+   - Status: PR 1 done (US-11 AC12); PR 2, test-only pins of what each clear removes, in review (PR 2182); PRs 3 and 4 wait for R5.
 6. **R6** Every storage failure carries a typed reason, set where it is raised (definite, may have landed, no answer); nothing reads words. Two halves. [record save/merge] health-core: `write-refusal.ts`, `save-state.ts`, `drive-rest-*.ts`, `sync-manager.ts`, `dropbox.ts`; phone: `ios/engine/cloud-adapters.ts`, `shim.ts`, `EngineNatives.swift`, `OAuthClient.swift`
    - health-core half: S62b S57c H127 M8 (web)
    - phone half: H134 M6 M8 (phone) S57d
