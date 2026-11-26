@@ -99,7 +99,7 @@ an engine release, so it cannot land on CI alone.
 Checked against `main` at `b2548fe3d` and each PR's state.
 
 - **R25** closed: PR 1846 removed the batch poll it named before the triage; lead C18 closed (PR 2121).
-- **R24** chat docs load as one state (PR 2124); lead T28 partial.
+- **R24** chat docs load as one state (PR 2124); the rest (every doc, read once at server start, `createChatDocs(root)`) in PR 2184 (draft, held); lead T28 done with it.
 - **R31** done (PR 2123). The erase test pins H107 and H109 are done (PR 2128).
 - **R26** merged (PR 2126).
 - **R20** web half merged (PR 2130); the phone half is left.
