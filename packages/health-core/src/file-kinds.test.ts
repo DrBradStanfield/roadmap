@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { originalPreview, VIEWABLE_KINDS } from './file-kinds';
 
-const open = (name: string, stored: string, served = '') => originalPreview(name, stored, served);
+const open = (name: string, stored: string | null, served = '') => originalPreview(name, stored, served);
 
 describe('US-14 AC14: originalPreview', () => {
   it('the table holds only the passive kinds, each type once', () => {
@@ -65,6 +65,18 @@ describe('US-14 AC14: originalPreview', () => {
     for (const name of ['Letter.constructor', 'Letter.__proto__', 'Letter.toString', 'Letter.hasOwnProperty']) {
       expect(open(name, 'application/pdf'), name).toBeNull();
     }
+  });
+});
+
+// The two iPhone edge cases US-14 AC14 names (PR 2204 Codex R2).
+describe('US-14 AC14: the edge cases the iPhone changed on', () => {
+  it('a ref ending in a slash after a passive name has no name of its own: only a passive stored type opens it, as "document.pdf"', () => {
+    expect(open('Other documents/Letter.pdf/', '')).toBeNull();
+    expect(open('Other documents/Letter.pdf/', 'application/pdf')).toEqual({ name: 'document.pdf', type: 'application/pdf' });
+  });
+  it('a stored type with a trailing newline matches its kind', () => {
+    expect(open('Letter.pdf', 'application/pdf\n')).toEqual({ name: 'Letter.pdf', type: 'application/pdf' });
+    expect(open('Letter', 'application/pdf\n')).toEqual({ name: 'Letter.pdf', type: 'application/pdf' });
   });
 });
 
