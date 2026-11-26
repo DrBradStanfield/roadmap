@@ -19,7 +19,7 @@ vi.mock('../lib/roadmap-data', () => ({
   loadAllHistorySync: () => [],
 }));
 vi.mock('../lib/storage', () => ({ healthWritesAllowed: () => true }));
-vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 
 import { addMeasurement } from '../lib/roadmap-data';
 import { useLongitudinalSave } from './useLongitudinalSave';
@@ -38,7 +38,7 @@ function setup(inputs: Record<string, number> = {}) {
   const hook = renderHook(() => useLongitudinalSave({
     inputs, setInputs: vi.fn(), history: [], unitOverrides: {}, unitSystem: 'si', reread: reloadValues,
     flushPendingProfileSave: async () => true,
-    typedIn: { current: {} }, firstSave: false,
+    typedIn: { current: {} },
   }));
   return { hook, reloads };
 }

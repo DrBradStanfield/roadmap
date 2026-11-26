@@ -16,7 +16,7 @@ import { MEDICATION_KEYS, METRIC_TYPES } from './validation';
 import { LPA_UNITS, UNIT_SYSTEMS } from './units';
 import { ALCOHOL_ANSWERS, isSex } from './types';
 import { isComparator } from './lab-limits';
-import type { RoadmapFile } from './roadmap-file';
+import { ROW_ARRAYS, type RoadmapFile, type RowArray } from './roadmap-file';
 
 type Row = Record<string, unknown>;
 
@@ -54,10 +54,9 @@ const ROWS = {
   // Every field a reader renders: a number or an object in any of them reached React as a child.
   documents: (r: Row) => strings(r, ['title', 'type', 'date', 'fileRef', 'contentHash', 'mimeType', 'extractedText', 'addedAt', 'sourceFileName'])
     && opt(isObject)(r.metadata) && opt((v) => typeof v === 'boolean')(r.deleted),
-} as const;
+} as const satisfies Record<RowArray, (r: Row) => boolean>;
 
-export type RowArray = keyof typeof ROWS;
-const ROW_ARRAYS = Object.keys(ROWS) as RowArray[];
+export type { RowArray } from './roadmap-file';
 
 /** The profile fields readers use, and each one's test. */
 const PROFILE: Record<string, (v: unknown) => boolean> = {

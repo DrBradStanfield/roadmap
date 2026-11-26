@@ -9,7 +9,7 @@ import { oneLine, printable, REPO_PUBLIC } from './plan';
 import { UNIT_DEFS } from './units';
 import { type McpRefusalReason } from './product-events';
 import { EXTRA_METRIC_NAMES } from './scrub-vocabulary';
-import { EMAIL_SOURCE } from './sentry-scrub';
+import { EMAIL_SOURCE, firstScrubbedValue } from './sentry-scrub';
 import * as z from './zod';
 import {
   FEEDBACK_REPO,
@@ -158,14 +158,15 @@ function phoneShaped(text: string): boolean {
  * The mechanical backstop on a report that becomes a PUBLIC issue nobody
  * reviews first. The tool's description is the control — it tells the model
  * what not to write — and this is what stands when the model writes it anyway:
- * a value (wearing a unit, or bare beside a name this record knows) and the
+ * a value (wearing a unit, or bare beside a name this record knows, or
+ * anything the error-report scrub would redact as one: US-32 AC9b) and the
  * three ways a person is identified in a sentence about a bug (an email
  * address, a phone number, a link carrying a token). It is deliberately not a
  * diagnosis word list: that cannot be mechanical and pretending otherwise
  * would sell a promise this cannot keep.
  */
 function unsafeFeedback(text: string): { reason: McpRefusalReason; text: string } | null {
-  const value = VALUE_WITH_UNIT.exec(text)?.[0] ?? valueNearMetric(text);
+  const value = VALUE_WITH_UNIT.exec(text)?.[0] ?? valueNearMetric(text) ?? firstScrubbedValue(text);
   if (value) {
     return {
       reason: 'health-value',
@@ -266,7 +267,10 @@ function prepareFeedback(
 ): { ok: false; reason: McpRefusalReason; text: string } | { ok: true; title: string; detail: string; issue: FeedbackIssue } {
   const title = oneLine(request.title).trim();
   const detail = printable(request.detail).trim();
-  const unsafe = unsafeFeedback(`${title}\n${detail}`);
+  // The title as filed: the cap can cut a harmless title into a value ("140 mgx" into "140 mg"), so the guard
+  // reads this too (US-32 AC9b). The detail and the URL's title are the full text read above.
+  const filedTitle = title.slice(0, MAX_NAME_LENGTH - FEEDBACK_TITLE_PREFIX.length);
+  const unsafe = unsafeFeedback(`${title}\n${detail}`) ?? unsafeFeedback(filedTitle);
   if (unsafe) return { ok: false, ...unsafe };
   const stamp = `Health by Dr Brad connector, server ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
   return {
@@ -274,7 +278,7 @@ function prepareFeedback(
     title,
     detail,
     issue: {
-      title: FEEDBACK_TITLE_PREFIX + titleSafe(title.slice(0, MAX_NAME_LENGTH - FEEDBACK_TITLE_PREFIX.length)),
+      title: FEEDBACK_TITLE_PREFIX + titleSafe(filedTitle),
       body: `${fenced(detail)}\n\n---\nkind: ${request.kind}\n${stamp}\n` +
         'Filed by the user’s AI assistant through the Health by Dr Brad connector; no health values are included by policy.',
       labels: ['from-connector', request.kind === 'bug' ? 'bug' : 'enhancement'],

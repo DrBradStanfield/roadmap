@@ -9,13 +9,13 @@ import { describe, expect, it, vi } from 'vitest';
 import type { RefusedCode, UploadState } from '@roadmap/health-core/upload-flow';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import type { UploadEngine } from '../storage/upload-save-store';
-import { initRoadmapStore, saveUpload } from './roadmap-data';
+import { getShownErase, initRoadmapStore, saveUpload } from './roadmap-data';
 import { trackProductEvent } from './server-api';
 
 vi.mock('./server-api', () => ({ trackProductEvent: vi.fn(), PROXY_PATH: '', parseJsonResponse: vi.fn() }));
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
-const s: UploadState = { phase: 'saving', platform: 'web', run: 1, files: [], started: '', firstRead: null, attempt: 1 };
+const s: Extract<UploadState, { phase: 'saving' }> = { phase: 'saving', platform: 'web', run: 1, files: [], started: '', firstRead: null, attempt: 1 };
 const io = { holds: () => false, original: () => null, mimeType: () => '' };
 /** An engine whose commit refused `codes`, writing nothing else. */
 const refusing = (codes: RefusedCode[]): UploadEngine => ({
@@ -25,7 +25,7 @@ const refusing = (codes: RefusedCode[]): UploadEngine => ({
 
 describe('mount 3a: saveUpload\'s counts', () => {
   it('with no record open: no-record, in the page\'s failed-save words, and nothing counted', async () => {
-    expect(await saveUpload(refusing([]), s, '2026-11-22T00:00:00.000Z', io)).toEqual({ ok: false, reason: 'no-record', message: 'Failed to save. Please try again.' });
+    expect(await saveUpload(refusing([]), { ...s, erase: getShownErase() }, '2026-11-22T00:00:00.000Z', io)).toEqual({ ok: false, reason: 'no-record', message: 'Failed to save. Please try again.' });
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
 
@@ -38,7 +38,7 @@ describe('mount 3a: saveUpload\'s counts', () => {
       { kind: 'lab', key: 'ferritin', reason: 'unit', unit: 'mmol/L' },
       { kind: 'lab', key: 'ferritin', reason: 'unit' },
       { kind: 'lab', key: 'ferritin', reason: 'value' },
-    ]), s, '2026-11-22T00:00:00.000Z', io);
+    ]), { ...s, erase: getShownErase() }, '2026-11-22T00:00:00.000Z', io);
     expect(vi.mocked(trackProductEvent).mock.calls).toEqual([
       ['measurement_refused', { refusal: 'out-of-range' }, 'systolic_bp'],
       ['measurement_refused', { refusal: 'unknown-metric' }],

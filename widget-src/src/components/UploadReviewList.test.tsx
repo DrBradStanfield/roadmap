@@ -15,7 +15,7 @@ import { recordFileSync, saveUpload, setLpaUnit } from '../lib/roadmap-data';
 import { showAllValues } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ recordFileSync: vi.fn(() => null), saveUpload: vi.fn(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(() => null), setLpaUnit: vi.fn(() => true), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', () => ({ recordFileSync: vi.fn(() => null), saveUpload: vi.fn(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(() => null), setLpaUnit: vi.fn(() => true), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => 'erase-shown') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/archive-payloads', async (original) => ({ ...await original<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => 'sha256-synthetic') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
@@ -65,7 +65,7 @@ describe('mount 3b: a unit press sets the unit its chip names (owner ruling 2)',
     await waitFor(() => expect(row('f0:v0')).not.toBeNull());
     showAllValues();
     fireEvent.click(screen.getByRole('radio', { name: 'mg/dL' }));
-    expect(setLpaUnit).toHaveBeenCalledWith('mg/dL');
+    expect(setLpaUnit).toHaveBeenCalledWith('mg/dL', 'erase-shown'); // the erase shown at the press (H21)
   });
 });
 

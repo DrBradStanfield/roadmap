@@ -20,6 +20,7 @@ import crypto from 'node:crypto';
 import { KNOWN_CLIENTS } from './mcp-clients.server';
 import type { McpProvider } from './mcp-providers.server';
 import { createQuotaCounter } from './rate-limiter';
+import type { IpKey } from './ip-key.server';
 
 /**
  * The only clients that see the form: the pinned Claude and Claude Code
@@ -46,7 +47,7 @@ export function reviewerClient(clientId: string) {
 }
 
 /** A noise brake, not a defence: the password is a ~130-bit random secret. Failures only, 20 per IP per 15 minutes, per machine. */
-export const reviewerFailures = createQuotaCounter(20, 15 * 60_000, 10 * 60_000, { name: 'mcp reviewer failures' });
+export const reviewerFailures = createQuotaCounter<IpKey>(20, 15 * 60_000, 10 * 60_000, { name: 'mcp reviewer failures' });
 
 const sha256 = (text: string) => crypto.createHash('sha256').update(text, 'utf8').digest();
 

@@ -15,7 +15,7 @@ describe('RoadmapStore — profile.lpaUnit (US-05 AC2)', () => {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     expect(store.getLpaUnit()).toBeUndefined();
 
-    store.setLpaUnit('mg/L');
+    store.setLpaUnit('mg/L', store.shownErase);
     await store.flush();
     const file = readCloudFile(cloud);
     expect(file.profile.lpaUnit).toBe('mg/L');
@@ -29,11 +29,11 @@ describe('RoadmapStore — profile.lpaUnit (US-05 AC2)', () => {
   it('choosing the unit already held writes nothing', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.setLpaUnit('mg/dL');
+    store.setLpaUnit('mg/dL', store.shownErase);
     await store.flush();
     const stamp = readCloudFile(cloud).profile.fieldStamps?.lpaUnit;
 
-    store.setLpaUnit('mg/dL');
+    store.setLpaUnit('mg/dL', store.shownErase);
     await store.flush();
     expect(readCloudFile(cloud).profile.fieldStamps?.lpaUnit).toEqual(stamp);
   });

@@ -207,7 +207,8 @@ records, extract-only, never write test data, never commit their contents.
 (`brad@microvitamin.com`), plus replay, `held_different` replace, the 90-day guard and the
 Drive refusal; the full log is in `docs/user-stories.md` US-35. `tools/list` shows `import_documents` with
 `_meta["openai/fileParams"]`. With a test PDF sitting in a connected Dropbox account's
-folder root, `import_documents {}` returns candidates plus a receipt. Then
+folder root, `import_documents {}` returns candidates plus a receipt. A commit inside 10 s of the
+receipt coming back is refused, nothing written (US-35 AC19); after 10 s
 `{commit:{receipt, accept:[], replace:[], approval:"Yes, file it"}}` (since 2026-10-07 a
 commit without `approval`, the user's quoted words, is refused) writes no values but files the PDF itself as
 one metadata-only `documents[]` row (so the rev moves once); extracting the same file
@@ -218,8 +219,8 @@ upload or a ChatGPT drag as the way in.
 **8b. `file_results` (US-36) and the nudge (US-37). NOT YET VERIFIED LIVE (built
 2026-09-07).** On the scratch Dropbox: `tools/list` shows nine tools and no
 `openai/fileParams`; `file_results` with two rows answers candidates plus a receipt and
-writes nothing; `{commit:{receipt, accept:[...], replace:[], approval:"Yes, file them"}}`
-writes them (without `approval` it is refused, nothing written) and the document row carries
+writes nothing; a commit inside 10 s of the receipt coming back is refused, and after
+10 s `{commit:{receipt, accept:[...], replace:[], approval:"Yes, file them"}}` writes them (without `approval` it is refused, nothing written) and the document row carries
 `metadata.importedVia: assistant`; the same file re-sent is `already_imported`; a
 `replace` on a held value passes the 90-day guard; a row named "Lipoprotein(a)" under
 `apob` is refused; `correct_value` without `confirm` answers a proposal and writes

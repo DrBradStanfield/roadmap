@@ -158,14 +158,14 @@ final class AppleHealthOwedTests: XCTestCase {
     /// Brad's text (2026-11-12): the footer and the erase's words name the same Settings path,
     /// built in one place (`LiveFooter.healthPath`), and the system's button label, curly quotes and all.
     func testTheFooterAndTheEraseWordsNameOneSettingsPathAndTheButton_US72_AC16() {
-        let steps = "open \(LiveFooter.healthPath), tap Data from “Health Roadmap”, then Delete All Data from “Health Roadmap”"
+        let steps = "open \(LiveFooter.healthPath), tap Data from “Dr Brad”, then Delete All Data from “Dr Brad”"
         XCTAssertEqual(EraseText.healthOwed, "Some readings this app wrote to Apple Health could not be deleted. The app tries again each time you open it. To delete them yourself, \(steps). This removes everything this app wrote to Apple Health.")
         XCTAssertEqual(EraseText.healthNotErased, " The readings this app wrote to Apple Health could not be deleted. To delete them yourself, \(steps).")
         if #available(iOS 18, *) {
-            XCTAssertTrue(EraseText.healthOwed.contains("open Settings › Apps › Health › Data Access & Devices › Health Roadmap, tap"))
+            XCTAssertTrue(EraseText.healthOwed.contains("open Settings › Apps › Health › Data Access & Devices › Dr Brad, tap"))
         }
         // LiveCards' own words are unchanged.
-        XCTAssertEqual(LiveFooter.access, "To change what Health Roadmap can read: \(LiveFooter.healthPath).")
+        XCTAssertEqual(LiveFooter.access, "To change what Dr Brad can read: \(LiveFooter.healthPath).")
         XCTAssertEqual(LiveFooter.healthSettings, "The Apple Health settings for this app are in \(LiveFooter.healthPath).")
     }
 

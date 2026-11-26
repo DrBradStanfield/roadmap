@@ -41,6 +41,7 @@ vi.mock('../lib/product-events.server', async (importOriginal) => ({
 import { action } from './api.measurements';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { streamingPost } from '../lib/capped-body.test-helpers';
+import { ipKeyedLimitCases } from '../lib/ip-key.test-helpers';
 
 const SCHEDULE = [{ category: 'blood_test_lipids', label: 'Lipid panel blood test', dueAt: '2027-05-12' }];
 let emailCounter = 0;
@@ -154,5 +155,19 @@ describe('api.measurements body cap (US-09 AC25)', () => {
     expect(res.status).toBe(413);
     expect(pulled.bytes).toBeLessThanOrEqual(SMALL_BODY_CAP + 2 * 16 * 1024);
     expect(subscribeToKlaviyo).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-52 AC4k: the email capture limit per IP keys on the one per-IP bucket', () => {
+  const SHOPIFY_EGRESS = '35.1.2.3';
+  ipKeyedLimitCases({
+    limit: 20, windowMs: 60 * 60_000, v6: '2001:db8:c1', v4: '100.74',
+    allowed: async (ip) => (await action({
+      request: new Request('https://health-tool-app.fly.dev/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'fly-client-ip': SHOPIFY_EGRESS, 'X-Forwarded-For': `${ip}, ${SHOPIFY_EGRESS}` },
+        body: JSON.stringify({ klaviyoCapture: { email: freshEmail() } }),
+      }),
+    } as never)).status !== 429,
   });
 });

@@ -15,7 +15,7 @@ I was going through the nitric oxide supplement literature, and it’s a lot mor
 
 Then I started looking for a good brand, and I came across Nitralis from a company called DoNotAge. The more I looked, the worse it got.
 
-In this article, I’ll break down the research so that if you decide to start taking nitric oxide supplements, you don’t get duped by marketing hype—and you can select a good brand. I’m not affiliated with any nitric oxide supplement brand.
+In this article, I’ll break down the research so that if you decide to start taking [nitric oxide supplements](/blogs/articles/nitric-oxide-supplements-benefits-forms-dosing-and-side-effects), you don’t get duped by marketing hype—and you can select a good brand. I’m not affiliated with any nitric oxide supplement brand.
 
 ## **Table of Contents**
 
@@ -69,7 +69,7 @@ Many human studies have looked at L-arginine supplements:
 
 And while L-arginine levels in the blood go up, that hasn’t reliably translated to athletic performance improvements or raised nitric oxide levels.
 
-But that’s where L-citrulline comes in. It gets converted to L-arginine after ingestion. Research has shown it’s actually more effective than L-arginine itself in raising blood levels of L-arginine \[11\]. So maybe L-citrulline would be able to raise nitric oxide levels, where L-arginine failed?
+But that’s where [L-citrulline](/blogs/articles/l-citrulline-benefits-forms-dosing-and-side-effects) comes in. It gets converted to L-arginine after ingestion. Research has shown it’s actually more effective than L-arginine itself in raising blood levels of L-arginine \[11\]. So maybe L-citrulline would be able to raise nitric oxide levels, where L-arginine failed?
 
 Unfortunately, the research has been underwhelming here, too, when it comes to performance. For example, a study last year tested L-citrulline in healthy young adults to see if it would increase time to exhaustion during exercise. It didn’t \[12\].
 

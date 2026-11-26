@@ -6,7 +6,7 @@ import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { isLpaUnit, recordLpaUnit } from '@roadmap/health-core/cell-unit';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
-import { getLpaUnit, setLpaUnit } from './roadmap-data';
+import { getLpaUnit, getShownErase, setLpaUnit } from './roadmap-data';
 import { trackProductEvent } from './server-api';
 import { getJson, LPA_CHECK_KEPT_KEY, pageOnChosenRecord, safeGetItem, setJson } from './storage';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
@@ -45,7 +45,7 @@ function subscribe(onChange: () => void): () => void {
 /** Write a choice to the record and show it in every Lp(a) field on the page. */
 function chooseLpaUnit(unit: LpaUnit, from: LpaUnit): void {
   if (unit !== from) trackProductEvent('lpa_unit_selected', { unit, from }); // the labels, never a value
-  setLpaUnit(unit);
+  setLpaUnit(unit, getShownErase()); // the erase shown at the choice (US-16 AC2a)
   for (const onChange of listeners) onChange();
 }
 

@@ -4,9 +4,11 @@
 // value's page (ValuePage). Phone and desktop alike.
 
 import { memo, useId, useLayoutEffect, useRef, useState } from 'react';
-import { type ApiMeasurement, BLOOD_TEST_METRICS, METRIC_LABELS, METRIC_TO_FIELD } from '@roadmap/health-core/mappings';
+import { type ApiMeasurement, METRIC_LABELS } from '@roadmap/health-core/mappings';
 import { type CellUnit, cellLabel } from '@roadmap/health-core/cell-unit';
 import type { EgfrPoint, WhtrPoint } from '@roadmap/health-core/plan';
+import type { TopicRow } from '@roadmap/health-core/plan-topics';
+import type { FormSlots, MyHealthProps } from './MyHealth';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
 import { type Comparator, limitText, LIMIT_NOT_GRADED } from '@roadmap/health-core/lab-limits';
 import { type GradeStatus, gradeWords, limitUngraded, pressureStatus, valueStatus } from '@roadmap/health-core/row-grade';
@@ -21,9 +23,6 @@ import type { ApiLabValue } from '../lib/api-types';
 
 /** What a row opens: a core metric, the blood pressure, or a lab test's series (`labSlotKey`). */
 export type ValueSubject = { kind: 'core'; metric: MetricType } | { kind: 'bp' } | { kind: 'lab'; seriesKey: string };
-
-/** The core blood tests, in the grid's order (PSA is asked under prostate screening). */
-export const BLOOD_ROWS = BLOOD_TEST_METRICS.filter(m => m !== 'psa' && METRIC_TO_FIELD[m]) as MetricType[];
 
 /** The iPhone's line colours (MetricChart.swift palette, light), so a trend reads the same on both. */
 const TINT: Record<string, string> = {
@@ -125,7 +124,7 @@ export const LAB_EGFR = 'egfr';
 /** A row or page subject that is the lab's eGFR series. */
 export const isLabEgfr = (s: ValueSubject) => s.kind === 'lab' && s.seriesKey === LAB_EGFR;
 
-export function labRows(labValues: ApiLabValue[]): RowModel[] {
+function labRows(labValues: ApiLabValue[]): RowModel[] {
   return labSeriesRows(labValues).map(({ seriesKey, label, target, latest, previous, unit, trend, trendLimits }): RowModel => ({
     subject: { kind: 'lab', seriesKey }, label, target, day: latest.day, latest: latest.value, previous, unit,
     trend, ...(trendLimits && { trendLimits }), tint: LAB_TINT, status: null, graded: '',
@@ -229,7 +228,7 @@ const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOp
   }, []);
   return (
     <li>
-      <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)} data-row={row.key ?? subjectKey(row.subject)}>
+      <button type="button" className="md-row" onClick={e => onOpen(row.subject, e.currentTarget)}>
         <span className="md-row-name" ref={name}>
           <span className="md-row-label">{row.label}</span>
           {(row.target || date) && (
@@ -243,7 +242,8 @@ const MetricRow = memo(function MetricRow({ row, onOpen }: { row: RowModel; onOp
             <>
               <span className="md-row-value" aria-hidden="true">
                 <span className={`md-row-latest md-status-${row.status ?? 'none'}`} title={row.note}>{row.latest}</span>
-                {row.previous && <span className="md-row-prev"> ({row.previous})</span>}
+                {/* The value breaks only at this space, so it stays in its 104px track (H108, US-62 AC28). */}
+                {row.previous && <>{' '}<span className="md-row-prev">({row.previous})</span></>}
               </span>
               <span className="hr-sr-only">{[row.latest, gradeWords(row.status, row.graded) ?? row.note, row.previous && `previous ${row.previous}`].filter(Boolean).join(', ')}</span>
               <span className="md-row-unit">{row.unit}</span>
@@ -285,7 +285,7 @@ const tileGrade = (tile: StatTile | undefined): GradeStatus =>
 
 /** Waist-to-height (US-62 AC21): health-core's series (waist over the current height), its
  *  target "Normal <0.5", graded by the plan's tile; it opens the waist page. None without a ratio. */
-export function whtrRow(series: WhtrPoint[], tile: StatTile | undefined): RowModel | null {
+function whtrRow(series: WhtrPoint[], tile: StatTile | undefined): RowModel | null {
   const [latest, previous] = series;
   if (!latest) return null;
   return {
@@ -296,13 +296,13 @@ export function whtrRow(series: WhtrPoint[], tile: StatTile | undefined): RowMod
 }
 
 /** Weight, its target line the plan's BMI ("BMI 27.4"), else its own (US-62 AC21). */
-export function weightRow(history: ApiMeasurement[], ctx: RowContext, bmi: StatTile | undefined): RowModel {
+function weightRow(history: ApiMeasurement[], ctx: RowContext, bmi: StatTile | undefined): RowModel {
   const row = coreRow('weight', history, ctx);
   return bmi ? { ...row, target: `${bmi.label} ${bmi.value}` } : row;
 }
 
 /** Non-HDL when the plan works it out (its lipid marker's tile): it opens total cholesterol's page. */
-export function nonHdlRow(tile: StatTile | undefined, total: RowModel): RowModel | null {
+function nonHdlRow(tile: StatTile | undefined, total: RowModel): RowModel | null {
   if (!tile) return null;
   return {
     key: 'nonHdl', subject: total.subject, label: tile.label, target: tile.status?.label ?? null, day: total.day,
@@ -316,7 +316,7 @@ export function nonHdlRow(tile: StatTile | undefined, total: RowModel): RowModel
  * previous value and the trend. It opens the page of its source: the lab eGFR's, or
  * creatinine's. None without the plan's eGFR.
  */
-export function egfrRow(series: EgfrPoint[], tile: StatTile | undefined, current: { day: string; source: 'lab' | 'calculated' } | null, labEgfrHeld: boolean): RowModel | null {
+function egfrRow(series: EgfrPoint[], tile: StatTile | undefined, current: { day: string; source: 'lab' | 'calculated' } | null, labEgfrHeld: boolean): RowModel | null {
   if (!tile || !current) return null;
   const at = series.find(p => p.day === current.day && p.source === current.source);
   const older = series.filter(p => p.day < current.day);
@@ -329,5 +329,23 @@ export function egfrRow(series: EgfrPoint[], tile: StatTile | undefined, current
     // The plan's point and up to six before it, as the iPhone draws it (TopicPlan.swift HealthPage.egfr: prefix(7)).
     trend: [...(at ? [at] : []), ...older].slice(0, 7).map(p => p.value).reverse(),
     tint: TINT.creatinine, status: tileGrade(tile), graded: '',
+  };
+}
+
+/** A row `planTopics` names, as the web draws it (US-62 AC21, AC40); a lab row's limits stay hollow on its trend (US-12 AC20). */
+export function rowModels(src: Omit<FormSlots['rows'], 'open' | 'withoutWeight'> & Pick<MyHealthProps, 'tiles' | 'series' | 'egfrCurrent'>): (row: TopicRow) => RowModel | null {
+  const tileOf = (key: string) => src.tiles.find(t => t.key === key);
+  const labs = new Map(labRows(src.labs).map(r => [subjectKey(r.subject), r]));
+  const egfr = egfrRow(src.series.egfr, tileOf('egfr'), src.egfrCurrent, labs.has(`lab:${LAB_EGFR}`));
+  return row => {
+    switch (row.kind) {
+      case 'core': return row.metric === 'weight' ? weightRow(src.vitals, src.ctx, tileOf('bmi')) : coreRow(row.metric as MetricType, row.metric === 'waist' ? src.vitals : src.blood, src.ctx);
+      case 'bp': return pressureRow(src.vitals, src.ctx);
+      case 'whtr': return whtrRow(src.series.whtr, tileOf('whtr'));
+      case 'nonHdl': return nonHdlRow(tileOf('nonHdl'), coreRow('total_cholesterol', src.blood, src.ctx));
+      case 'egfr': return egfr;
+      case 'lab': return labs.get(`lab:${row.seriesKey}`) ?? null;
+      case 'deviceHealth': return null;
+    }
   };
 }

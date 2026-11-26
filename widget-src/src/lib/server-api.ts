@@ -69,7 +69,7 @@ export async function sendFeedback(
 }
 
 // ---------------------------------------------------------------------------
-// A/B Testing
+// Visitor id (anonymous, for product events)
 // ---------------------------------------------------------------------------
 
 let cachedVisitorId: string | null = null;
@@ -87,43 +87,6 @@ export function getVisitorId(): string {
   cachedVisitorId = id;
   return id;
 }
-
-// Key format shared with inline script in app-block.liquid: { tests: { testId: variantId, ... } }
-// Backwards compat: also reads old single-test format { t: testId, v: variantId }
-export function getABAssignments(): Record<string, string> {
-  try {
-    const raw = JSON.parse(localStorage.getItem('hr_ab') || '{}');
-    if (raw.tests) return raw.tests;
-    if (raw.t && raw.v) return { [raw.t]: raw.v };
-  } catch { /* no assignment */ }
-  return {};
-}
-
-function trackABEvent(eventType: 'impression' | 'conversion'): void {
-  if (!SHOPIFY_SURFACE) return;
-  const assignments = getABAssignments();
-  const visitorId = getVisitorId();
-  for (const [testId, variantId] of Object.entries(assignments)) {
-    // Skip redundant impression calls — server deduplicates, but this avoids the network roundtrip
-    if (eventType === 'impression') {
-      const sentKey = `hr_ab_imp_${testId}`;
-      if (safeGetItem(sentKey)) continue;
-      safeSetItem(sentKey, '1');
-    }
-    apiCall(
-      () => fetch(`${PROXY_PATH}/api/ab`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [eventType]: { testId, variantId, visitorId } }),
-      }),
-      `AB ${eventType} tracking failed`,
-      null,
-    );
-  }
-}
-
-export function trackABImpression(): void { trackABEvent('impression'); }
-export function trackABConversion(): void { trackABEvent('conversion'); }
 
 // ---------------------------------------------------------------------------
 // Product funnel events (anonymous behavioral counters — usage-audit 2026-08)

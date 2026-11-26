@@ -11,6 +11,7 @@ import { stopRoadmapLocalWrites } from '../storage/local-storage-adapter';
 import { Sentry, scrubEvent } from './sentry';
 import { EXPECTED_NETWORK_ERRORS, recordFailure, storageCauseClass, storageFailureClass } from './error-diagnostics';
 import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
+import { uploadThrough } from '../testing/upload-save-kit';
 
 // US-09 AC6: provider errors and request breadcrumbs may contain document
 // titles or results. Inspect complete outgoing SDK envelopes, not just extras.
@@ -45,13 +46,13 @@ describe('cloud-storage telemetry boundary', () => {
   it('does not expose a rejected archive reference in console or Sentry', async () => {
     class FailingArchive extends MemoryAdapter {
       async writeDocument(): Promise<void> {
-        throw new StorageError(`Clinic letters/${marker} synthetic result.pdf`, undefined, new Error(marker), 503);
+        throw new StorageError(`Clinic letters/${marker} synthetic result.pdf`, undefined, new Error(marker), 503, undefined, 'may-have-landed');
       }
     }
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = await RoadmapStore.create(new FailingArchive());
     Sentry.addBreadcrumb({ category: 'fetch', data: { url: `https://storage.example/${marker}.pdf` } });
-    await store.bulkSaveDocuments([{
+    await uploadThrough(store, [{
       documentType: 'clinic_letter', title: marker, documentDate: '2026-01-01',
       contentMd: marker, metadata: {}, sourceFileName: `${marker}.pdf`,
       file: new NodeBlob(['synthetic pdf'], { type: 'application/pdf' }) as unknown as Blob,
@@ -87,7 +88,7 @@ describe('cloud-storage telemetry boundary', () => {
     });
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = await RoadmapStore.create(new LocalStorageAdapter());
-    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z', store.shownErase);
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
@@ -103,7 +104,7 @@ describe('cloud-storage telemetry boundary', () => {
     }
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = await RoadmapStore.create(new DeadCloud());
-    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z', store.shownErase);
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
@@ -111,10 +112,10 @@ describe('cloud-storage telemetry boundary', () => {
   });
 
   it.each([
-    [new StorageError(marker, undefined, new DOMException(marker, 'SecurityError')), 'SecurityError'],
-    [new StorageError(marker, undefined, new TypeError(marker)), 'TypeError'],
-    [new StorageError(marker, undefined, new ReferenceError(marker)), 'ReferenceError'],
-    [new StorageError(marker, undefined, new Error(marker)), 'other'],
+    [new StorageError(marker, undefined, new DOMException(marker, 'SecurityError'), undefined, undefined, 'no-answer'), 'SecurityError'],
+    [new StorageError(marker, undefined, new TypeError(marker), undefined, undefined, 'no-answer'), 'TypeError'],
+    [new StorageError(marker, undefined, new ReferenceError(marker), undefined, undefined, 'no-answer'), 'ReferenceError'],
+    [new StorageError(marker, undefined, new Error(marker), undefined, undefined, 'no-answer'), 'other'],
     [new TypeError('Failed to fetch'), 'other'], // a bare transport error is not a storage class
     [marker, 'other'],
   ])('names the failure class from a closed list: %s → %s', (error, expected) => {
@@ -126,33 +127,33 @@ describe('cloud-storage telemetry boundary', () => {
   // class of error it was and what a StorageError wrapped, each from a
   // closed list, so a corrupt read, a conflict and an odd refusal read apart.
   it.each([
-    [new StorageError(marker, undefined, new SyntaxError(marker)), 'SyntaxError'],
-    [new StorageError(marker, undefined, new ConflictError(marker)), 'ConflictError'],
-    [new StorageError(marker), 'none'],
-    [new StorageError(marker, undefined, new DOMException(marker, 'NS_ERROR_FILE_CORRUPTED')), 'DOMException'],
-    [new StorageError(marker, undefined, new DOMException(marker, 'QuotaExceededError')), 'DOMException'],
-    [new StorageError(marker, undefined, new DOMException(marker, 'SyntaxError')), 'DOMException'], // not instanceof SyntaxError
-    [new StorageError(marker, undefined, new StorageError(marker)), 'StorageError'], // AC29: a failure after the write landed
-    [new StorageError(marker, undefined, new Error(marker)), 'Error'],
-    [new StorageError(marker, undefined, marker), 'other'],
-    [new StorageError(marker, undefined, { name: 'NS_ERROR_FILE_CORRUPTED', result: 0x8052000b }), 'other'], // Gecko's XPCOM Exception is not an Error
+    [new StorageError(marker, undefined, new SyntaxError(marker), undefined, undefined, 'no-answer'), 'SyntaxError'],
+    [new StorageError(marker, undefined, new ConflictError(marker), undefined, undefined, 'no-answer'), 'ConflictError'],
+    [new StorageError(marker, undefined, undefined, undefined, undefined, 'no-answer'), 'none'],
+    [new StorageError(marker, undefined, new DOMException(marker, 'NS_ERROR_FILE_CORRUPTED'), undefined, undefined, 'no-answer'), 'DOMException'],
+    [new StorageError(marker, undefined, new DOMException(marker, 'QuotaExceededError'), undefined, undefined, 'no-answer'), 'DOMException'],
+    [new StorageError(marker, undefined, new DOMException(marker, 'SyntaxError'), undefined, undefined, 'no-answer'), 'DOMException'], // not instanceof SyntaxError
+    [new StorageError(marker, undefined, new StorageError(marker, undefined, undefined, undefined, undefined, 'no-answer'), undefined, undefined, 'no-answer'), 'StorageError'], // AC29: a failure after the write landed
+    [new StorageError(marker, undefined, new Error(marker), undefined, undefined, 'no-answer'), 'Error'],
+    [new StorageError(marker, undefined, marker, undefined, undefined, 'no-answer'), 'other'],
+    [new StorageError(marker, undefined, { name: 'NS_ERROR_FILE_CORRUPTED', result: 0x8052000b }, undefined, undefined, 'no-answer'), 'other'], // Gecko's XPCOM Exception is not an Error
     [new SyntaxError(marker), 'none'], // only a StorageError's own cause is read
   ])('names the cause class from a closed list (US-09 AC28): %s → %s', (error, expected) => {
     expect(storageCauseClass(error)).toBe(expected);
   });
 
   it.each([
-    [new StorageError(marker, undefined, new SyntaxError(marker)), 'SyntaxError'],
-    [new StorageError(marker, undefined, new ConflictError(marker)), 'ConflictError'],
-    [new StorageError(marker), 'none'],
-    [new StorageError(marker, undefined, new RangeError(marker)), 'Error'],
+    [new StorageError(marker, undefined, new SyntaxError(marker), undefined, undefined, 'no-answer'), 'SyntaxError'],
+    [new StorageError(marker, undefined, new ConflictError(marker), undefined, undefined, 'no-answer'), 'ConflictError'],
+    [new StorageError(marker, undefined, undefined, undefined, undefined, 'no-answer'), 'none'],
+    [new StorageError(marker, undefined, new RangeError(marker), undefined, undefined, 'no-answer'), 'Error'],
   ])('tags a persist failure with its error and cause class, never its text (US-09 AC28): %s → %s', async (error, causeClass) => {
     class RefusingCloud extends MemoryAdapter {
       async write(): Promise<never> { throw error; }
     }
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const store = await RoadmapStore.create(new RefusingCloud());
-    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z');
+    store.addMeasurement('ldl', 4.5, '2024-06-01T09:00:00.000Z', store.shownErase);
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
@@ -173,10 +174,10 @@ describe('cloud-storage telemetry boundary', () => {
       localStorage.clear();
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       const store = await RoadmapStore.create(new LocalStorageAdapter());
-      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z');
+      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z', store.shownErase);
       await store.flush();
       await arrange(store);
-      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z');
+      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z', store.shownErase);
       await expect(store.flush()).rejects.toThrow();
       await Sentry.flush();
       expect(envelopes).toHaveLength(1);
@@ -224,7 +225,7 @@ describe('cloud-storage telemetry boundary', () => {
       let armed = false;
       const writeSync = LocalStorageAdapter.prototype.writeSync;
       vi.spyOn(LocalStorageAdapter.prototype, 'writeSync').mockImplementation(function (this: LocalStorageAdapter, ...args) {
-        if (armed) throw new StorageError('Synthetic storage full');
+        if (armed) throw new StorageError('Synthetic storage full', undefined, undefined, undefined, undefined, 'refused');
         return writeSync.apply(this, args);
       });
       expect(await persistTags(() => { armed = true; })).toEqual({ ...local, causeClass: 'none' });
@@ -236,11 +237,11 @@ describe('cloud-storage telemetry boundary', () => {
       localStorage.clear();
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       const store = await RoadmapStore.create(new LocalStorageAdapter());
-      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z');
+      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z', store.shownErase);
       await store.flush();
       stopRoadmapLocalWrites();
       const writeSync = vi.spyOn(LocalStorageAdapter.prototype, 'writeSync');
-      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z');
+      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z', store.shownErase);
       await expect(store.flush()).rejects.toThrow();
       expect(writeSync).not.toHaveBeenCalled(); // the page is closed: the save stops before the write (US-09 AC2c)
       await Sentry.flush();

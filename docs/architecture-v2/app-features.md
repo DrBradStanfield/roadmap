@@ -59,7 +59,7 @@ The "Get Your Personalized Plan" button does **exactly two things**: (1) the ema
 
 #### A/B testing
 
-[app.ab-testing.tsx](../../app/routes/app.ab-testing.tsx) dashboard, [api.ab.ts](../../app/routes/api.ab.ts) events and `ab-stats.ts` remain. Admin permits one active test per target and writes a shop metafield, but the current `app-block.liquid` renders fixed copy without reading it. [Current wiring and historical rationale](../reference.md#ab-testing).
+[app.ab-testing.tsx](../../app/routes/app.ab-testing.tsx) dashboard and `ab-stats.ts` remain; the event calls and `/api/ab` were retired on 2026-11-26 (US-09 AC62). Admin permits one active test per target and writes a shop metafield, but the current `app-block.liquid` renders fixed copy without reading it. [Current wiring and historical rationale](../reference.md#ab-testing).
 
 #### Blog / trending
 
