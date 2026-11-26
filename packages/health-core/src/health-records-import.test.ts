@@ -225,7 +225,8 @@ describe('US-72 AC3: the day', () => {
       rec(obs(R4_LDL, { effectiveDateTime: '2026-02-30' })),
       rec(obs(R4_LDL, { effectiveDateTime: '2026-10-21T08:30:00' })), // a time with no offset
     ]);
-    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 5 });
+    // AC18: each is counted as undated too.
+    expect(counts).toEqual({ added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 5, undated: 5 });
     expect(file.labValues).toEqual([]);
   });
 
@@ -1371,15 +1372,16 @@ describe('US-72 AC15: report-level dates, report statuses and withdrawals (PR 12
 
   it('a malformed report-level period or meta is one not-read, never a result on the report\'s release', () => {
     const { effectiveDateTime: _d, ...undated } = ldl();
-    for (const fields of [
-      { effectivePeriod: { start: 20261021 } },
-      { effectivePeriod: { start: `2026-10-21T08:00:00Z${'0'.repeat(60)}` } },
-      { meta: { lastUpdated: `2026-10-22T10:00:00Z${'0'.repeat(60)}` } },
-    ]) {
+    // AC18: a malformed period is a bad date, so undated too; a malformed meta is not.
+    for (const [fields, bad] of [
+      [{ effectivePeriod: { start: 20261021 } }, { undated: 1 }],
+      [{ effectivePeriod: { start: `2026-10-21T08:00:00Z${'0'.repeat(60)}` } }, { undated: 1 }],
+      [{ meta: { lastUpdated: `2026-10-22T10:00:00Z${'0'.repeat(60)}` } }, {}],
+    ] as const) {
       const p = panel([undated], fields);
       delete p.effectiveDateTime;
       const { file, counts } = run(empty(), [report(p)]);
-      expect(counts).toEqual({ ...NONE, notRead: 1 });
+      expect(counts).toEqual({ ...NONE, notRead: 1, ...bad });
       expect(file.labValues).toEqual([]);
     }
   });
