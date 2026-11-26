@@ -19,6 +19,7 @@
   "G21-ios-app": {
     "CLAUDE.md": 1,
     "docs/architecture-v2/teardown-rejected-gotchas.md": 1,
+    "docs/decisions-for-brad.md": 1,
     "docs/gotchas.md": 4,
     "health_roadmap_algorithm.md": 1,
     "ios/architecture.md": 1
