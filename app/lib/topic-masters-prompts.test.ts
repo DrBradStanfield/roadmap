@@ -73,19 +73,19 @@ describe('YouTube prompt and the master views (US-50 AC6)', () => {
   });
 
   it("the more recent of video and Current view wins, scoped as in the answer prompt (N2)", () => {
-    expect(youtube).toContain("When a topic page's Current view and this video differ, the more recent one wins: if the video was published after the page's reviewed date, the video may record a newer view, so give the video's view and say plainly that it is Brad's newer position; otherwise the Current view wins");
+    expect(youtube).toContain("When a topic page's Current view and this video differ, the more recent one wins: if the video was published after the page's reviewed date, the video may record a newer view, so give the video's view and say plainly that it is your newer position; otherwise the Current view wins");
     expect(youtube).toContain('a video dated the same day as the reviewed date counts as covered by the Current view');
-    expect(youtube).toContain('A Current evidence position is never Brad\'s view, so it never prompts a "view has changed" remark.');
+    expect(youtube).toContain('A Current evidence position is never your view, so it never prompts a "view has changed" remark.');
   });
 
   it('the safety sections are evidence summaries, never Brad\'s view (US-50 AC6)', () => {
-    expect(youtube).toContain("followed by that page's safety, side-effect and drug-interaction sections. Those safety sections are evidence summaries, never Brad's view; use them when a reply touches safety, side effects or interactions.");
+    expect(youtube).toContain("followed by that page's safety, side-effect and drug-interaction sections. Those safety sections are evidence summaries, never your view; use them when a reply touches safety, side effects or interactions.");
     expect(MASTER_VIEWS_HEADING).toContain('current view and safety notes');
   });
 
   it('states the two-axis rule and allows a public "view has changed"', () => {
-    expect(youtube).toContain("The video's content is the authority on what the video said; this section is the authority on Brad's view today.");
-    expect(youtube).toContain("a reply may say publicly that Brad's view has changed since the video");
+    expect(youtube).toContain("The video's content is the authority on what the video said; this section is the authority on your view today.");
+    expect(youtube).toContain("a reply may say publicly that your view has changed since the video");
   });
 });
 
@@ -246,13 +246,14 @@ describe('rules are applied silently (US-15 AC49)', () => {
 // health claims"): the doctor posture's second exception, and the YouTube ownership line exempt from the reply caps.
 describe('Potassium Fiber Drink on the doctor surfaces (US-45 AC4)', () => {
   const doctor = readFileSync('app/lib/chat-posture-doctor.md', 'utf-8');
-  const OWNERSHIP = 'Brad owns the company that sells it and profits from its sale.';
   it('the doctor posture allows it only when the user names it, and never brings it up beside a condition', () => {
     expect(doctor).toContain("when the user's message names it, you may name and describe it from the PRODUCTS section and link https://potassiumfiber.com");
     expect(doctor).toContain('If a question that does not name the drink names a condition or symptom (blood pressure, constipation, kidney disease and the like), or the reply discusses outcome research, do not bring the drink up.');
     expect(doctor).toContain('never steer to it, never recommend it');
   });
   it('a YouTube reply naming the drink carries the exact ownership sentence, outside the sentence and word limits', () => {
-    expect(youtube).toContain(`- **Potassium Fiber Drink ownership:** when a reply names or discusses the drink, it must include this exact sentence: "${OWNERSHIP}" This sentence is exempt from the do-not-copy rule above and does not count toward the sentence or word limits.`);
+    // First person on YouTube (US-15 AC79, Brad 2026-11-27); the doctor posture keeps the third person.
+    expect(doctor).toContain('say that Brad owns the company that sells it and profits from its sale');
+    expect(youtube).toContain(`- **Potassium Fiber Drink ownership:** when a reply names or discusses the drink, it must include this exact sentence: "I own the company that sells it and profit from its sale." This sentence is exempt from the do-not-copy rule above and does not count toward the sentence or word limits.`);
   });
 });

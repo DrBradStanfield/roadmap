@@ -493,7 +493,8 @@ describe('omega-3 affiliate disclosure in the assembled platform prompts (US-50 
     await runPipeline({ topLevelCommentId: 'c9', videoId: 'vid9', authorDisplayName: 'V', authorChannelId: null, text: 'Which fish oil does Brad take?', publishedAt: '2026-10-20T00:00:00Z' },
       { title: 'Omega-3 video', handle: 'omega-video', url: 'u', tags: [], publishedAt: '2025-03-12T00:00:00Z' }, 'The video body.');
     const prompt = lastSystem();
-    expect(prompt).toContain(`- **Omega-3 affiliate disclosure:** when a reply shares the omega-3 Amazon link, it must include this exact sentence: "${DISCLOSURE}" This sentence is exempt from the do-not-copy rule above and does not count toward the sentence or word limits.`);
+    // First person on YouTube (US-15 AC79, Brad 2026-11-27); the doctor posture keeps the third-person sentence.
+    expect(prompt).toContain(`- **Omega-3 affiliate disclosure:** when a reply shares the omega-3 Amazon link, it must include this exact sentence: "I earn a small commission through this Amazon link." This sentence is exempt from the do-not-copy rule above and does not count toward the sentence or word limits.`);
     expect(prompt).toContain(`say: "${DISCLOSURE}"`);
   });
 
