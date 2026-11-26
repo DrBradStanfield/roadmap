@@ -139,9 +139,13 @@ which waits for Brad's look.
 - **R23** closed, superseded by the shared upload engine. The two old rules are deleted (`review-matrix.ts`
   in PR 1972, `LabReportSave.swift` in PR 1913). One engine rule sets the default ticks (`upload-review.ts`),
   and the phone saves an upload in one call. Leads U10 and U12 done; U12 keeps one open line, a test gap.
-- **R17** owner rulings: the phone's hand-written allow-list stays the authority, with a CI test against drift
-  from the adapters' routes, built after PR 2099 lands (lead M12, not started). Later that day, after Brad's
-  word that the clients share as much as possible: one open rule in health-core for both clients (the
+- **R17** owner rulings (both as changed later that day). Lead M12, not started, built after PR 2099 lands:
+  one shared route table, a plain data file in the repo, is the single source. The cloud adapters read
+  their routes from it; at build time it is generated into a constant compiled into the iPhone app (later
+  the Android app the same way), so no platform hand-writes a list. The native app, not the over-the-air
+  engine, enforces it; a new route takes effect only with a new app build. A table change is security class
+  (adversary + Codex), and a test fails when an adapter uses a route outside the table. After Brad's word
+  that the clients share as much as possible: one open rule in health-core for both clients (the
   extension decides; with no extension, the stored type decides; only the existing passive viewable types),
   built as its own PR with an adversary and Codex review (lead M13, in progress).
 - **R24** finished: PR 2184 merged. Its follow-up, lead T38: the classifier half merged (PR 2187); the YouTube
