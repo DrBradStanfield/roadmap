@@ -12,6 +12,9 @@ import { isImportableEntryName } from './lab-extraction';
 const MB = 1024 * 1024;
 
 export type UploadPlatform = 'web' | 'phone';
+/** Who reads a file: our server, or the web's GitHub Pages build's own Anthropic key (US-12 AC9). Absent: the server. */
+export const UPLOAD_READERS = ['server', 'ownKey'] as const;
+export type UploadReader = (typeof UPLOAD_READERS)[number];
 
 /** Files read by the server at once, turned into pages at once, and ZIPs opened at once, on both clients (upload-flow.ts, US-12 AC26). */
 const IN_FLIGHT = { sendsInFlight: 5, convertsInFlight: 3, listsInFlight: 2 } as const;

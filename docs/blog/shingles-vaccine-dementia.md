@@ -139,7 +139,7 @@ Other recent developments are giving us more potential strategies to reduce deme
 
 ### 1\. Lithium orotate
 
-A study in mice found that lithium orotate almost completely prevented amyloid plaque and tau accumulation — both key hallmarks of Alzheimer’s \[7\].
+A study in mice found that [lithium orotate](/blogs/articles/lithium-benefits-forms-dosing-and-side-effects) almost completely prevented amyloid plaque and tau accumulation — both key hallmarks of Alzheimer’s \[7\].
 
 ### 2\. Hearing aids
 

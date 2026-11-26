@@ -263,3 +263,36 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W46,yt_reply_gt90w_count_7d,3,7,-57,chat_messages,"3/104 (91, 92, 159 words); >5 sentences 13; any sentence >25 words 13 (max 32); 3/104 carry the main prompt's 'educational information' disclaimer, including the 159-word reply"
 2026-W46,harness_full_pass,298,289,3,tools/test-chatbot-matching.ts,"298/322 (92.5%), 'variance' (fail rate) 7.5% (gate 5%), --runs 3, claude-sonnet-5-5 thinking off, 0 API errors, $5.72, HEAD 756683a1, router view 306 entries; not comparable with W45 289/308 (14 fixtures joined). Paired arm with the 36 summaries changed since W45 restored (21 masters batches 1–2, 8 re-sourced masters 11-09, 7 US-70 guides): 298/322 like-for-like (299/324 incl. this run's 2 fixtures), $5.76: no measurable routing change"
 2026-W46,harness_classifier_pass,30,30,0,tools/test-classifier.ts,"--runs 1, claude-haiku-5-5, 33 fixtures, $0.0007; fails 'female' (known), calcium-score (KNOWN-FLAKY), book-spam (known). After this run's fixture (34), --runs 3: 30/34 ($0.0022); new non-word fixture ROUTE 2/3 (KNOWN-FLAKY)"
+2026-W47,lint_unresolved_marker,87,87,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_uncited_reference,19,19,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_uncited_list,39,39,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_doi_shape,2,2,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_pmid_shape,1,1,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_id_mismatch,2,2,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_link_dead,12,14,-14,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_grokipedia,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_dose_mismatch,11,11,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_product_rise,4,4,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_guide_shape,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_topic_no_master,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_master_front,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_master_gate,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_master_doi,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_master_key_points,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_master_stale,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_source_stale,30,30,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_master_places,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_master_overlap,44,44,0,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_grokipedia_only_sentences,0,0,,tools/knowledge-lint.ts,weekly lint
+2026-W47,lint_due_entries,227,225,1,tools/knowledge-lint.ts,weekly lint
+2026-W47,empty_handle_turns,67,44,52,chat_match_events,"window 2026-11-14T22:25Z → 11-21T22:25Z; split youtube 66 / shopify 1 / widget 0 / discord 0; total events 276 = 87 skipped + 189 ran (all v5); YouTube empty rate 66/179 (37%; W46 27%); 6 empties are a 40-second copy-paste burst of 2 texts across 4 videos; duplicate processing 0 (248 YouTube events, 248 unique comment/follow-up ids); W46 re-measured 212 / 44 = published"
+2026-W47,classifier_catchable_share_pct,0,0,,manual categorisation + replay,"0/67 by the prompt; by intent 1/67 (1.5%): storefront 'difference between V8 and V9' (MicroVitamin versions, no product named) ROUTE 3/3 on replay. Classifier skipped 87 upstream (GREETING 46 / SPAM 25 / ACCOUNT 11 / PRODUCT 5)"
+2026-W47,routing_miss_share_pct,0,2.3,-100,manual categorisation + replay,"0/67. 8 replayed 3x through production classifyMessage/routeQuery: 7 ∅ 3/3 with no covering entry; the router-error turn routed 3/3 in clean JSON. Widget ran 7, matched 7 (no own-data miss this week, first since W41). Fixtures: router +1, classifier +1. Content gaps 5 (kidney and prostate cancer, trial access, Whitehall, drop-out rate)"
+2026-W47,router_errors_7d,1,0,,chat_match_events,"1: YouTube 11-19T16:14Z, prose reasoning then JSON cut at the output cap (W43 shape); replay clean 3/3; fallbacks 0"
+2026-W47,router_latency_median_ms,1431,1335,7,chat_match_events,n=188 ran (error row excluded; all v5)
+2026-W47,router_latency_p90_ms,2007,1987,1,chat_match_events,nearest-rank n=188; max 4663; no timeouts
+2026-W47,router_cache_hit_rate_pct,78.7,74.4,6,chat_match_events,"148/188; hit gaps ≤300 s 96, 300–3,600 s 50, >3,600 s 2, first 0 (previous ran row in window, any platform); hit median 1385 vs miss 1520 ms"
+2026-W47,yt_reply_median_words,73,72,1,chat_messages,"n=122 replies excluding 59 SKIP_NO_REPLY and 0 failed rows; all claude-sonnet-5-5; recounted by the orchestrator, same"
+2026-W47,yt_reply_gt90w_count_7d,4,3,33,chat_messages,"4/122 (91, 113, 136, 155); without the disclaimer line 91, 94, 117, 136: all still over; >5 sentences 16; any sentence >25 words 24 (max 37); 7/122 carry the 'educational information' line (W46 3/104), 3 of the 4 over-cap among them"
+2026-W47,harness_full_pass,297,298,0,tools/test-chatbot-matching.ts,"297/324 (91.7%), 'variance' (fail rate) 8.3% (gate 5%), --runs 3, claude-sonnet-5-5 thinking off, 2 parse errors (both Bombyx mori fixture: prose reply, scored ∅ = its expected; the tool flags the arm NOT trustworthy), $5.79, HEAD 9f3b8b48, router view 308 entries (+2 blogs); W46 298/322 not like-for-like (2 fixtures joined). New fail vs W46: GLP-1-with-reflux 1/3 runs missing the weight guide; snoring 1/3 ∅. Before this run's 2 fixtures"
+2026-W47,harness_classifier_pass,30,30,0,tools/test-classifier.ts,"--runs 1, claude-haiku-5-5, 34 fixtures, $0.0012; fails 'female' (known), calcium-score (KNOWN-FLAKY), book-spam (known), Kalimoru (KNOWN-FLAKY). After this run's fixture (35), --runs 3: 30/35 ($0.0022); new V8/V9 PRODUCT fixture ROUTE 3/3 (KNOWN-FAIL)"

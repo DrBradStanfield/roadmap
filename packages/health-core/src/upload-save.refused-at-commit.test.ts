@@ -22,7 +22,7 @@ const saving: UploadState = { phase: 'saving', platform: 'web', run: 1, started:
 
 describe('a value refused at the final commit (item 3)', () => {
   it('is carried in the outcome and named on the done screen with its reason', async () => {
-    const out = await uploadSave(saving, EMPTY, NOW, false, { holds: () => false, original: () => null, mimeType: () => '', write: async () => {} });
+    const out = await uploadSave(saving, EMPTY, NOW, false, { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => {} });
     if (!out.ok) throw new Error(out.reason);
     // While the originals uploaded, another device saved a diastolic of 120 for that day: 90/120 is the wrong way up.
     const changed = bulkAppendValues(EMPTY, [{ kind: 'measurement', metricType: 'diastolic_bp', value: 120, recordedAt: DAY, source: 'manual' }], NOW).file;

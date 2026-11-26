@@ -19,7 +19,7 @@ const CORE = resolve(SRC, '../../packages/health-core/src');
 const STORAGE = resolve(SRC, 'lib/storage.ts');
 /** A call to one of lib/storage's device writers, to a hook or helper that writes a shared health key or the
  *  pending marker, a document write, or a device store made. */
-const WRITER_CALL = /(?<!function )\b(saveToLocalStorage|patchMirror|keepLpaAsIs|useMatrixDraft|markSyncPending)\s*[<(]|\.writeDocument\s*\(|\bnew\s+LocalStorageAdapter\b/;
+const WRITER_CALL = /(?<!function )\b(saveToLocalStorage|writeMirror|keepLpaAsIs|useMatrixDraft|markSyncPending)\s*[<(]|\.writeDocument\s*\(|\bnew\s+LocalStorageAdapter\b/;
 const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"]([^'"]+)['"]/g;
 
 function resolveFile(base: string): string | null {

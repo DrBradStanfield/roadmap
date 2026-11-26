@@ -4,8 +4,13 @@ import type { PlanView } from '../components/ResultsPanel';
 import { MyHealth, type FormSlots, type MyHealthProps } from '../components/MyHealth';
 
 export const NO_PLAN: PlanView = {
-  layout: { sections: [], medicines: [], screenings: [] },
-  topics: new Map(),
+  sections: [],
+  // Every question part asked (HealthTool's forms say which; here the form's own parts decide, each null where it does not apply).
+  forms: {
+    medications: ['weight-medications', 'lipid-medications'].map(id => ({ id, title: '', intro: '', groups: [] })),
+    screenings: [{ id: 'cancer-screening', title: '', intro: '', groups: [] }],
+    screeningNote: null,
+  },
   planned: false,
   highlights: { highlighted: new Set(), fadingOut: new Set() },
   urgent: null,

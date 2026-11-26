@@ -315,11 +315,17 @@ describe('namedArticles (US-50 AC14)', () => {
   });
 
   // Round 2, N1: the bare-word pattern was quadratic on a long alphanumeric run (about 520 ms on 8,000 characters).
+  // Timed as growth, not speed (an absolute budget fails on a loaded machine, docs/gotchas.md 2026-11-13, lead
+  // TA-3): each 4x step must take under 10x the time (linear about 4, quadratic about 16), fastest of three runs.
+  // Under 1 ms is timer noise; 10 s is a last-resort backstop.
   it('stays fast on a long alphanumeric run (round 2, N1)', () => {
-    for (const n of [8_000, 10_000]) {
+    let previous = Infinity;
+    for (const n of [2_000, 8_000, 32_000]) {
       const text = 'a'.repeat(n);
-      const runs = [0, 1, 2].map(() => { const t0 = performance.now(); namedArticles(index, text); return performance.now() - t0; });
-      expect(Math.min(...runs)).toBeLessThan(50);
+      const took = Math.min(...[0, 1, 2].map(() => { const t0 = performance.now(); expect(namedArticles(index, text).size).toBe(0); return performance.now() - t0; }));
+      expect(took, `at ${n}`).toBeLessThan(10_000);
+      expect(took / Math.max(previous, 1), `growth to ${n}`).toBeLessThan(10);
+      previous = took;
     }
   });
 });

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H413,iPhone state,VoiceOver focus after a correction sheet closes on the metric page lands on the corrected row,lead,not started,Filed 2026-11-26 from the day's reviews: ios/HealthRoadmap/MyData/MetricDetailView.swift. Build: the corrected row takes accessibility focus when the sheet closes. (H413),,no

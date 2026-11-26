@@ -98,13 +98,13 @@ describe('B5: a row being typed in is never hidden; nothing to check opens the l
 });
 
 describe('B6: the day picker is one named control', () => {
-  it('Save refused for a missing day focuses a control named by the day\'s label and described by its hint; nothing interactive nests', () => {
+  it('Save refused for a missing day focuses a control named by the day\'s label and file (US-13 AC28) and described by its hint; nothing interactive nests', () => {
     const host = mount(open([labRead('f0', { reportDate: null, values: [core({})] })]));
     const day = host.see().list.days[0];
     fireEvent.click(save());
     const focused = document.activeElement as HTMLElement;
     expect(focused).toBe(controlAt(document, day.key));
-    expect(focused.getAttribute('aria-label')).toBe(day.label);
+    expect(screen.getByRole('button', { name: day.name.replace(/, /g, ' , ') })).toBe(focused);
     const described = focused.getAttribute('aria-describedby')!.split(' ').map((id) => document.getElementById(id)?.textContent);
     expect(described).toContain(day.hint);
     expect(document.querySelector('button input, button button, button select')).toBeNull();

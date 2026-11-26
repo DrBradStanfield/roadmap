@@ -1,9 +1,10 @@
 import type { HealthInputs, HealthResults, MedicationInputs, SuggestionInputs, ScreeningInputs } from './types';
 import type { UnitSystem, MetricType } from './units';
-import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated } from './units';
+import { CREATININE_FACTOR, EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS, waistToHeightRatio, isWaistToHeightElevated } from './units';
 import { generateSuggestions } from './suggestions';
 import { validateInputValue } from './validation';
 import { limitOf } from './lab-limits';
+import { BMI_THRESHOLDS } from './bmi-thresholds';
 
 /**
  * Calculate Ideal Body Weight using the Peterson Formula (2016)
@@ -68,7 +69,7 @@ export function ageOnDay(birthYear: number, birthMonth: number | undefined, day:
  * they turn 18 (birthYear + 19), and the date is judged at UTC-12, the zone
  * furthest behind, whatever zone this runs in (Fly runs in UTC). So no one
  * anywhere counts as 18 early. Every other age keeps the January default and
- * the local date.
+ * the local date, except the screening gates (`screeningAge`, UTC month).
  */
 export function isKnownMinor(birthYear: number | undefined, birthMonth: number | undefined, now = new Date()): boolean {
   if (!birthYear) return false;
@@ -98,7 +99,7 @@ export function knownMinorOf(birth: { birthYear?: number; birthMonth?: number },
  * Returns eGFR in mL/min/1.73m².
  */
 export function calculateEGFR(creatinineUmolL: number, age: number, sex: 'male' | 'female'): number {
-  const cr = creatinineUmolL / 88.4; // convert to mg/dL
+  const cr = creatinineUmolL / CREATININE_FACTOR; // convert to mg/dL
 
   if (sex === 'female') {
     const kappa = 0.7;
@@ -117,14 +118,14 @@ export function calculateEGFR(creatinineUmolL: number, age: number, sex: 'male' 
  * is reclassified as "Normal" since central adiposity is absent.
  */
 export function getBMICategory(bmi: number, waistToHeightRatio?: number): string {
-  if (bmi < 18.5) return 'Underweight';
-  if (bmi < 25) return 'Normal';
-  if (bmi < 30) {
+  if (bmi < BMI_THRESHOLDS.normal) return 'Underweight';
+  if (bmi < BMI_THRESHOLDS.overweight) return 'Normal';
+  if (bmi < BMI_THRESHOLDS.obese) {
     if (waistToHeightRatio !== undefined && !isWaistToHeightElevated(waistToHeightRatio)) return 'Normal';
     return 'Overweight';
   }
-  if (bmi < 35) return 'Obese (Class I)';
-  if (bmi < 40) return 'Obese (Class II)';
+  if (bmi < BMI_THRESHOLDS.obeseClass2) return 'Obese (Class I)';
+  if (bmi < BMI_THRESHOLDS.obeseClass3) return 'Obese (Class II)';
   return 'Obese (Class III)';
 }
 

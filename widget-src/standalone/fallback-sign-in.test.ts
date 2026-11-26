@@ -56,7 +56,7 @@ async function tab() {
 
 /** A cloud whose read fails, in `page`'s own StorageError: another graph's class is not one to its catch. */
 const unreachable = (page: Awaited<ReturnType<typeof tab>>) => Object.assign(new MemoryAdapter(), {
-  read: async () => { throw new page.adapter.StorageError('synthetic outage', undefined, undefined, 503); },
+  read: async () => { throw new page.adapter.StorageError('synthetic outage', undefined, undefined, 503, undefined, 'no-answer'); },
 });
 
 /** The weights a file holds. */
@@ -90,7 +90,7 @@ async function userOneFallback() {
 }
 /** User 1's tab saves a weight and is put away. */
 async function saveWeight(fallback: Awaited<ReturnType<typeof userOneFallback>>) {
-  fallback.addMeasurement('weight', USER_ONE_WEIGHT, '2026-01-01');
+  fallback.addMeasurement('weight', USER_ONE_WEIGHT, '2026-01-01', fallback.shownErase);
   await fallback.flush().catch(() => {});
   fallback.flushSync();
 }

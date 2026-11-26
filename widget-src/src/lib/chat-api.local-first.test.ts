@@ -13,7 +13,7 @@ const store = vi.hoisted(() => ({
   getMessages: vi.fn(() => []),
   listConversations: vi.fn(() => []),
 }));
-vi.mock('./chat-history-access', () => ({ getChatHistory: () => Promise.resolve(store), askChatHistory: () => Promise.resolve({ store, askedMarks: [] }) }));
+vi.mock('./chat-history-access', () => ({ hasChatHistoryLayer: () => true, getChatHistory: () => Promise.resolve(store), askChatHistory: () => Promise.resolve({ store, askedMarks: [] }) }));
 vi.mock('./build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 
 import * as Sentry from '@sentry/react';
@@ -57,7 +57,7 @@ describe('chat-api on the local-first widget (US-15 AC7)', () => {
 
   it('US-09 AC2c: an answer whose history save the device refuses still reaches the page, and the report names no chat text', async () => {
     const { StorageError } = await import('@roadmap/health-core/adapter');
-    store.recordExchange.mockRejectedValueOnce(new StorageError('Synthetic device refusal'));
+    store.recordExchange.mockRejectedValueOnce(new StorageError('Synthetic device refusal', undefined, undefined, undefined, undefined, 'refused'));
     const { result, error } = await sendMessage('SYNTHETIC_REFUSED_QUESTION', null, null);
     expect(error).toBeNull();
     expect(result?.content).toBe('fresh answer');

@@ -2,8 +2,9 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { askedUnder, deleteUserData, getBackendKind, getEraseIdentity, getShownErase, markEraseShown } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
-import { recordFailure, WritesStoppedError } from '../lib/error-diagnostics';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD, ERASE_FAILED, WRITE_REFUSED } from '../lib/erase-copy';
+import { recordFailure, writesStopped } from '../lib/error-diagnostics';
+import { eraseOutcomeWords } from '@roadmap/health-core/erase-outcome';
+import { ERASE_CONFIRM, ERASE_FAILED, WRITE_REFUSED, eraseDone } from '../lib/erase-copy';
 import { createEraseStore, refusal, unreachable, type EraseState, type EraseStore } from '../lib/erase-machine';
 import { tellChats } from './chatStore';
 
@@ -126,17 +127,22 @@ export function useErase(props: EraseDoorProps): Erase {
     // A throw is reported, then taken as a failed write: the erase still ends, or the lock sticks (US-16 AC2f).
     // A log-off refusal is not a failure, so it is not reported (US-09 AC2c, A19).
     const result: Awaited<ReturnType<typeof deleteUserData>> = await deleteUserData().catch((error: unknown) => {
-      if (!(error instanceof WritesStoppedError)) Sentry.captureException(recordFailure(error, 'Erase failed'), { tags: { area: 'erase', op: 'delete-all' } });
-      return { success: false, chatErased: false };
+      if (!writesStopped(error)) Sentry.captureException(recordFailure(error, 'Erase failed'), { tags: { area: 'erase', op: 'delete-all' } });
+      return { success: false, chat: null };
     });
     // Read in the turn it dispatches (2b-1 R1). An erase whose write failed
     // still leaves the erased copy in the store, which retries it: the screen
     // shows that copy too (US-16 AC2a). A refused erase moved nothing, and nor
     // does one this browser could not hold either: the store puts its copy
-    // back and gives no reason, so ERASE_FAILED is said (lead S57).
+    // back and gives no reason, after the chat step (lead S57). The words say
+    // what each step did (US-11 AC13).
     const now = getEraseIdentity();
-    const done = result.chatErased ? ERASE_DONE : result.chatUnread ? ERASE_DONE_CHAT_UNREAD : ERASE_DONE_CHAT_PENDING;
-    const message = result.success ? (result.warning ? `${done}\n\n${result.warning}` : done) : result.error || ERASE_FAILED;
+    const message = result.success
+      // The chat step runs before every erase that stands (record-session-erase.ts); were it ever missing, never say the chat history is deleted.
+      ? eraseDone(result.chat ?? 'unreached', result.warning)
+      : eraseOutcomeWords(!result.error && result.chat
+        ? { record: 'not-saved', chat: result.chat }
+        : { record: 'failed', reason: result.error || ERASE_FAILED, chat: result.chat });
     store.dispatch(now !== before ? { type: 'own-end', identity: now, message } : { type: 'own-failed', message });
     return result.success;
   }, [store]);

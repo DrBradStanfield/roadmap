@@ -36,6 +36,7 @@ import { createCoreRow } from '../../packages/health-core/src/blood-tests';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { connectionKey, resetMcpMemory, type AccessPayload, type CodePayload, type RefreshPayload } from '../lib/mcp-grants.server';
 import { hash, unpackSealed } from '../lib/mcp-seal.server';
+import { ipKeyedLimitCases } from '../lib/ip-key.test-helpers';
 import { type AdapterFactory, mcpEndpoint } from '../lib/mcp.server';
 import { recordServerEvent } from '../lib/product-events.server';
 import { action, loader } from './mcp.$';
@@ -592,6 +593,28 @@ describe('US-32 AC38 — 20 failures per IP per 15 minutes, and a success never 
   });
 });
 
+describe('US-52 AC4k: the reviewer failures limit keys on the one per-IP bucket', () => {
+  let pages = 0;
+  /** A fresh consent page from its own address each time, so the authorize limit never decides. */
+  const freshState = async () => reviewerState(await (await get(`/mcp/authorize?${authorizeQuery()}`, { 'fly-client-ip': `198.18.${++pages >> 8}.${pages & 255}` })).text());
+  ipKeyedLimitCases({
+    limit: 20, windowMs: 15 * 60_000, v6: '2001:db8:4e', v4: '100.80',
+    allowed: async (ip) => (await signIn(await freshState(), USERNAME, 'wrong', { 'fly-client-ip': ip })).status !== 429,
+  });
+});
+
+describe('US-52 AC4k: the authorize limit keys on the one per-IP bucket', () => {
+  ipKeyedLimitCases({
+    limit: 20, windowMs: 60_000, v6: '2001:db8:a0', v4: '100.81',
+    allowed: async (ip) => (await get(`/mcp/authorize?${authorizeQuery()}`, { 'fly-client-ip': ip })).status !== 429,
+  });
+
+  it('writes one rate-limited row per /64 per window, the log brake keyed the same way', async () => {
+    for (let i = 0; i < 25; i++) await get(`/mcp/authorize?${authorizeQuery()}`, { 'fly-client-ip': `2001:db8:a1:1::${i + 1}` });
+    expect(events('mcp_authorize_refused').filter((row) => row.reason === 'rate-limited')).toHaveLength(1);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Two-phase tools on a reviewer bearer
 // ---------------------------------------------------------------------------
@@ -618,7 +641,7 @@ describe('US-32 AC38 — the two-phase tools work on a reviewer bearer (one shar
     });
     expect(proposed.isError, proposed.text).toBe(false);
     const receipt = proposed.structured.receipt as string;
-    const committed = await callTool(access, 'file_results', { commit: { receipt, accept: ['c1'], replace: [], approval: APPROVED } });
+    const committed = await callTool(access, 'file_results', { commit: { receipt, accept: ['c1'], replace: [], approval: APPROVED } }, LATER);
     expect(committed.isError, committed.text).toBe(false);
     expect(storedRecord().labValues.some((row) => row.metricName === 'Ferritin')).toBe(true);
   });
