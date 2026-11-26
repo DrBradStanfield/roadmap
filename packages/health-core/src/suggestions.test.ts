@@ -3203,7 +3203,7 @@ describe('Evidence attachment', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const base = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-micronutrient-base')!;
     expect(base.ingredients).toContain('Vitamin D3 with K2');
-    expect(base.description).toContain('If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.');
+    expect(base.description).toContain('If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.');
     const reason = SUGGESTION_EVIDENCE['supplement-micronutrient-base'].reason;
     expect(reason).toContain('vitamin K antagonist');
     // Review R2 (2026-10-22): the 45 mcg result and the authors' conclusion; no "below retail" framing.

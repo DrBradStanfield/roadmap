@@ -126,7 +126,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
     howTo: { heading: PREPARE, points: [
       'Avoid ejaculation and long or hard cycling for 48 hours before the test.',
       'Wait until any urinary infection has fully cleared.',
-      'Tell your doctor if you take finasteride or dutasteride. Both lower PSA, roughly by half, so the result needs adjusting.',
+      'Tell your doctor if you take Finasteride or Dutasteride. Both lower PSA, roughly by half, so the result needs adjusting.',
     ] },
     sources: [ref('American Cancer Society – Screening Guidelines'), ref('Goodman 2019')],
   },

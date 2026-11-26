@@ -202,6 +202,7 @@ const MEDICINE_NAMES = [
   'atorvastatin', 'rosuvastatin', 'simvastatin', 'pravastatin', 'pitavastatin', 'lovastatin', 'fluvastatin',
   'ezetimibe', 'bempedoic acid', 'evolocumab', 'alirocumab', 'inclisiran',
   'empagliflozin', 'dapagliflozin', 'canagliflozin', 'ertugliflozin', 'metformin', 'orlistat',
+  'warfarin', 'finasteride', 'dutasteride', 'tretinoin', 'adapalene',
 ];
 /** A medicine name in lower case anywhere: after a space, a digit, a bracket, a slash, a colon or a dash. */
 const LOWER_CASE_NAME = new RegExp(`(?<![A-Za-z_])(?:${MEDICINE_NAMES.join('|')})(?![A-Za-z_])`);
