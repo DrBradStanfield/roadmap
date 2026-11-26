@@ -125,7 +125,7 @@ describe('US-65 AC7: an on-device record the app refuses at load is explained, n
 
   it.each([
     ['a version mismatch', (core: Core) => new core.ConflictError('expected version 3, but local is 4'), 'expected version 3, but local is 4'],
-    ['a full device store', (core: Core) => new core.StorageError('Could not save on this device (local storage may be full).'), 'local storage may be full'],
+    ['a full device store', (core: Core) => new core.StorageError('Could not save on this device (local storage may be full).', undefined, undefined, undefined, undefined, 'refused'), 'local storage may be full'],
   ])('%s at load is a storage failure, not a refusal: a neutral heading and a reload line', async (_label, failure, message) => {
     // The record itself may be fine, so the page must not say it is broken.
     // Built from the page's own copy of health-core (resetModules gives it a fresh one), so its class checks hold.

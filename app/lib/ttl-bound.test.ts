@@ -2,8 +2,8 @@
  * S-19 (b): the limiter maps and the subscription summary cache hold a bounded number of entries
  * (US-52 AC4f, US-59 AC12). When a new key meets a full map, expired entries go first, then the
  * oldest live entry, and the new key is admitted. A full map says so once an hour, by its name
- * alone. The in-memory maps left unbounded on purpose are a named list below; the spent-challenge
- * set is one of them, unchanged, so one-use holds for a challenge's whole life (US-52 AC1a).
+ * alone. The in-memory maps left unbounded on purpose are a named list below. The spent-code and
+ * confirm-receipt sets are bounded but never drop a live id (US-52 AC16, one-use-bound.test.ts).
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -141,7 +141,7 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
   const prod = appFiles(app).filter((file) => !/\.test(-helpers)?\.tsx?$/.test(file));
 
   /** In-memory maps with an expiry that are not size-bounded, on purpose (lead S-24). */
-  const UNBOUNDED_TTL = ['guestIpRateMap', 'orderCache', 'spentCodes', 'spentProposals', 'spentWrites'];
+  const UNBOUNDED_TTL = ['spentWrites'];
   /** Module maps with no expiry: lookups, in-flight work and content caches. */
   const NOT_TTL = ['DECODERS', 'KNOWN_CLIENTS', 'NUDGED', 'TWO_PHASE', 'WRITE_COSTS', 'articleCache', 'formsCache', 'handleCache', 'inFlight'];
 
@@ -150,20 +150,22 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
     expect(appFiles(app).filter((file) => banned.test(readFileSync(file, 'utf8')))).toEqual([]);
   });
 
-  it('names every limit map, and only the spent-challenge set is unbounded', () => {
+  it('names every limit map; none is unbounded, and only the spent codes are one-use', () => {
     const sites: string[] = [];
     for (const file of prod) {
       const text = readFileSync(file, 'utf8');
-      for (const call of text.matchAll(/(?<!function )create(RateLimiter|QuotaCounter)\(/g)) {
+      for (const call of text.matchAll(/(?<!function )create(RateLimiter|QuotaCounter)(?:<\w+>)?\(/g)) {
         // The call through its options object, which closes with `})`.
         const site = text.slice(call.index, text.indexOf('})', call.index) + 2);
         const name = /name: '([^']+)'/.exec(site)?.[1] ?? `UNNAMED in ${file}`;
-        sites.push(`${name}${/maxKeys: Infinity/.test(site) ? ': unbounded' : ''}`);
+        sites.push(`${name}${/maxKeys: Infinity/.test(site) ? ': unbounded' : ''}${/oneUse: true/.test(site) ? ': one-use' : ''}`);
       }
     }
-    expect(sites).toHaveLength(36);
+    expect(sites).toHaveLength(36); // 38 until the A/B route and its two limiters were retired (US-09 AC62)
+    expect(sites).toContain('guest sessions per IP'); // US-15 AC67: bounded, at the default
     expect(sites.filter((s) => s.startsWith('UNNAMED'))).toEqual([]);
-    expect(sites.filter((s) => s.endsWith(': unbounded'))).toEqual(['app spent challenges: unbounded']);
+    expect(sites.filter((s) => s.includes(': unbounded'))).toEqual([]);
+    expect(sites.filter((s) => s.endsWith(': one-use'))).toEqual(['mcp spent codes: one-use']);
   });
 
   it('every other module-level Map is bounded or on a named list', () => {
@@ -175,6 +177,28 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
       }
     }
     expect(unbounded.sort()).toEqual([...UNBOUNDED_TTL, ...NOT_TTL].sort());
+  });
+});
+
+describe('US-15 AC67: the order summary cache holds at most 10,000 customers', () => {
+  it('drops the oldest summary for a new customer, and fetches it again when asked', async () => {
+    vi.resetModules();
+    const getCustomerOrders = vi.fn(async () => 'one order');
+    vi.doMock('./route-helpers.server', () => ({ getCustomerOrders, checkSubscriptionFromTags: vi.fn() }));
+    vi.doMock('./supabase-account.server', () => ({ updateSubscriptionPlan: vi.fn() }));
+    vi.doMock('./chat-turn-io.server', () => ({ reportChatError: vi.fn() }));
+    const { getCachedOrders } = await import('./chat-customer-cache.server');
+    const admin = {} as Parameters<typeof getCachedOrders>[0];
+    for (let i = 0; i < 10_000; i++) await getCachedOrders(admin, `c-${i}`);
+    expect(getCustomerOrders).toHaveBeenCalledTimes(10_000);
+    await getCachedOrders(admin, 'c-new'); // the cache is full: c-0 goes
+    await getCachedOrders(admin, 'c-1'); // still cached
+    expect(getCustomerOrders).toHaveBeenCalledTimes(10_001);
+    await getCachedOrders(admin, 'c-0'); // fetched again
+    expect(getCustomerOrders).toHaveBeenCalledTimes(10_002);
+    vi.doUnmock('./route-helpers.server');
+    vi.doUnmock('./supabase-account.server');
+    vi.doUnmock('./chat-turn-io.server');
   });
 });
 

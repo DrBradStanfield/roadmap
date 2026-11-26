@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import { ValueCell, headerDay, useLiveRegion, SAVE_ERRORS, SAVE_FAILED, saveErrorText } from './BloodTestTimeline';
 import type { BloodTestTimelineProps, BloodTestPrefillFn } from './BloodTestTimeline';
+import { getShownErase } from '../lib/roadmap-data';
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -37,7 +38,7 @@ describe('BloodTestTimeline cell pins', () => {
     fireEvent.change(input, { target: { value: '4.1' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await wait(0);
-    expect(onCorrect).toHaveBeenLastCalledWith('r1', 4.1);
+    expect(onCorrect).toHaveBeenLastCalledWith('r1', 4.1, getShownErase());
     expect(view.container.textContent).toContain(SAVE_ERRORS.invalid);
     expect(norm(view.container.innerHTML)).toMatchSnapshot('refused, still open');
     fireEvent.keyDown(input, { key: 'Enter' });

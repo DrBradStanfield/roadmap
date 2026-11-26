@@ -33,8 +33,8 @@ describe('parseProductEvent', () => {
   it('accepts every client-emittable event name', () => {
     for (const eventName of PRODUCT_EVENT_NAMES) {
       if (SERVER_ONLY.has(eventName)) continue;
-      // US-62 AC1: these three need their key, tested with it below.
-      if (['tool_opened', 'onboarding_step', 'signin_opened'].includes(eventName)) continue;
+      // US-62 AC1: these three need their key, tested with it below; US-73 AC14's in its own file.
+      if (['tool_opened', 'onboarding_step', 'signin_opened', 'upload_labs_opened'].includes(eventName)) continue;
       // US-61 AC8: the two US product events need their product; US-07 AC11: measurement_added its measure.
       const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } }
         : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } }
@@ -231,6 +231,15 @@ describe('the email-arrival counters', () => {
       visitorId: VISITOR,
     });
     expect(parseProductEvent({ eventName: 'pdf_window_blocked', visitorId: VISITOR, metadata: { key: 'x' } })).toBeNull();
+  });
+
+  it('US-15 AC77: takes chat_panel_shown from a browser by name alone, never with metadata', () => {
+    expect(PRODUCT_EVENT_NAMES).toContain('chat_panel_shown');
+    expect(parseProductEvent({ eventName: 'chat_panel_shown', visitorId: VISITOR })).toEqual({ eventName: 'chat_panel_shown', visitorId: VISITOR });
+    for (const metadata of [{ key: 'x' }, { placement: 'header' }, { surface: 'brand' }, { count: 1 }]) {
+      expect(parseProductEvent({ eventName: 'chat_panel_shown', visitorId: VISITOR, metadata })).toBeNull();
+    }
+    expect(parseProductEvent({ eventName: 'chat_panel_shown', visitorId: SERVER_VISITOR_ID })).toBeNull(); // a browser event
   });
 
   it('takes blood_test_moved from a browser, with no metadata (US-04 AC5)', () => {

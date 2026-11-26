@@ -36,3 +36,5 @@ export const unauthenticated = shopify.unauthenticated;
 export const login = shopify.login;
 export const registerWebhooks = shopify.registerWebhooks;
 export const sessionStorage = shopify.sessionStorage;
+/** The Shopify Admin API client type (`admin` from authenticate.admin and friends). */
+export type { AdminApiContext } from "@shopify/shopify-app-react-router/server";

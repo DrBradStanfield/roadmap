@@ -14,9 +14,10 @@ import { renderHook } from '@testing-library/react';
 import { buildChatContextJson, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import type { ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core/mappings';
 import {
-  clearLocalStorage, loadFromLocalStorage, loadGuestInputs, patchMirror, saveToLocalStorage, saveUnitPreference,
+  clearLocalStorage, loadFromLocalStorage, loadGuestInputs, saveToLocalStorage, saveUnitPreference,
   MIRROR_CHANGED_EVENT, MIRROR_KEY,
 } from './lib/storage';
+import { writeMirror } from './lib/chat-mirror';
 import { sendMessage } from './lib/chat-api';
 import { useChatState } from './hooks/useChatState';
 
@@ -179,19 +180,20 @@ describe('US-15 AC10: the mirror has one meaning and one signal', () => {
     window.addEventListener(MIRROR_CHANGED_EVENT, seen);
     try {
       saveToLocalStorage(PROFILE, SAVED, [], []);
-      patchMirror({ medications: [STATIN] });
+      writeMirror({ medications: [STATIN] });
       expect(seen).toHaveBeenCalledTimes(2);
     } finally {
       window.removeEventListener(MIRROR_CHANGED_EVENT, seen);
     }
   });
 
-  it('US-15 AC10: a medication or screening write replaces its own list and keeps the saved profile and values', () => {
+  // The values and their derived fields come from the store at each write (US-34 AC11, lib/chat-mirror.test.ts).
+  it('US-15 AC10: a medication or screening write replaces its own list and keeps the saved profile', () => {
     seedReturningUser();
-    patchMirror({ medications: [STATIN] });
-    patchMirror({ screenings: [COLONOSCOPY] });
+    writeMirror({ medications: [STATIN] });
+    writeMirror({ screenings: [COLONOSCOPY] });
     expect(loadFromLocalStorage()).toMatchObject({
-      inputs: PROFILE, previousMeasurements: SAVED, medications: [STATIN], screenings: [COLONOSCOPY],
+      inputs: PROFILE, medications: [STATIN], screenings: [COLONOSCOPY],
     });
   });
 
@@ -241,7 +243,7 @@ describe('US-15 AC10: the mirror has one meaning and one signal', () => {
 describe('US-07 AC7: every chat reads the saved lab eGFR the plan reads', () => {
   const LAB = { labEgfr: 40, labEgfrDate: '2026-09-01' };
   /** Ruth-shaped: a misread creatinine (a urine ratio) saved on the lab eGFR's day. */
-  const seedRuth = () => saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 15)], [], [], undefined, LAB);
+  const seedRuth = () => saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 15)], [], [], LAB);
   const eGFR = (payload: ChatContextPayload | null) => JSON.parse(buildChatContextJson(payload!)!).derivedValues.eGFR;
 
   it('US-07 AC7: loadGuestInputs reads the lab eGFR on the creatinine\'s day', () => {
@@ -251,7 +253,7 @@ describe('US-07 AC7: every chat reads the saved lab eGFR the plan reads', () => 
   });
 
   it('US-07 AC7: a saved creatinine from a later day outdates the lab eGFR', () => {
-    saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 80)], [], [], undefined, { labEgfr: 40, labEgfrDate: '2026-07-01' });
+    saveToLocalStorage(PROFILE, [...SAVED, row('creatinine', 80)], [], [], { labEgfr: 40, labEgfrDate: '2026-07-01' });
     expect(loadGuestInputs()).not.toHaveProperty('labEgfr');
     expect(eGFR(loadGuestInputs())).toBeGreaterThan(80);
   });
@@ -265,13 +267,13 @@ describe('US-07 AC7: every chat reads the saved lab eGFR the plan reads', () => 
     expect(eGFR(contextNow(captured.section?.guestInputs) as ChatContextPayload)).toBe(40);
   });
 
-  it('US-07 AC7: the mirror keeps the lab eGFR through a patch, and drops one the schema refuses', () => {
+  // Every write works the lab eGFR out again from the store's lab rows (US-34 AC11, lib/chat-mirror.test.ts).
+  it('US-07 AC7: the mirror keeps the lab eGFR, and drops one the schema refuses', () => {
     seedRuth();
-    patchMirror({ medications: [] });
     expect(loadFromLocalStorage()?.labEgfr).toEqual(LAB);
-    saveToLocalStorage(PROFILE, SAVED, [], [], undefined, { labEgfr: 5000, labEgfrDate: '2026-09-01' });
+    saveToLocalStorage(PROFILE, SAVED, [], [], { labEgfr:5000, labEgfrDate: '2026-09-01' });
     expect(loadFromLocalStorage()?.labEgfr).toBeNull();
-    saveToLocalStorage(PROFILE, SAVED, [], [], undefined, { labEgfr: 40, labEgfrDate: 'soon' });
+    saveToLocalStorage(PROFILE, SAVED, [], [], { labEgfr:40, labEgfrDate: 'soon' });
     expect(loadFromLocalStorage()?.labEgfr).toBeNull();
   });
 });

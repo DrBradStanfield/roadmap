@@ -157,7 +157,8 @@ describe('the page\'s chat history follows the record\'s erase identity (US-11 A
     expect(await storedLive(cloud)).toEqual([]);
   });
 
-  it('a failed open is kept for the chat\'s callers, even once the identity moves; the erase\'s first open tries once', async () => {
+  // US-15 AC69 (R15): before, the failed open was kept for the page's life.
+  it('a failed open is not kept: the next chat caller opens again; the erase\'s first open tries once', async () => {
     const cloud = new MemoryCloud();
     const identity = { now: 'erase-1' };
     const factory = vi.fn(() => ChatHistoryStore.create(new MemoryAdapter(cloud)));
@@ -166,7 +167,8 @@ describe('the page\'s chat history follows the record\'s erase identity (US-11 A
     await expect(openChatHistory()).rejects.toThrow('Synthetic');
     expect(factory).toHaveBeenCalledTimes(1);
     identity.now = 'erase-2';
-    expect(await getChatHistory()).toBeNull();
+    expect(await getChatHistory()).not.toBeNull();
+    expect(factory).toHaveBeenCalledTimes(2);
   });
 
   it('a re-read that fails is not kept: once the cloud answers, the next caller gets the merged copy and new exchanges are saved', async () => {

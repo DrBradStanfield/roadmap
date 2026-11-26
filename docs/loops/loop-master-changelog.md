@@ -5,6 +5,16 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-11-22, later (Brad-directed: reversed, loops write to main):** Brad: "no, reverse this. you can write to
+  main to log your findings, save your work in the ledger, etc." The by-PR landing rule (PR #2016) is undone: Repo
+  rules, landing check, commit-early and the three charter delivery lines are back to main. The commit-to-main line
+  now names Brad's standing permission, so a cloud session's permission check can see it. Lines back to 196.
+- **2026-11-22 (Brad-directed: cloud loops land by PR):** The cloud runner refused pushes to main in chat-health
+  W46 and W47, so both runs sat on a session branch with no PR. Brad: "do it" to "(a) a build session opens a PR
+  from the branch and merges it; (b) change the landing rule so cloud loops land by PR". Repo rules now: commit on
+  the session's `claude/` branch, push, open ONE PR per run; the loop never merges it. The landing check needs the
+  branch pushed AND an open PR. Commit-early now says the data survives on the pushed branch. Charter delivery
+  lines (chat-health, product-health, repo-health) say "by PR". Lines 196 → 194.
 - **2026-10-19 (Brad-directed: loop effort medium):** Brad: "change the loop default model to medium effort
   rather than high effort." Orchestration now says the cloud environment sets `CLAUDE_CODE_EFFORT_LEVEL=medium`
   (was high, 2026-09-28) and that it overrides the agents' high pins, so cloud workers and reviewers run at

@@ -2,15 +2,15 @@ import SwiftUI
 
 /// My health's title row, jump pills and urgent banner. Split out of MyDataView.swift.
 extension MyDataView {
-    /// The title with the person button, lab upload and Sync, as a row so nothing holds space
-    /// under it; then the urgent banner, only when a card is urgent.
+    /// The title with the person button and Sync, as a row so nothing holds space under it; then
+    /// the urgent banner, only when a card is urgent. Lab upload is on the headings (US-73 AC14).
     @ViewBuilder
     func top(_ page: HealthPage, proxy: ScrollViewProxy) -> some View {
         Section {
             let title = Text("My health").font(.largeTitle.bold()).accessibilityAddTraits(.isHeader)
             let buttons = HStack(spacing: 14) {
                 settingsButton
-                recordButtons
+                syncButton
             }
             .buttonStyle(.borderless)
             .labelStyle(.iconOnly)
@@ -71,16 +71,6 @@ extension MyDataView {
             }
         }
         .listSectionSpacing(.compact)
-    }
-
-    /// Lab upload and Sync: on the title line and on the Blood tests heading.
-    @ViewBuilder
-    var recordButtons: some View {
-        Button { addingLabs = true } label: {
-            Label("Add medical records", systemImage: "plus")
-        }
-        .accessibilityHint("Upload a lab report or clinic letter")
-        syncButton
     }
 
     /// The person button: the settings sheet. Also on the page for a record that cannot be drawn (UndrawnRecord.swift).

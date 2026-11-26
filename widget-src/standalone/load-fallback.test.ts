@@ -23,7 +23,7 @@ const PROVIDER_BODY = 'ACCESS_TOKEN_SCOPE_INSUFFICIENT';
 
 class RefusingCloud extends MemoryAdapter {
   async read(): Promise<never> {
-    throw new StorageError(`Google Drive lookup failed (403): ${PROVIDER_BODY}`, undefined, undefined, 403);
+    throw new StorageError(`Google Drive lookup failed (403): ${PROVIDER_BODY}`, undefined, undefined, 403, undefined, 'refused');
   }
 }
 
@@ -75,7 +75,7 @@ describe('startOnBackend (US-09 AC13)', () => {
 
   it('the on-device tier has nothing to fall back to, so its failure still throws', async () => {
     const failing = async (): Promise<void> => {
-      throw new StorageError('Local data is corrupt and could not be read.');
+      throw new StorageError('Local data is corrupt and could not be read.', undefined, undefined, undefined, undefined, 'no-answer');
     };
     await expect(startOnBackend({ adapter: new LocalStorageAdapter(), backend: 'local' }, failing)).rejects.toThrow(/corrupt/);
     expect(captureException).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
 
   class SaveFails extends MemoryAdapter {
     async write(): Promise<never> {
-      throw new StorageError('cloud down');
+      throw new StorageError('cloud down', undefined, undefined, undefined, undefined, 'may-have-landed');
     }
   }
 
@@ -135,7 +135,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
       adapter: await import('@roadmap/health-core/adapter'),
     };
     // This page's own StorageError: a class from another module graph is not one to its catch.
-    const outage = new page.adapter.StorageError('synthetic outage', undefined, undefined, 503);
+    const outage = new page.adapter.StorageError('synthetic outage', undefined, undefined, 503, undefined, 'no-answer');
     let fallback!: Awaited<ReturnType<typeof page.store.RoadmapStore.create>>;
     const cloud = new MemoryAdapter();
     const started = await page.connect.startOnBackend({ adapter: Object.assign(new MemoryAdapter(), { read: async () => { throw outage; } }), backend: 'github' }, async (adapter) => {
@@ -143,7 +143,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     });
     expect(started.reconnect).toEqual({ kind: 'unreachable', provider: 'github' });
     expect(page.lib.healthWritesAllowed()).toBe(true);
-    fallback.addMeasurement('weight', 80, '2026-06-01');
+    fallback.addMeasurement('weight', 80, '2026-06-01', fallback.shownErase);
     await fallback.flush();
     expect(localStorage.getItem('health_roadmap_file_v2')).not.toBeNull();
     expect(page.store.isSyncPending()).toBe(true);
@@ -159,9 +159,9 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
 
   it('US-09 AC23: a weight, a medication and a supplement typed against an erased cloud survive, with their histories', async () => {
     const guest = await RoadmapStore.create(new SaveFails());
-    guest.saveMedication('statin', 'atorvastatin', 20, 'mg');
-    guest.saveSupplement('omega3', 'Omega-3');
-    guest.addMeasurement('weight', 80, '2026-06-01');
+    guest.saveMedication('statin', 'atorvastatin', 20, 'mg', guest.shownErase);
+    guest.saveSupplement('omega3', 'Omega-3', undefined, undefined, undefined, undefined, guest.shownErase);
+    guest.addMeasurement('weight', 80, '2026-06-01', guest.shownErase);
     await expect(guest.flush()).rejects.toThrow();
     expect(isSyncPending()).toBe(true);
 
@@ -182,7 +182,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-06-01T10:00:00.000Z')); // a second before the erase
     const store = await RoadmapStore.create(new SaveFails());
-    store.addMeasurement('weight', 80, '2026-06-01');
+    store.addMeasurement('weight', 80, '2026-06-01', store.shownErase);
     await expect(store.flush()).rejects.toThrow();
     vi.useRealTimers();
 
@@ -193,7 +193,7 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
   it('US-09 AC23: an erased cloud still wins, but the edits made on-device survive', async () => {
     const started = await startOnBackend({ adapter: new RefusingCloud(), backend: 'dropbox' }, init);
     const onDevice = await RoadmapStore.create(started.adapter);
-    onDevice.addMeasurement('weight', 80);
+    onDevice.addMeasurement('weight', 80, undefined, onDevice.shownErase);
     await onDevice.flush();
 
     // The cloud comes back, and another device erased the record meanwhile.
@@ -213,8 +213,8 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-06-01T10:00:05.000Z'));
     const guest = await RoadmapStore.create(new SaveFails());
-    guest.saveMedication('statin', 'atorvastatin', 20, 'mg');
-    guest.addMeasurement('weight', 80, '2026-06-01');
+    guest.saveMedication('statin', 'atorvastatin', 20, 'mg', guest.shownErase);
+    guest.addMeasurement('weight', 80, '2026-06-01', guest.shownErase);
     await expect(guest.flush()).rejects.toThrow();
     vi.useRealTimers();
 
@@ -232,13 +232,13 @@ describe('a fallback session\'s edits reach the cloud (US-09 AC13)', () => {
     vi.spyOn(RoadmapStore.prototype, 'startLiveRefresh').mockReturnValue(() => {});
     const started = await startOnBackend({ adapter: new RefusingCloud(), backend: 'google-drive' }, data.initRoadmapStore);
     expect(started.reconnect).toEqual({ kind: 'signedOut', provider: 'google-drive' });
-    await data.addMeasurement('weight', 80, '2026-06-01');
+    await data.addMeasurement('weight', 80, '2026-06-01', data.getShownErase());
     await data.flushRoadmapStore();
     const before = localStorage.getItem('health_roadmap_file_v2');
     const hook = vi.fn(async () => null);
     data.setPreEraseHook(hook);
 
-    expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chatErased: false });
+    expect(await data.deleteUserData()).toEqual({ success: false, error: ERASE_UNREACHABLE, chat: null });
     expect(hook).not.toHaveBeenCalled();
     expect(localStorage.getItem('health_roadmap_file_v2')).toBe(before);
     expect((await data.loadAllHistory()).map((m) => m.value)).toEqual([80]);

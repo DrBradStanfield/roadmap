@@ -160,7 +160,7 @@ export function stubResponse(method: string, path: string): { status: number; bo
   if (path.startsWith(LOCAL_BRAD_SERVER + '/')) return stubbed;
   if (!path.startsWith(PROXY + '/')) return null;
   const route = path.slice(PROXY.length);
-  if (route === '/api/events' || route === '/api/ab' || route === '/api/feedback') return { status: 200, body: { success: true } };
+  if (route === '/api/events' || route === '/api/feedback') return { status: 200, body: { success: true } };
   // The guest email box (US-18): accepted, so the captured state and Save as PDF can be checked.
   if (route === '/api/measurements' && method === 'POST') return { status: 200, body: { success: true } };
   if (route === '/api/chat' && method === 'GET') return { status: 200, body: { success: true, conversations: [], isGuest: true } };

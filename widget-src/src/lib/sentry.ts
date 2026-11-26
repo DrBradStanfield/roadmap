@@ -81,7 +81,8 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   // Record errors can quote clinical filenames in messages, causes and fetch
   // breadcrumbs. These captures carry only closed operation/provider tags.
   // `erase`: a throwing "Delete all my data" write (US-16 AC2f), the same record errors.
-  const strictArea = ['cloud-sync', 'cloud-connect', 'upload-save', 'erase'].includes(String(event.tags?.area));
+  // `page-hide`: a save stage that throws as the page hides (US-10 AC14).
+  const strictArea = ['cloud-sync', 'cloud-connect', 'upload-save', 'erase', 'page-hide'].includes(String(event.tags?.area));
   // `upload_review`: the review's error boundary (US-13 AC9). Its breadcrumbs
   // can quote what the review showed (its Replace label named the values until US-13 AC10).
   const strictFeature = ['upload', 'upload_review'].find(feature => feature === event.tags?.feature);
@@ -89,7 +90,7 @@ export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
     const { area, op, backend, branch, uploadErrorCode, cause, errorClass, httpStatus, causeClass } = event.tags!;
     event.tags = {
       ...(strictArea ? { area } : { feature: strictFeature }),
-      ...(['write-document', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load', 'delete-all', 'mirror-write'].includes(String(op)) ? { op } : {}),
+      ...(['write-document', 'write-document-busy', 'read-document', 'persist', 'log-off', 'copy-down', 'migrate-up', 'load', 'delete-all', 'mirror-write'].includes(String(op)) ? { op } : {}),
       ...(['google-drive', 'dropbox', 'github', 'self-host', 'local', 'file', 'memory'].includes(String(backend)) ? { backend } : {}),
       ...(['measurements', 'documents', 'labValues'].includes(String(branch)) ? { branch } : {}),
       ...(['rate_limit', 'busy', 'no_files', 'server_error', 'network', 'unknown'].includes(String(uploadErrorCode)) ? { uploadErrorCode } : {}),

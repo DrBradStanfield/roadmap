@@ -695,6 +695,8 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
 
   it('every pinned redirect is also in the allow-list, so the two cannot drift', () => {
     for (const client of KNOWN_CLIENTS.values()) {
+      // Gemini's redirects are per user, judged by shape (US-32 AC61, mcp.gemini.test.ts): its pin holds none.
+      if (client.clientId === 'gemini' && client.redirectUris.length === 0) continue;
       expect(client.redirectUris.length).toBeGreaterThan(0);
       for (const uri of client.redirectUris) expect(isAllowedRedirect(uri)).toBe(true);
     }

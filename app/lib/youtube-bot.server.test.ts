@@ -89,6 +89,7 @@ const base = {
   channelId: CHANNEL,
   originalAuthor: 'Viewer',
   channelHandle: HANDLE,
+  claims: new Map(),
 };
 
 describe('assessThreadFollowUp', () => {

@@ -1,5 +1,5 @@
 ---
-title: "Omega-3 Brain Trial SHOCKS Scientists. Now What?"
+title: "We Urgently Need to Rethink Omega-3 and the Brain"
 url: "https://drstanfield.com/blogs/articles/omega-3-brain-trial-shocks-scientists-now-what"
 commerceUrl: "https://microvitamin.com/blogs/articles/omega-3-b-vitamins-brain-dha-trial"
 youtube: "https://www.youtube.com/watch?v=VAX_55Uyfpo"

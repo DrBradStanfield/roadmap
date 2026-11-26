@@ -1,8 +1,8 @@
 // The letters and documents an upload will save (US-14 AC11-13; web list PR 2), drawn from `uploadView().documents` as the
 // iPhone draws them (UploadReviewView.swift `documentsRow`): each with its file, title, kind, date and text, changed through the
 // engine's `{document: DocumentFix}`. The title is typed into the list's one draft (key `title:<fileId>`), so it commits
-// as a value does. "Document title", "Date:" and "Document date" are ReviewFileSections.tsx's words. Each control is
-// named with its letter's file, so two letters read apart.
+// as a value does. "Document title", "Date:" and "Document date" are the old grid's words (ReviewFileSections.tsx, gone
+// with the mount). Each control is named with its letter's file, so two letters read apart.
 import { useId } from 'react';
 import type { DocumentFix } from '@roadmap/health-core/upload-choices';
 import type { ListPage } from '@roadmap/health-core/upload-list-page';
@@ -48,6 +48,13 @@ function Letter({ d, documents, fileName, title, page, editable, on, fix }: {
       </span>
       {/* The engine's preview of the reader's Markdown (the grid's cut), as plain text, never HTML, in the grid's box. */}
       {page && <div className="review-document-preview upload-list-letter-text">{page.preview}</div>}
+      {/* The letter's screening box, as the engine words and ticks it (US-13 AC6, web only, upload-screening.ts). */}
+      {page?.screening && (
+        <label className="review-screening-update">
+          <input type="checkbox" checked={page.screening.checked} disabled={!editable || page.screening.disabled} aria-describedby={fileId} onChange={(e) => fix({ screening: e.target.checked })} />
+          <span>{page.screening.lead}<strong>{page.screening.type}</strong>{page.screening.tail}</span>
+        </label>
+      )}
     </li>
   );
 }

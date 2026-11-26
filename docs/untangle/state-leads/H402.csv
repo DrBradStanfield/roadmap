@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H402,process,"docs/user-stories.md is one file every PR appends to: PRs that add an AC to the same story conflict on GitHub, and a conflicting PR gets no CI run",lead,awaits Brad,"25 Nov 2026: six PRs needed a rebase for this alone. Option: one file per AC or per story section, built into the page by the existing Pages step. Brad's call: it changes where stories are edited.",,yes

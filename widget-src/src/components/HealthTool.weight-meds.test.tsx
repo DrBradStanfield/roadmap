@@ -23,15 +23,13 @@ import {
   flushRoadmapStore,
   initRoadmapStore,
   saveChangedMeasurements,
-  saveMedication,
+  saveMedication, getShownErase,
 } from '../lib/roadmap-data';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
   trackProductEvent: vi.fn(),
-  trackABImpression: vi.fn(),
-  trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
@@ -80,19 +78,19 @@ async function guestWith(r: GuestRecord): Promise<RenderResult> {
   await saveChangedMeasurements({
     ...(r.sex ? { sex: r.sex } : {}), ...(birthYear ? { birthYear } : {}),
     ...(r.birthMonth ? { birthMonth: r.birthMonth } : {}), ...(r.height === 0 ? {} : { heightCm: r.height ?? 178 }),
-  }, {});
-  await addMeasurement('weight', r.weight, day);
-  if (r.waist) await addMeasurement('waist', r.waist, day);
-  if (r.hba1c) await addMeasurement('hba1c', r.hba1c, day);
-  if (r.triglycerides) await addMeasurement('triglycerides', r.triglycerides, day);
+  }, {}, getShownErase());
+  await addMeasurement('weight', r.weight, day, getShownErase());
+  if (r.waist) await addMeasurement('waist', r.waist, day, getShownErase());
+  if (r.hba1c) await addMeasurement('hba1c', r.hba1c, day, getShownErase());
+  if (r.triglycerides) await addMeasurement('triglycerides', r.triglycerides, day, getShownErase());
   if (r.bp) {
-    await addMeasurement('systolic_bp', r.bp[0], day);
-    await addMeasurement('diastolic_bp', r.bp[1], day);
+    await addMeasurement('systolic_bp', r.bp[0], day, getShownErase());
+    await addMeasurement('diastolic_bp', r.bp[1], day, getShownErase());
   }
-  if (r.lipids?.total) await addMeasurement('total_cholesterol', r.lipids.total, day);
-  if (r.lipids?.hdl) await addMeasurement('hdl', r.lipids.hdl, day);
-  if (r.lipids?.ldl) await addMeasurement('ldl', r.lipids.ldl, day);
-  for (const [key, drug, dose] of r.meds ?? []) await saveMedication(key, drug, dose ?? null, dose ? 'mg' : null);
+  if (r.lipids?.total) await addMeasurement('total_cholesterol', r.lipids.total, day, getShownErase());
+  if (r.lipids?.hdl) await addMeasurement('hdl', r.lipids.hdl, day, getShownErase());
+  if (r.lipids?.ldl) await addMeasurement('ldl', r.lipids.ldl, day, getShownErase());
+  for (const [key, drug, dose] of r.meds ?? []) await saveMedication(key, drug, dose ?? null, dose ? 'mg' : null, getShownErase());
   await flushRoadmapStore();
   // The store refuses a birth year out of range (US-02 AC5); a record holding
   // one (an older app's, another writer's) is written as it would arrive.

@@ -160,9 +160,9 @@ export class DriveAdapter implements StorageAdapter {
       if (expectedVersion !== null) throw new ConflictError(`${PROVIDER} no longer holds that file`);
       const parentId = await this.folderId(signal);
       const res = await driveCreateFile(this.accessToken, fileName, 'application/json', json, parentId, signal);
-      if (!res.ok) await fail('create', res);
+      if (!res.ok) await fail('create', res, true);
       const created = await jsonBody<{ id?: string; version?: string }>(res);
-      if (!created.id) throw new StorageError(`${PROVIDER} create returned no file id.`);
+      if (!created.id) throw new StorageError(`${PROVIDER} create returned no file id.`, undefined, undefined, undefined, undefined, 'may-have-landed');
       this.fileIds.set(fileName, created.id);
       return { version: JSON.stringify([created.id, String(created.version ?? '')]) };
     }
@@ -211,7 +211,7 @@ export class DriveAdapter implements StorageAdapter {
   /** Where a document ref lives, once the opt-in allows it. Without the
    *  opt-in this is the hosted server's refusal, word for word. */
   private async docTarget(ref: string, verb: 'read' | 'write', signal?: AbortSignal): Promise<{ name: string; parentId: string }> {
-    if (this.options.documents !== 'write') throw new StorageError(`The hosted server does not ${verb} uploaded documents.`);
+    if (this.options.documents !== 'write') throw new StorageError(`The hosted server does not ${verb} uploaded documents.`, undefined, undefined, undefined, undefined, 'refused');
     const { folder, name } = splitDocumentRef(ref);
     return { name, parentId: await untilAborted(PROVIDER, this.documentFolder(folder), signal) }; // ends the wait, not the shared lookup: lead A1-6b
   }

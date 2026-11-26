@@ -1,4 +1,27 @@
 {
  "about": "Deliberate divergences the weekly knowledge lint must not report (tools/knowledge-lint.ts and knowledge-lint-compare.ts). Brad owns this file: the loop proposes entries in its report and never edits it. Each entry: rule, then handle (one entry) or pair (two handles, any order; the algorithm is algorithm:<topic>), optional item (the finding's exact item; without it the entry covers the whole handle or pair), reason, date (YYYY-MM-DD), who. For the model rules an entry with an item is shown to the model as a known divergence; one without an item skips the comparison.",
- "entries": []
+ "entries": [
+  {
+   "rule": "entry-vs-algorithm",
+   "pair": [
+    "algorithm:heart-disease-risk",
+    "heart-disease-risk"
+   ],
+   "item": "ApoB 0.5 g/L boundary",
+   "reason": "No conflict: the aim is ApoB below 0.5 g/L, and 0.5 is where Borderline starts, so the plan's tier table and the guide's 'target below 0.5' state the same boundary.",
+   "date": "2026-11-22",
+   "who": "Brad"
+  },
+  {
+   "rule": "entry-vs-algorithm",
+   "pair": [
+    "algorithm:lipids",
+    "psyllium-benefits-forms-dosing-and-side-effects"
+   ],
+   "item": "psyllium LDL dose-response",
+   "reason": "Brad 2026-11-22: leave the plan line ('the effect rises with dose', Wei 2009) as it is; the reference may note that a 2025 meta-analysis disagrees.",
+   "date": "2026-11-22",
+   "who": "Brad"
+  }
+ ]
 }

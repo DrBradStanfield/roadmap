@@ -1,9 +1,9 @@
 /**
- * The web upload review as a list (US-13 AC26, web list PR 2; design docs/drafts/upload-list-screen.md). Not mounted
- * yet: UploadModal still draws ReviewTable. It draws only what the engine exposes (`uploadList`, `uploadView`) and adds
+ * The web upload review as a list (US-13 AC26, web list PR 2; design docs/drafts/upload-list-screen.md), mounted in
+ * UploadModal through UploadReviewList.tsx. It draws only what the engine exposes (`uploadList`, `uploadView`) and adds
  * no rule: it never decides a status, a caption, an error, a blocker or whether an input takes typing, never parses a
  * number and never counts. Its one state is the focused input's draft (lib/upload-list-draft.ts). Its view state: Show
- * all, a latch set once when the review first has rows (`SHOW_ALL_AT_START`, closed) and then only by its press;
+ * all, a latch set closed once when the review first has rows (Brad 2026-11-23) and then only by its press;
  * which row holds the focus, which is never hidden (owner rulings 2026-11-21, 2026-11-22); and the last error announced.
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -13,7 +13,9 @@ import type { ListPage } from '@roadmap/health-core/upload-list-page';
 import type { CellUnit } from '@roadmap/health-core/cell-unit';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import type { UploadView } from '@roadmap/health-core/upload-view';
+import { ROW_NAME_PARTS } from '@roadmap/health-core/upload-text';
 import { transition, type Draft, type DraftEvent } from '../lib/upload-list-draft';
+import type { ListNameIds } from '../lib/upload-list-names';
 import { UploadListRow, type RowEvents } from './UploadListRow';
 import { DayHeader } from './UploadListDays';
 import { titleKey, UploadListDocuments } from './UploadListDocuments';
@@ -41,6 +43,8 @@ export interface UploadListProps {
    *  SET the unit it is given (a flip can disagree while the record's units are held, US-34 AC7a). */
   unitTo: (metric: MetricType, unit: CellUnit) => void;
   lpaUnitTo: (unit: LpaUnit) => void;
+  /** The person opened "Show all": the review's `showAll` count (US-13 AC13). */
+  openedAll?: () => void;
 }
 
 /** The element that removes a blocker: a row's input (its tick when it takes none) or a day control's picker button. */
@@ -56,18 +60,13 @@ function bySection(rows: ListRow[]): Array<{ key: string; rows: ListRow[] }> {
   return [...groups].map(([key, rs]) => ({ key, rows: rs }));
 }
 
-/** Show all's starting state, set once when the review first has rows: closed, as US-13 AC26 and Brad's decision of
- *  2026-11-21 say (untouched rows that need nothing sit behind "Show all"). Open: docs/decisions-for-brad.md asks whether
- *  a report with nothing to check should show its values straight away; a yes makes this `list.check === null`. */
-const SHOW_ALL_AT_START = false;
-
 /** The errors a person's step made: an error text a row did not have in the list before it (adversary F8, R3). */
 const newErrors = (before: List, after: List) => {
   const had = new Map(before.rows.map((r) => [r.key, r.error]));
   return after.rows.filter((r) => r.error && had.get(r.key) !== r.error).map((r) => r.error!);
 };
 
-export function UploadList({ list, view, page, choose, reread, save, stop, retry, cancel, done, unitTo, lpaUnitTo }: UploadListProps) {
+export function UploadList({ list, view, page, choose, reread, save, stop, retry, cancel, done, unitTo, lpaUnitTo, openedAll }: UploadListProps) {
   // The draft, read synchronously as well as drawn: a blur and the next row's typing land in one batch.
   const live = useRef<Draft>(null);
   const [draft, setDraft] = useState<Draft>(null);
@@ -85,9 +84,17 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
   }
   const root = useRef<HTMLDivElement>(null);
   const rowsId = useId();
+  // What each value and day control is named with (US-13 AC28): `rowName`'s words, drawn once and hidden, each file's name
+  // in Files and each day control's shown day, by their place in the engine's lists.
+  const namesId = useId();
+  const names = useMemo((): ListNameIds => {
+    const file = new Map(view.files.rows.map((f, i) => [f.fileId, `${namesId}f${i}`]));
+    const day = new Map(list.days.map((d, i) => [d.key, `${namesId}d${i}`]));
+    return { valueFrom: `${namesId}v`, commas: [`${namesId}c0`, `${namesId}c1`], again: `${namesId}a`, file: (id) => file.get(id) ?? '', day: (key) => day.get(key) ?? '' };
+  }, [namesId, view.files.rows, list.days]);
   const byKey = useMemo(() => new Map(list.rows.map((r) => [r.key, r])), [list]);
   const editable = view.editable ?? false;
-  const open = latch.open ?? (list.rows.length > 0 ? SHOW_ALL_AT_START : null);
+  const open = latch.open ?? (list.rows.length > 0 ? false : null);
   const all = open ?? list.check === null;
   // The row being typed in, or holding the focus, is never hidden; nor is one shown since Show all was last pressed.
   const shown = (row: ListRow) => all || row.attention || row.key === draft?.key || row.key === focused || latch.kept.has(row.key);
@@ -134,7 +141,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
   };
 
   const failed = view.sections.find((s) => s.kind === 'failed');
-  if (view.done) return <Done done={view.done} label={view.doneLabel} files={[...view.notices, ...(failed?.kind === 'failed' ? failed.rows : [])]} onDone={done} />;
+  if (view.done) return <Done done={view.done} label={view.doneLabel} files={view.files.rows.filter((f) => f.notFullyRead).map((f) => ({ name: f.name, line: f.status }))} onDone={done} />;
 
   const notSaved = view.sections.find((s) => s.kind === 'notSaved');
   const days = new Map(list.days.map((d) => [d.key, d]));
@@ -147,6 +154,9 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
       {/* The list's one announcement: an error text the person's last step made, said once (adversary F8, R3); polite, so
           a check after a blur never cuts off the next field's name. */}
       <div className="hr-sr-only" aria-live="polite">{said.text && <p key={said.n}>{said.text}</p>}</div>
+      <span id={names.valueFrom} hidden>{ROW_NAME_PARTS.valueFrom}</span>
+      {names.commas.map((id) => <span key={id} id={id} hidden>,</span>)}
+      <span id={names.again} hidden>{`, ${ROW_NAME_PARTS.again}`}</span>
       <p className="review-summary">{view.summary}</p>
       {view.alreadySaved && <p className="review-overview-line">{view.alreadySaved}</p>}
       {view.refused && <p className="upload-error">{view.refused}</p>}
@@ -164,11 +174,11 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
           const control = days.get(g.key);
           return (
             <section key={g.key} className="upload-list-group" data-section={g.key}>
-              {control && <DayHeader control={control} editable={editable} choose={pick} />}
+              {control && <DayHeader control={control} editable={editable} choose={pick} shownId={names.day(control.key)} commas={names.commas} />}
               <ul className="upload-list-rows">
                 {g.rows.map((row) => (
                   <UploadListRow
-                    key={row.key} row={row} on={on} editable={editable} hidden={!shown(row)}
+                    key={row.key} row={row} on={on} editable={editable} hidden={!shown(row)} names={names}
                     value={draft?.key === row.key ? draft.text : row.typed?.text ?? row.shown.text}
                     draftLabel={draft?.key === row.key ? draft.unitLabel ?? row.unit.label : null}
                   />
@@ -179,7 +189,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
         })}
         {(list.showAll || all) && (
           <p className="upload-list-show-all">
-            <button type="button" className="review-disclosure" aria-expanded={all} aria-controls={rowsId} onClick={() => setLatch({ open: !all, kept: new Set() })}>
+            <button type="button" className="review-disclosure" aria-expanded={all} aria-controls={rowsId} onClick={() => { if (!all) openedAll?.(); setLatch({ open: !all, kept: new Set() }); }}>
               {all ? list.hide : list.showAll}
             </button>
           </p>
@@ -193,7 +203,7 @@ export function UploadList({ list, view, page, choose, reread, save, stop, retry
         />
       )}
       {notSaved?.kind === 'notSaved' && <NotSaved section={notSaved} />}
-      <Files files={view.files} notices={view.notices} failed={failed?.kind === 'failed' ? failed : undefined} retry={retry} />
+      <Files files={view.files} failed={failed?.kind === 'failed' ? failed : undefined} retry={retry} nameId={names.file} />
       <div className="review-actions upload-list-actions">
         <div className="upload-list-save-line" role="status">
           {view.save.why && <p className="upload-list-why">{view.save.why}</p>}
