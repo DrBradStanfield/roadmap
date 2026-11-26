@@ -140,10 +140,11 @@ which waits for Brad's look.
   in PR 1972, `LabReportSave.swift` in PR 1913). One engine rule sets the default ticks (`upload-review.ts`),
   and the phone saves an upload in one call. Leads U10 and U12 done; U12 keeps one open line, a test gap.
 - **R17** owner rulings: the phone's hand-written allow-list stays the authority, with a CI test against drift
-  from the adapters' routes, built after PR 2099 lands (lead M12). One shared table of viewable types in
-  health-core; each client's open rule stays until a change to it gets its own adversary and Codex review
-  (lead M13). Both leads not started.
+  from the adapters' routes, built after PR 2099 lands (lead M12, not started). Later that day, after Brad's
+  word that the clients share as much as possible: one open rule in health-core for both clients (the
+  extension decides; with no extension, the stored type decides; only the existing passive viewable types),
+  built as its own PR with an adversary and Codex review (lead M13, in progress).
 - **R24** finished: PR 2184 merged. Its follow-up, lead T38: the classifier half merged (PR 2187); the YouTube
-  half is not built. PR 2183, which it waited on, has merged.
+  half is no longer held, since PR 2183 merged; next, `app/lib/youtube-context.ts` joins `ChatDocsState`.
 - **R4** PR 2 merged (PR 2182).
 - **R14** merged as PR 2181 (lead H35).
