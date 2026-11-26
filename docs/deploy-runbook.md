@@ -124,7 +124,7 @@ fly status -c fly.edu.toml  # health-tool-edu
 (b) Apply, as postgres in one transaction, the `handle_new_user` change and the profiles section of `supabase/rls-policies.sql` (trigger reads `raw_app_meta_data`; drop the "Users can update own profile" policy; `REVOKE ALL ON profiles FROM anon, authenticated`; `GRANT SELECT ON profiles TO authenticated`). Check that the trigger reads only `raw_app_meta_data` and that only `authenticated | SELECT` remains.
 (c) From the main checkout, at exactly `origin/main` with no tracked change (`tools/write-gate.mjs` refuses `--execute` otherwise; docs/git-workflow.md): `npx tsx --env-file=.env tools/backfill-shopify-link-proof.ts` (dry run: expect `to_write` = `confirmed` = `linked_profiles` and every skip 0; investigate any skip first), then the same with `--execute` (expect `verified` = `written`, `write_failed` 0). A second dry run shows `already_proven` = `linked_profiles`.
 (d) Deploy both Fly apps.
-(e) Once every machine of both apps runs the new code (`fly status` for each), run the dry run again: an old machine may have linked a new customer between (c) and (d) without `app_metadata`. If `to_write` > 0, run `--execute`. Then check `audit_logs` for `PAID_ORDER_UNPROVEN_LINK` rows: each is a paid message pack the webhook did not credit (order id and profile id, no customer id); credit it by hand once the link is proven. Sentry should show no "Shopify link without admin-written proof" warnings.
+(e) Once every machine of both apps runs the new code (`fly status` for each), run the dry run again: an old machine may have linked a new customer between (c) and (d) without `app_metadata`. If `to_write` > 0, run `--execute`. Then check `audit_logs` for `PAID_ORDER_UNPROVEN_LINK` rows: each is a paid message pack the webhook did not credit (order id and profile id, no customer id); credit it by hand once the link is proven. Since US-09 AC63 the webhook is gone and writes no such row. Sentry should show no "Shopify link without admin-written proof" warnings.
 
 ### Local-first (v2) builds & build flags
 
@@ -266,6 +266,8 @@ to both — deploy twice, see "Shopify app configs".**)
   **Chat surface (2026-09-29):** the site-chat FAB's title, subtitle and empty state come from a
   second shop metafield, `health_roadmap.chat_surface` (`doctor` default | `brand`), emitted as
   `data-surface` by `chat-embed.liquid` and read by `resolveChatSurface` in `assistant-config.ts`.
+  The inline chat panel (`ChatEmbed`) takes the same words from the same table (`chat-copy.ts`,
+  US-15 AC77); the tool page and the chatbot embed block emit no `data-surface`, so they read as `doctor`.
   `microvitamin.com` is set to `brand` ("Ask MicroVitamin", products copy); `drstanfield.com` is
   unset. Same `metafieldsSet` call as the name; no redeploy needed after the extension is live.
 

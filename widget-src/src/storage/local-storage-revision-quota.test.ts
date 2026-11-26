@@ -12,7 +12,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConflictError, ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
-import { isDefiniteRefusal, mayHaveLanded } from '@roadmap/health-core/write-refusal';
+import { mayHaveLanded } from '@roadmap/health-core/write-refusal';
 import { LocalStorageAdapter } from './local-storage-adapter';
 
 const BODY = 'health_roadmap_file_v2';
@@ -171,7 +171,7 @@ describe('S69 (US-11 AC4c): a full revision write says whether the record may ha
     const { adapter } = setup('0', 0);
     const refused = thrown(() => adapter.writeSync(ROADMAP_FILE_NAME, first, '0'));
     expect(mayHaveLanded(refused)).toBe(false);
-    expect(isDefiniteRefusal(refused)).toBe(true);
+    expect((refused as StorageError).outcome).toBe('refused');
   });
 
   it('the old record could not go back: may have stored, never a refusal, so a failed erase keeps its erased copy', () => {
@@ -184,6 +184,6 @@ describe('S69 (US-11 AC4c): a full revision write says whether the record may ha
     const refused = thrown(() => adapter.writeSync(ROADMAP_FILE_NAME, first, '5-i'));
     expect(refused).toBeInstanceOf(StorageError);
     expect(mayHaveLanded(refused)).toBe(true);
-    expect(isDefiniteRefusal(refused)).toBe(false);
+    expect((refused as StorageError).outcome).toBe('may-have-landed');
   });
 });

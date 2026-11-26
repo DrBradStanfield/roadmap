@@ -6,9 +6,10 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { UploadModal } from './UploadModal';
-import { initRoadmapStore, addMeasurement, bulkSaveLabValues, correctValue, flushRoadmapStore } from '../lib/roadmap-data';
+import { initRoadmapStore, addMeasurement, correctValue, flushRoadmapStore, getShownErase } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
+import { seedOpenLabValues } from '../testing/seed-record';
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 // Extraction and original-file archival are outside this value-save witness.
@@ -35,11 +36,11 @@ it.each([
   await initRoadmapStore(new MemoryAdapter(cloud));
   async function add(value: number) {
     if (lab) {
-      const result = await bulkSaveLabValues([{ metricName: 'Synthetic test', value, unit: 'units', recordedAt: '2024-06-01' }]);
-      expect(result.saved).toHaveLength(1);
-      return result.saved[0].id;
+      const saved = seedOpenLabValues([{ metricName: 'Synthetic test', value, unit: 'units', recordedAt: '2024-06-01' }]);
+      expect(saved).toHaveLength(1);
+      return saved[0].id;
     }
-    const result = await addMeasurement('ldl', value, '2024-06-01');
+    const result = await addMeasurement('ldl', value, '2024-06-01', getShownErase());
     if (result.status !== 'inserted') throw new Error('fixture failed');
     return result.row.id;
   }
@@ -69,7 +70,7 @@ it.each([
   } else await screen.findByRole('button', { name: /^Save / });
   // Keep review history unchanged while the real store receives another writer's value.
   const stale = outcome === 'stale' || outcome === 'mixed';
-  if (stale) expect(await correctValue(oldId!, 3.5)).toBe('ok');
+  if (stale) expect(await correctValue(oldId!, 3.5, getShownErase())).toBe('ok');
   if (duplicate) await add(3);
   await flushRoadmapStore();
   fireEvent.click(screen.getByRole('button', { name: /^Save / }));

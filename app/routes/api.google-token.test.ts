@@ -7,6 +7,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { action } from './api.google-token';
+import { ipKeyedLimitCases } from '../lib/ip-key.test-helpers';
 
 function refreshRequest(ip: string): Request {
   return new Request('https://health-tool-app.fly.dev/api/google-token', {
@@ -49,5 +50,15 @@ describe('US-09 AC47: the Google token exchange', () => {
     expect(res.status).toBe(status);
     expect(await res.json()).toEqual({ error, errorDescription: 'test description' });
     expect(Object.values(logs).every((fn) => fn.mock.calls.length === 0)).toBe(true);
+  });
+});
+
+describe('US-52 AC4k: the Google token limit per IP keys on the one per-IP bucket', () => {
+  ipKeyedLimitCases({
+    limit: 30, windowMs: 60_000, v6: '2001:db8:91', v4: '100.75',
+    allowed: async (ip) => {
+      vi.stubGlobal('fetch', vi.fn(async () => Response.json({ access_token: 'test-token-good', expires_in: 3600 })));
+      return (await action({ request: refreshRequest(ip) } as never)).status !== 429;
+    },
   });
 });

@@ -17,10 +17,10 @@
  *
  * why: mcp-architecture.md §7
  */
-import { chmodSync, closeSync, existsSync, fchmodSync, fstatSync, fsyncSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeSync } from 'node:fs';
+import { chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
-import { ConflictError, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
+import { ConflictError, LANDED_HINT, ROADMAP_FILE_NAME, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
 import { RecordShapeError } from './migrate';
 
 /** How many `.bak-` siblings to keep beside the record. */
@@ -72,6 +72,21 @@ function create(dest: string, text: string, mode: number): void {
 }
 
 /**
+ * The text of `file` if it is a regular file, else null. Opening a pipe waits
+ * for a writer and a device can be read forever, so the open does not wait
+ * (`O_NONBLOCK`) and the check and the read use that one descriptor: what is
+ * put at the name between them is never read.
+ */
+function regularText(file: string): string | null {
+  const fd = openSync(file, constants.O_RDONLY | constants.O_NONBLOCK);
+  try {
+    return fstatSync(fd).isFile() ? readFileSync(fd, 'utf8') : null;
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/**
  * How old a lock file is, as one sentence a refusal can open with. Plain
  * words for the person deciding whether its writer is still alive.
  */
@@ -92,6 +107,9 @@ function lockAge(lockPath: string): string {
   if (i > 0 && n * units[i][1] >= units[i - 1][1]) n = Math.round(ms / units[--i][1]);
   return `The lock file ${name} is about ${n} ${units[i][0]}${n === 1 ? '' : 's'} old.`;
 }
+
+/** A failure this adapter met before the rename that replaces the record: nothing was changed, so refused (US-10 AC17). */
+const refusal = (message: string, hint?: string): StorageError => new StorageError(message, hint, undefined, undefined, undefined, 'refused');
 
 export class FileAdapter implements StorageAdapter {
   readonly id = 'file' as const;
@@ -129,13 +147,13 @@ export class FileAdapter implements StorageAdapter {
    */
   private only(fileName: string): void {
     if (fileName !== ROADMAP_FILE_NAME) {
-      throw new StorageError(
+      throw refusal(
         `The local file adapter holds ${ROADMAP_FILE_NAME}, not ${fileName}`,
         'Run this against the record file; other documents live in a cloud folder.',
       );
     }
     if (basename(this.path).includes('.bak-')) {
-      throw new StorageError(
+      throw refusal(
         `${basename(this.path)} is a backup, not the record`,
         'Edit the record itself — backups are rotated, so an edit here is pruned away.',
       );
@@ -147,7 +165,7 @@ export class FileAdapter implements StorageAdapter {
     // hang forever on one, so what the path IS is checked before it is read.
     try {
       if (!statSync(this.path).isFile()) {
-        throw new StorageError(
+        throw refusal(
           `${basename(this.path)} is not a regular file`,
           'Give the path to your health-roadmap.json — a pipe or a device cannot hold a record.',
         );
@@ -159,7 +177,7 @@ export class FileAdapter implements StorageAdapter {
     try {
       return readFileSync(this.path, 'utf8');
     } catch {
-      throw new StorageError(
+      throw refusal(
         `Cannot read ${basename(this.path)}`,
         'Give the path to your health-roadmap.json — see docs/agent-access.md for where each backend keeps it.',
       );
@@ -177,6 +195,7 @@ export class FileAdapter implements StorageAdapter {
       throw new StorageError(
         `${basename(this.path)} is not valid JSON`,
         'The file may be a partial write. Restore it from your cloud provider’s version history.',
+        undefined, undefined, undefined, 'no-answer', // an answer that cannot be used
       );
     }
     // A file that exists and holds `null` is not a fresh start: the document
@@ -227,7 +246,7 @@ export class FileAdapter implements StorageAdapter {
       this.lastBackup = erasing ? '' : this.backup(current, mode);
       const next = `${JSON.stringify(body, null, 2)}\n`;
       if (!this.ownsLock(lock)) {
-        throw new StorageError(
+        throw refusal(
           'The local record lock changed during the write',
           'The write was stopped. Close all record writers and investigate the lock before retrying.',
         );
@@ -281,7 +300,7 @@ export class FileAdapter implements StorageAdapter {
         // cannot make a lock here at all (an unwritable folder), and waiting
         // five seconds to say so would be a stall on top of a failure.
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-          throw new StorageError(
+          throw refusal(
             `Cannot write beside ${basename(this.path)}`,
             'Check the folder is writable, then try again. Your record was not changed.',
           );
@@ -290,7 +309,7 @@ export class FileAdapter implements StorageAdapter {
         // steal a lock: PID checks also cannot prove ownership across machines
         // or PID reuse, and competing reclaimers introduce another unlink race.
         if (Date.now() > until) {
-          throw new StorageError(
+          throw refusal(
             `Another program is writing ${basename(this.path)} and did not finish`,
             `${lockAge(this.lockPath)} Nothing was changed. Retry later. If the lock persists, terminate all record writers before investigating it; never remove a lock while a writer might resume.`,
           );
@@ -375,7 +394,7 @@ export class FileAdapter implements StorageAdapter {
       // symlink would otherwise take the record's bytes wherever it points.
       create(dest, text, mode);
     } catch {
-      throw new StorageError(
+      throw refusal(
         `Cannot write a backup beside ${basename(this.path)}`,
         'Check the folder is writable, then try again. Your record was not changed.',
       );
@@ -419,7 +438,9 @@ export class FileAdapter implements StorageAdapter {
       const file = join(dirname(this.path), name);
       let meta: unknown;
       try {
-        meta = (JSON.parse(readFileSync(file, 'utf8')) as { meta?: unknown } | null)?.meta;
+        const text = regularText(file);
+        if (text === null) continue;
+        meta = (JSON.parse(text) as { meta?: unknown } | null)?.meta;
       } catch {
         continue;
       }
@@ -447,27 +468,29 @@ export class FileAdapter implements StorageAdapter {
    */
   private replace(text: string, mode: number): void {
     const temp = this.tempPath();
+    const clear = () => {
+      try { rmSync(temp, { force: true }); } catch { /* a leftover `.tmp-` is harmless; the failure below is what matters */ }
+    };
     try {
       create(temp, text, mode);
+    } catch {
+      clear();
+      throw refusal(`Cannot write ${basename(this.path)}`, 'Check the file and its folder are writable. Your record was not changed.');
+    }
+    try {
       renameSync(temp, this.path);
     } catch {
-      try {
-        rmSync(temp, { force: true });
-      } catch {
-        // A leftover `.tmp-` is harmless; the failure below is what matters.
-      }
-      throw new StorageError(
-        `Cannot write ${basename(this.path)}`,
-        'Check the file and its folder are writable. Your record was not changed.',
-      );
+      clear();
+      // A rename that reports a failure can still have landed (a network filesystem): the safe side.
+      throw new StorageError(`Cannot write ${basename(this.path)}`, LANDED_HINT, undefined, undefined, undefined, 'may-have-landed');
     }
   }
 
   async readDocument(): Promise<Blob> {
-    throw new StorageError('The local file adapter does not read uploaded documents.');
+    throw refusal('The local file adapter does not read uploaded documents.');
   }
 
   async writeDocument(): Promise<void> {
-    throw new StorageError('The local file adapter does not write uploaded documents.');
+    throw refusal('The local file adapter does not write uploaded documents.');
   }
 }

@@ -85,7 +85,7 @@ describe('US-10 AC4c: SyncManager.save and a conflict on the read', () => {
 
   it('negative control: a read that fails for any other reason still fails the save (passes today)', async () => {
     const adapter = new VanishingCopyAdapter(new MemoryCloud());
-    adapter.error = new StorageError('Google Drive read failed (500).');
+    adapter.error = new StorageError('Google Drive read failed (500).', undefined, undefined, undefined, undefined, 'no-answer');
     const sync = new SyncManager(adapter, 'device-a', ROADMAP_DOC);
     await expect(sync.save(createEmptyFile({ deviceId: 'device-a', now: '2024-01-01T00:00:00.000Z' }))).rejects.toThrow('read failed (500)');
   });

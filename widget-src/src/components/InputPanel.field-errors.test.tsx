@@ -39,7 +39,7 @@ function renderPanel({ errors = {}, unitSystem = 'si', onboarding = DONE, previo
       { id: 's3', screeningKey: 'lung_pack_years', value: '25', updatedAt: '' },
     ],
     onSupplementDelete: vi.fn(), scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    hasApiResponse: true, onboarding, planBasis: { age: 66 }, grading: {},
+    hasApiResponse: true, onboarding, planBasis: { age: 66, screeningAge: 66 }, grading: {},
   };
   const view = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
   if (onboarding === DONE) openAboutYou(view.container);

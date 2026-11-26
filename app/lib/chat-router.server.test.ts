@@ -26,6 +26,24 @@ describe('prompt cache TTL on the router and classifier hops', () => {
   });
 });
 
+// US-15 AC78: the router runs on ROUTER_MODEL unless a caller (the YouTube bot) names another.
+describe('US-15 AC78: the router model', () => {
+  it('sends Sonnet 5.5 with thinking off when no model is given (web, Discord)', async () => {
+    vi.mocked(callAnthropicWithUsage).mockClear();
+    await routeQuery('vitamin d', undefined, undefined, 'CHAT');
+    expect(vi.mocked(callAnthropicWithUsage).mock.calls[0][0])
+      .toMatchObject({ model: 'claude-sonnet-5-5', max_tokens: 200, thinking: { type: 'between_tools' } });
+  });
+  it('sends the model it is given, in that family\'s thinking-off shape', async () => {
+    vi.mocked(callAnthropicWithUsage).mockClear();
+    await routeQuery('vitamin d', undefined, undefined, 'YOUTUBE', 'claude-haiku-5-5');
+    const body = vi.mocked(callAnthropicWithUsage).mock.calls[0][0] as Record<string, unknown>;
+    expect(body).toMatchObject({ model: 'claude-haiku-5-5', max_tokens: 200, thinking: { type: 'disabled' } });
+    expect(body).not.toHaveProperty('output_config');
+    expect(vi.mocked(callAnthropicWithUsage).mock.calls[0][1]).toBe('YOUTUBE');
+  });
+});
+
 describe('sanitizeRawHandles', () => {
   it('soft-truncates >3 handles so a 4th match cannot void the first three (W33 router_error defect)', () => {
     const four = ['cardiovascular-disease', 'hypertension-in-adults', 'statins', 'ldl-cholesterol'];

@@ -21,7 +21,7 @@ import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, bulkSaveDocuments, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, saveSupplement, getShownErase } from '../lib/roadmap-data';
 import { MIRROR_KEY } from '../lib/storage';
 import { openAboutYou, showTables, trackLiveRefresh, stopLiveRefresh, recordOnDisk, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 import { formatShortDate } from '../lib/constants';
@@ -30,7 +30,6 @@ vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackABImpression: vi.fn(), trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
@@ -48,6 +47,7 @@ vi.mock('./ChatSection', () => ({
 }));
 import { HealthTool } from './HealthTool';
 import { closeSettings, deleteButton, openSettings } from '../testing/settings';
+import { seedOpenDocuments } from '../testing/seed-record';
 
 // Read at assertion time, not module load: a run that crosses local midnight stamps rows with the new day.
 const localToday = () => localDay(new Date());
@@ -324,8 +324,8 @@ describe('US-62 AC13: a reload resumes at the first missing answer', () => {
   });
 
   it('a returning user with a saved weight and no sex goes to the sex question', async () => {
-    await saveChangedMeasurements({ heightCm: 170, birthYear: 1980, birthMonth: 3 }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
@@ -334,8 +334,8 @@ describe('US-62 AC13: a reload resumes at the first missing answer', () => {
   });
 
   it('US-62 AC13 (adversary R3, 2026-11-02): a saved weight from another day in the onboarding box says when it was saved; today\'s says nothing', async () => {
-    await saveChangedMeasurements({ heightCm: 170 }, {});
-    await addMeasurement('weight', 90, '2024-03-03');
+    await saveChangedMeasurements({ heightCm: 170 }, {}, getShownErase());
+    await addMeasurement('weight', 90, '2024-03-03', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     const box = await waitFor(() => { const b = q(view, '#weightKg') as HTMLInputElement; expect(b).toBeTruthy(); return b; });
@@ -347,7 +347,7 @@ describe('US-62 AC13: a reload resumes at the first missing answer', () => {
     expect(line()).toBe(`Previous: 90 kg · ${formatShortDate('2024-03-03')}`);
     view.unmount();
 
-    await addMeasurement('weight', 89, localToday());
+    await addMeasurement('weight', 89, localToday(), getShownErase());
     await flushRoadmapStore();
     const again = await open();
     const today = await waitFor(() => { const b = q(again, '#weightKg') as HTMLInputElement; expect(b?.value).toBe('89'); return b; });
@@ -357,8 +357,8 @@ describe('US-62 AC13: a reload resumes at the first missing answer', () => {
 
 describe('US-62 AC13: a saved blood test opens the whole form, the missing questions pinned at the top', () => {
   it('shows the blood tests and asks sex and birth date above them', async () => {
-    await saveChangedMeasurements({ heightCm: 170 }, {});
-    await addMeasurement('ldl', 3.1, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170 }, {}, getShownErase());
+    await addMeasurement('ldl', 3.1, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(fullForm(view)).toBe(true));
@@ -401,8 +401,8 @@ describe('US-62 AC13: onboarding events (AC1, AC2)', () => {
   });
 
   it('a returning user who is already done sends none', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(fullForm(view)).toBe(true));
@@ -415,8 +415,8 @@ describe('US-62 AC13: onboarding events (AC1, AC2)', () => {
 
 describe('US-62 AC13 review fixes (PR 421)', () => {
   it('R1: a birth year alone answers the step: a year-only record gets the whole form, nothing pinned', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980 }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980 }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(fullForm(view)).toBe(true));
@@ -426,9 +426,9 @@ describe('US-62 AC13 review fixes (PR 421)', () => {
   });
 
   it('R1: a returning record with medications and no birth date gets the whole form, the question pinned', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'male' }, {});
-    await addMeasurement('weight', 80, '2026-09-01');
-    await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'male' }, {}, getShownErase());
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
+    await saveMedication('statin', 'rosuvastatin', 10, 'mg', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(fullForm(view)).toBe(true));
@@ -440,8 +440,8 @@ describe('US-62 AC13 review fixes (PR 421)', () => {
 
   it('R2: on a phone, retyping the birth year keeps the field and its focus where they are', async () => {
     phone = true;
-    await saveChangedMeasurements({ heightCm: 170, sex: 'male', birthYear: 1980, birthMonth: 3 }, {});
-    await addMeasurement('weight', 80, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'male', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(q(view, '.md-about-you #birthYear')).toBeTruthy()); // About you low
@@ -471,8 +471,8 @@ describe('US-62 AC13 review fixes (PR 421)', () => {
   });
 
   it('R4: a returning user resuming mid-onboarding sees the weight once when the form opens (the vitals as a matrix)', async () => {
-    await saveChangedMeasurements({ heightCm: 170 }, {});
-    await addMeasurement('weight', 80, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170 }, {}, getShownErase());
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     seedMatrixMirror();
     const view = await open();
@@ -485,12 +485,12 @@ describe('US-62 AC13 review fixes (PR 421)', () => {
   });
 
   it('R5: a jump from another device or tab sends no onboarding events', async () => {
-    await saveChangedMeasurements({ heightCm: 170 }, {});
-    await addMeasurement('weight', 80, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170 }, {}, getShownErase());
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
-    await saveChangedMeasurements({ heightCm: 170, sex: 'male', birthYear: 1980, birthMonth: 3 }, { heightCm: 170 }); // another writer
+    await saveChangedMeasurements({ heightCm: 170, sex: 'male', birthYear: 1980, birthMonth: 3 }, { heightCm: 170 }, getShownErase()); // another writer
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await waitFor(() => expect(fullForm(view)).toBe(true), { timeout: 3000 });
@@ -511,8 +511,8 @@ function seedMatrixMirror() {
 const weightPlaces = (view: RenderResult) => Array.from(view.container.querySelectorAll('.bt-name-label, label[for="weightKg"]'))
   .filter((l) => l.textContent?.trim().startsWith('Weight'));
 async function completeRecord(extra: Parameters<typeof saveChangedMeasurements>[0] = {}) {
-  await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, ...extra }, {});
-  await addMeasurement('weight', 70, '2026-09-01');
+  await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3, ...extra }, {}, getShownErase());
+  await addMeasurement('weight', 70, '2026-09-01', getShownErase());
   await flushRoadmapStore();
 }
 
@@ -531,7 +531,7 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
   });
 
   it('S1: a weight typed beside the height shows there alone once the form opens, the matrix leaving its row out', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
     await flushRoadmapStore();
     seedMatrixMirror(); // a copy holding a saved vital (another device's, say): the vitals open as a matrix
     const view = await open();
@@ -543,8 +543,8 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
   });
 
   it('Codex R1: a year-only record keeps its year field, and focus, while the year is cleared and retyped', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980 }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980 }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(fullForm(view)).toBe(true));
@@ -558,7 +558,7 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
   });
 
   it.each([
-    ['supplements', () => saveSupplement('magnesium', 'Magnesium', 200, 'mg')],
+    ['supplements', () => saveSupplement('magnesium', 'Magnesium', 200, 'mg', undefined, undefined, getShownErase())],
     ['documents', () => saveLetter()],
   ] as const)('Codex R3: a record holding only %s opens the whole form', async (_, seed) => {
     await seed();
@@ -569,8 +569,8 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
   });
 
   it('Codex R4: finishing through the vitals matrix counts the answered step and done', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
-    await addMeasurement('ldl', 3.0, '2026-09-01'); // the whole form, the weight in the matrix
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+    await addMeasurement('ldl', 3.0, '2026-09-01', getShownErase()); // the whole form, the weight in the matrix
     await flushRoadmapStore();
     seedMatrixMirror();
     const view = await open();
@@ -611,8 +611,8 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
 
   it('R7: the vitals matrix weight jumps to the email box only as the last answer', async () => {
     // Sex missing: the weight is not the last answer, so the email box keeps still.
-    await saveChangedMeasurements({ heightCm: 170, birthYear: 1980, birthMonth: 3 }, {});
-    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+    await addMeasurement('ldl', 3.0, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     seedMatrixMirror();
     const view = await open();
@@ -628,8 +628,8 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
   });
 
   it('R7: with the other answers in, the matrix weight is the last answer and jumps to the email box', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
-    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+    await addMeasurement('ldl', 3.0, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     seedMatrixMirror();
     const view = await open();
@@ -649,13 +649,13 @@ describe('US-62 AC13 review fixes, round 2 (PR 421)', () => {
 });
 
 /** A clinic letter on record: a document the Health Records list shows. */
-const saveLetter = () => bulkSaveDocuments([{
+const saveLetter = () => seedOpenDocuments([{
   documentType: 'clinic_letter', title: 'Clinic letter', documentDate: '2026-09-01', contentMd: 'A letter.', metadata: {}, sourceFileName: 'letter.pdf',
 }]);
 
 describe('US-62 AC13 review fixes, round 3 (PR 421)', () => {
   it('1: a chat weight, with the weight beside the height, lands in that field: the BMI matches and no hidden draft', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
     await flushRoadmapStore();
     seedMatrixMirror(); // the vitals as a matrix, its weight row hidden
     const view = await open();
@@ -683,8 +683,8 @@ describe('US-62 AC13 review fixes, round 3 (PR 421)', () => {
   });
 
   it('3: a year-only record opened by a medication keeps its year field while the year is retyped', async () => {
-    await saveChangedMeasurements({ heightCm: 170, birthYear: 1980 }, {});
-    await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+    await saveChangedMeasurements({ heightCm: 170, birthYear: 1980 }, {}, getShownErase());
+    await saveMedication('statin', 'rosuvastatin', 10, 'mg', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(fullForm(view)).toBe(true));
@@ -704,8 +704,8 @@ describe('US-62 AC13 review fixes, round 3 (PR 421)', () => {
     const view = render(<HealthTool />);
     await waitFor(() => expect(q(view, '.mh-sections')).toBeTruthy());
     expect(q(view, '.about-card')).toBeNull();
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, { heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 });
-    await saveChangedMeasurements({ heightCm: undefined }, { heightCm: 170 }); // another writer clears the height
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, { heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, getShownErase());
+    await saveChangedMeasurements({ heightCm: undefined }, { heightCm: 170 }, getShownErase()); // another writer clears the height
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     openSettings(view.container);
@@ -864,8 +864,8 @@ describe('US-62 AC31: "Your plan is ready." after the onboarding', () => {
   });
 
   it('a returning user with all four answers never sees it', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
-    await addMeasurement('weight', 70, localToday());
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+    await addMeasurement('weight', 70, localToday(), getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(q(view, '.mh-sections')).toBeTruthy());
@@ -1002,7 +1002,7 @@ describe('US-02 AC11: feet and inches keep what is typed', () => {
   });
 
   it('a saved height still shows in feet and inches', async () => {
-    await saveChangedMeasurements({ heightCm: 178 }, {});
+    await saveChangedMeasurements({ heightCm: 178 }, {}, getShownErase());
     const view = await open();
     const feet = await toFeetInches(view);
     expect([feet.value, inchesBox(view).value]).toEqual(['5', '10']);
@@ -1016,7 +1016,7 @@ describe('US-02 AC11: feet and inches keep what is typed', () => {
     key(inchesBox(view), '0');
     await wait(900); // the profile's 500 ms save
     const typed = (await recordOnDisk()).profile.heightCm;
-    await saveChangedMeasurements({ heightCm: 160 }, { heightCm: typed }); // another device
+    await saveChangedMeasurements({ heightCm: 160 }, { heightCm: typed }, getShownErase()); // another device
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await waitFor(() => expect([feet.value, inchesBox(view).value]).toEqual(['5', '3']), { timeout: 3000 });
@@ -1057,8 +1057,8 @@ const gridErrors = (view: RenderResult) => Array.from(view.container.querySelect
 
 describe('PR 518 review: refused and erased records', () => {
   it('Codex R1 (US-02 AC5, US-34 AC4): a remote change arriving before an out-of-range birth year is refused stays held; the year and its error survive', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(q(view, '#birthMonth')).toBeTruthy());
@@ -1066,7 +1066,7 @@ describe('PR 518 review: refused and erased records', () => {
     const year = q(view, '#birthYear') as HTMLInputElement;
     type(year, '1850');
     // Another writer changes the height before the 500 ms autosave runs.
-    await saveChangedMeasurements({ heightCm: 171, sex: 'female' }, { heightCm: 170, sex: 'female' });
+    await saveChangedMeasurements({ heightCm: 171, sex: 'female' }, { heightCm: 170, sex: 'female' }, getShownErase());
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await wait(900); // the autosave refuses the year
@@ -1085,7 +1085,7 @@ describe('PR 518 review: refused and erased records', () => {
     type(waist, '3');
     leave(waist);
     await wait(700); // the grid's commit on leaving skips it
-    await saveChangedMeasurements({ alcohol: 'none' }, {}); // another writer
+    await saveChangedMeasurements({ alcohol: 'none' }, {}, getShownErase()); // another writer
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await wait(300);
@@ -1178,8 +1178,8 @@ describe('PR 518 Codex re-check', () => {
 
 describe('PR 518 adversary re-check', () => {
   it('N1 (US-34 AC4): a refused birth year, then cleared, releases the remote change it held', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(q(view, '#birthMonth')).toBeTruthy());
@@ -1188,7 +1188,7 @@ describe('PR 518 adversary re-check', () => {
     const year = q(view, '#birthYear') as HTMLInputElement;
     type(year, '1850');
     await wait(700); // refused
-    await saveChangedMeasurements({ heightCm: 171, sex: 'female' }, { heightCm: 170, sex: 'female' }); // another writer
+    await saveChangedMeasurements({ heightCm: 171, sex: 'female' }, { heightCm: 170, sex: 'female' }, getShownErase()); // another writer
     await flushRoadmapStore();
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); }); // held: the form holds 1850
     expect((q(view, '#heightCm') as HTMLInputElement).value).toBe('170');
@@ -1250,8 +1250,8 @@ describe('PR 518 adversary re-check', () => {
 
 describe('US-11 AC6: a remote erase always applies', () => {
   it('a height of 19 refused by the autosave, then the record erased on another device: the erase applies and the draft goes', async () => {
-    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {});
-    await addMeasurement('weight', 70, '2026-09-01');
+    await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {}, getShownErase());
+    await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(sexQuestion(view)).toBeTruthy());
@@ -1330,7 +1330,7 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
   });
 
   it('a record with data but no weight, in a fresh browser: a Weight "Add" row, no weight box, and the height does not hop to a missing box', async () => {
-    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await addMeasurement('ldl', 3.0, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const view = await open();
     await waitFor(() => expect(fullForm(view)).toBe(true), slow);
@@ -1358,7 +1358,7 @@ describe('US-62 AC8 (H71): waist and blood pressure are rows from the start; no 
   // R3 (H71): the test above passes without the guard, since focusing a missing id does nothing. Here another
   // element on the host page carries the id, so a hop the guard did not stop would be seen.
   it('path (c): with no weight box, a complete height never hops, even to another element with the weight\'s id', async () => {
-    await addMeasurement('ldl', 3.0, '2026-09-01');
+    await addMeasurement('ldl', 3.0, '2026-09-01', getShownErase());
     await flushRoadmapStore();
     const decoy = document.body.appendChild(Object.assign(document.createElement('input'), { id: 'weightKg' }));
     try {

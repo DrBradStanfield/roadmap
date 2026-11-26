@@ -119,7 +119,7 @@ During strength exercise, taurine has been found to reduce exercise-induced oxid
 
 But I’m far more excited about a new study published last year that looked at measures related to metabolic syndrome. Metabolic syndrome is a significant health concern because it increases the risks of heart disease, strokes, type 2 diabetes, and chronic inflammation \[15\].
 
-Despite numerous clinical studies that show the diverse health benefits of taurine, there are inconsistencies. That makes it a challenge to say for sure whether taurine reduces the risk of metabolic syndrome. And that’s why this new study was done. The authors wanted to clarify taurine’s effectiveness.
+Despite numerous clinical studies that show the diverse health [benefits of taurine](/blogs/articles/taurine-benefits-forms-dosing-and-side-effects), there are inconsistencies. That makes it a challenge to say for sure whether taurine reduces the risk of metabolic syndrome. And that’s why this new study was done. The authors wanted to clarify taurine’s effectiveness.
 
 So they conducted a meta-analysis of the randomized clinical trials that looked at parameters linked to metabolic syndrome—things like cholesterol, blood pressure, and insulin sensitivity \[16\]. The analysis included 25 trials involving over 1,000 participants. It found that taurine decreased fasting blood sugar levels, blood pressure, triglycerides, LDL cholesterol, HbA1c, and insulin levels \[17\].
 

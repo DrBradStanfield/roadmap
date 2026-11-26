@@ -29,8 +29,13 @@ struct TopicHeading<Controls: View>: View {
                 .minimumScaleFactor(0.7)
                 .accessibilityAddTraits(.isHeader)
             // As the title row (MyDataView+Top.swift): beside the title when both fit unbroken, else under it.
+            // ViewThatFits measures the title at its ideal width. A List's own Label style reports a
+            // wrong one (40 pt wide, hundreds tall under fixedSize), which grew the row and broke the
+            // title, so a hidden plain copy holds the one-line size and the title draws over it
+            // (TextSizeLayoutTests, the room under the banner).
+            let line = text.labelStyle(.titleAndIcon).fixedSize(horizontal: true, vertical: false).hidden()
             let row = ViewThatFits(in: .horizontal) {
-                HStack(spacing: 14) { text.fixedSize(horizontal: true, vertical: false); Spacer(minLength: 0); controls }
+                HStack(spacing: 14) { line.overlay(alignment: .topLeading) { text }; Spacer(minLength: 0); controls }
                 VStack(alignment: .leading, spacing: 8) { text; controls }
             }
             .buttonStyle(.borderless)

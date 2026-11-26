@@ -564,7 +564,7 @@ describe('readRecord (AC4, adversary R4)', () => {
     expect(notRecord).toMatchObject({ name: 'Refusal', message: 'This file is not a health record.' });
     const record = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
     const tooNew = refusal(JSON.stringify({ ...record, schemaVersion: 999 }));
-    expect(tooNew).toMatchObject({ name: 'Refusal', message: 'A newer version of Health Roadmap wrote this record. Update the app to open it.' });
+    expect(tooNew).toMatchObject({ name: 'Refusal', message: 'A newer version of this app wrote this record. Update the app to open it.' });
     // A broken record is no refusal: its text stays hidden.
     expect(refusal(JSON.stringify({ hello: 1 }))).not.toBeInstanceOf(Refusal);
   });

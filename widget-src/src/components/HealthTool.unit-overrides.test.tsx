@@ -12,13 +12,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/react';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 import { showTables, trackLiveRefresh, stopLiveRefresh } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
@@ -37,7 +37,7 @@ beforeEach(async () => {
   Element.prototype.scrollIntoView ??= () => {};
   trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64, waistCm: 80 }, {});
+  await saveChangedMeasurements({ sex: 'female', heightCm: 165, birthYear: 1975, birthMonth: 5, unitSystem: 'si', weightKg: 64, waistCm: 80 }, {}, getShownErase());
   await flushRoadmapStore();
 });
 afterEach(async () => {

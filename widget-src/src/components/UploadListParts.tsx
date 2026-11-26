@@ -19,13 +19,14 @@ export function NotSaved({ section }: { section: Section<'notSaved'> }) {
 }
 
 /** The files and their status; quiet when every file says the same. */
-export function Files({ files, failed, retry }: { files: UploadView['files']; failed: Section<'failed'> | undefined; retry: () => void }) {
+/** `nameId`: each file name's id, which the rows are named with (US-13 AC28). */
+export function Files({ files, failed, retry, nameId }: { files: UploadView['files']; failed: Section<'failed'> | undefined; retry: () => void; nameId: (fileId: string) => string }) {
   const quiet = new Set(files.rows.map((f) => f.status)).size <= 1 && !files.rows.some((f) => f.notFullyRead);
   return (
     <section className={`upload-list-files${quiet ? ' upload-list-files--quiet' : ''}`}>
       <h4 className="review-check-title">{files.row}</h4>
       <ul>
-        {files.rows.map((f) => <li key={f.fileId}><span className="upload-list-file-name">{f.name}</span> <span className="review-overview-footer">{f.status}</span></li>)}
+        {files.rows.map((f) => <li key={f.fileId}><span id={nameId(f.fileId)} className="upload-list-file-name">{f.name}</span> <span className="review-overview-footer">{f.status}</span></li>)}
       </ul>
       {failed?.retry && <button type="button" className="review-cancel-btn" onClick={retry}>{failed.retry}</button>}
     </section>

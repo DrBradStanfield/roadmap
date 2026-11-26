@@ -14,6 +14,7 @@ import { render, fireEvent, cleanup, act, within } from '@testing-library/react'
 afterEach(cleanup);
 import type { ApiLabValue } from '../lib/api-types';
 import type { CorrectFn } from '../lib/matrix-save';
+import { getShownErase } from '../lib/roadmap-data';
 
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 
@@ -106,7 +107,7 @@ describe('US-21 AC5 — a lab value opens the core editor', () => {
     expect(input.value).toBe('141');
     fireEvent.change(input, { target: { value: '142' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    await vi.waitFor(() => expect(onCorrect).toHaveBeenCalledWith(ROWS[0].id, 142));
+    await vi.waitFor(() => expect(onCorrect).toHaveBeenCalledWith(ROWS[0].id, 142, getShownErase()));
   });
 
   it('stays read-only for a caller that passes no handler', () => {
@@ -135,7 +136,7 @@ describe('US-21 AC5 — closing a group never drops a correction', () => {
     const onCorrect = vi.fn().mockResolvedValue('ok');
     const { header } = editSodium(onCorrect);
     fireEvent.click(header); // closes the group; nothing moved the focus
-    await vi.waitFor(() => expect(onCorrect).toHaveBeenCalledWith(ROWS[0].id, 142));
+    await vi.waitFor(() => expect(onCorrect).toHaveBeenCalledWith(ROWS[0].id, 142, getShownErase()));
   });
 
   it('a correction that fails as its group closes is there, with its reason, when the group opens again', async () => {
@@ -183,9 +184,9 @@ describe('US-21 AC26 — a refused lab correction says why, in the engine\'s wor
     const { RoadmapStore } = await import('../storage/roadmap-store');
     const { MemoryAdapter } = await import('@roadmap/health-core/memory-adapter');
     const store = await RoadmapStore.create(new MemoryAdapter());
-    const added = store.addLabValue({ metricName: 'sodium', unit: 'mmol/L', value: 141, day: '2026-05-12' });
+    const added = store.addLabValue({ metricName: 'sodium', unit: 'mmol/L', value: 141, day: '2026-05-12' }, store.shownErase);
     expect(added?.ok).toBe(true);
-    const onCorrect: CorrectFn = async (id, value) => store.correctValue(id, value);
+    const onCorrect: CorrectFn = async (id, value) => store.correctValue(id, value, store.shownErase);
     const { container, getByRole } = render(<AdditionalLabRows labValues={store.loadLabValues()} onCorrect={onCorrect} />);
     fireEvent.click(getByRole('button', { name: /Renal/ }));
     fireEvent.click(Array.from(container.querySelectorAll('.bt-cell-clickable')).find((c) => c.textContent === '141') as HTMLElement);

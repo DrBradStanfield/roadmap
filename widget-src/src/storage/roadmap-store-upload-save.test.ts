@@ -14,10 +14,12 @@ import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
 import type { UploadFile, UploadState } from '@roadmap/health-core/upload-flow';
 import { reviewedWrites, uploadReview } from '@roadmap/health-core/upload-review';
 import { uploadSave } from '@roadmap/health-core/upload-save';
+import type { RecordSession } from '@roadmap/health-core/record-session';
 import { Sentry } from '../lib/sentry';
 import { emptyHeld, type Held } from '../lib/upload-read';
 import { webUploadIO } from '../lib/upload-save-io';
 import { RoadmapStore } from './roadmap-store';
+import { stamped } from '../testing/upload-save-kit';
 import { BACKEND_KEY } from './web-record-host';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -89,7 +91,7 @@ describe('US-52 AC8c, US-16 AC2a: one Save, one edit', () => {
     adapter.gate = new Promise((r) => { release = r; });
     const writing = new Promise<void>((r) => { adapter.reached = r; });
     const s = saving(store, [read('lab', labX), read('letter', letterX)]);
-    const save = store.saveUpload(ENGINE, s, NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
+    const save = store.saveUpload(ENGINE, stamped(s, store.shownErase), NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
     await writing;
     expect(rowsOf(store)).toEqual({ labs: 0, documents: 0, stored: 0, screening: null });
     release();
@@ -102,7 +104,7 @@ describe('US-52 AC8c, US-16 AC2a: one Save, one edit', () => {
   it('a Save the page began before an erase it no longer shows is refused before any original is written', async () => {
     const { adapter, store } = await opened();
     store.showErase('[0,"an erase the page showed"]');
-    const answer = await store.saveUpload(ENGINE, saving(store, [read('lab', labX)]), NOW, true, webUploadIO(held({ lab: pdf('lab') })), PERSON);
+    const answer = await store.saveUpload(ENGINE, stamped(saving(store, [read('lab', labX)]), store.shownErase), NOW, true, webUploadIO(held({ lab: pdf('lab') })), PERSON);
     expect(answer).toEqual({ ok: false, reason: 'erased', message: 'Failed to save. Please try again.' });
     expect(adapter.writes).toEqual([]);
     expect(rowsOf(store)).toEqual({ labs: 0, documents: 0, stored: 0, screening: null });
@@ -113,7 +115,7 @@ describe('US-52 AC8c, US-16 AC2a: one Save, one edit', () => {
     let release!: () => void;
     adapter.gate = new Promise((r) => { release = r; });
     const writing = new Promise<void>((r) => { adapter.reached = r; });
-    const save = store.saveUpload(ENGINE, saving(store, [read('lab', labX), read('letter', letterX)]), NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
+    const save = store.saveUpload(ENGINE, stamped(saving(store, [read('lab', labX), read('letter', letterX)]), store.shownErase), NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
     await writing;
     adapter.gate = null;
     const erased = await store.deleteAllData();
@@ -125,11 +127,54 @@ describe('US-52 AC8c, US-16 AC2a: one Save, one edit', () => {
   });
 });
 
+// US-16 AC2a (lead H18, H19): the Save stands for the erase its saving state carries, the one the page showed at the
+// press on Save (hooks/useUploadFlow.ts `save`), not the one the page shows when the Save runs.
+describe('US-16 AC2a: the Save writes under the erase its state carries', () => {
+  async function erasedAfterThePress() {
+    const { adapter, store } = await opened();
+    const pressed = store.shownErase;
+    const s = { ...saving(store, [read('lab', labX), read('letter', letterX)]), erase: pressed } as UploadState;
+    expect((await store.deleteAllData()).success).toBe(true);
+    store.showErase(store.eraseIdentity); // the page has drawn the erased record since the press
+    await store.flush();
+    return { adapter, store, s };
+  }
+  const io = () => webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') }));
+
+  it('pressed before an erase the page now shows: refused, no original written, the record unchanged', async () => {
+    const { adapter, store, s } = await erasedAfterThePress();
+    const before = JSON.stringify(store.file);
+    expect(await store.saveUpload(ENGINE, stamped(s, store.shownErase), NOW, true, io(), PERSON)).toEqual({ ok: false, reason: 'erased', message: 'Failed to save. Please try again.' });
+    expect(adapter.writes).toEqual([]);
+    expect(JSON.stringify(store.file)).toBe(before);
+  });
+
+  it('control: pressed under the erase shown, the same Save lands', async () => {
+    const { store, s } = await erasedAfterThePress();
+    const answer = await store.saveUpload(ENGINE, stamped({ ...s, erase: store.shownErase } as UploadState, store.shownErase), NOW, true, io(), PERSON);
+    expect(answer).toMatchObject({ ok: true, outcome: { values: 2, documents: 1 } });
+    expect(rowsOf(store)).toMatchObject({ labs: 2, documents: 2 });
+  });
+
+  // Lead H109: the store's own check, pinned apart from the session's. With the session's edit made to accept any
+  // erase, a Save pressed before the erase is still refused by the store, before any original is written.
+  it('US-16 AC5 (H109): pressed before an erase, the session\'s edit refusal bypassed: the store refuses it on its own', async () => {
+    const { adapter, store, s } = await erasedAfterThePress();
+    const session = (store as unknown as { session: RecordSession }).session;
+    const edit = session.edit.bind(session);
+    vi.spyOn(session, 'edit').mockImplementation((change) => edit(change, session.eraseIdentity));
+    const before = JSON.stringify(store.file);
+    expect(await store.saveUpload(ENGINE, stamped(s, store.shownErase), NOW, true, io(), PERSON)).toEqual({ ok: false, reason: 'erased', message: 'Failed to save. Please try again.' });
+    expect(adapter.writes).toEqual([]);
+    expect(JSON.stringify(store.file)).toBe(before);
+  });
+});
+
 describe('US-14 AC12: a failed original is reported, tags only, and counted unstored', () => {
   it('each failed original is reported as the store reports one, and its row keeps the hash alone', async () => {
     const { adapter, store } = await opened();
     adapter.fail = true;
-    const answer = await store.saveUpload(ENGINE, saving(store, [read('lab', labX), read('letter', letterX)]), NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
+    const answer = await store.saveUpload(ENGINE, stamped(saving(store, [read('lab', labX), read('letter', letterX)]), store.shownErase), NOW, true, webUploadIO(held({ lab: pdf('lab'), letter: pdf('letter') })), PERSON);
     expect(answer).toMatchObject({ ok: true, outcome: { values: 2, documents: 1, unstored: 2 } });
     expect(store.file.documents.map((d) => [d.contentHash, d.fileRef])).toEqual([['hash-letter', ''], ['hash-lab', '']]);
     const calls = vi.mocked(Sentry.captureException).mock.calls;
@@ -151,7 +196,7 @@ describe('US-14 AC5: a busy refusal is reported on its own', () => {
     const member = { async: async () => { inflated += 1; return new Blob(['bytes of letter'], { type: 'application/pdf' }); } };
     vi.useFakeTimers({ toFake: ['setTimeout'] });
     try {
-      const answer = store.saveUpload(ENGINE, saving(store, [read('letter', letterX)]), NOW, true, webUploadIO(held({ letter: member })), PERSON);
+      const answer = store.saveUpload(ENGINE, stamped(saving(store, [read('letter', letterX)]), store.shownErase), NOW, true, webUploadIO(held({ letter: member })), PERSON);
       await vi.runAllTimersAsync();
       return { answer: await answer, inflated, writes: adapter.writes.length, reports: vi.mocked(Sentry.captureException).mock.calls.map(([, hint]) => hint) };
     } finally {
@@ -209,7 +254,7 @@ describe('US-14 AC5: bytes kept for a retry are freed when the original settles'
     const blobs = heldBlobs();
     vi.useFakeTimers({ toFake: ['setTimeout'] });
     try {
-      const answer = store.saveUpload(ENGINE, s, NOW, true, webUploadIO(members(ids)), PERSON);
+      const answer = store.saveUpload(ENGINE, stamped(s, store.shownErase), NOW, true, webUploadIO(members(ids)), PERSON);
       await vi.runAllTimersAsync();
       expect(await answer).toMatchObject({ ok: true, outcome: { unstored: 5 } });
     } finally {
@@ -232,7 +277,7 @@ describe('US-14 AC5: bytes kept for a retry are freed when the original settles'
     const blobs = heldBlobs();
     vi.useFakeTimers({ toFake: ['setTimeout'] });
     try {
-      const answer = store.saveUpload(ENGINE, s, NOW, true, webUploadIO(members(['a'])), PERSON);
+      const answer = store.saveUpload(ENGINE, stamped(s, store.shownErase), NOW, true, webUploadIO(members(['a'])), PERSON);
       await vi.runAllTimersAsync();
       expect(await answer).toMatchObject({ ok: false, reason: 'erased' });
       await erasing;
@@ -253,7 +298,7 @@ describe('US-16 AC2a: no write starts after an erase', () => {
     let asked!: () => void;
     const reading = new Promise<void>((r) => { asked = r; });
     const member = { async: () => { asked(); return new Promise<Blob>((r) => { inflate = r; }); } };
-    const save = store.saveUpload(ENGINE, saving(store, [read('zip/0', labX, { zip: 'bundle.zip', name: 'member.pdf' })]), NOW, true, webUploadIO(held({ 'zip/0': member })), PERSON);
+    const save = store.saveUpload(ENGINE, stamped(saving(store, [read('zip/0', labX, { zip: 'bundle.zip', name: 'member.pdf' })]), store.shownErase), NOW, true, webUploadIO(held({ 'zip/0': member })), PERSON);
     await reading;
     expect((await store.deleteAllData()).success).toBe(true);
     inflate(new Blob(['bytes of member']));
@@ -267,7 +312,7 @@ describe('US-14 AC12: an original that cannot be read is counted unstored and re
   it('a ZIP member that will not inflate: no cloud write, one upload-save report, the row keeps the hash', async () => {
     const { adapter, store } = await opened();
     const member = { async: () => Promise.reject(new Error('Synthetic test: the member would not inflate')) };
-    const answer = await store.saveUpload(ENGINE, saving(store, [read('zip/0', labX, { zip: 'bundle.zip', name: 'member.pdf' })]), NOW, true, webUploadIO(held({ 'zip/0': member })), PERSON);
+    const answer = await store.saveUpload(ENGINE, stamped(saving(store, [read('zip/0', labX, { zip: 'bundle.zip', name: 'member.pdf' })]), store.shownErase), NOW, true, webUploadIO(held({ 'zip/0': member })), PERSON);
     expect(answer).toMatchObject({ ok: true, outcome: { values: 2, unstored: 1 } });
     expect(adapter.writes).toEqual([]);
     expect(vi.mocked(Sentry.captureException).mock.calls.map(([, hint]) => hint)).toEqual([{ tags: { area: 'upload-save', branch: 'original' } }]);
@@ -284,10 +329,10 @@ describe('US-12 AC23: a ZIP member\'s original is inflated only as it is written
     const io = webUploadIO(held({ 'zip/0': member }));
     expect(io.holds('zip/0')).toBe(true);
     expect(member.async).not.toHaveBeenCalled();
-    await store.saveUpload(ENGINE, s, NOW, false, io, PERSON);
+    await store.saveUpload(ENGINE, stamped(s, store.shownErase), NOW, false, io, PERSON);
     expect(member.async).not.toHaveBeenCalled();
     const { store: clouded } = await opened();
-    await clouded.saveUpload(ENGINE, saving(clouded, files), NOW, true, io, PERSON);
+    await clouded.saveUpload(ENGINE, stamped(saving(clouded, files), clouded.shownErase), NOW, true, io, PERSON);
     expect(member.async).toHaveBeenCalledTimes(1);
     expect(clouded.file.documents[0].fileRef).not.toBe('');
   });

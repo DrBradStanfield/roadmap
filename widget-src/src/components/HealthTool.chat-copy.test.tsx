@@ -17,14 +17,12 @@ import { loadFromLocalStorage, loadGuestInputs, saveToLocalStorage, MIRROR_CHANG
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
-import { initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening } from '../lib/roadmap-data';
+import { initRoadmapStore, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening, getShownErase } from '../lib/roadmap-data';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
   trackProductEvent: vi.fn(),
-  trackABImpression: vi.fn(),
-  trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 // The real saves, which a test can make fail once.
@@ -169,7 +167,7 @@ describe('US-15 AC10: the chat copy holds what is saved, never an unsaved typed 
       expect([panel.props!.inputs.birthYear, panel.props!.inputs.birthMonth]).toEqual([1970, undefined]);
 
       // Another device's change, with no more typing here, reaches the form and the plan.
-      await saveChangedMeasurements({ sex: 'male', heightCm: 180, birthYear: 1980, birthMonth: 3 }, { sex: 'male', heightCm: 180, birthYear: 1970 });
+      await saveChangedMeasurements({ sex: 'male', heightCm: 180, birthYear: 1980, birthMonth: 3 }, { sex: 'male', heightCm: 180, birthYear: 1970 }, getShownErase());
       act(() => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
       await waitFor(() => expect([panel.props!.inputs.birthYear, panel.props!.inputs.birthMonth]).toEqual([1980, 3]));
       expect([panel.props!.effectiveInputs.birthYear, panel.props!.effectiveInputs.birthMonth]).toEqual([1980, 3]);

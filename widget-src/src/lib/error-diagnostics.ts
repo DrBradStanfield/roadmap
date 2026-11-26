@@ -1,4 +1,5 @@
-import { ConflictError, StorageError } from '@roadmap/health-core/adapter';
+import { ConflictError, httpStatusTag, StorageError } from '@roadmap/health-core/adapter';
+export { HTTP_STATUS_TAGS } from '@roadmap/health-core/adapter';
 import { RecordShapeError, SchemaTooNewError } from '@roadmap/health-core/migrate';
 
 /** Expected transport interruptions stay quiet without retaining raw messages. */
@@ -28,6 +29,7 @@ type RecordFailure =
   | 'Cloud record could not be loaded'
   | 'Upload processing failed'
   | 'Upload save failed'
+  | 'Page-hide save failed'
   | 'Chat load failed'
   | 'Chat list failed';
 
@@ -37,9 +39,16 @@ type RecordFailure =
  *  a page is never attempted (A15, A19). */
 export class WritesStoppedError extends StorageError {
   constructor() {
-    super('On-device roadmap persistence stopped for logout.');
+    super('On-device roadmap persistence stopped for logout.', undefined, undefined, undefined, 'writes-stopped', 'refused');
     this.name = 'WritesStoppedError';
   }
+}
+
+/** A device write refused because this page may no longer write here (US-09 AC59): read from the typed reason set
+ *  where it was raised (root fix R6), so the session's own gate counts too, never the class or the words. A refusal
+ *  SyncManager rewrapped after a write keeps the reason but may have landed, so it is not one. */
+export function writesStopped(error: unknown): boolean {
+  return error instanceof StorageError && error.reason === 'writes-stopped' && error.outcome === 'refused';
 }
 
 /** Fresh exception: no provider text, original cause or document reference. */
@@ -83,7 +92,6 @@ export function storageCauseClass(error: unknown): string {
 }
 
 export const ERROR_CLASS_TAGS = ['StorageError', 'ConflictError', 'SchemaTooNewError', 'RecordShapeError', 'other'];
-export const HTTP_STATUS_TAGS = ['401', '403', '404', '409', '429', '4xx', '5xx', 'none'];
 
 /** What a fixed-message capture still needs to be read (US-09 AC6c): the
  *  error's class and the provider's HTTP status class, each from a closed
@@ -102,11 +110,5 @@ export function failureTags(error: unknown): { errorClass: string; httpStatus: s
     : error instanceof SchemaTooNewError ? 'SchemaTooNewError'
     : error instanceof RecordShapeError ? 'RecordShapeError'
     : 'other';
-  const status = error instanceof StorageError ? error.status : undefined;
-  const httpStatus = status === undefined ? 'none'
-    : HTTP_STATUS_TAGS.includes(String(status)) ? String(status)
-    : status >= 400 && status < 500 ? '4xx'
-    : status >= 500 && status < 600 ? '5xx'
-    : 'none';
-  return { errorClass, httpStatus };
+  return { errorClass, httpStatus: httpStatusTag(error) };
 }

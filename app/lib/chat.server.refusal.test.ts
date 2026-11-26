@@ -45,6 +45,31 @@ describe('US-15 AC13: the answer body comes from the model pin', () => {
     expect(body.output_config).toEqual({ effort: 'medium' });
     expect(body).not.toHaveProperty('temperature');
   });
+
+  it('US-15 AC78: with no model given, the body and the result name CHAT_MODEL', async () => {
+    const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'hi' }], false, undefined, { purpose: 'CHAT' });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).model).toBe('claude-sonnet-5-5');
+    expect(result.model).toBe('claude-sonnet-5-5');
+  });
+
+  it('US-15 AC78: opts.model sends that model with the same effort and cap, and the result names it', async () => {
+    const fetchMock = respond('end_turn', [{ type: 'text', text: 'An answer.' }]);
+    const result = await getChatCompletion([], [{ role: 'user', content: 'hi' }], false, undefined, { purpose: 'YOUTUBE', model: 'claude-haiku-5-5' });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.model).toBe('claude-haiku-5-5');
+    expect(body.max_tokens).toBe(4096);
+    expect(body.thinking).toEqual({ type: 'adaptive', display: 'summarized' });
+    expect(body.output_config).toEqual({ effort: 'medium' });
+    expect(body).not.toHaveProperty('temperature');
+    expect(result).toMatchObject({ content: 'An answer.', isFallback: false, model: 'claude-haiku-5-5' });
+  });
+
+  it('US-15 AC78: a failed call still names the model it was sent to', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('network down')) as unknown as typeof fetch;
+    const result = await getChatCompletion([], [{ role: 'user', content: 'hi' }], false, undefined, { purpose: 'YOUTUBE', model: 'claude-haiku-5-5' });
+    expect(result).toMatchObject({ isFallback: true, failureMode: 'api-error', model: 'claude-haiku-5-5' });
+  });
 });
 
 // US-15 AC19: the form tools go only to a client that applies them.
