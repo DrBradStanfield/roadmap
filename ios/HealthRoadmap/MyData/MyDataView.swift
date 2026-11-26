@@ -44,8 +44,6 @@ struct MyDataView: View {
     @State var showSync = false
     @State var showSettings = false
     @State var addingLabs = false
-    /// Tour tip 3 is due and its heading has come to rest on screen (US-57 AC2).
-    @State var bloodTestsTipReady = false
     /// "Add blood test", and the test picked in it (round 7).
     @State var addingTest = false
     @State private var pickedTest: PickedTest?
@@ -214,28 +212,24 @@ struct MyDataView: View {
         // no card passes tip 2 (review R4).
         .task { await bringIntoView(SnapshotTip(), Self.firstRow, proxy: proxy, at: .center) }
         .task { await bringIntoView(FoundationTip(), currentPage.firstWeightCard, proxy: proxy, at: .center) }
-        .task {
-            // Tip 3 is drawn only once its heading has stopped moving: due while the heading
-            // was off screen and the list mid-scroll (after tip 2's Next or a tap outside it, or
-            // scrolling to the top after a tap by the clock), its popover never showed (US-57 AC2).
-            for await due in BloodTestsTip().shouldDisplayUpdates {
-                guard due else { bloodTestsTipReady = false; continue }
-                withAnimation { proxy.scrollTo(HealthTopic.bloodTests.anchor, anchor: .top) }
-                try? await Task.sleep(for: .milliseconds(700))
-                proxy.scrollTo(HealthTopic.bloodTests.anchor, anchor: .top)
-                bloodTestsTipReady = true
-            }
-        }
+        // A tap by the clock that closes tip 2 also scrolls to the top, so tip 3 scrolls
+        // again once that settles (US-57 AC2).
+        .task { await bringIntoView(BloodTestsTip(), HealthTopic.bloodTests.anchor, proxy: proxy, at: .top, settle: .milliseconds(700)) }
         .tourStep(FoundationTip(), hasNoAnchor: page.firstWeightCard == nil)
     }
 
     /// The scroll id of Weight & diabetes' first row, tour tip 1's anchor.
     static let firstRow = "tour.firstRow"
 
-    /// Once `tip` is due, scrolls its anchor into view (US-57).
-    private func bringIntoView(_ tip: some Tip, _ anchor: @autoclosure () -> String?, proxy: ScrollViewProxy, at point: UnitPoint) async {
+    /// Once `tip` is due, scrolls its anchor into view (US-57); with `settle`, scrolls there
+    /// again after it.
+    private func bringIntoView(_ tip: some Tip, _ anchor: @autoclosure () -> String?, proxy: ScrollViewProxy, at point: UnitPoint,
+                               settle: Duration? = nil) async {
         for await due in tip.shouldDisplayUpdates where due {
             withAnimation { proxy.scrollTo(anchor(), anchor: point) }
+            guard let settle else { continue }
+            try? await Task.sleep(for: settle)
+            proxy.scrollTo(anchor(), anchor: point)
         }
     }
 
