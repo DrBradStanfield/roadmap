@@ -215,8 +215,8 @@
 //                      refused with --record, --record-file and --loop
 //            --record  READ access (read_record, get_plan) to a local copy of
 //                      the scratch record at ~/.codex-review/scratch-record.json
-//                      (Brad downloads health-roadmap.json from the
-//                      brad@microvitamin.com Dropbox, Apps/Health Roadmap);
+//                      (Brad downloads health-roadmap.json from the Dropbox of the
+//                      account named in his shell's CODEX_REVIEW_RECORD_ACCOUNT);
 //                      --record-file <path> overrides the location
 //            --include <dir>  (repeatable) a read-only source folder from outside
 //                      the checkout, under a pinned root, copied to
@@ -295,13 +295,12 @@ if (WEB_ACCESS === "live" && (RECORD || has("--record-file") || LOOP)) usage("--
  * the record's own creation stamp (merge keeps the minimum, so it is stable
  * for the record's life; an erase makes a new one and this must be re-pinned).
  * Checked by the wrapper on the file, before the reviewer exists. Brad's rule,
- * 2026-09-21: always brad@microvitamin.com.
+ * 2026-09-21: always his scratch account, named only in CODEX_REVIEW_RECORD_ACCOUNT (2026-11-27).
  */
 /** The wrapper's own checkout supplies the server and its runtime, whatever repo is under review. */
 const HOME_REPO = join(dirname(fileURLToPath(import.meta.url)), "..");
 const TSX = join(HOME_REPO, "node_modules", ".bin", "tsx");
 const SCRATCH_RECORD = {
-  account: "brad@microvitamin.com",
   createdAt: "2026-09-17T20:06:27.965Z",
   path: opt("--record-file", DEFAULT_RECORD),
 };
@@ -1011,7 +1010,8 @@ work = mkdtempSync(join(tmpdir(), "codex-review-"));
 // --record: verify the local record BEFORE anything can read it (a wrong
 // account must never be disclosed, not merely detected afterwards).
 if (RECORD) {
-  const how = `Download health-roadmap.json from the ${SCRATCH_RECORD.account} Dropbox (Apps/Health Roadmap) to ${SCRATCH_RECORD.path}.`;
+  if (!process.env.CODEX_REVIEW_RECORD_ACCOUNT?.trim()) finish(incomplete("E_NO_RECORD_ACCOUNT: --record needs CODEX_REVIEW_RECORD_ACCOUNT, the scratch account's address, set in your shell"), "0.0"); // only that it is set: its value enters no message, reviewer environment or snapshot
+  const how = `Download health-roadmap.json from the Dropbox of the account in CODEX_REVIEW_RECORD_ACCOUNT (Apps/Health Roadmap) to ${SCRATCH_RECORD.path}.`;
   if (!existsSync(SCRATCH_RECORD.path)) finish(incomplete(`E_NO_SCRATCH_RECORD: no local scratch record. ${how}`), "0.0");
   // One read: the bytes that are verified are the bytes that are served. A
   // directory, an unreadable file, or non-JSON is a bounded incomplete, not a crash.

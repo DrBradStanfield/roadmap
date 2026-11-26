@@ -91,10 +91,13 @@ exposed to a prompt-injected reviewer. Withholding covers what the reviewer
 is handed, not what it can read. Add `--record` when the change touches what an agent reads
 (MCP tool descriptions, units, plan sections, refusals): the reviewer then
 gets `read_record` and `get_plan` against a LOCAL copy of the scratch
-record (brad@microvitamin.com; Brad keeps it at
-`~/.codex-review/scratch-record.json`), served by `tools/mcp-server.ts`
-with no network. The wrapper checks the file's creation stamp before launch;
-any other record is `E_WRONG_RECORD` and nothing starts. The output's
+record (Brad keeps it at `~/.codex-review/scratch-record.json`), served by
+`tools/mcp-server.ts` with no network. The scratch account comes from
+`CODEX_REVIEW_RECORD_ACCOUNT`, which Brad sets in his shell; unset or empty,
+a `--record` run is `E_NO_RECORD_ACCOUNT` and nothing starts. The value is
+never printed or passed to the reviewer. The wrapper checks the file's
+creation stamp before launch; any other record is `E_WRONG_RECORD` and
+nothing starts. The output's
 `record_access` says what happened: `not_requested`, `not_attempted`,
 `failed`, or `read`.
 Boundary tests: `tools/codex-review.test.ts` (fake codex; they prove the

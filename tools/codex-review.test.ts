@@ -60,9 +60,12 @@ process.exit(cfg.exit);
 }
 
 let outJson: string;
+/** A low-entropy stand-in for the scratch account Brad sets in his shell (US-40 AC6): a --record run needs it. */
+const RECORD_ACCOUNT = 'scratch@example.test';
+const recordEnv = (extra: string[]) => (extra.includes('--record') ? { CODEX_REVIEW_RECORD_ACCOUNT: RECORD_ACCOUNT } : {});
 function runWrapper(bin: string, extra: string[] = [], cwd = repo) {
   extra = [...extra, '--out', outJson];
-  return spawnSync('node', [WRAPPER, '--codex', bin, ...extra], { cwd, encoding: 'utf8', env: childEnv({ CANARY_SECRET: 'canary-value' }) });
+  return spawnSync('node', [WRAPPER, '--codex', bin, ...extra], { cwd, encoding: 'utf8', env: childEnv({ CANARY_SECRET: 'canary-value', ...recordEnv(extra) }) });
 }
 
 // Each test gets its own fixture repo, with a.txt changed since its commit: a test that changed
@@ -441,9 +444,41 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
       const r = runWrapper(f.bin, ['--record', '--record-file', file]);
       expect(r.status).toBe(3);
       expect(r.stdout).toContain(code);
-      expect(r.stdout).toContain('brad@microvitamin.com');
+      expect(r.stdout).toContain('CODEX_REVIEW_RECORD_ACCOUNT'); // the how-to names the variable, never its value
+      expect(r.stdout + r.stderr).not.toContain(RECORD_ACCOUNT);
       expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     }
+  });
+  it('E_NO_RECORD_ACCOUNT: a --record run with the account variable unset, empty or blank stops before launch, and no work dir is left', () => {
+    for (const value of [undefined, '', '   ']) {
+      const before = new Set(readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-')));
+      const f = fake({ output: CLEAN });
+      const env = childEnv(value === undefined ? {} : { CODEX_REVIEW_RECORD_ACCOUNT: value });
+      const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--keep', '--record-file', scratchFile, '--out', outJson], { cwd: repo, encoding: 'utf8', env });
+      expect([value, r.status]).toEqual([value, 3]);
+      expect(r.stdout).toContain('E_NO_RECORD_ACCOUNT');
+      expect(r.stdout).toContain('CODEX_REVIEW_RECORD_ACCOUNT');
+      expect(JSON.parse(readFileSync(outJson, 'utf8')).status).toBe('incomplete');
+      expect(r.stderr).not.toContain('work dir kept');
+      expect(readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-') && !before.has(d))).toEqual([]);
+      expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+    }
+  });
+  it('with the account variable set and the pinned record, the run proceeds, and the value reaches no output, log, prompt or reviewer environment', () => {
+    const f = fake({ output: CLEAN });
+    const r = runWrapper(f.bin, ['--record', '--keep', '--record-file', scratchFile]);
+    expect(r.status).toBe(0);
+    const work = r.stderr.match(/work dir kept at (\S+)/)![1];
+    for (const text of [r.stdout, r.stderr, readFileSync(outJson, 'utf8'), f.read('argv.json'), f.read('env.json'), f.read('stdin.txt')]) expect(text).not.toContain(RECORD_ACCOUNT);
+    expect(Object.keys(JSON.parse(f.read('env.json')))).not.toContain('CODEX_REVIEW_RECORD_ACCOUNT');
+    expect(sh(work, `grep -rl ${RECORD_ACCOUNT} . || true`)).toBe('');
+  });
+  it('a run without --record runs with the account variable unset', () => {
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv() });
+    expect(r.status).toBe(0);
+    expect(r.stdout).not.toContain('E_NO_RECORD_ACCOUNT');
+    expect(JSON.parse(readFileSync(outJson, 'utf8')).record_access).toBe('not_requested');
   });
   it('the right record is served from a COPY through the stdio server via the checkout\'s own tsx, read tools only, no URL, no launcher', () => {
     const f = fake({ output: CLEAN });
@@ -505,7 +540,7 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
     const f = fake({ output: CLEAN });
     // 1 block = 512 bytes: the oversized copy is the first write the wrapper makes.
     // --commit: the patch comes from git pipes, so the record copy is the first FILE write the limit can hit.
-    const r = spawnSync('bash', ['-c', `ulimit -f 1; exec node ${JSON.stringify(WRAPPER)} --codex ${JSON.stringify(f.bin)} --commit HEAD --record --keep --record-file ${JSON.stringify(file)}`], { cwd: repo, encoding: 'utf8' });
+    const r = spawnSync('bash', ['-c', `ulimit -f 1; exec node ${JSON.stringify(WRAPPER)} --codex ${JSON.stringify(f.bin)} --commit HEAD --record --keep --record-file ${JSON.stringify(file)}`], { cwd: repo, encoding: 'utf8', env: { ...process.env, CODEX_REVIEW_RECORD_ACCOUNT: RECORD_ACCOUNT } });
     expect(r.stdout).toContain('E_COPY_FAILED');
     // E_COPY_FAILED proves the run reached the copy; a stop before the value check keeps no work dir at all.
     const fresh = readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-') && !before.has(d));
@@ -520,7 +555,7 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
   it('the copy is gone even when the wrapper itself fails after the run (an --out folder made read-only during it)', () => {
     const outDir = mkdtempSync(join(tmpdir(), 'cr-out-ro-'));
     const f = fake({ output: CLEAN, during: `chmod 555 ${JSON.stringify(outDir)}` });
-    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--record-file', scratchFile, '--keep', '--out', join(outDir, 'out.json')], { cwd: repo, encoding: 'utf8', env: childEnv() });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--record', '--record-file', scratchFile, '--keep', '--out', join(outDir, 'out.json')], { cwd: repo, encoding: 'utf8', env: childEnv({ CODEX_REVIEW_RECORD_ACCOUNT: RECORD_ACCOUNT }) });
     chmodSync(outDir, 0o755);
     expect(r.status).not.toBe(0);
     expect(r.stderr).toContain('the old file at --out may still be there');
