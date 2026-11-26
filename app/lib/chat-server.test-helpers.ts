@@ -22,7 +22,7 @@ export function chatServerStub(
     buildSystemBlocks: () => [],
     buildConversationMessages: () => [],
     loadMatchedArticlesFromHandles: () => null,
-    DOCTOR_POSTURE: '', BRAND_POSTURE: '',
+    surfacePosture: () => '',
     getChatCompletion: async () => ({
       content: 'Synthetic answer', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheCreationTokens: 0 },
       isFallback: false, stopReason: 'end_turn',

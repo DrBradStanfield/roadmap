@@ -10,8 +10,7 @@ import {
   MAX_MESSAGE_LENGTH,
   loadMatchedArticlesFromHandles,
   FALLBACK_RESPONSE,
-  DOCTOR_POSTURE,
-  BRAND_POSTURE,
+  surfacePosture,
 } from './chat.server';
 import { REFUSAL_RESPONSES } from '../../packages/health-core/src/models';
 import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, NO_SEX_CHAT_RULE } from '../../packages/health-core/src/chat-context';
@@ -212,7 +211,7 @@ describe('buildSystemBlocks', () => {
     const [algorithm, products] = [doc('health_roadmap_algorithm.md'), doc('docs/products.md')];
     const [doctor, brand] = [doc('app/lib/chat-posture-doctor.md'), doc('app/lib/chat-posture-brand.md')];
     expect(doctor).not.toBe(brand);
-    for (const [surfaceContext, posture] of [[DOCTOR_POSTURE, doctor], [BRAND_POSTURE, brand]]) {
+    for (const [surfaceContext, posture] of [[surfacePosture('doctor'), doctor], [surfacePosture('brand'), brand]]) {
       const texts = buildSystemBlocks('{}', { surfaceContext, savedChat }).map(b => b.text);
       expect(texts[0].endsWith(algorithm)).toBe(true);
       expect(texts.some(t => t.startsWith(`## Dr Stanfield's Products\n\n${products}`))).toBe(true);

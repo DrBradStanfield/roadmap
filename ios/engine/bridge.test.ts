@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { EDIT_OUTCOME } from './contract';
 import * as entry from './entry';
 import { UPLOAD_REFUSAL_REASONS } from './upload-doors';
 
@@ -297,6 +298,20 @@ describe('bridge contract (US-25 AC18)', () => {
     expect(contract.doors.applyEditJson.returns).toContain("healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]}");
     expect(contract.doors.applyEditJson.returns).toContain('{added, corrected, withdrawn, alreadyInRecord, notRead}');
     expect(contract.doors.cloudEdit.returns).toContain('healthRecords');
+  });
+
+  // US-72 AC18: the door's answer counts a result with a bad date as undated, inside notRead.
+  // The count is optional (contract.schema.json, not bridge-contract.json), so the bridge id
+  // above did not move and an answer from an engine before it still parses.
+  it('a healthRecords answer counts a bad date as undated, and one without the count still parses', () => {
+    const record = entry.newRecordJson(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
+    const ldl = (id: string, date: Record<string, unknown>) => ({ sourceId: 'src', resourceType: 'Observation', fhirVersion: '4.0.1', json: JSON.stringify({
+      resourceType: 'Observation', id, status: 'final', code: { coding: [{ system: 'http://loinc.org', code: '13457-7' }] },
+      valueQuantity: { value: 3.1, unit: 'mmol/L' }, issued: '2026-10-02T09:00:00Z', ...date }) });
+    const edit = { kind: 'healthRecords', records: [ldl('a', { effectiveDateTime: '2026-10-01' }), ldl('b', { effectivePeriod: { start: 20261001 } }), ldl('c', { effectiveDateTime: '2026-02-30' })] };
+    const answer = EDIT_OUTCOME.parse(JSON.parse(entry.applyEditJson(record, JSON.stringify(edit), NOW, 'phone')));
+    expect(answer.healthRecords).toEqual({ added: 1, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 2, undated: 2 });
+    expect(EDIT_OUTCOME.parse({ ok: true, healthRecords: { added: 0, corrected: 0, withdrawn: 0, alreadyInRecord: 0, notRead: 1 } }).healthRecords?.undated).toBeUndefined();
   });
 
   it('every value the engine exports is in the contract', () => {

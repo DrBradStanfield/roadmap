@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T38,web chat,"Two chat prompt files load outside the chat docs state: the classifier prompt and the YouTube prompt template.",implicit state,not started,"app/lib/chat-classifier.server.ts keeps its own 60-second cache of chat-classifier-prompt.md (cachedPrompt, PROMPT_TTL_MS); app/lib/youtube-context.ts reads chat-youtube-prompt.md at import. Both could join ChatDocsState in app/lib/chat-system-prompt.server.ts (root fix R24, US-15 AC80) as optional docs.",,no

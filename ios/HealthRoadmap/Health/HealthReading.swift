@@ -81,4 +81,6 @@ struct HealthRecordBatch: Sendable {
 extension HealthRecordCounts {
     /// At least one row landed: "Health Records imported" (AC13).
     var landed: Bool { added + corrected > 0 }
+    /// At least one result was skipped for a bad date (AC18); an engine before it sends no count.
+    var skippedUndated: Bool { (undated ?? 0) > 0 }
 }

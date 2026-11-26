@@ -75,6 +75,26 @@ final class AppleHealthCloudTests: XCTestCase {
         XCTAssertNotNil(HealthSyncMemory(defaults: defaults).anchor(for: .weight), "and the anchor moved after it was taken")
     }
 
+    /// US-72 AC18 in the cloud: a batch of only a bad-dated lab result leaves the cloud record as it
+    /// was, yet its counts reach the sync (Codex R1: `shown` dropped them), so Settings says it.
+    func testABadDatedLabResultIsSaidThroughTheCloudSession_US72_AC18() async throws {
+        dropbox.put(try webRecord())
+        let (store, sync, healthSync, health) = try app()
+        await sync.start()
+        XCTAssertNotNil(store.cloudErase, "the cloud record is open")
+        health.supportsHealthRecords = true
+        health.pendingRecords = [HealthRecord(sourceId: "com.apple.health.clinical.test|Test Hospital", resourceType: "Observation", fhirVersion: "4.0.1", json: """
+        {"resourceType":"Observation","id":"obs-1","status":"final","code":{"coding":[{"system":"http://loinc.org","code":"4548-4"}]},\
+        "effectiveDateTime":"2026-02-30","valueQuantity":{"value":5.6,"unit":"%"}}
+        """)]
+
+        await healthSync.connect()
+        await sync.background()
+
+        XCTAssertTrue(healthSync.undatedFooter)
+        XCTAssertTrue(HealthSyncMemory(defaults: defaults).labResultsUndated)
+    }
+
     /// A sheet opened before a remote erase pins the old erase; a typed value from it
     /// is refused (AC11g), but an import is not a sheet and is checked against now.
     func testAnOpenSheetDoesNotRefuseAnImport() async throws {

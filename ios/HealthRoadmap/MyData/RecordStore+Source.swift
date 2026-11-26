@@ -181,7 +181,8 @@ extension RecordStore {
         guard outcome.ok, let next = outcome.record, let nextErase = outcome.erase else {
             return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
         }
-        if next == recordJSON { return .saved() }
+        // A batch that changed nothing still says what it did (US-72 AC18: results skipped for a bad date).
+        if next == recordJSON { return .saved(healthRecords: outcome.healthRecords) }
         // The session has taken the edit: the choices follow it, once it is drawn (adversary R4).
         await draw(next, order: order, as: .cloudEdited(erase: nextErase), in: Self.clearsChoices(edit) ? UnitChoices() : nil, holdUndrawn: true)
         onEdit?()

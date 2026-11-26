@@ -24,12 +24,12 @@ vi.mock('./anthropic.server', async (orig) => ({
   })),
 }));
 
-import { routeQuery, VALID_HANDLES, ROUTER_VERSION } from './chat-router.server';
+import { routeQuery, routerHandles, ROUTER_VERSION } from './chat-router.server';
 import { callAnthropicWithUsage } from './anthropic.server';
 
 describe('router view in the router call (US-50 AC3)', () => {
   it('the allow-list holds the view only', () => {
-    expect([...VALID_HANDLES].sort()).toEqual(['collagen', 'skin-aging']);
+    expect([...routerHandles()].sort()).toEqual(['collagen', 'skin-aging']);
   });
 
   it('the index block and entry count match the view, and a hidden handle is dropped from the reply', async () => {

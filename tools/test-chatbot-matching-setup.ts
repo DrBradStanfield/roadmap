@@ -130,7 +130,7 @@ export function repairHandle(h: string): string {
 
 export const ROUTER_INDEX_BLOCK = routerIndexBlock(BLOG_INDEX, SUMMARY_CAP);
 
-// {{ENTRY_COUNT}} substitution must mirror chat-router.server.ts getRouterPrompt().
+// {{ENTRY_COUNT}} substitution must mirror `transition` in app/lib/chat-system-prompt.server.ts.
 // Without it the harness would send the literal placeholder to the model and
 // stop being a faithful test of production.
 export const ROUTER_PROMPT = fs
