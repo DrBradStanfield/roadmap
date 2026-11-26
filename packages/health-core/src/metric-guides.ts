@@ -189,7 +189,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   // ── Medicines ───────────────────────────────────────────────
   statin: {
     title: 'Statins',
-    whatItIs: 'Daily tablets that lower LDL cholesterol and ApoB. The app lists atorvastatin, rosuvastatin, pravastatin, simvastatin and pitavastatin.',
+    whatItIs: 'Daily tablets that lower LDL cholesterol and ApoB. The app lists Atorvastatin, Rosuvastatin, Pravastatin, Simvastatin and Pitavastatin.',
     whyItMatters: 'Large trials show statins reduce heart attacks, strokes and deaths from heart disease. Guidelines name them the first medicine to consider when cholesterol stays above target.',
     howTo: { heading: WORKS, points: [
       'Statins slow cholesterol production in the liver, which then pulls more LDL out of the blood.',
@@ -203,10 +203,10 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   ezetimibe: {
     title: 'Ezetimibe',
     whatItIs: 'A daily 10 mg tablet that lowers LDL cholesterol. It is often added to a statin, and it also comes in combined pills.',
-    whyItMatters: 'Added to a statin, ezetimibe typically lowers LDL by a further 15 to 20%. In trials, this extra lowering reduced heart attacks and strokes. Starting it early after a heart attack was linked with better outcomes than adding it later.',
+    whyItMatters: 'Added to a statin, Ezetimibe typically lowers LDL by a further 15 to 20%. In trials, this extra lowering reduced heart attacks and strokes. Starting it early after a heart attack was linked with better outcomes than adding it later.',
     howTo: { heading: WORKS, points: [
       'It blocks the gut from absorbing cholesterol, a different route from statins.',
-      'It is also sold combined with a statin, or with bempedoic acid.',
+      'It is also sold combined with a statin, or with Bempedoic acid.',
       'Most people notice no side effects. Mild stomach upset can happen.',
       TALK,
     ] },
@@ -214,8 +214,8 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   },
   bempedoic_acid: {
     title: 'Bempedoic acid',
-    whatItIs: 'A daily 180 mg tablet (Nexletol) that lowers LDL cholesterol. It also comes combined with ezetimibe (Nexlizet).',
-    whyItMatters: 'In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on bempedoic acid. It can be taken with a statin, but this plan suggests discussing it only when a statin cannot be taken.',
+    whatItIs: 'A daily 180 mg tablet (Nexletol) that lowers LDL cholesterol. It also comes combined with Ezetimibe (Nexlizet).',
+    whyItMatters: 'In the CLEAR Outcomes trial, people who could not take statins had 13% fewer major heart and blood vessel events on Bempedoic acid. It can be taken with a statin, but this plan suggests discussing it only when a statin cannot be taken.',
     howTo: { heading: WORKS, points: [
       'It lowers the cholesterol your liver makes, working at a different step from statins.',
       'It is activated in the liver but not in muscle, which may explain why muscle aches seem less common than with statins.',
@@ -226,10 +226,10 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   },
   pcsk9i: {
     title: 'PCSK9 inhibitors',
-    whatItIs: 'Medicines that lower LDL cholesterol by acting on PCSK9, a protein made in the liver. They come in three kinds: antibody injections such as evolocumab and alirocumab, given under the skin, usually every 2 or 4 weeks; inclisiran, an injection given twice a year once started; and oral PCSK9 inhibitors, which are newer.',
-    whyItMatters: 'Guidelines recommend the antibody injections (evolocumab, alirocumab) when cholesterol stays above target on the highest tolerated statin plus ezetimibe. They can lower LDL by a further 50 to 60%, and Lp(a) by about 25 to 30%.',
+    whatItIs: 'Medicines that lower LDL cholesterol by acting on PCSK9, a protein made in the liver. They come in three kinds: antibody injections such as Evolocumab and Alirocumab, given under the skin, usually every 2 or 4 weeks; Inclisiran, an injection given twice a year once started; and oral PCSK9 inhibitors, which are newer.',
+    whyItMatters: 'Guidelines recommend the antibody injections (Evolocumab, Alirocumab) when cholesterol stays above target on the highest tolerated statin plus Ezetimibe. They can lower LDL by a further 50 to 60%, and Lp(a) by about 25 to 30%.',
     howTo: { heading: WORKS, points: [
-      'PCSK9 is a protein that breaks down the liver\'s LDL receptors. Blocking it, or stopping the liver making it as inclisiran does, leaves more receptors to clear LDL from the blood.',
+      'PCSK9 is a protein that breaks down the liver\'s LDL receptors. Blocking it, or stopping the liver making it as Inclisiran does, leaves more receptors to clear LDL from the blood.',
       'The most common side effect of the injections is redness or soreness where you inject.',
       'Cost and insurance approval can be hurdles.',
       TALK,
@@ -238,8 +238,8 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   },
   glp1: {
     title: 'GLP-1 medications',
-    whatItIs: 'Medicines that copy gut hormones, taken as a weekly injection or a daily tablet. The app lists semaglutide (Ozempic, Wegovy, Rybelsus), dulaglutide (Trulicity) and tirzepatide (Mounjaro, Zepbound), which acts on two hormones, GLP-1 and GIP.',
-    whyItMatters: 'In large trials, semaglutide and tirzepatide led to substantial weight loss, with better blood sugar, blood pressure and triglycerides. Weight tends to return after stopping, so they are usually taken long term.',
+    whatItIs: 'Medicines that copy gut hormones, taken as a weekly injection or a daily tablet. The app lists Semaglutide (Ozempic, Wegovy, Rybelsus), Dulaglutide (Trulicity) and Tirzepatide (Mounjaro, Zepbound), which acts on two hormones, GLP-1 and GIP.',
+    whyItMatters: 'In large trials, Semaglutide and Tirzepatide led to substantial weight loss, with better blood sugar, blood pressure and triglycerides. Weight tends to return after stopping, so they are usually taken long term.',
     howTo: { heading: WORKS, points: [
       'They reduce appetite, slow stomach emptying and help release insulin after meals.',
       'Nausea, vomiting, diarrhoea and constipation are common, and usually ease over time.',
@@ -250,7 +250,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   },
   sglt2i: {
     title: 'SGLT2 inhibitors',
-    whatItIs: 'Daily tablets first made for type 2 diabetes. The app lists empagliflozin (Jardiance), dapagliflozin (Farxiga) and canagliflozin (Invokana).',
+    whatItIs: 'Daily tablets first made for type 2 diabetes. The app lists Empagliflozin (Jardiance), Dapagliflozin (Farxiga) and Canagliflozin (Invokana).',
     whyItMatters: 'Besides lowering blood sugar and causing modest weight loss, they protected the heart and kidneys in large trials, including in people with heart failure.',
     howTo: { heading: WORKS, points: [
       'They make your kidneys pass extra sugar out in your urine.',
@@ -264,7 +264,7 @@ export const METRIC_GUIDES: Record<string, MetricGuide> = {
   metformin: {
     title: 'Metformin',
     whatItIs: 'A daily tablet used for decades for type 2 diabetes. It comes as immediate release (IR) or extended release (XR).',
-    whyItMatters: 'In the Diabetes Prevention Program, metformin slowed the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. In the long-term follow-up of the Diabetes Prevention Program, people at high risk of type 2 diabetes who took metformin were no less likely to die, including from heart disease or cancer, than those on placebo.',
+    whyItMatters: 'In the Diabetes Prevention Program, Metformin slowed the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. In the long-term follow-up of the Diabetes Prevention Program, people at high risk of type 2 diabetes who took Metformin were no less likely to die, including from heart disease or cancer, than those on placebo.',
     howTo: { heading: WORKS, points: [
       'It lowers the sugar your liver releases and helps your body respond to insulin.',
       'Stomach upset and loose stools are common at first. The XR form may cause fewer.',

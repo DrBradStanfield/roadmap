@@ -47,7 +47,7 @@ const recommends = (bmi: string, reasons?: string) => (reasons
   : `At a BMI of ${bmi}, medications that support weight management and metabolic health are an option to discuss with your doctor.`);
 /** The plan's GLP-1 card text (US-06 AC6). */
 const glp1Card = (bmi: string, reasons: string) =>
-  `With a BMI of ${bmi} and ${reasons}, consider discussing tirzepatide or semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+  `With a BMI of ${bmi} and ${reasons}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
 
 interface GuestRecord {
   sex?: 'male';
@@ -390,7 +390,7 @@ describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inh
     return Array.from(title.parentElement!.querySelectorAll('label')).map((l) => l.textContent);
   });
   const lipidCards = (container: HTMLElement) => planTitles(container)
-    .filter((t) => /statin|Ezetimibe|bempedoic|PCSK9/.test(t));
+    .filter((t) => /statin|Ezetimibe|Bempedoic|PCSK9/.test(t));
 
   it('statin not tolerated: the PCSK9 inhibitor card, and its question straight after the statin', async () => {
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 }, meds: [['statin', 'not_tolerated']] });
@@ -403,7 +403,7 @@ describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inh
       sex: 'male', weight: 80, lipids: { ldl: 3 },
       meds: [['statin', 'not_tolerated'], ['pcsk9i', 'pcsk9i', 140], ['ezetimibe', 'ezetimibe', 10]],
     });
-    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Consider discussing bempedoic acid with your doctor']));
+    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Consider discussing Bempedoic acid with your doctor']));
     expect(await lipidQuestions(view.container)).toEqual(['Statin', 'On a PCSK9 inhibitor?', 'On Ezetimibe 10mg?', 'Bempedoic acid']);
   });
 });

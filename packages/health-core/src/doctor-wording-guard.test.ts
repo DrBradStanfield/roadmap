@@ -192,31 +192,43 @@ describe('US-07 AC17: doctor-discussion wording guard', () => {
   });
 });
 
-// US-07 AC19 (Brad 2026-11-27): inside a sentence a medicine's generic name reads as a word, in lower
-// case, and no sentence carries the "(listed first)" note. Titles, form labels and checklist items
-// ("Statin: Atorvastatin 20mg") keep their capital: the scan reads card text and reasons, not titles.
-const GENERIC_NAMES = 'Tirzepatide|Semaglutide|Dulaglutide|Liraglutide|Atorvastatin|Rosuvastatin|Simvastatin|Pravastatin|Pitavastatin|Ezetimibe|Empagliflozin|Dapagliflozin|Canagliflozin|Metformin|Evolocumab|Alirocumab|Inclisiran';
-/** A capitalised generic name after a lower-case word, a comma, a bracket or "e.g.": mid-sentence. */
-const MID_SENTENCE_CAPITAL = new RegExp(`(?:[a-z,(]|e\\.g\\.) (?:${GENERIC_NAMES})\\b`);
+// US-07 AC19 (Brad 2026-11-27, "Capitals everywhere. Every medicine name gets a capital, in titles and
+// sentences."): a specific medicine's name starts with a capital wherever the engine shows it, and no
+// sentence carries the "(listed first)" note. Drug classes ("a statin", "SGLT2 inhibitors") are not names.
+// The scan reads every title, card text, reason, tile, form title, intro, label, hint and option label
+// and every metric guide the sweep above reaches, plus every "why" reason in the evidence tables.
+const MEDICINE_NAMES = [
+  'tirzepatide', 'semaglutide', 'dulaglutide', 'liraglutide', 'exenatide',
+  'atorvastatin', 'rosuvastatin', 'simvastatin', 'pravastatin', 'pitavastatin', 'lovastatin', 'fluvastatin',
+  'ezetimibe', 'bempedoic acid', 'evolocumab', 'alirocumab', 'inclisiran',
+  'empagliflozin', 'dapagliflozin', 'canagliflozin', 'ertugliflozin', 'metformin', 'orlistat',
+];
+/** A medicine name in lower case anywhere: after a space, a digit, a bracket, a slash, a colon or a dash. */
+const LOWER_CASE_NAME = new RegExp(`(?<![A-Za-z_])(?:${MEDICINE_NAMES.join('|')})(?![A-Za-z_])`);
 
-describe('US-07 AC19: medicine names inside a sentence', () => {
-  const titles = new Set(shown.medicineTitles);
-  const body = shown.medicineText.filter((t) => !titles.has(t));
+describe('US-07 AC19: medicine names start with a capital', () => {
+  const optionLabels = (meds: MedicationInputs) => {
+    const basis = { lipidMarker: null, weightMedTrigger: { on: true, reasons: [] }, bmi: 30, hasLipidInput: true, hasWeightInput: true, unitFor: () => 'si' as const };
+    return medicationForm(meds, basis).flatMap((s) => s.groups.flatMap((g) => g.fields))
+      .flatMap((f) => ('options' in f ? f.options.map((o) => o.label) : []));
+  };
+  const reasons = Object.values({ ...SUGGESTION_EVIDENCE, ...STAT_CARD_EVIDENCE }).map((e) => e.reason);
+  const all = [...shown.text, ...reasons, ...MEDS.flatMap(optionLabels)];
 
-  it('walks the sentences that name a medicine (the scan is not vacuous)', () => {
-    const all = body.join('\n');
+  it('walks the text that names a medicine (the scan is not vacuous)', () => {
+    const joined = all.join('\n');
     for (const phrase of [
-      'consider discussing tirzepatide or semaglutide with your doctor, alongside diet, exercise and sleep.',
-      'A higher dose or a switch to tirzepatide may help',
-      'SGLT2 inhibitors like empagliflozin or dapagliflozin provide',
-      'Discuss starting a statin (e.g. rosuvastatin 5mg) with your doctor.',
-      'Discuss adding ezetimibe 10mg with your doctor.',
-      "You're at or near the maximum dose of simvastatin. Discuss switching to a more potent statin (e.g. rosuvastatin) with your doctor.",
-    ]) expect(all).toContain(phrase);
+      'consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep.',
+      'Consider discussing Bempedoic acid with your doctor',
+      'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide',
+      'Discuss adding Ezetimibe 10mg with your doctor.',
+      "You're at or near the maximum dose of Simvastatin.",
+      'Dulaglutide (Trulicity)',
+    ]) expect(joined).toContain(phrase);
   });
 
-  it('no card text or reason carries "(listed first)" or a capitalised generic name mid-sentence', () => {
-    expect(shown.text.filter((t) => t.includes('(listed first)'))).toEqual([]);
-    expect(body.filter((t) => MID_SENTENCE_CAPITAL.test(t))).toEqual([]);
+  it('no shown text carries "(listed first)" or a medicine name in lower case', () => {
+    expect(all.filter((t) => t.includes('(listed first)'))).toEqual([]);
+    expect([...new Set(all.filter((t) => LOWER_CASE_NAME.test(t)))]).toEqual([]);
   });
 });

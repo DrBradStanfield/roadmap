@@ -192,7 +192,7 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
 /** The GLP-1 card's text, shared by the cascade's first step and the standalone card. */
 function glp1Description(bmi: number, reasons: string[]): string {
   const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
-  return `With a BMI of ${bmi}${and}, consider discussing tirzepatide or semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+  return `With a BMI of ${bmi}${and}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
 }
 
 /** A dose card's text (US-06 AC8): the steps the missing dose decides
@@ -418,10 +418,10 @@ export function generateSuggestions(
       // Weight & diabetes medication cascade (GLP-1 → its dose if not recorded → escalate → SGLT2i → Metformin)
       const stepCards: Record<WeightStep, [priority: Suggestion['priority'], title: string, text: string]> = {
         glp1: ['attention', 'Consider discussing a GLP-1 medication with your doctor', glp1Text],
-        'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'a switch to tirzepatide')],
+        'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'a switch to Tirzepatide')],
         'glp1-increase': ['attention', 'Consider discussing your GLP-1 dose with your doctor', 'Discuss with your doctor the pros and cons of a higher dose of your current GLP-1 medication.'],
         'glp1-switch': ['attention', 'Consider discussing Tirzepatide with your doctor', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
-        sglt2i: ['attention', 'Consider discussing an SGLT2 inhibitor with your doctor', 'SGLT2 inhibitors like empagliflozin or dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
+        sglt2i: ['attention', 'Consider discussing an SGLT2 inhibitor with your doctor', 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
         metformin: ['info', 'Consider discussing Metformin with your doctor', 'Metformin provides additional glycemic control and has potential long-term health benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.'],
       };
       for (const step of weightCascade(medications).suggest) {
@@ -730,7 +730,7 @@ export function generateSuggestions(
     }
     if (weightMeds.on) {
       // The GLP-1 sentence names medicines, so it needs a known adult age (US-07 AC6).
-      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? ' GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.' : ''}`);
+      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? ' GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.' : ''}`);
     }
     const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';
 
@@ -779,12 +779,12 @@ export function generateSuggestions(
     const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.'
       + (statinDoses ? ` ${onStatinPregnancy}` : '');
     const stepCards: Record<LipidStep, [title: string, text: string]> = {
-      statin: ['Consider discussing a statin with your doctor', 'Discuss starting a statin (e.g. rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.'],
-      ezetimibe: ['Consider discussing Ezetimibe with your doctor', `Discuss adding ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
-      'bempedoic-acid': ['Consider discussing bempedoic acid with your doctor', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
+      statin: ['Consider discussing a statin with your doctor', 'Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.'],
+      ezetimibe: ['Consider discussing Ezetimibe with your doctor', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
+      'bempedoic-acid': ['Consider discussing Bempedoic acid with your doctor', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
       'statin-dose': ['Add your statin dose', `${doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)} ${onStatinPregnancy}`],
       'statin-increase': ['Consider discussing your statin dose with your doctor', `Discuss increasing your statin dose with your doctor. ${onStatinPregnancy}`],
-      'statin-switch': ['Consider discussing a more potent statin with your doctor', `You're at or near the maximum dose of ${statinDrug}. Discuss switching to a more potent statin (e.g. rosuvastatin) with your doctor. ${onStatinPregnancy}`],
+      'statin-switch': ['Consider discussing a more potent statin with your doctor', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor. ${onStatinPregnancy}`],
       pcsk9i: ['Consider discussing a PCSK9 inhibitor with your doctor', `Discuss a PCSK9 inhibitor with your doctor. ${pregnancyUnstudied}`],
     };
     // On a statin: statin → ezetimibe → the statin's dose if not recorded, a step up or a PCSK9 inhibitor.
