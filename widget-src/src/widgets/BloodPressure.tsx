@@ -12,8 +12,9 @@ import { formatShortDate } from '../lib/constants';
 import { trackProductEvent } from '../lib/server-api';
 import { useBpPair } from '../lib/useBpPair';
 import { useSaveOnLeave } from '../lib/useSaveOnLeave';
-import { averageOf, bpPageView, readReading, recordPair, resultFor, rowsOn, savePair, type Ids, type Result, type SaveOutcome, type Typed } from './blood-pressure';
+import { NO_SAVES, averageOf, bpPageView, readReading, recordPair, resultFor, rowsOn, savePair, transition, type Ids, type Result, type SaveOutcome, type Saves, type Typed } from './blood-pressure';
 import { safeHref } from './body-measures';
+import { FollowErase, useTreeErase } from './FollowErase';
 import { NEXT_STEP_DEFAULT, type WidgetProps } from './WaistToHeight';
 import { PILL, canvasDraws, drawPill, fixed } from './WidgetResults';
 
@@ -100,7 +101,19 @@ function BpResults({ result }: { result: Result | null }) {
   );
 }
 
-export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => window.location.assign(href) }: WidgetProps) {
+export function BloodPressureWidget(props: WidgetProps) {
+  // One view event per page view, however many blood pressure blocks the page holds (AC1, as US-74). Counted
+  // above FollowErase: starting over after a newer erase is the same page view (AC8).
+  useEffect(() => {
+    if (bpPageView.mounted++ === 0) { bpPageView.savedCounted = false; trackProductEvent('bp_widget_viewed'); }
+    return () => { bpPageView.mounted--; };
+  }, []);
+  return <FollowErase><BloodPressureForm {...props} /></FollowErase>;
+}
+
+function BloodPressureForm({ nextUrl, nextLabel, navigate = (href) => window.location.assign(href) }: WidgetProps) {
+  // The erase this tree was mounted under: every save of its typing writes under it or not at all (AC8).
+  const erase = useTreeErase();
   // The record's latest pair, shown until the person types (AC3): never averaged in, never saved.
   const [start] = useState(recordPair);
   const [prefilled, setPrefilled] = useState(!!start);
@@ -109,22 +122,12 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
   const [readings, setReadings] = useState<[Typed, Typed]>(() => [start ? { sys: String(start.pair.sys), dia: String(start.pair.dia) } : EMPTY, EMPTY]);
   const sysRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)] as const;
   const form = useRef<HTMLFormElement>(null);
-  // Saves (AC5), bound to what was asked: each edit is numbered; a save carries its number, day and pair.
-  // `kept`: the newest edit the store has kept; `conflict`: the newest edit whose save met a row changed
-  // elsewhere, so it and every save asked before it are dropped. `shown`: the day's rows this page may
-  // replace, the rows it showed or wrote itself, as of an edit; after a conflict, a newer edit takes the
-  // record's rows as they are then (the person typed again after the change, as US-74 AC4).
-  const edits = useRef(0);
-  const kept = useRef(0);
-  const conflict = useRef(-1);
+  // Saves (AC5), bound to what was asked: a save carries its edit's number, day and pair (Saves). `shown`: the day's rows this page may replace, the rows it showed or wrote itself,
+  // as of an edit; after a drop, a newer edit takes the record's rows as they are then (the person typed again
+  // after the change, as US-74 AC4).
+  const saves = useRef<Saves>(NO_SAVES);
   const shown = useRef({ day: localDay(new Date()), ids: start?.day === localDay(new Date()) ? start.ids : NONE, asOf: 0 });
   const queue = useRef<Promise<unknown>>(Promise.resolve());
-
-  // One view event per page view, however many blood pressure blocks the page holds (AC1, as US-74).
-  useEffect(() => {
-    if (bpPageView.mounted++ === 0) { bpPageView.savedCounted = false; trackProductEvent('bp_widget_viewed'); }
-    return () => { bpPageView.mounted--; };
-  }, []);
 
   // Only readings typed today count, and the record's while it shows: one typed before midnight is never
   // averaged into a new day's result or save (Codex 1876b R5); a save already asked keeps its own day.
@@ -137,20 +140,23 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
 
   /** Save the readings as typed now. Resolves true when nothing valid is waiting or the store kept it (AC5, AC6). */
   const save = (): Promise<boolean> => {
-    const pending = edits.current > kept.current;
-    if (!pending || pairs.length === 0) return queue.current.then(() => true, () => true);
+    const s = saves.current;
+    if (s.edits <= s.kept || pairs.length === 0) return queue.current.then(() => true, () => true);
     // A complete reading held back by another reading's error: blocked, so the next step stays (Codex 1876b R7).
-    if (read.some((r) => r.kind === 'error')) return Promise.resolve(false);
-    const seq = edits.current, pair = averageOf(pairs), day = localDay(new Date());
+    // Settled with an edit not kept: its typing was dropped, and nothing has been typed since.
+    if (read.some((r) => r.kind === 'error') || s.kind === 'settled') return Promise.resolve(false);
+    // The queued write lands under the tree's erase or not at all (US-16 AC2a, AC8).
+    const seq = s.edits, pair = averageOf(pairs), day = localDay(new Date());
     const run = async (): Promise<boolean> => {
-      if (seq <= conflict.current) return false;
-      if (conflict.current > shown.current.asOf) shown.current = { day, ids: rowsOn(day), asOf: seq };
+      const dropped = saves.current.dropped;
+      if (seq <= dropped) return false;
+      if (dropped > shown.current.asOf) shown.current = { day, ids: rowsOn(day), asOf: seq };
       const expected = shown.current.day === day ? shown.current.ids : NONE;
-      const out = await savePair(pair, day, expected).catch((): SaveOutcome => ({ kind: 'failed' }));
-      if (out.kind === 'changed') { conflict.current = seq; return false; }
+      const out = await savePair(pair, day, expected, erase).catch((): SaveOutcome => ({ kind: 'failed' }));
+      if (out.kind === 'changed') { saves.current = transition(saves.current, { type: 'dropped', seq }); return false; }
       if (out.kind === 'failed') { if (out.ids) shown.current = { day, ids: out.ids, asOf: seq }; return false; }
       shown.current = { day, ids: out.ids, asOf: seq };
-      kept.current = Math.max(kept.current, seq);
+      saves.current = transition(saves.current, { type: 'kept', seq });
       if (!bpPageView.savedCounted) { bpPageView.savedCounted = true; trackProductEvent('bp_widget_saved'); }
       return true;
     };
@@ -168,7 +174,7 @@ export function BloodPressureWidget({ nextUrl, nextLabel, navigate = (href) => w
 
   // The first edit clears the record's reading: a half from another day is never kept beside a typed one (AC3).
   const change = (i: 0 | 1) => (typed: Typed) => {
-    edits.current++;
+    saves.current = transition(saves.current, { type: 'typed' });
     // The load reserve for a returning visitor (the block's inline script) has done its job once they type:
     // from then on the card fits what it holds (Brad 2026-11-19).
     form.current?.closest('.hr-widget')?.classList.remove('hr-widget--saved');

@@ -26,29 +26,29 @@ describe('routeQuery: US-15 AC28a only known handles fill the three places', () 
 
   it('a made-up first handle does not push out a known one', async () => {
     reply(['not-a-real-handle', a, b, c]);
-    const r = await routeQuery('q');
+    const r = await routeQuery('q', undefined, undefined, 'CHAT');
     expect(r).toMatchObject({ handles: [a, b, c], error: null });
   });
 
   it('a repeated handle takes one place', async () => {
     reply([a, a, b, c]);
-    expect((await routeQuery('q')).handles).toEqual([a, b, c]);
+    expect((await routeQuery('q', undefined, undefined, 'CHAT')).handles).toEqual([a, b, c]);
   });
 
   it('a repaired handle and its plain form take one place', async () => {
     reply([`guideline-${a}`, b, a]);
-    expect((await routeQuery('q')).handles).toEqual([a, b]);
+    expect((await routeQuery('q', undefined, undefined, 'CHAT')).handles).toEqual([a, b]);
   });
 
   it('an overlong string is dropped and the reply still routes', async () => {
     reply(['x'.repeat(121), a, b]);
-    const r = await routeQuery('q');
+    const r = await routeQuery('q', undefined, undefined, 'CHAT');
     expect(r).toMatchObject({ handles: [a, b], error: null });
   });
 
   it('keeps the first three known handles in the order sent', async () => {
     reply([d, c, b, a]);
-    expect((await routeQuery('q')).handles).toEqual([d, c, b]);
+    expect((await routeQuery('q', undefined, undefined, 'CHAT')).handles).toEqual([d, c, b]);
   });
 
   it('without an allow-list, keeps every non-empty entry, one character included, and drops repeats', () => {
@@ -57,6 +57,6 @@ describe('routeQuery: US-15 AC28a only known handles fill the three places', () 
 
   it('a reply with no known handle routes nowhere, with no error', async () => {
     reply(['made-up-one', 'made-up-two']);
-    expect(await routeQuery('q')).toMatchObject({ handles: [], error: null });
+    expect(await routeQuery('q', undefined, undefined, 'CHAT')).toMatchObject({ handles: [], error: null });
   });
 });

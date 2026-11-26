@@ -40,7 +40,7 @@ function panel(screenings: Record<string, string>, sex: 'female' | 'male' = 'fem
     medications: [], onMedicationChange: vi.fn(), screenings: rows(screenings), onScreeningChange,
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age }, grading: {},
+    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { age, screeningAge: age }, grading: {},
   };
   const { container } = render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />);
   const date = (key: string) => container.querySelector<HTMLSelectElement>(`select#${key}`);

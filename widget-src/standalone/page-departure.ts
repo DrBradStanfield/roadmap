@@ -1,16 +1,7 @@
-import { flushRoadmapStoreSync } from '../src/lib/roadmap-data';
+import { afterPageHide } from '../src/lib/page-hide';
 
-/** Register the entrypoint's synchronous save before the component listeners. */
+/** The entrypoint's place on the one page-hide path (lib/page-hide.ts): every
+ *  hide flushes the store, a page mounted or not, and `onHidden` runs after the flush. */
 export function registerPageDeparture(onHidden: () => void): () => void {
-  const hidden = () => {
-    if (document.visibilityState !== 'hidden') return;
-    flushRoadmapStoreSync();
-    onHidden();
-  };
-  document.addEventListener('visibilitychange', hidden);
-  window.addEventListener('beforeunload', flushRoadmapStoreSync);
-  return () => {
-    document.removeEventListener('visibilitychange', hidden);
-    window.removeEventListener('beforeunload', flushRoadmapStoreSync);
-  };
+  return afterPageHide(onHidden);
 }

@@ -1,0 +1,2 @@
+id,section,title,status,evidence,pr,durability_check,needs_brad
+W1-5b,S8 web big components,The iPhone engine reads the shared screening note,not started,"packages/health-core/src/screening-note.ts holds the Cancer screening note's words for the web (US-62 AC41); ios/engine/my-data-forms.ts buildForms keeps its own copy of the same three sentences. Remedy: buildForms calls screeningNote, shipped with the next engine release. Until then screening-note.test.ts checks the engine's copy holds the same words",,packages/health-core/src/screening-note.test.ts,no

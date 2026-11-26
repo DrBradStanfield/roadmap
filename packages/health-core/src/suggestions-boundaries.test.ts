@@ -135,9 +135,9 @@ describe('US-07 AC1: HbA1c tiers at 5.7% and 6.5% (doc §4 HbA1c Tiers, >=)', ()
     expect(byId(plan({ hba1c: ifcc(6.5) }), 'hba1c-diabetic')?.priority).toBe('urgent');
     expect(tier(ifcc(6.5) - BELOW)).toEqual(['hba1c-prediabetic']);
   });
-  it('5.7% is prediabetic; just below is normal', () => {
+  it('5.7% is prediabetic; just below is normal, with no card (US-07 AC18)', () => {
     expect(tier(ifcc(5.7))).toEqual(['hba1c-prediabetic']);
-    expect(tier(ifcc(5.7) - BELOW)).toEqual(['hba1c-normal']);
+    expect(tier(ifcc(5.7) - BELOW)).toEqual([]);
   });
 });
 

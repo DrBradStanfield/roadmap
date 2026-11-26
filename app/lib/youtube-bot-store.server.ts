@@ -6,7 +6,7 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
-import { routerColumns, matchEventText, answerColumns } from './chat-persist.server';
+import { matchEventRow, answerColumns } from './chat-persist.server';
 import { generateTitle } from './chat.server';
 import { COMMENT_MAX_AGE_DAYS, PLATFORM_YOUTUBE, BOT_PROFILE_ID } from './youtube-bot-config.server';
 import type { YouTubeThread } from './youtube-bot-api.server';
@@ -58,6 +58,42 @@ export async function unclaimComment(commentId: string, claimRowId: number): Pro
       tags: { feature: 'youtube-bot', subsystem: 'unclaim' },
       extra: { commentId },
     });
+  }
+}
+
+/** A follow-up's claim as the scan sees it (US-15 AC68): `running` = claimed with no decision recorded yet
+ *  (a machine may be running it now); `done` = ended without a post, its decision recorded by finishClaim;
+ *  `posted` = marked posting or posted. */
+export type FollowUpClaim = 'running' | 'done' | 'posted';
+
+/** The bot's claims on these reply ids. Throws when unreadable, so the scan skips the thread this tick. */
+export async function readFollowUpClaims(ids: string[]): Promise<Map<string, FollowUpClaim>> {
+  const out = new Map<string, FollowUpClaim>();
+  if (!supabaseAdmin || ids.length === 0) return out;
+  const { data, error } = await supabaseAdmin
+    .from('youtube_bot_log')
+    .select('youtube_comment_id, posted, classification')
+    .in('youtube_comment_id', ids);
+  if (error) throw error;
+  for (const r of data ?? []) {
+    out.set(r.youtube_comment_id, r.posted ? 'posted' : typeof r.classification === 'string' ? 'done' : 'running');
+  }
+  return out;
+}
+
+/** Records the decision on a kept claim that ended without a post, so the follow-up scan passes over it
+ *  (US-15 AC68). Only this claim's row, and only while unposted. A failed write leaves it `running`, which
+ *  holds the thread as before. */
+export async function finishClaim(commentId: string, claimRowId: number, classification: string): Promise<void> {
+  if (!supabaseAdmin) return;
+  const { error } = await supabaseAdmin
+    .from('youtube_bot_log')
+    .update({ classification })
+    .eq('id', claimRowId)
+    .eq('youtube_comment_id', commentId)
+    .eq('posted', false);
+  if (error) {
+    Sentry.captureException(error, { tags: { feature: 'youtube-bot', subsystem: 'finish-claim' }, extra: { commentId } });
   }
 }
 
@@ -335,30 +371,29 @@ export async function persistYouTubeTurn(p: {
       }
     }
 
-    const r = outcome.routerResult;
-    const { error: evtErr } = await supabaseAdmin.from('chat_match_events').insert({
-      message_id: assistantMessageId,
-      conversation_id: conversationId,
-      user_id: BOT_PROFILE_ID,
-      message: matchEventText(thread.text),
-      router_context: {
-        platform: PLATFORM_YOUTUBE,
+    // matched_handles come from routerResult, which runPipeline also copies to routerHandles.
+    const { error: evtErr } = await supabaseAdmin.from('chat_match_events').insert(matchEventRow({
+      messageId: assistantMessageId,
+      conversationId,
+      userId: BOT_PROFILE_ID,
+      question: thread.text,
+      platform: PLATFORM_YOUTUBE,
+      context: {
         videoId: thread.videoId,
         commentId: thread.topLevelCommentId,
         followUpCommentId: p.followUpCommentId ?? null,
         postedYoutubeId: p.postedYoutubeId,
         posted: outcome.posted,
         skipReason: outcome.skipReason ?? null,
-        ...(outcome.replaced?.length ? { replaced: outcome.replaced } : {}),
-        ...(outcome.reduced?.length ? { reduced: outcome.reduced } : {}),
       },
-      matched_handles: outcome.routerHandles ?? [],
-      ...routerColumns(r),
+      replaced: outcome.replaced,
+      reduced: outcome.reduced,
+      routerResult: outcome.routerResult,
       classification: outcome.classification ?? 'ERROR',
-      router_skipped: outcome.routerSkipped ?? false,
-      is_fallback: outcome.isFallback ?? false,
-      failure_mode: outcome.failureMode ?? null,
-    });
+      routerSkipped: outcome.routerSkipped ?? false,
+      isFallback: outcome.isFallback ?? false,
+      failureMode: outcome.failureMode,
+    }));
     if (evtErr) {
       Sentry.captureException(new Error('YouTube: match-event insert failed'), {
         tags: { feature: 'youtube-bot', subsystem: 'persist-chat' },
@@ -374,9 +409,14 @@ export async function persistYouTubeTurn(p: {
   }
 }
 
+/** Forgets a claim that ended without a post once no scan can bring its comment back (US-15 AC68): neither
+ *  scan runs a comment older than COMMENT_MAX_AGE_DAYS, and a claim is never older than its comment; the extra
+ *  day absorbs clock skew. The youtube_bot_cleanup_skipped RPC kept only the newest 200 such rows, so on a busy
+ *  day a skipped follow-up's claim fell out while its thread was still scanned, and it ran again (chat-health W46). */
 export async function cleanupSkippedRows(): Promise<void> {
   if (!supabaseAdmin) return;
-  const { error } = await supabaseAdmin.rpc('youtube_bot_cleanup_skipped');
+  const cutoff = new Date(Date.now() - (COMMENT_MAX_AGE_DAYS + 1) * 24 * 60 * 60_000).toISOString();
+  const { error } = await supabaseAdmin.from('youtube_bot_log').delete().eq('posted', false).lt('processed_at', cutoff);
   if (error) {
     Sentry.captureException(error, { tags: { feature: 'youtube-bot', subsystem: 'cleanup' } });
   }

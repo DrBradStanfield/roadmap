@@ -7,6 +7,8 @@ import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
 import { logAudit } from './supabase-identity.server';
 import { safeErrorFields } from './safe-error-fields.server';
+import { createRateLimiter } from './rate-limiter';
+import { hashedKey, ipBucket, perKindLimit, type IpKey } from './ip-key.server';
 
 // ---------------------------------------------------------------------------
 // Guest chat session management
@@ -31,20 +33,16 @@ export function hashClientIp(ip: string): string {
   return crypto.createHmac('sha256', Buffer.from(key)).update(ip, 'utf8').digest('base64url');
 }
 
-// Hashed-IP rate limit for guest session creation: 10 new sessions/hour per IP,
-// per-process in-memory. Resets on redeploy; effective ceiling is ~N × 10/hr
-// where N is the Fly machine count. Sophisticated IP-rotation abuse isn't
-// caught here — would need an upstream WAF.
-const GUEST_IP_RATE_WINDOW_MS = 60 * 60_000;
-const GUEST_IP_RATE_MAX = 10;
-const guestIpRateMap = new Map<string, { count: number; resetAt: number }>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of guestIpRateMap) {
-    if (now > entry.resetAt) guestIpRateMap.delete(key);
-  }
-}, 10 * 60_000);
+// Hashed-IP rate limit for guest session creation: 10 new sessions/hour per IPv4 address, 30 per IPv6 /64,
+// which can hold many people (US-52 AC4k), per-process in-memory. Resets on redeploy; effective ceiling is
+// that limit × N, where N is the Fly machine count. Sophisticated IP-rotation abuse isn't
+// caught here — would need an upstream WAF. Bounded like every limiter map
+// (US-15 AC67): a live entry is evicted only once MAX_TRACKED_KEYS other hashes
+// are live within the hour, and a caller holding that many addresses already
+// gets a full count per address.
+// The limit keys on the hashed bucket (IPv6 /64, US-52 AC4k); the session itself stays bound to the address.
+const GUEST_SESSIONS_PER_HOUR = perKindLimit({ v4: 10, 'v6-bucket': 30, unknown: 10 });
+const takeGuestSession = createRateLimiter<IpKey>(GUEST_SESSIONS_PER_HOUR, 60 * 60_000, 10 * 60_000, { name: 'guest sessions per IP' });
 
 export interface GuestSessionResult {
   sessionId: string;
@@ -88,10 +86,10 @@ export async function getOrCreateGuestSession(
 ): Promise<GuestSessionResult> {
   if (!supabaseAdmin) throw new Error('Supabase admin client not configured');
 
-  const now = Date.now();
-  // Nothing below this line touches `ip` again (US-15 AC7): the session row,
-  // the rate-limit bucket and the audit entry all key on the hash.
+  // Nothing below this line touches `ip` again (US-15 AC7): the session row
+  // and the audit entry key on the address's hash, the limit on its bucket's.
   const ipHash = hashClientIp(ip);
+  const limitKey = hashedKey(ipBucket(ip), hashClientIp);
 
   // Existing session — validate token + IP (checked BEFORE rate limit to avoid penalizing returning guests)
   if (sessionToken) {
@@ -108,15 +106,7 @@ export async function getOrCreateGuestSession(
   }
 
   // In-memory IP rate limit (only for new session creation, not returning sessions)
-  const ipEntry = guestIpRateMap.get(ipHash);
-  if (ipEntry && now < ipEntry.resetAt && ipEntry.count >= GUEST_IP_RATE_MAX) {
-    throw new GuestRateLimitError('Too many requests');
-  }
-  if (!ipEntry || now > ipEntry.resetAt) {
-    guestIpRateMap.set(ipHash, { count: 1, resetAt: now + GUEST_IP_RATE_WINDOW_MS });
-  } else {
-    ipEntry.count++;
-  }
+  if (!takeGuestSession(limitKey)) throw new GuestRateLimitError('Too many requests');
 
   // Create ghost auth user + profile + session
   const guestEmail = `guest-${crypto.randomUUID()}@guest.internal`;

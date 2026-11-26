@@ -9,8 +9,8 @@
 import { ROADMAP_FILE_NAME } from './adapter';
 import type { RecordHost } from './record-host';
 import { saveRecordInto } from './record-session';
-import { ROADMAP_DOC } from './roadmap-doc';
-import { SyncManager, type SyncContext } from './sync-manager';
+import { recordSync, ROADMAP_DOC } from './roadmap-doc';
+import type { SyncContext } from './sync-manager';
 
 type CloudHost = Extract<RecordHost, { tier: 'cloud' }>;
 
@@ -58,6 +58,6 @@ export async function copyCloudDown(host: CloudHost): Promise<void> {
   const { body } = await host.store.read(ROADMAP_FILE_NAME);
   if (body == null) return;
   const ctx = ctxOf(host);
-  const device = new SyncManager(host.mirror.adapter, ctx.deviceId, ROADMAP_DOC, { now: () => ctx.now });
+  const device = recordSync(host.mirror.adapter, ctx.deviceId, ctx.now);
   await device.save(ROADMAP_DOC.merge(await device.load(), ROADMAP_DOC.migrate(body, ctx), ctx));
 }

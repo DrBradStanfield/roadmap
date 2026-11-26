@@ -22,7 +22,7 @@ const SWITCH_KEY = 'hr_reminders_switch_cancelled';
 class FailingCloud extends MemoryAdapter {
   failWrites = false;
   async write(...args: Parameters<MemoryAdapter['write']>) {
-    if (this.failWrites) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403);
+    if (this.failWrites) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403, undefined, 'refused');
     return super.write(...args);
   }
 }
@@ -58,7 +58,7 @@ async function setUp(provider: 'dropbox' | 'google-drive' = 'dropbox') {
   const cloud = new FailingCloud();
   await data.initRoadmapStore(cloud);
   data.setPreEraseHook(reminders.cancelRemindersForErase); // as standalone/app.tsx registers it
-  expect(data.setReminderOptIn({ status: 'active', token: TOKEN, email: ADDRESS, provider })).toBe(true);
+  expect(data.setReminderOptIn({ status: 'active', token: TOKEN, email: ADDRESS, provider }, data.getShownErase())).toBe(true);
   await data.flushRoadmapStore();
   localStorage.setItem(SWITCH_KEY, 'old-switch-token');
   return { data, reminders, cloud, Sentry };

@@ -212,7 +212,7 @@ describe('US-15 AC11: nothing reaches the prompt unless it is allowlisted or bou
   it('US-15 AC11: only allowlisted keys reach the prompt, at the top level too', () => {
     const { context } = contextFor([], [], { notes: INJECTION, unitSystem: INJECTION });
     expect(Object.keys(context).sort()).toEqual(
-      ['currentSuggestions', 'derivedValues', 'latestValues', 'medications', 'missingInputs', 'profile', 'screenings', 'units', 'uploadedDocuments'],
+      ['currentSuggestions', 'derivedValues', 'latestValues', 'medications', 'missingInputs', 'profile', 'screenings', 'units'],
     );
     expect(context.profile.unitSystem).toBe('si');
   });
@@ -323,7 +323,7 @@ describe('US-15 AC36: no plan still sends what is saved', () => {
   it('US-15 AC36: no plan, so no cards and no derived values (no verdicts for the model to report)', () => {
     const context = build(SAVED);
     expect(Object.keys(context).sort()).toEqual(
-      ['latestValues', 'measurementHistory', 'medications', 'missingInputs', 'profile', 'screenings', 'units', 'uploadedDocuments'],
+      ['latestValues', 'measurementHistory', 'medications', 'missingInputs', 'profile', 'screenings', 'units'],
     );
   });
 

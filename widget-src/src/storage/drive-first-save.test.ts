@@ -336,7 +336,8 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
   });
 
   it.each<Kind>(['hosted', 'browser'])('%s keeps the provider status on an auth-refused record write or create (US-10 AC4a)', async (kind) => {
-    for (const [status, existing] of [[401, true], [403, true], [401, false]] as const) {
+    // A 403 to the PATCH stored nothing (US-10 AC16, owner 2026-11-25): drive-record-refusal.test.ts.
+    for (const [status, existing] of [[401, true]] as const) {
       const drive = new Drive();
       if (existing) {
         drive.files = [{ id: 'one', name: ROADMAP_FILE_NAME, content: JSON.stringify(record('A')), version: 1 }];
@@ -352,6 +353,20 @@ describe('US-10 AC4 — ambiguous first-save discovery', () => {
       expect(told.hint).toMatch(/may have landed/);
       expect(`${told.message} ${told.hint}`).not.toMatch(/nothing was (read|written)/i);
     }
+  });
+
+  it.each<Kind>(['hosted', 'browser'])('%s: a 401 answer to the record create stored nothing and says so (US-10 AC12, S62b)', async (kind) => {
+    const drive = new Drive();
+    drive.createResponseStatus = 401;
+    const failure = await manager(adapter(kind), 'writer').save(record('B')).then(() => null, (error: unknown) => error);
+    // The status stays, so iOS refreshes the token and the page says "reconnect".
+    expect(failure).toBeInstanceOf(StorageError);
+    expect(failure).toMatchObject({ status: 401 });
+    expect(drive.files).toEqual([]);
+    const told = describeStorageFailure(failure, 'Google Drive');
+    expect(told.hint).toContain('Reconnect');
+    expect(`${told.message} ${told.hint}`).toMatch(/nothing was written/i);
+    expect(told.hint).not.toMatch(/landed/);
   });
 
   it.each<Kind>(['hosted', 'browser'])('%s remembers a landed concurrent create through four later pre-upload conflicts', async (kind) => {

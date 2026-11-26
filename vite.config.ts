@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { reactRouter } from "@react-router/dev/vite";
 import { sentryReactRouter, type SentryReactRouterBuildOptions } from "@sentry/react-router";
-import { defineConfig, type UserConfig } from "vite";
+import { defineConfig, type Rollup, type UserConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 // Related: https://github.com/remix-run/remix/issues/2835#issuecomment-1144102176
@@ -143,7 +143,7 @@ function packageListsReactRouter(pkgName: string): boolean {
 function assertNoExternalReactRouterConsumers() {
   return {
     name: "assert-no-external-react-router-consumers",
-    generateBundle(_options: unknown, bundle: Record<string, any>) {
+    generateBundle(_options: unknown, bundle: Rollup.OutputBundle) {
       for (const chunk of Object.values(bundle)) {
         if (chunk.type !== "chunk") continue;
         for (const spec of [...chunk.imports, ...chunk.dynamicImports]) {

@@ -21,14 +21,13 @@ import { migrateFile } from '@roadmap/health-core/migrate';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 import { listConversations } from '../lib/chat-api';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackABImpression: vi.fn(), trackABConversion: vi.fn(),
 }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 const floating = vi.hoisted(() => ({ opened: [] as Array<string[] | null> }));
@@ -66,8 +65,8 @@ beforeEach(async () => {
   await chat.recordExchange({ conversationId: 'c-old', isNew: true, userText: OLD_TITLE, assistantText: 'Synthetic answer.' });
   await initRoadmapStore(new MemoryAdapter(cloud));
   // A synthetic returning user with all four answers: the chat is open to them.
-  await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {});
-  await addMeasurement('weight', 70, '2026-09-01');
+  await saveChangedMeasurements({ heightCm: 170, sex: 'female', birthYear: 1980, birthMonth: 3 }, {}, getShownErase());
+  await addMeasurement('weight', 70, '2026-09-01', getShownErase());
   await flushRoadmapStore();
 });
 afterEach(async () => {

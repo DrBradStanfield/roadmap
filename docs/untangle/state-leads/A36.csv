@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A36,shared sync,docs/agent-access.md: wording for a timed-out upload,behaviour,not started,"Raised in PR 2149 review (US-10 AC20). docs/agent-access.md:448 says provider calls that time out surface as 'did not answer'; for an upload the shared hint is the may-have-landed sentence. Check that its words match the shared sentences in describeStorageFailure (packages/health-core/src/sync-manager.ts) and adapter.ts LANDED_HINT.",2149,yes

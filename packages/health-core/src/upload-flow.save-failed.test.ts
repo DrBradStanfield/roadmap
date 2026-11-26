@@ -32,3 +32,18 @@ describe('a choice after a failed Save (US-12 AC6)', () => {
     expect(next).toBe(failed);
   });
 });
+
+// US-16 AC2a (lead H18): the web's Save carries the erase the page showed at its press, each press its own.
+describe('a Save carries the erase of its own press (US-16 AC2a)', () => {
+  it('the saving state holds the press\'s erase; a retry after a failure holds the retry\'s; leaving saving drops it', () => {
+    const first = transition(failed, { type: 'saveStarted', erase: '[1,"erase-a"]' }).state;
+    expect(first).toMatchObject({ phase: 'saving', attempt: 2, erase: '[1,"erase-a"]' });
+    const again = transition(transition(first, { type: 'saveFailed', run: 1, attempt: 2, message: 'no' }).state, { type: 'saveStarted', erase: '[2,"erase-b"]' }).state;
+    expect(again).toMatchObject({ phase: 'saving', attempt: 3, erase: '[2,"erase-b"]' });
+    expect(transition(again, { type: 'saveFailed', run: 1, attempt: 3, message: 'no' }).state).not.toHaveProperty('erase');
+  });
+
+  it('a Save with no erase (the phone\'s) holds none', () => {
+    expect(transition(failed, { type: 'saveStarted' }).state).not.toHaveProperty('erase');
+  });
+});

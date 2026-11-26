@@ -127,7 +127,7 @@ describe('US-15 AC45: web chat turns are capped per IP and per machine', () => {
     expect((await post('198.51.100.13')).status).toBe(200);
     for (let i = 0; i < 5; i++) expect((await post('198.51.100.14')).status).toBe(429);
     const { webChatTurns } = await import('../lib/rate-limiter');
-    const { ipBucket } = await import('../lib/app-gate.server');
+    const { ipBucket } = await import('../lib/ip-key.server');
     webChatTurns.machine.reset();
     expect(webChatTurns.ip.remaining(ipBucket('198.51.100.14'))).toBe(200);
     expect(webChatTurns.ip.remaining(ipBucket('198.51.100.13'))).toBe(199);
@@ -165,7 +165,7 @@ describe('US-15 AC45: web chat turns are capped per IP and per machine', () => {
   it('by default a machine allows 10,000 turns a day and an IP 200', async () => {
     await load();
     const { webChatTurns } = await import('../lib/rate-limiter');
-    const { ipBucket } = await import('../lib/app-gate.server');
+    const { ipBucket } = await import('../lib/ip-key.server');
     expect(webChatTurns.machine.remaining('machine')).toBe(10_000);
     expect((await post('198.51.100.16')).status).toBe(200);
     expect(webChatTurns.machine.remaining('machine')).toBe(9_999);

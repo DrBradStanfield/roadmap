@@ -17,6 +17,7 @@ vi.mock('../lib/product-events.server', async (importOriginal) => ({
 import { action } from './api.events';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { streamingPost } from '../lib/capped-body.test-helpers';
+import { ipKeyedLimitCases } from '../lib/ip-key.test-helpers';
 
 const SHOPIFY_EGRESS = '35.1.2.3';
 
@@ -43,6 +44,13 @@ describe('api.events', () => {
     }
     expect((await emit(shopper)).status).toBe(429);
     expect((await emit('198.51.100.41')).status).toBe(200);
+  });
+});
+
+describe('US-52 AC4k: the events limit per IP keys on the one per-IP bucket', () => {
+  ipKeyedLimitCases({
+    limit: 600, windowMs: 60 * 60_000, v6: '2001:db8:e1', v4: '100.72',
+    allowed: async (ip) => (await emit(ip)).status !== 429,
   });
 });
 

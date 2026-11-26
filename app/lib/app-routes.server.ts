@@ -6,11 +6,12 @@
 import { labImportRequestSchema, type LabImportRequest } from '../../packages/health-core/src/validation';
 import { action as webChatAction } from '../routes/api.chat';
 import { attestConfig, AttestError, challengeValid, newChallenge, validKeyId, verifyAttestation } from './app-attest.server';
-import { appGate, appLimits, appRoutesOff, ipBucket, supabaseKeyStore, type GateOptions, type KeyStore } from './app-gate.server';
+import { appGate, appLimits, appRoutesOff, supabaseKeyStore, type GateOptions, type KeyStore } from './app-gate.server';
 import { SMALL_BODY_CAP } from './capped-body.server';
 import { captureAllowListedWarning } from './sentry-allow-listed.server';
 import { extractOneFile, TOO_SLOW } from './lab-extract-one.server';
-import { BODY_TOO_LARGE, getClientIp, parseSimpleRequestJson } from './local-first-route.server';
+import { BODY_TOO_LARGE, parseSimpleRequestJson } from './local-first-route.server';
+import { clientKey } from './ip-key.server';
 import { CHAT_PROMPT } from './chat-system-prompt.server';
 
 /** 2 MB, the web chat's own cap (api.chat.ts). */
@@ -39,7 +40,7 @@ export async function appRegister(request: Request, store: KeyStore = supabaseKe
   if (request.method !== 'POST') return postOnly();
   const config = attestConfig();
   if (appRoutesOff() || !config) return unavailable();
-  const ip = ipBucket(getClientIp(request, 'fly'));
+  const ip = clientKey(request, 'fly');
   const attempt = appLimits.register.reserve(ip, 1);
   if (!attempt) return registerRefused(429, 'limit');
 

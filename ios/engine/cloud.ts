@@ -12,6 +12,7 @@ import { ChatSession } from '../../packages/health-core/src/chat-session';
 import { LiveRefresh } from '../../packages/health-core/src/live-refresh';
 import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
 import type { RecordHost } from '../../packages/health-core/src/record-host';
+import type { RefreshReason } from '../../packages/health-core/src/refresh-pause';
 import { ERASE_UNREACHABLE, RecordSession, saveRecordInto } from '../../packages/health-core/src/record-session';
 import { copyCloudDown, liftDeviceCopy } from '../../packages/health-core/src/record-transfer';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
@@ -347,23 +348,23 @@ export function cloudHidden(): string {
   return '';
 }
 
-/** Re-read now ("Sync now"): answers 'changed' or 'same'. A failure rejects
- *  with its kind, as an open does. */
+/** Re-read now ("Sync now"): answers 'changed' or 'same'. A pressed read skips the five-second
+ *  pause (lead H31). A failure rejects with its kind, as an open does. */
 export async function cloudRefresh(): Promise<string> {
   checkArgs('cloudRefresh', arguments);
   if (!open) return 'same';
-  return (await reread(open)) ? 'changed' : 'same';
+  return (await reread(open, 'pressed')) ? 'changed' : 'same';
 }
 
 /** Every re-read, asked for or on the minute, tells Swift how it went: a
  *  revoked grant must show "Sign in again" even when no save is waiting, and a
  *  re-read that works clears a passing failure. */
-async function reread(at: Open): Promise<boolean> {
+async function reread(at: Open, reason: RefreshReason = 'automatic'): Promise<boolean> {
   // A save that failed is retried first; while it waits the session does not
   // re-read (its working copy is ahead of the cloud).
   at.session.flushSync();
   try {
-    const changed = await at.session.refreshFromRemote();
+    const changed = await at.session.refreshFromRemote(reason); // Sync now skips the pause (H31)
     // "Synced" only when nothing waits on the phone: the session clears the
     // pending marker when a save lands, and never before (review F1).
     if (!__native.pending('get')) __native.notify('synced', '', at.id);

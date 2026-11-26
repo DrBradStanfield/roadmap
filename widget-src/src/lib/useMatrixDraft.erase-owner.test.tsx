@@ -24,10 +24,10 @@ vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
 const THEIRS = JSON.stringify({ draft: { values: { weight: '79' } }, backfills: {}, meta: {} });
 const later = () => vi.setSystemTime(Date.now() + 60_000);
-const add = (session: { edit: RecordSession['edit'] }, id: string) =>
+const add = (session: Pick<RecordSession, 'edit' | 'shownErase'>, id: string) =>
   session.edit((file) => void file.measurements.push(createMeasurement({
     id, metricType: 'weight', value: 80, recordedAt: '2026-11-12', createdAt: '2026-11-12T10:00:00.000Z',
-  })));
+  })), session.shownErase);
 
 /** Another tab: a fresh module graph, with its own health-write state. */
 async function otherTab() {
