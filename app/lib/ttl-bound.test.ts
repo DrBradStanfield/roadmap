@@ -154,14 +154,14 @@ describe('US-52 AC4f: one policy, and a named list of unbounded maps', () => {
     const sites: string[] = [];
     for (const file of prod) {
       const text = readFileSync(file, 'utf8');
-      for (const call of text.matchAll(/(?<!function )create(RateLimiter|QuotaCounter)\(/g)) {
+      for (const call of text.matchAll(/(?<!function )create(RateLimiter|QuotaCounter)(?:<\w+>)?\(/g)) {
         // The call through its options object, which closes with `})`.
         const site = text.slice(call.index, text.indexOf('})', call.index) + 2);
         const name = /name: '([^']+)'/.exec(site)?.[1] ?? `UNNAMED in ${file}`;
         sites.push(`${name}${/maxKeys: Infinity/.test(site) ? ': unbounded' : ''}${/oneUse: true/.test(site) ? ': one-use' : ''}`);
       }
     }
-    expect(sites).toHaveLength(38);
+    expect(sites).toHaveLength(36); // 38 until the A/B route and its two limiters were retired (US-09 AC62)
     expect(sites).toContain('guest sessions per IP'); // US-15 AC67: bounded, at the default
     expect(sites.filter((s) => s.startsWith('UNNAMED'))).toEqual([]);
     expect(sites.filter((s) => s.includes(': unbounded'))).toEqual([]);

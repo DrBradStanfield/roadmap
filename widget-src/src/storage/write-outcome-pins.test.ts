@@ -18,6 +18,8 @@
  * (R6 PR 3b): a sync conflict storm is now raised `refused`, every attempt's
  * write refused as a conflict. Failures before the upload: pre-write-outcome-pins.test.ts.
  * The row marked AC19 (R6 PR 5): a 401 that may have landed owes a retry (drive-auth-retry.test.ts).
+ * US-10 AC20: the told column on purpose: a refusal says so, an error status says "returned an error",
+ * and an access refusal of the save's write no longer says nothing was read (its read answered).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConflictError, LostUpdateError, StorageError, type StorageAdapter } from '@roadmap/health-core/adapter';
@@ -112,10 +114,11 @@ function toldOf(error: unknown): string {
   const told = describeStorageFailure(error, 'The record');
   if (error instanceof ConflictError) return 'conflict';
   if (told.message.endsWith('after a change was sent')) return MAYBE;
-  if (told.message.endsWith('Nothing was read and nothing was written')) return NOTHING;
+  if (told.message.endsWith('refused this connection’s access. Nothing was written')) return NOTHING;
   if (error instanceof StorageError && error.hint) return told.hint === error.hint ? OWN : 'other';
-  if (told.message === 'The record did not answer' && /may have landed/.test(told.hint)) return LANDED;
-  return told.message === 'The record did not answer. Nothing was written' ? SILENT : 'other';
+  if (told.message === 'The record returned an error' && /may have landed/.test(told.hint)) return LANDED;
+  if (told.message === 'The record returned an error. Nothing was written') return ERROR;
+  return told.message === 'The record refused the change. Nothing was written' ? REFUSED : 'other';
 }
 
 /** A conflict the provider refused, or a failure raised `refused`: nothing stored. */
@@ -175,22 +178,25 @@ const SHAPES: Record<string, Failure> = {
 const NOTHING = 'access, nothing written';
 const MAYBE = 'access, may have landed';
 const OWN = 'its own hint';
-const SILENT = 'did not answer, nothing written';
-/** "did not answer", and the change may have landed (US-10 AC16). */
-const LANDED = 'did not answer, may have landed';
+/** A refusal of the save's write (US-10 AC20: was "did not answer"). */
+const REFUSED = 'refused the change, nothing written';
+/** An error status to a call that sent no write (US-10 AC20: was "did not answer"). */
+const ERROR = 'returned an error, nothing written';
+/** An error status, and the change may have landed (US-10 AC16, AC20: was "did not answer"). */
+const LANDED = 'returned an error, may have landed';
 
 /** [adapter, shape, landed, refused, cause, told]. The erase column follows `landed`: kept when it may have landed, else put back. */
 type Row = [Kind, string, boolean, boolean, 'auth' | 'other', string];
 const ROWS: Row[] = [
   // Dropbox (dropbox-rest.ts dropboxWrite; the web adapter writes through it too). A 409 with no
   // error summary is a ConflictError, so every attempt conflicts: a storm that wrote nothing.
-  ['dropbox', '400', false, true, 'other', SILENT],
+  ['dropbox', '400', false, true, 'other', REFUSED], // AC20: was SILENT
   ['dropbox', '401', false, true, 'auth', NOTHING],
   ['dropbox', '403', false, true, 'other', NOTHING],
-  ['dropbox', '404', false, true, 'other', SILENT],
+  ['dropbox', '404', false, true, 'other', REFUSED], // AC20: was SILENT
   ['dropbox', '409', false, true, 'other', OWN], // AC17: was not refused (a storm named no outcome)
-  ['dropbox', '412', false, true, 'other', SILENT],
-  ['dropbox', '422', false, true, 'other', SILENT],
+  ['dropbox', '412', false, true, 'other', REFUSED], // AC20: was SILENT
+  ['dropbox', '422', false, true, 'other', REFUSED], // AC20: was SILENT
   ['dropbox', '408', true, false, 'other', LANDED], // AC16: was SILENT
   ['dropbox', '429', true, false, 'other', LANDED], // AC16: was SILENT
   ['dropbox', '500', true, false, 'other', LANDED], // AC16: was SILENT
@@ -228,26 +234,26 @@ const ROWS: Row[] = [
   // Google Drive, the version check before the PATCH. Every row but 404, drop and timeout is PR 1's
   // (S62b): the 4xx ones now refuse, and the 408/429/5xx ones lost the create-path hint. A 404 reads
   // as a vanished file, a conflict each attempt: a storm. The check sent no write, so the rest got no answer (AC16).
-  ['drive-check', '400', false, true, 'other', SILENT],
+  ['drive-check', '400', false, true, 'other', REFUSED], // AC20: was SILENT
   ['drive-check', '401', false, true, 'auth', NOTHING],
   ['drive-check', '403', false, true, 'other', NOTHING],
   ['drive-check', '404', false, true, 'other', OWN], // AC17: was not refused
-  ['drive-check', '409', false, true, 'other', SILENT],
-  ['drive-check', '412', false, true, 'other', SILENT],
-  ['drive-check', '422', false, true, 'other', SILENT],
-  ['drive-check', '408', false, false, 'other', SILENT], // AC16: was landed
-  ['drive-check', '429', false, false, 'other', SILENT], // AC16: was landed
-  ['drive-check', '500', false, false, 'other', SILENT], // AC16: was landed
-  ['drive-check', '503', false, false, 'other', SILENT], // AC16: was landed
+  ['drive-check', '409', false, true, 'other', REFUSED], // AC20: was SILENT
+  ['drive-check', '412', false, true, 'other', REFUSED], // AC20: was SILENT
+  ['drive-check', '422', false, true, 'other', REFUSED], // AC20: was SILENT
+  ['drive-check', '408', false, false, 'other', ERROR], // AC16: was landed; AC20: was SILENT
+  ['drive-check', '429', false, false, 'other', ERROR], // AC16: was landed; AC20: was SILENT
+  ['drive-check', '500', false, false, 'other', ERROR], // AC16: was landed; AC20: was SILENT
+  ['drive-check', '503', false, false, 'other', ERROR], // AC16: was landed; AC20: was SILENT
   ['drive-check', 'drop', false, false, 'other', OWN], // AC16: was landed
   ['drive-check', 'timeout', false, false, 'other', OWN], // AC16: was landed
   // GitHub: 409 and 422 are ConflictErrors, so a storm.
-  ['github', '400', false, true, 'other', SILENT],
+  ['github', '400', false, true, 'other', REFUSED], // AC20: was SILENT
   ['github', '401', false, true, 'auth', NOTHING],
   ['github', '403', false, true, 'other', NOTHING],
-  ['github', '404', false, true, 'other', SILENT],
+  ['github', '404', false, true, 'other', REFUSED], // AC20: was SILENT
   ['github', '409', false, true, 'other', OWN], // AC17: was not refused
-  ['github', '412', false, true, 'other', SILENT],
+  ['github', '412', false, true, 'other', REFUSED], // AC20: was SILENT
   ['github', '422', false, true, 'other', OWN], // AC17: was not refused
   ['github', '408', true, false, 'other', LANDED], // AC16: was SILENT
   ['github', '429', true, false, 'other', LANDED], // AC16: was SILENT
@@ -256,13 +262,13 @@ const ROWS: Row[] = [
   ['github', 'drop', true, false, 'other', OWN],
   ['github', 'timeout', true, false, 'other', OWN],
   // WebDAV: 412 is a ConflictError, so a storm.
-  ['webdav', '400', false, true, 'other', SILENT],
+  ['webdav', '400', false, true, 'other', REFUSED], // AC20: was SILENT
   ['webdav', '401', false, true, 'auth', NOTHING],
   ['webdav', '403', false, true, 'other', NOTHING],
-  ['webdav', '404', false, true, 'other', SILENT],
-  ['webdav', '409', false, true, 'other', SILENT],
+  ['webdav', '404', false, true, 'other', REFUSED], // AC20: was SILENT
+  ['webdav', '409', false, true, 'other', REFUSED], // AC20: was SILENT
   ['webdav', '412', false, true, 'other', OWN], // AC17: was not refused
-  ['webdav', '422', false, true, 'other', SILENT],
+  ['webdav', '422', false, true, 'other', REFUSED], // AC20: was SILENT
   ['webdav', '408', true, false, 'other', LANDED], // AC16: was SILENT
   ['webdav', '429', true, false, 'other', LANDED], // AC16: was SILENT
   ['webdav', '500', true, false, 'other', LANDED], // AC16: was SILENT
@@ -297,9 +303,9 @@ describe('US-10 AC13: the device tier (LocalStorageAdapter) when the browser sto
     return { landed: mayHaveLanded(error), refused: refusedOf(error), cause: await saveCauseOf(error), told: toldOf(error) };
   }
   it('the record write refused: nothing stored', async () => {
-    expect(await localOutcome((key) => key === 'health_roadmap_file_v2')).toEqual({ landed: false, refused: true, cause: 'other', told: SILENT });
+    expect(await localOutcome((key) => key === 'health_roadmap_file_v2')).toEqual({ landed: false, refused: true, cause: 'other', told: REFUSED });
   });
   it('the revision write refused and the old record put back: nothing stored', async () => {
-    expect(await localOutcome((key) => key === 'health_roadmap_file_v2_rev')).toEqual({ landed: false, refused: true, cause: 'other', told: SILENT });
+    expect(await localOutcome((key) => key === 'health_roadmap_file_v2_rev')).toEqual({ landed: false, refused: true, cause: 'other', told: REFUSED });
   });
 });

@@ -133,8 +133,8 @@ are shown or counted (problem (c)).
   no row of that family, by section 2. The phone deletes the bytes when it takes the erase in. A write already in
   flight may leave a file in the cloud folder (US-11 AC1a).
 - An erase on another device that never saw the row (the Save was made offline and synced after) leaves the row, as
-  the record keeps any row no erase saw; its bytes stay and are stored. Whether the erase confirm says so is Brad's
-  wording question.
+  the record keeps any row no erase saw; its bytes stay and are stored. Decided 2026-11-26 (Brad: "do this for now.
+  it's simpler"): the erase confirm stays as it is.
 
 ## 7. What the person sees
 
@@ -161,7 +161,8 @@ MCP tools. So it lands before any writer.
 self-hosted copies and older CLI or MCP installs exist. Proposed: step 0 also raises the record's schema version for
 any file holding a document id ending `#at`, so an older reader refuses the file, as the record already does for an
 earlier row-shape change (schema version 2, US-09 AC23). Consequence for Brad: once a phone writes such a row, an
-older app version cannot open that record until it is updated.
+older app version cannot open that record until it is updated. Decided 2026-11-26 (Brad: option (a), "the existing
+iOS app, virtually no one is using"): accepted, and the reader ships one app version before the writer.
 
 **(c) Complete copy.** "Family absent" may be judged only on a session that loaded the cloud and read the mirror:
 not device-closed, not cloud-unreachable, not mirror-skipped. A named predicate is needed; anything else is

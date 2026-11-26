@@ -21,7 +21,7 @@
 import crypto from 'node:crypto';
 import { sameBytes } from '../lib/crypto-compare.server';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
-import { getClientIp } from '../lib/local-first-route.server';
+import { clientKey, scopedKey } from '../lib/ip-key.server';
 import { cappedBody } from '../lib/capped-body.server';
 import { mcpClientLabel, mcpEndpoint, originRejected } from '../lib/mcp.server';
 import { recordServerEvent } from '../lib/product-events.server';
@@ -35,7 +35,7 @@ import {
   type McpClientLabel,
 } from '../lib/mcp-clients.server';
 import { isMcpEnabled, issuer } from '../lib/mcp-config.server';
-import { allowAuthorize, allowRateLimitEvent, allowToken, claimCode, CODE_LIFETIME_SECONDS, grantLive, issueTokens, STATE_LIFETIME_SECONDS, type CodePayload, type Grant, type RefreshPayload, type StatePayload } from '../lib/mcp-grants.server';
+import { allowAuthorize, allowRateLimitEvent, allowTokenFrom, claimCode, CODE_LIFETIME_SECONDS, grantLive, issueTokens, STATE_LIFETIME_SECONDS, type CodePayload, type Grant, type RefreshPayload, type StatePayload } from '../lib/mcp-grants.server';
 import {
   availableProviders,
   isProvider,
@@ -159,7 +159,7 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
   const who = mcpClientLabel(url.searchParams.get('client_id') ?? '');
   // Rate-limit BEFORE resolving the client: resolving may fetch a URL the
   // caller chose, which is the expensive and abusable half (design §4).
-  const ip = getClientIp(request, 'fly');
+  const ip = clientKey(request, 'fly');
   if (!allowAuthorize(ip)) {
     // Once per IP per window: a flood is when this branch runs, so a row per
     // refused request would spend a database insert on every one of them.
@@ -358,10 +358,10 @@ function reviewerSignIn(request: Request, form: URLSearchParams, state: StatePay
   if (!client || !generation || !reviewerOffered(state.clientId, state.provider)) {
     return htmlError('That sign-in is not available here. Please start again from your assistant.');
   }
-  const ip = getClientIp(request, 'fly');
+  const ip = clientKey(request, 'fly');
   const retry = (reason: 'reviewer-credentials' | 'reviewer-rate-limited', message: string, status: number) => {
     // One row per IP per window, per reason: a flood is when these run.
-    if (allowRateLimitEvent(`${reason}:${ip}`)) connectFailed(reason, state);
+    if (allowRateLimitEvent(scopedKey(reason, ip))) connectFailed(reason, state);
     const again: AuthorizeRequest = {
       client,
       redirectUri: state.redirectUri,
@@ -391,7 +391,7 @@ function reviewerSignIn(request: Request, form: URLSearchParams, state: StatePay
 async function tokenEndpoint(request: Request): Promise<Response> {
   // A flood brake only: a whole vendor's users share one egress range, so this
   // limit is generous by design (design §4, "useless when distributed").
-  if (!allowToken(getClientIp(request, 'fly'))) return new Response('Too many requests', { status: 429 });
+  if (!allowTokenFrom(request)) return new Response('Too many requests', { status: 429 });
   const type = request.headers.get('content-type') ?? '';
   if (!type.includes('application/x-www-form-urlencoded')) {
     // No form yet, so no client either: the word is the whole row.
@@ -468,7 +468,7 @@ async function registerEndpoint(request: Request): Promise<Response> {
   }
   const client = registerClient(body);
   if (!client) {
-    if (allowRateLimitEvent(`register:${getClientIp(request, 'fly')}`)) void recordServerEvent('mcp_authorize_refused', { reason: 'register-redirect', detail: registrationRefused(body) });
+    if (allowRateLimitEvent(scopedKey('register', clientKey(request, 'fly')))) void recordServerEvent('mcp_authorize_refused', { reason: 'register-redirect', detail: registrationRefused(body) });
     return oauthError('invalid_redirect_uri', 'This server registers only known assistant redirect URIs');
   }
   return Response.json(

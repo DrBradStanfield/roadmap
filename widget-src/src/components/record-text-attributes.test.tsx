@@ -124,14 +124,17 @@ describe('US-09 AC7l: the chat History list', () => {
 });
 
 describe('US-09 AC7l: the upload list', () => {
-  it('names a test the catalogue does not know by its label, with the name and file name in no attribute', () => {
-    mount(open([
+  it('names a test the catalogue does not know by its label and file (US-13 AC28), with the name and file name in no attribute', () => {
+    const host = mount(open([
       labRead('f0', { additionalValues: [{ name: TEST, value: 4.2, unit: 'U/L' }] }, `${FILE}.pdf`),
       letterRead('f1', 'Letter', `${FILE} letter.pdf`),
     ]));
     openAll();
-    expect(screen.getByRole('checkbox', { name: TEST })).toBeTruthy();
-    expect(screen.getByRole('textbox', { name: TEST })).toBeTruthy();
+    const said = host.see().list.rows[0].name.replace(/, /g, ' , ');
+    expect(said).toContain(TEST);
+    expect(said).toContain(FILE);
+    expect(screen.getByRole('checkbox', { name: said })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: said })).toBeTruthy();
     expect(document.body.textContent).toContain(FILE);
     expect(recordTextInAttributes(document.body, [TEST, FILE])).toEqual([]);
   });

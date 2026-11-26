@@ -3,7 +3,7 @@
  * the real runPipeline and getChatCompletion ends in an api-error fallback, and
  * persistYouTubeTurn stores the web chat's assistant fallback row for it. Only
  * the classifier, the database, the retry sleep and the network are stubbed.
- * US-15 AC77: the same path asks YOUTUBE_MODEL (Haiku) for the answer, and
+ * US-15 AC78: the same path asks YOUTUBE_MODEL (Haiku) for the answer, and
  * the stored row names that model, on success and on a fallback.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -76,7 +76,7 @@ describe('US-15 AC52: a 529 on YouTube stores the assistant fallback row', () =>
   });
 });
 
-describe('US-15 AC77: the YouTube answer runs on Haiku 5.5', () => {
+describe('US-15 AC78: the YouTube answer runs on Haiku 5.5', () => {
   it('runPipeline asks Haiku with the web answer\'s effort, posts its reply, and the row names Haiku', async () => {
     const fetchMock = vi.fn().mockImplementation(async () => new Response(
       JSON.stringify({ content: [{ type: 'text', text: 'A Haiku answer.' }], stop_reason: 'end_turn', usage: { input_tokens: 10, output_tokens: 5 } }),

@@ -1,5 +1,5 @@
 /**
- * US-15 AC77: the YouTube bot runs its router and its answer on YOUTUBE_MODEL
+ * US-15 AC78: the YouTube bot runs its router and its answer on YOUTUBE_MODEL
  * (Haiku 5.5). runPipeline is real; the classifier, router call and answer call
  * are stubbed so the test reads which model each was asked for.
  */
@@ -24,7 +24,7 @@ import { runPipeline } from './youtube-bot.server';
 import { routeQuery } from './chat-router.server';
 import { getChatCompletion } from './chat.server';
 
-describe('US-15 AC77: the YouTube bot routes and answers on Haiku 5.5', () => {
+describe('US-15 AC78: the YouTube bot routes and answers on Haiku 5.5', () => {
   it('asks routeQuery and getChatCompletion for claude-haiku-5-5', async () => {
     const thread = { topLevelCommentId: 'c1', videoId: 'vid1', authorDisplayName: 'V', authorChannelId: null, text: 'What dose of vitamin D is safe?', publishedAt: '2026-11-20T00:00:00Z' };
     const entry = { title: 'A video', handle: 'a-video', url: 'u', tags: [], publishedAt: '2025-03-12T00:00:00Z' };

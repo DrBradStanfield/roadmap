@@ -340,7 +340,7 @@ export async function runPipeline(
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, savedChat: savedChatBlock(YOUTUBE_SAVED_CHAT), blogArticles });
   const conversationMessages = buildConversationMessages(history, thread.text);
   const tBeforeLlm = Date.now();
-  // No form here to apply an edit to, so no tools (US-15 AC19). Haiku answers, as it routes (AC77).
+  // No form here to apply an edit to, so no tools (US-15 AC19). Haiku answers, as it routes (AC78).
   const completion = await getChatCompletion(systemBlocks, conversationMessages, false, undefined, { purpose: 'YOUTUBE', model: YOUTUBE_MODEL });
 
   return {

@@ -9,6 +9,7 @@ export const NO_PLAN: PlanView = {
   forms: {
     medications: ['weight-medications', 'lipid-medications'].map(id => ({ id, title: '', intro: '', groups: [] })),
     screenings: [{ id: 'cancer-screening', title: '', intro: '', groups: [] }],
+    screeningNote: null,
   },
   planned: false,
   highlights: { highlighted: new Set(), fadingOut: new Set() },

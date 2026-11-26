@@ -30,6 +30,7 @@ import { CHAT_PROMPT } from './chat-system-prompt.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { supabaseAdmin } from './supabase-client.server';
 import { createRateLimiter } from './rate-limiter';
+import type { PlainKey } from './ip-key.server';
 import {
   DISCORD_BOT_TOKEN,
   DISCORD_GUILD_ID,
@@ -76,7 +77,7 @@ let client: Client | null = null;
 let isRunning = false;
 let activeLlmCalls = 0;
 let waitingLlmCalls = 0;
-const checkUserRateLimit = createRateLimiter(
+const checkUserRateLimit = createRateLimiter<PlainKey>(
   USER_RATE_LIMIT_MAX,
   USER_RATE_LIMIT_WINDOW_MS,
   USER_RATE_LIMIT_CLEANUP_MS,
@@ -84,7 +85,7 @@ const checkUserRateLimit = createRateLimiter(
 );
 // Per-user cooldown: at most 1 response per USER_COOLDOWN_MS. Reuses the
 // rate limiter factory so stale entries auto-evict — avoids an unbounded Map.
-const checkUserCooldown = createRateLimiter(1, USER_COOLDOWN_MS, 5 * 60_000, { name: 'discord cooldown per user' });
+const checkUserCooldown = createRateLimiter<PlainKey>(1, USER_COOLDOWN_MS, 5 * 60_000, { name: 'discord cooldown per user' });
 
 // ---------------------------------------------------------------------------
 // Startup / shutdown

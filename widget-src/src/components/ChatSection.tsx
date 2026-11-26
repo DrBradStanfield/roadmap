@@ -19,29 +19,10 @@ import { ChatMessageList, ChatComposer } from './ChatPanel';
 import { ChatThreadList } from './ChatThreadList';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
 import { MUTED_CHAT } from './chat-muted';
-import { getAssistantName, getChatSurface } from '../lib/assistant-config';
+import { chatCopy } from './chat-copy';
 
 export type { ChatPrefetchData } from '../hooks/useChatState';
 import type { ChatPrefetchData } from '../hooks/useChatState';
-
-// US-15 AC12: the brand store has no plan, so its chat names products. The
-// brand title reads the metafield-set assistant name at render, not import.
-const SURFACE_COPY = {
-  doctor: {
-    label: 'Health by Dr Brad Chat',
-    title: 'Discuss your health',
-    subtitle: 'Answers cite your plan & the guidelines above',
-    empty: 'Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm.',
-    collapsed: 'Ask about your health suggestions',
-  },
-  brand: {
-    get label() { return `${getAssistantName()} chat`; },
-    get title() { return `Ask ${getAssistantName()}`; },
-    subtitle: 'Products, ingredients, and the research behind them',
-    empty: "Ask what's in a product, how to take it, or what the evidence says about an ingredient. For orders and subscriptions, sign in to your account.",
-    collapsed: 'Ask about our products',
-  },
-};
 
 interface ChatSectionProps {
   isLoggedIn: boolean;
@@ -94,7 +75,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   // BYOK gate (standalone build only — null on the Shopify widget).
   const [, refreshGate] = useReducer((x: number) => x + 1, 0);
   const gate = getChatGate();
-  const copy = SURFACE_COPY[getChatSurface()];
+  const copy = chatCopy();
 
   const closeThreadsPanel = useCallback(() => setShowThreads(false), []);
   const chat = useChatState({

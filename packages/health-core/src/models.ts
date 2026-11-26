@@ -11,13 +11,13 @@
  *
  * Haiku 5.5 since 2026-10-16 (Brad, no benchmark): the classifier, extraction and
  * BYOK chat, all with thinking off (US-15 AC34). Since 2026-11-26 also YOUTUBE_MODEL, the
- * YouTube bot's router (thinking off) and answer (adaptive thinking, medium effort; AC77).
+ * YouTube bot's router (thinking off) and answer (adaptive thinking, medium effort; AC78).
  */
 
 /** Main chat answer on the web and Discord. */
 export const CHAT_MODEL = 'claude-sonnet-5-5';
 /**
- * The YouTube bot's main answer and router (US-15 AC77); its classifier is CLASSIFIER_MODEL,
+ * The YouTube bot's main answer and router (US-15 AC78); its classifier is CLASSIFIER_MODEL,
  * also Haiku. Haiku 5.5 since 2026-11-26 (Brad), to cut cost: the bot was about $8 a day,
  * near half of all API spend. Same prompts, effort and caps as the web. Haiku's prompt cache
  * is its own, so YouTube turns no longer warm the web chat's Sonnet caches (accepted).

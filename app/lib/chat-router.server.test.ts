@@ -26,8 +26,8 @@ describe('prompt cache TTL on the router and classifier hops', () => {
   });
 });
 
-// US-15 AC77: the router runs on ROUTER_MODEL unless a caller (the YouTube bot) names another.
-describe('US-15 AC77: the router model', () => {
+// US-15 AC78: the router runs on ROUTER_MODEL unless a caller (the YouTube bot) names another.
+describe('US-15 AC78: the router model', () => {
   it('sends Sonnet 5.5 with thinking off when no model is given (web, Discord)', async () => {
     vi.mocked(callAnthropicWithUsage).mockClear();
     await routeQuery('vitamin d', undefined, undefined, 'CHAT');

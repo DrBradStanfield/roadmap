@@ -371,7 +371,7 @@ export interface ChatCompletionResult {
   toolRound?: true;
   /** A subscription change the model proposed (US-59); the route turns it into a confirm card or drops it. */
   subscriptionProposal?: SubscriptionProposal;
-  /** The model the turn ran on (`opts.model`, else CHAT_MODEL); persistence tags the row with it (US-15 AC77). */
+  /** The model the turn ran on (`opts.model`, else CHAT_MODEL); persistence tags the row with it (US-15 AC78). */
   model?: string;
 }
 

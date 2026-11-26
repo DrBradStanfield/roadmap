@@ -11,7 +11,7 @@ import { OpenEvidenceContext, PlanCardList, QuickStats } from '../components/Pla
 import { usePlanView } from '../components/ResultsPanel';
 import type { AlcoholQuestion } from '../components/AlcoholQuestion';
 
-const NO_FORMS = { medications: [], screenings: [] };
+const NO_FORMS = { medications: [], screenings: [], screeningNote: null };
 
 export function PlanHost({ results, isValid, tiles = [], showEmailCapture, formStage, syncControl, remindersSection, onDeleteData, isDeleting, alcoholQuestion, hasUnsavedLongitudinal, onSaveLongitudinal, shownErase = '', cardsShown = true }: {
   results: HealthResults | null;

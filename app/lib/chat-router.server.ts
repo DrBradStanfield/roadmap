@@ -207,7 +207,7 @@ export async function routeQuery(
   firstMessage: string | undefined,
   recentUserMessages: string[] | undefined,
   purpose: ChatPurpose,
-  model: string = ROUTER_MODEL, // YouTube passes YOUTUBE_MODEL (US-15 AC77)
+  model: string = ROUTER_MODEL, // YouTube passes YOUTUBE_MODEL (US-15 AC78)
 ): Promise<RouterResult> {
   const t0 = Date.now();
 

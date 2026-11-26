@@ -33,7 +33,6 @@ import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
 import { activeCellIn } from './NumericInputCell';
 import { inPsaRow } from './ScreeningQuestions';
-import { clearLocalStorage } from '../lib/storage';
 import { NO_RECORD, writeMirror } from '../lib/chat-mirror';
 import {
   loadLatestMeasurements,
@@ -48,7 +47,7 @@ import {
   getBackendKind,
   getUnreadableCount,
 } from '../lib/roadmap-data';
-import { trackABImpression, trackProductEvent } from '../lib/server-api';
+import { trackProductEvent } from '../lib/server-api';
 import { observeVisibility } from '../lib/observe-visibility';
 import { onPageHide } from '../lib/page-hide';
 import type { CorrectFn } from '../lib/matrix-save';
@@ -183,9 +182,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     void loadData().catch(firstReadFailed);
   }, [eraseStore, firstReadShown, firstReadFailed]);
 
-  // Fire A/B impression once on mount
-  useEffect(() => { trackABImpression(); }, []);
-
   // Effective inputs for results calculation: form inputs, then a fallback
   // to previousMeasurements, which the data layer has already reduced to the
   // newest active row per metric (US-07 AC4) — so the first match here IS
@@ -302,7 +298,6 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   } = useLongitudinalSave({
     inputs, setInputs, history, unitOverrides, unitSystem, reread: ownSave,
     flushPendingProfileSave: flushProfile, typedIn,
-    firstSave: previousMeasurements.length === 0, // read once: a record holding a measurement at load sends no conversion (US-01 AC7)
   });
   // The page's stage on the one hide path (lib/page-hide.ts), which writes once
   // after every stage: only queued edits, with the erase they were made
@@ -457,8 +452,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // check's answers too: a failed write's store holds the erased copy. Stored
   // originals go by the session's rule, never by the page (US-11 AC6).
   const forgetRecord = useCallback(() => {
-    clearLocalStorage();
-    clearOffFileAfterErase(); // the second DRAFTS_CLEARED when the write lands; kept, since on a failed write the session clears nothing
+    clearOffFileAfterErase(); // the legacy blob, then the second DRAFTS_CLEARED when the write lands; kept, since on a failed write the session clears nothing
     setInputs({});
     clearForErase();
     cancelPendingSave();

@@ -59,7 +59,7 @@ describe('modelParams', () => {
       output_config: { effort: 'medium' },
     });
   });
-  it('US-15 AC77: the YouTube answer and router bodies: Haiku 5.5, the web\'s effort and caps, no sampling param', () => {
+  it('US-15 AC78: the YouTube answer and router bodies: Haiku 5.5, the web\'s effort and caps, no sampling param', () => {
     expect(YOUTUBE_MODEL).toBe('claude-haiku-5-5');
     expect(modelParams(YOUTUBE_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT)).toEqual({
       model: 'claude-haiku-5-5',

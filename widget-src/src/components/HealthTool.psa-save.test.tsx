@@ -24,7 +24,7 @@ import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async importOriginal => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 // Every write the page asks of the store, to count them (the store still writes).
 const writes = vi.hoisted(() => [] as string[]);

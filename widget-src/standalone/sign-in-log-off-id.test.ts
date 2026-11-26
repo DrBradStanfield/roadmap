@@ -16,6 +16,7 @@ vi.mock('../src/lib/sentry', () => ({ initSentry: vi.fn(), Sentry: { captureExce
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 
 const BACKEND_KEY = 'health_roadmap_backend';
+const SIGN_IN_UNFINISHED = 'Sign-in did not finish because this browser was logged off. Please try again.';
 const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
 const EMAIL = 'person@example.test';
 const DRIVE_SCOPE = 'openid email https://www.googleapis.com/auth/drive.file';
@@ -32,6 +33,7 @@ function makeStorage(onChange: (key: string) => void): Storage {
     key: (i: number) => [...values.keys()][i] ?? null,
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => {
+      if (key === refusedKey) throw new DOMException('full', 'QuotaExceededError');
       const changed = values.get(key) !== String(value);
       values.set(key, String(value));
       if (changed) onChange(key);
@@ -47,9 +49,14 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const idToken = () => `h.${btoa(JSON.stringify({ email: EMAIL, email_verified: true })).replace(/=+$/, '')}.s`;
 
 let calls: string[];
+/** Set to log off in the other tab while the code exchange is out. */
+let logOffDuringExchange = false;
+/** A key this browser refuses to store, as a full device store does. */
+let refusedKey: string | null = null;
 async function fakeFetch(input: RequestInfo | URL): Promise<Response> {
   const url = String(input);
   calls.push(url);
+  if (logOffDuringExchange && (url === PROVIDER.dropbox.exchange || url.endsWith(PROVIDER['google-drive'].exchange))) await other.logOff('local');
   if (url === PROVIDER.dropbox.exchange) return json({ access_token: 'at-new', refresh_token: 'rt-new', expires_in: 14400 });
   if (url.endsWith(PROVIDER['google-drive'].exchange)) return json({ accessToken: 'at-new', refreshToken: 'rt-new', expiresIn: 3600, idToken: idToken() });
   return json({ error_summary: 'path/not_found/..' }, 409);
@@ -81,6 +88,8 @@ beforeEach(async () => {
   Object.defineProperty(document, 'visibilityState', { value: 'hidden' });
   vi.stubGlobal('document', document);
   calls = [];
+  logOffDuringExchange = false;
+  refusedKey = null;
   capture.mockClear();
   vi.stubGlobal('fetch', vi.fn(fakeFetch));
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -121,11 +130,34 @@ describe.each(['dropbox', 'google-drive'] as const)('US-09 AC45: a %s sign-in ac
     const booted = await returningTab(cloud);
     expect(booted.backend).toBe('local');
     expect((await import('../src/storage/sign-in-state')).currentSignIn()).toEqual({ kind: 'none' }); // a guest (US-09 AC48)
-    expect(booted.refused).toBeUndefined();
+    expect(booted.refused).toBe(SIGN_IN_UNFINISHED); // said, not reported (lead C29)
     expect(saved(cloud)).toEqual(saved(cloud).map(() => null));
     expect(calls.some((url) => url.endsWith(PROVIDER[cloud].exchange))).toBe(false);
     expect(session.get(PROVIDER[cloud].pkce)).toBeUndefined();
     expect(capture).not.toHaveBeenCalled();
+  });
+
+  it('US-09 AC60: a log-off while the code exchange is out saves nothing and says the sign-in did not finish', async () => {
+    await startSignIn(cloud);
+    logOffDuringExchange = true;
+
+    const booted = await returningTab(cloud);
+    expect(booted.backend).toBe('local');
+    expect(booted.refused).toBe(SIGN_IN_UNFINISHED);
+    expect(calls.some((url) => url.endsWith(PROVIDER[cloud].exchange))).toBe(true);
+    expect(saved(cloud)).toEqual(saved(cloud).map(() => null));
+    expect(capture).not.toHaveBeenCalled();
+  });
+
+  it('US-09 AC60: a sign-in this browser cannot store, with no log-off, ends as before, without the log-off line', async () => {
+    await startSignIn(cloud);
+    refusedKey = PROVIDER[cloud].saved[0];
+
+    const booted = await returningTab(cloud);
+    expect(booted.backend).toBe('local');
+    expect(booted.refused).toBeUndefined();
+    expect(calls.some((url) => url.endsWith(PROVIDER[cloud].exchange))).toBe(true);
+    expect(saved(cloud)).toEqual(saved(cloud).map(() => null));
   });
 
   it('control: a return with no log-off in between signs in', async () => {

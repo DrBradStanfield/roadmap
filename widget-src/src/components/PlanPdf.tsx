@@ -4,7 +4,7 @@
 import React, { useId, useState, useRef, useReducer } from 'react';
 import { flushSync } from 'react-dom';
 import { getReportHtml, sendGuestReport, getReportEmailCaptured, markReportEmailCaptured, getShownErase } from '../lib/roadmap-data';
-import { trackABConversion, trackProductEvent } from '../lib/server-api';
+import { trackProductEvent } from '../lib/server-api';
 import { EMAIL_REGEX } from '../lib/email';
 import { describedBy } from '../lib/aria';
 import { getSkipEmailGate } from '../lib/assistant-config';
@@ -239,7 +239,6 @@ function useGuestEmailCapture(printReport: () => Promise<void>, { state, setStat
     const result = await sendGuestReport(trimmed);
 
     if (result.success) {
-      trackABConversion();
       // Local-first: the PDF window already opened (the delivery). Persist the
       // captured flag to the user's own cloud and switch to the "Save as PDF"
       // view — no email box on return, nothing extra (no articles screen).
@@ -300,11 +299,9 @@ function emailDescription(ids: string, error: string): string | undefined {
   return describedBy(`${ids}-helper`, error && `${ids}-error`);
 }
 
-export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
+export function GuestEmailCapture({ hook, formStage }: {
   hook: GuestEmailHook;
   formStage?: number;
-  /** US-18 AC6: this capture's print window was refused. */
-  pdfBlocked?: boolean;
 }) {
   const { email, setEmail, emailError, setEmailError, state, helperText, handleSubmit } = hook;
   const box = emailBox(state, !!hook.gateSkipped);
@@ -343,7 +340,6 @@ export function GuestEmailCapture({ hook, formStage, pdfBlocked }: {
         </button>
       </div>
       {emailError && <span className="email-capture-error" id={`${ids}-error`} role="alert">{emailError}</span>}
-      <PdfNote show={!!pdfBlocked && (!!emailError || state === 'sending')} />
     </div>
   );
 }
@@ -358,7 +354,7 @@ export function PlanPdf({ mode, formStage, capture, print, onPrint, onCapturePri
   const saving = print.phase !== 'idle' && print.at === 'bottom';
   const pdfBlocked = print.phase === 'idle' ? print.blocked : null;
   const printLabel = saving ? 'Loading...' : 'Save as PDF';
-  const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} pdfBlocked={pdfBlocked === 'capture'} />;
+  const box = mode.email && <GuestEmailCapture hook={guestEmailHook} formStage={formStage} />;
   if (!box && !mode.save) return null;
   return (
     <div className="mh-pdf">
@@ -368,9 +364,11 @@ export function PlanPdf({ mode, formStage, capture, print, onPrint, onCapturePri
           <button type="button" className="action-btn" onClick={() => onPrint('bottom')} disabled={saving} title="Save your plan as a PDF">
             {printLabel}
           </button>
-          <PdfNote show={pdfBlocked === 'bottom' || pdfBlocked === 'capture'} />
         </div>
       )}
+      {/* Mounted from the start, empty, so filling it is announced. It names Save as PDF, so it says
+          anything only while that button shows, a refused capture's window too (lead P10). */}
+      <PdfNote show={mode.save && (pdfBlocked === 'bottom' || pdfBlocked === 'capture')} />
     </div>
   );
 }

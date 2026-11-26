@@ -13,7 +13,7 @@ import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-libra
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', async original => ({
   ...(await original<typeof import('../src/lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../src/lib/chat-api', async original => ({
   ...(await original<typeof import('../src/lib/chat-api')>()),

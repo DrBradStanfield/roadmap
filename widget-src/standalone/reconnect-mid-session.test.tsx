@@ -36,7 +36,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() }, initSentry: vi.fn() }));
 vi.mock('../src/lib/server-api', async (original) => ({
   ...(await original<typeof import('../src/lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false, clearAutoEnrolBlock: vi.fn() }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
@@ -340,7 +340,9 @@ describe('US-09 AC48 (R1, R2): exit (b) a picker move from a dead sign-in is ref
     fireEvent.change(document.querySelector('input[placeholder^="Repository name"]')!, { target: { value: 'health' } });
     fireEvent.click(button('Connect GitHub')!);
     await until(() => !!document.querySelector('dialog .hr-sync-error'), 'the refused move');
-    expect(document.querySelector('dialog .hr-sync-error')?.textContent).toMatch(/could not be reached/);
+    // The sign-in was refused, so the stop names that cause (US-09 AC56).
+    const label = cloud === 'dropbox' ? 'Dropbox' : 'Google Drive';
+    expect(document.querySelector('dialog .hr-sync-error')?.textContent).toBe(`${label} did not connect, so nothing changed. Please try again.`);
     expect(reload).not.toHaveBeenCalled();
     expect(githubFile).toBeNull();
     expect(localStorage.getItem(BACKEND_KEY)).toBe(cloud);

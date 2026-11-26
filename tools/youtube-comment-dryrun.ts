@@ -188,7 +188,7 @@ async function classify(comment: string): Promise<{ classification: Classificati
 
 async function routeQuery(comment: string): Promise<{ handles: string[]; raw: string; error: string | null }> {
   const body = {
-    ...modelParams(YOUTUBE_MODEL, 200), // the bot's router model (US-15 AC77)
+    ...modelParams(YOUTUBE_MODEL, 200), // the bot's router model (US-15 AC78)
     system: [
       { type: 'text', text: ROUTER_PROMPT, cache_control: PROMPT_CACHE },
       { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: PROMPT_CACHE },
@@ -234,7 +234,7 @@ async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: 
   }
 
   const body = {
-    // The bot's own answer model, so a dry run matches production (US-15 AC77).
+    // The bot's own answer model, so a dry run matches production (US-15 AC78).
     ...modelParams(YOUTUBE_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: [...cachedBlocks, ...perRequestBlocks],
     messages: [{ role: 'user', content: comment }],

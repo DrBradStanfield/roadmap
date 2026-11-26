@@ -2,6 +2,9 @@
  * US-09 — server-api calls that need Brad's server must no-op on the GitHub
  * Pages build, so the Pages bundle never ships the fetch.
  */
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -40,17 +43,25 @@ describe('sendFeedback', () => {
   });
 });
 
-describe('A/B tracking', () => {
-  it('does not fetch on the Pages build even with an assignment stored', async () => {
-    const fetchMock = stubFetch();
-    vi.stubGlobal('localStorage', {
-      getItem: (k: string) => (k === 'hr_ab' ? '{"tests":{"t1":"v1"}}' : null),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-    });
-    const { trackABImpression, trackABConversion } = await loadApi(false);
-    trackABImpression();
-    trackABConversion();
-    expect(fetchMock).not.toHaveBeenCalled();
+describe('A/B tracking, retired (US-09 AC62)', () => {
+  // Brad, 2026-11-26: the old A/B event calls are deleted. Nothing assigns a variant, so the
+  // calls, their stored-assignment reader and the endpoint that took them go together.
+  const root = fileURLToPath(new URL('../../../', import.meta.url));
+  const sources = (dir: string): string[] =>
+    readdirSync(join(root, dir), { recursive: true, encoding: 'utf8' })
+      .filter((f) => /\.(tsx?|liquid)$/.test(f) && !/\.test\.tsx?$/.test(f))
+      .map((f) => join(dir, f));
+
+  it('no widget, theme block or app source sends, reads or serves an A/B event', () => {
+    const named = [...sources('widget-src/src'), ...sources('extensions/health-tool-widget/blocks'), ...sources('app')]
+      .filter((f) => /\/api\/ab\b|hr_ab|trackAB|getABAssignments|recordABEvent/.test(readFileSync(join(root, f), 'utf8')));
+    expect(named).toEqual([]);
+    expect(existsSync(join(root, 'app/routes/api.ab.ts'))).toBe(false);
+  });
+
+  it('server-api exports no A/B tracker, and the visitor id product events use stays', async () => {
+    const api: Record<string, unknown> = await loadApi(true);
+    expect(Object.keys(api).filter((k) => /AB/.test(k))).toEqual([]);
+    expect(typeof api.getVisitorId).toBe('function');
   });
 });

@@ -83,7 +83,7 @@ export function answerColumns(a: {
   return {
     input_tokens: a.usage.inputTokens,
     output_tokens: a.usage.outputTokens,
-    // The model the turn ran on (YouTube: YOUTUBE_MODEL); a hand-built result is CHAT_MODEL's (US-15 AC77).
+    // The model the turn ran on (YouTube: YOUTUBE_MODEL); a hand-built result is CHAT_MODEL's (US-15 AC78).
     model: a.model ?? CHAT_MODEL,
     is_fallback: a.isFallback,
     failure_mode: a.failureMode ?? null,

@@ -8,7 +8,7 @@
  * asserting what the user reads.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { ERASE_CONFIRM, ERASE_DONE, ERASE_DONE_CHAT_PENDING, ERASE_DONE_CHAT_UNREAD } from './erase-copy';
+import { ERASE_CONFIRM, eraseDone } from './erase-copy';
 
 /** The erase strings as one build shows them. */
 async function eraseCopyOn(shopify: boolean) {
@@ -35,7 +35,8 @@ describe('erase confirm copy (US-11)', () => {
   // (Codex re-check R1, adversary re-check R1).
   it('US-09 AC23: says the erase covers this browser and the connected cloud file, and what it keeps', async () => {
     for (const shopify of [true, false]) {
-      const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending } = await eraseCopyOn(shopify);
+      const { ERASE_CONFIRM: confirm, eraseDone: doneOn } = await eraseCopyOn(shopify);
+      const [done, pending] = [doneOn('erased'), doneOn('unreached')];
       expect(confirm).toContain('erased, in this browser and in your connected cloud file.');
       expect(confirm).toContain('A value another device has not saved yet, or saves while the erase runs, is kept and arrives later.');
       expect(confirm).toContain('With no cloud connected, the values in this browser are erased. If you later connect a cloud, the same values are erased there too and its profile and screening answers are reset; values this browser never held stay.');
@@ -147,19 +148,19 @@ describe('erase confirm copy (US-11)', () => {
     expect(ERASE_CONFIRM).toContain(
       'Backups made by the command-line tool stay beside the file until that tool next writes it.',
     );
-    expect(ERASE_DONE).toContain('any command-line backups until that tool next writes the file');
-    expect(ERASE_DONE_CHAT_PENDING).toContain('until that tool next writes the file');
+    expect(eraseDone('erased')).toContain('any command-line backups until that tool next writes the file');
+    expect(eraseDone('unreached')).toContain('until that tool next writes the file');
   });
 
   // US-11 AC2c: a history that could not be opened has no tombstone waiting,
   // so this alert must not promise the next chat will erase it.
   it('US-11 AC2c: an unread cloud chat history is named as still there, not erased later', () => {
-    expect(ERASE_DONE_CHAT_UNREAD).toContain('could not be read, so any chats you saved are still in your cloud folder, in chat-history.json');
-    expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/next chat/i);
+    expect(eraseDone('unread')).toContain('could not be read, so any chats you saved are still in your cloud folder, in chat-history.json');
+    expect(eraseDone('unread')).not.toMatch(/next chat/i);
     // No retry instruction: the button is gone after an erase, and the failure may be lasting.
-    expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/again/i);
-    expect(ERASE_DONE_CHAT_UNREAD).toContain('until that tool next writes the file');
-    expect(ERASE_DONE_CHAT_UNREAD).not.toMatch(/—/);
+    expect(eraseDone('unread')).not.toMatch(/again/i);
+    expect(eraseDone('unread')).toContain('until that tool next writes the file');
+    expect(eraseDone('unread')).not.toMatch(/—/);
   });
 
   it('never claims the kept row stops reminders from restarting', () => {
@@ -172,20 +173,21 @@ describe('erase confirm copy (US-11)', () => {
 
   it('is plain: no em dashes in either string', () => {
     expect(ERASE_CONFIRM).not.toMatch(/—/);
-    expect(ERASE_DONE).not.toMatch(/—/);
+    expect(eraseDone('erased')).not.toMatch(/—/);
   });
 
   it('the post-erase alert stays consistent with the confirm, and shorter', () => {
-    expect(ERASE_DONE).toMatch(/chat history/i);
-    expect(ERASE_DONE).toMatch(/version history/i);
-    expect(ERASE_DONE.length).toBeLessThan(ERASE_CONFIRM.length);
+    expect(eraseDone('erased')).toMatch(/chat history/i);
+    expect(eraseDone('erased')).toMatch(/version history/i);
+    expect(eraseDone('erased').length).toBeLessThan(ERASE_CONFIRM.length);
   });
 
   // US-11 AC5: the alert repeats the confirm, shorter. On the Shopify build
   // that includes items 5 to 7: the bubble and embed on another device, the
   // chat our server keeps on the confirm's own clock, and the feedback box.
   it('US-11 AC5: on the Shopify build, the alert repeats items 5 to 7 on the same clock, shorter', async () => {
-    const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending, ERASE_DONE_CHAT_UNREAD: unread } = await eraseCopyOn(true);
+    const { ERASE_CONFIRM: confirm, eraseDone: doneOn } = await eraseCopyOn(true);
+    const [done, pending, unread] = [doneOn('erased'), doneOn('unreached'), doneOn('unread')];
     const clock = 'for up to 30 days after your last message in that chat';
     expect(confirm).toContain(clock);
     for (const alert of [done, pending, unread]) {
@@ -198,7 +200,8 @@ describe('erase confirm copy (US-11)', () => {
   });
 
   it('US-11 AC5: on the Pages build, the alert names no bubble, embed or server-kept chat', async () => {
-    const { ERASE_CONFIRM: confirm, ERASE_DONE: done, ERASE_DONE_CHAT_PENDING: pending, ERASE_DONE_CHAT_UNREAD: unread } = await eraseCopyOn(false);
+    const { ERASE_CONFIRM: confirm, eraseDone: doneOn } = await eraseCopyOn(false);
+    const [done, pending, unread] = [doneOn('erased'), doneOn('unreached'), doneOn('unread')];
     for (const alert of [done, pending, unread]) {
       expect(alert).not.toMatch(/chat bubble|chatbot embed|30 days|our server|health question/i);
       expect(alert).toMatch(/version history/i);
@@ -210,10 +213,10 @@ describe('erase confirm copy (US-11)', () => {
   // never trap a user's data on their device. The alert must not then claim
   // the chat history is gone: it reports the flag the caller was handed.
   it('has a variant for the erase that could not reach the chat history', () => {
-    expect(ERASE_DONE_CHAT_PENDING).toMatch(/health record is deleted/i);
-    expect(ERASE_DONE_CHAT_PENDING).toMatch(/chat history could not be reached/i);
-    expect(ERASE_DONE_CHAT_PENDING).toMatch(/erased on your next chat/i);
-    expect(ERASE_DONE_CHAT_PENDING).not.toMatch(/chat history (?:and|are|is) deleted/i);
-    expect(ERASE_DONE_CHAT_PENDING).not.toMatch(/—/);
+    expect(eraseDone('unreached')).toMatch(/health record is deleted/i);
+    expect(eraseDone('unreached')).toMatch(/chat history could not be reached/i);
+    expect(eraseDone('unreached')).toMatch(/erased on your next chat/i);
+    expect(eraseDone('unreached')).not.toMatch(/chat history (?:and|are|is) deleted/i);
+    expect(eraseDone('unreached')).not.toMatch(/—/);
   });
 });

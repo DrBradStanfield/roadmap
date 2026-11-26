@@ -28,7 +28,6 @@ vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMessage: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackABImpression: vi.fn(), trackABConversion: vi.fn(),
 }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
 const floating = vi.hoisted(() => ({ opened: [] as Array<string[] | null> }));
