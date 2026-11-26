@@ -66,7 +66,7 @@ class SignedInCloud extends MemoryAdapter {
 const add = (session: RecordSession, id: string, value: number) =>
   session.edit((file) => void file.measurements.push(createMeasurement({
     id, metricType: 'weight', value, recordedAt: '2026-10-01', createdAt: '2026-10-01T10:00:00.000Z',
-  })));
+  })), session.shownErase);
 const ids = (file: RoadmapFile | null | undefined) => (file?.measurements ?? []).map((m) => m.id).sort();
 const deviceCopy = () => new LocalStorageAdapter().readSync(ROADMAP_FILE_NAME).body as RoadmapFile | null;
 

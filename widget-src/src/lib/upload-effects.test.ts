@@ -18,10 +18,10 @@ vi.mock('./upload-api', () => ({
     pending.set(pages[0].content, (ok) => resolve(ok ? { result: lab } : { result: null, error: 'Extraction failed', errorCode: 'server_error' }));
   })),
 }));
-const known = vi.hoisted(() => ({ hashes: new Set<string>(), legacy: false }));
+const known = vi.hoisted(() => ({ hashes: new Set<string>(), archiveOnly: false, legacy: false }));
 vi.mock('./roadmap-data', () => ({
   getDocumentArchiveMode: () => 'cloud',
-  uploadKnownIndex: () => new Map([...known.hashes].map((h) => [h, { as: 'document', archiveOnly: false }])),
+  uploadKnownIndex: () => new Map([...known.hashes].map((h) => [h, { as: 'document', archiveOnly: known.archiveOnly }])),
   isLegacyUpload: () => known.legacy,
 }));
 // A fake hash that names the bytes it was given.
@@ -40,7 +40,7 @@ const pdf = (name: string) => new File([name], name, { type: 'application/pdf' }
 const settle = async (n: number) => { for (let i = 0; i < 50 && pending.size < n; i++) await new Promise((r) => setTimeout(r, 0)); };
 const sending = (s: UploadState) => (s.phase === 'open' ? s.files.filter((f) => f.status.s === 'sending').length : 0);
 
-beforeEach(() => { pending.clear(); known.hashes.clear(); known.legacy = false; vi.mocked(labImport).mockClear(); });
+beforeEach(() => { pending.clear(); known.hashes.clear(); known.archiveOnly = false; known.legacy = false; vi.mocked(labImport).mockClear(); });
 
 describe('US-12 AC23: the review lists files in picked order (D12)', () => {
   it('later-picked files that finish first are still listed after the earlier ones, notices too', async () => {
@@ -72,6 +72,20 @@ describe('US-12 AC27: a file the record already holds is never sent', () => {
     const { results, notices } = run.outcome();
     expect(results.map((r) => r.fileName)).toEqual(['new.pdf']);
     expect(notices.map((n) => n.name)).not.toContain('held.pdf');
+  });
+
+  // Owner ruling 7 (mount 3b): one the record holds without its original is not read again either, with a cloud open:
+  // the state holds it as known, `archiveOnly`, and the shared Save files its original unread (upload-plan.ts).
+  it('one held without its original is never sent, with a cloud open; the state knows it as archive-only', async () => {
+    known.hashes.add('sha256-held.pdf');
+    known.archiveOnly = true;
+    const run = drive(upload, [pdf('held.pdf'), pdf('new.pdf')]);
+    await settle(1);
+    pending.get('new.pdf')!(true);
+    await vi.waitFor(() => expect(inFlight(run.state())).toBe(0));
+    expect(vi.mocked(labImport).mock.calls.map(([pages]) => pages[0].content)).toEqual(['new.pdf']);
+    const s = run.state();
+    expect(s.phase === 'open' && s.files.map((f) => f.status)).toEqual([{ s: 'known', as: 'document', archiveOnly: true }, expect.objectContaining({ s: 'read' })]);
   });
 
   it('a read the record holds from before hashing (same name and date) is not offered either', async () => {

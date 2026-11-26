@@ -28,7 +28,7 @@ export interface Extraction {
   document?: DocumentResult | null;
 }
 
-/** A non-lab document as the review card shows it: the web's ReviewTable card (US-52 AC13d). */
+/** A non-lab document as the review card shows it: the web's old ReviewTable card (US-52 AC13d). */
 export interface DocumentReview {
   /** The model's classification, shown read-only ("clinic letter"). */
   classification: string;

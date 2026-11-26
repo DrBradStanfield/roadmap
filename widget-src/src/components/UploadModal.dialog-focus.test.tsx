@@ -7,22 +7,21 @@
  * (`[aria-modal="true"]`) could not see it. Synthetic: no file is read.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { useState } from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
 import { SettingsSheet } from './SettingsSheet';
-import { bulkSaveDocuments, bulkSaveMeasurements, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { getDocumentArchiveMode, saveUpload } from '../lib/roadmap-data';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', () => ({ recordFileSync: vi.fn(() => null), saveUpload: vi.fn(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
-
-const history = { measurements: [], labValues: [], documents: [] };
 
 /** The page: an opener button and the modal, shown and hidden as HealthTool does. */
 function Page({ startOpen = false, mounted = true, withOpener = true }: { startOpen?: boolean; mounted?: boolean; withOpener?: boolean }) {
@@ -30,7 +29,7 @@ function Page({ startOpen = false, mounted = true, withOpener = true }: { startO
   return <>
     {withOpener && <button type="button" onClick={() => setOpen(true)}>Upload lab results</button>}
     <button type="button">Somewhere else</button>
-    {mounted && <UploadModal open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)} onComplete={() => {}} unitSystem="si" grading={{}} history={history} />}
+    {mounted && <UploadModal open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)} onComplete={() => {}} unitSystem="si" />}
   </>;
 }
 
@@ -186,10 +185,9 @@ describe('US-12 AC4a: a window reopened from the floating indicator that then en
   async function reopened(shown: 'review' | 'failed read') {
     let fail: ((error: Error) => void) | undefined;
     vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 } as never); vi.mocked(labImport).mockResolvedValue(extraction as never);
-    vi.mocked(bulkSaveMeasurements).mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as never);
-    vi.mocked(bulkSaveDocuments).mockResolvedValue({ saved: [], errorCount: 0 } as never);
+    vi.mocked(saveUpload).mockResolvedValue({ ok: true, outcome: { values: 1, documents: 0, archived: 0, unstored: 0 }, added: [] });
     const extractFromPdf = shown === 'review' ? async () => ({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false }) : () => new Promise((_, no) => { fail = no; });
-    Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
+    Object.assign(window, { HealthUpload: { ...UPLOAD_ENGINE, extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
     render(<Page />);
     openFromButton();
     await act(async () => { fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [new File(['synthetic'], 'synthetic.pdf', { type: 'application/pdf' })] } }); });

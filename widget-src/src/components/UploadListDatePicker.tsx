@@ -11,7 +11,8 @@ export function ListDatePicker({ value, shown, empty, name, describedBy, disable
   /** What the button shows: the day in words, or what to pick; `id` makes it the button's description. */
   shown: { text: string; id: string };
   empty: boolean;
-  name: string;
+  /** Its name: fixed words, or `by` the ids of text on the page that name it (record text never sits in an attribute). */
+  name: string | { by: string };
   describedBy?: string;
   disabled: boolean;
   /** The blocker key this picker removes (UploadList's focus on a refused Save). */
@@ -30,7 +31,7 @@ export function ListDatePicker({ value, shown, empty, name, describedBy, disable
     <span className="upload-list-picker" data-at={at}>
       <button type="button" className={`upload-list-picker-button${empty ? ' upload-list-picker-button--empty' : ''}`}
         // The name replaces the button's content, so the day it shows is read as its description (adversary F6).
-        aria-label={name} aria-describedby={[shown.id, describedBy].filter(Boolean).join(' ')} disabled={disabled} onClick={open}>
+        aria-label={typeof name === 'string' ? name : undefined} aria-labelledby={typeof name === 'string' ? undefined : name.by} aria-describedby={[shown.id, describedBy].filter(Boolean).join(' ')} disabled={disabled} onClick={open}>
         <span id={shown.id}>{shown.text}</span>
       </button>
       <input ref={input} type="date" tabIndex={-1} aria-hidden="true" className="bt-date-hidden-icon" value={value} disabled={disabled}

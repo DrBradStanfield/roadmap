@@ -79,6 +79,8 @@ Per AACE 2025 and NICE guidelines, BMI classification in the 25–29.9 range is 
 
 `currentYear - birthYear`, minus 1 if `currentMonth < birthMonth`. Minimum 0. Defaults to birthMonth = 1 if not provided.
 
+The screening cards (section 8), the screening questions, the upload gate and the reminders (section 11) read this age at the UTC year and month (`screeningAge`), so one record at one instant gets the same screening gate on all of them, in every time zone (US-23 AC6b, AC6c). The age shown, and its other uses, read the local date.
+
 ### eGFR (CKD-EPI 2021, Race-Free)
 
 Input: creatinine in umol/L. Internal conversion: `Cr_mg_dL = Cr_umol_L / 88.4`.
@@ -465,7 +467,7 @@ A spelling this table does not carry for that test is **refused** — never resc
 
 A plain "calcium" is total calcium (`calcium_total`), never corrected calcium (US-21 AC12, fixed 2026-10-18; it used to land on `calcium_corrected`). Rows already stored under the key `calcium_corrected` stay there: no migration. A row stored as a plain calcium (the website upload's snake_case `calcium`, or the assistant's printed "Calcium") now reads as total calcium.
 
-Nineteen catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `mcv` (fL), `mch` (pg), `rdw` (%), `rdw_sd` (fL), `mpv` (fL), `t3_uptake` (%), `trab` (IU/L), `shbg` (nmol/L), `psa_free_percent` (%), `b12_active` (pmol/L), `transferrin_sat` (%), `stfr` (mg/L), `omega3_index` (%), `vitamin_b1` (nmol/L), `anti_ccp` (U/mL), `ttg_iga` (U/mL), `homocysteine` (µmol/L) and `fructosamine` (µmol/L). Since US-21 AC28 (2026-11-15) seven more take only %: `neutrophils_pct`, `lymphocytes_pct`, `monocytes_pct`, `eosinophils_pct`, `basophils_pct`, `immature_granulocytes_pct` and `reticulocytes_pct`. Any other spelling is refused. (Until 2026-10-20 this sentence named three; five more already took only their canonical unit.)
+Nineteen catalogued tests take only their canonical unit, so they have no row above: `cystatin_c` (mg/L), `mcv` (fL), `mch` (pg), `rdw` (%), `rdw_sd` (fL), `mpv` (fL), `t3_uptake` (%), `trab` (IU/L), `shbg` (nmol/L), `psa_free_percent` (%), `b12_active` (pmol/L), `transferrin_sat` (%), `stfr` (mg/L), `omega3_index` (%), `vitamin_b1` (nmol/L), `anti_ccp` (U/mL), `ttg_iga` (U/mL), `homocysteine` (µmol/L) and `fructosamine` (µmol/L). Since US-21 AC28 (2026-11-15) seven more take only %: `neutrophils_pct`, `lymphocytes_pct`, `monocytes_pct`, `eosinophils_pct`, `basophils_pct`, `immature_granulocytes_pct` and `reticulocytes_pct`. Since US-21 AC29 (2026-11-23) one more, `cholesterol_hdl_ratio`, takes only "ratio", or no unit at all, since a ratio prints with none. Any other spelling is refused. (Until 2026-10-20 this sentence named three; five more already took only their canonical unit.)
 
 Non-HDL cholesterol is deliberately not catalogued. The app derives it from total cholesterol and HDL, so a stored lab row would duplicate it; a printed one is kept as an uncatalogued row with its printed unit.
 
@@ -476,7 +478,7 @@ Non-HDL cholesterol is deliberately not catalogued. The app derives it from tota
 - **Osmolality** resolves only under a serum or plasma name: a bare "osmolality" is as often the urine test. It takes mOsm/kg, mOsmol/kg and mmol/kg, the same number.
 - **Immature granulocytes in %, reticulocytes in %, and NRBC in % or per 100 WBC** were refused with a note pointing at the absolute count until 2026-11-15; since US-21 AC28 each is a test of its own, as a differential in % is.
 - **AMH** converts at the 140 kDa dimer convention (7.14 pmol/L per ng/mL), as insulin's 6.00 is one. Growth hormone in mIU/L and soluble transferrin receptor in nmol/L are assay-dependent and refused.
-- **Left out:** the free thyroxine index (two scales share the name), every unitless ratio and index (TC/HDL, INR, free androgen index, HOMA-IR, A/G, BUN/creatinine), PT and APTT in seconds, base excess, and a bare "T4", "T3" or "troponin", which can mean either test. A printed one stays an uncatalogued row with its printed unit.
+- **Left out:** the free thyroxine index (two scales share the name), every other unitless ratio and index (INR, free androgen index, HOMA-IR, A/G, BUN/creatinine), PT and APTT in seconds, base excess, and a bare "T4", "T3" or "troponin", which can mean either test. A printed one stays an uncatalogued row with its printed unit. The TC/HDL ratio is catalogued since US-21 AC29 (Brad 2026-11-23) as `cholesterol_hdl_ratio`, in "ratio" or no unit, with both earlier stored spellings (`cholesterol_total_hdl_ratio`, `total_cholesterol_hdl_ratio`) as aliases. It is record-keeping only: no suggestion reads it.
 
 AC20 adds the comma, bracket and "absolute" spellings US, AU and NZ reports print for tests already catalogued ("Bilirubin, Total", "ALT (SGPT)", "Neutrophils (Absolute)"). Each of these spellings is listed. Since US-07 AC10 (Brad 2026-11-02), a name no listed spelling matches is tried once more without its punctuation: "A.M." and "P.M." lose their dots, and hyphens, dashes, brackets, commas, colons and slashes become spaces. That second try never changes how a name that already resolves resolves; a form two tests share resolves to nothing; a name that stays uncatalogued keeps its own slot, and since US-66 a core blood-test name gets the same second try, after the catalogue and never for a ratio ("/" or a colon before more words) or for "Cr", so "LDL - Cholesterol" files as LDL. "Urea Nitrogen (BUN)" takes BUN's mg/dL factor; "Urea (BUN)" does not (see the `urea` row). The extraction prompt offers every catalogue name (US-07 AC10, Brad 2026-11-02: "release now"); it still does not suggest the new core names or `bun`, which the resolver alone knows. What a US BUN in mg/dL does today depends on the name it arrives under. Under a printed nitrogen name ("BUN", "Urea Nitrogen", "Blood Urea Nitrogen (BUN)", or the extractor's `blood_urea_nitrogen`) it converts at ×0.357. Under "Urea (BUN)" or the bare `urea` it is refused. The assistant routes (`file_results`, `add_lab_values`) store the printed name, so they convert. The website now files a row by the name the report printed when it resolves (US-07 AC10), so a website "BUN" in mg/dL converts too; a row the model names only `urea` is still refused in mg/dL. The core resolver (not the prompt) gained the printed names on Brad's own reports ("Cholesterol (HDL)", "Cholesterol (LDL) (calculated)") and six more ("HDL-Cholesterol", "LDL-Cholesterol", "LDL Chol Calc (NIH)", "Glycated haemoglobin (HbA1c)", "PSA, Total", "Prostate Specific Ag"). A direct LDL is not yet a core alias: which LDL wins a day with both is open (US-21 AC19 notes).
 
@@ -715,13 +717,13 @@ The plan is built for adults aged 18 and over (US-07 AC6, 2026-10-14; amended th
 | 18 or over | The plan below, unchanged. |
 | Unknown (no birth year) | The plan below, except the medicine cards. Medicine cards need a known age of 18 or over. When the plan would show any, they give way to one card where the first stood: `add-birth-year` (general, info), "Add your birth year": "Suggestions about medicines to discuss with your doctor need your age. Add your birth year to see them." Every other card is unchanged. The standalone lipid cards (`apob-*`, `non-hdl-*`, `ldl-*`, `total-chol-*`) never give way to the lipid cascade here, because the cascade is not shown. No weight card gives way to the weight cascade, at any age. The kept cards suggest no medicine in their own text: `apob-very-high` ends "Discuss treatment, including lifestyle changes, with your doctor." and `ldl-very-high` "Discuss treatment with your doctor." in place of their statin sentence, `bp-stage2` says "Discuss treatment with your doctor." in place of "Guidelines typically recommend medication at this level. Discuss it with your doctor.", `bp-stage1` and `bp-stage2` keep their weight-loss sentences but leave out "GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.", and the `lpa-elevated` checklist leaves out its "not started" medicine lines. One exception, by decision: `ldl-high` keeps "Lifestyle changes and medication options are typically discussed at this level. Discuss them with your doctor." It names no medicine, and discussing is not suggesting. |
 
-**Unknown sex (US-07 AC8, Brad 2026-10-31).** The plan needs only a height. A stored sex that is not male or female counts as none (the record is not changed). With no sex on record it is the plan above, minus every part that needs sex: the ideal body weight, the protein target and its `protein-target` card, a calculated eGFR (a lab-printed one still stands, and a calculated one cannot outrank it; when a newer creatinine exists, that lab eGFR opens no potassium advice), the `hdl-low` card, and the sex-specific screenings (breast, cervical, prostate, endometrial, bone density), as cards and as reminders in `due` (section 11). Nothing falls back to a male or female default. BMI, the waist-to-height ratio and every unsexed card are unchanged. `get_plan` returns `profile.sex`, `idealBodyWeightKg` and `proteinTargetG` as `null`, names `sex` in `missingInputs`, and lists the missing parts in `profile.needsSex`. No usable height is still no plan. The website's blood-test grids and My data rows give HDL and creatinine no colour and no spoken grade with no sex on record, and assume no sex (US-62 AC13); their hints show both lines ("Optimal: >1.0/>1.3" for HDL; "Normal: 60–110 (men) / 45–90 (women)" for creatinine, "Normal 60–110/45–90" in a row). With sex, each is coloured on its own line: HDL ok from 1.03 mmol/L (men) or 1.29 (women), red below 1.03; creatinine ok to 110 µmol/L (men) or 90 (women), red from 1.3 × that ceiling. The numbers live in `units.ts` (`HDL_GRID_BANDS`, `CREATININE_GRID_BANDS`).
+**Unknown sex (US-07 AC8, Brad 2026-10-31).** The plan needs only a height. A stored sex that is not male or female counts as none (the record is not changed). With no sex on record it is the plan above, minus every part that needs sex: the ideal body weight, the protein target and its `protein-target` card, a calculated eGFR (a lab-printed one still stands, and a calculated one cannot outrank it; when a newer creatinine exists, that lab eGFR opens no potassium advice), the `hdl-low` card, and the sex-specific screenings (breast, cervical, prostate, endometrial, bone density), as cards and as reminders in `due` (section 11). Nothing falls back to a male or female default. BMI, the waist-to-height ratio and every unsexed card are unchanged. `get_plan` returns `profile.sex`, `idealBodyWeightKg` and `proteinTargetG` as `null`, names `sex` in `missingInputs`, and lists the missing parts in `profile.needsSex`. No usable height is still no plan. The website's blood-test grids and My data rows give HDL and creatinine no colour and no spoken grade with no sex on record, and assume no sex (US-62 AC13); their hints show both lines ("Optimal: >1.0/>1.3" for HDL; "Normal: 60–110 (men) / 45–90 (women)" for creatinine, "Normal 60–110/45–90" in a row). With sex, each is coloured on its own line: HDL ok from 1.03 mmol/L (men) or 1.29 (women), red below 1.03; creatinine ok to 110 µmol/L (men) or 90 (women), red from 1.3 × that ceiling. The numbers live in `units.ts` (`HDL_GRID_BANDS`, `CREATININE_GRID_BANDS`). From 86, when none of its groups applies, the cancer section on both apps holds no questions and shows the note "Some screening questions depend on your sex. Add it in About you." (US-07 AC1k, US-62 AC41).
 
 Three-file sync for US-07 AC8: `evidence.ts` needs no change. No card's reason, guideline tag or citation changes, and the sex-specific "why" texts (ideal body weight, BMI) are built only when sex is known. `roadmap_text.html` needs no change. It describes how each number is worked out, which is unchanged when sex is known, and its eGFR sentence ("uses your creatinine level along with your age and sex") stays true: with no sex there is no calculated eGFR.
 
 The medicine cards are the `medication` category: `weight-glp1`; `weight-med-glp1`, `-glp1-dose`, `-glp1-increase`, `-glp1-switch`, `-sglt2i`, `-metformin`; `med-statin`, `-ezetimibe`, `-bempedoic-acid`, `-statin-dose`, `-statin-increase`, `-statin-switch`, `-pcsk9i`.
 
-The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month is strict: the person is a minor until 1 January of the year after the year they turn 18 (birth year + 19), so no one counts as 18 early. Someone born in 2008 with no month is a minor through 31 December 2026 and an adult from 1 January 2027. A known month keeps the birthday-month rule. The gate reads the date at UTC−12, the zone furthest behind, whatever zone it runs in (the hosted server runs in UTC), so no one anywhere counts as 18 early: the new month or year starts for the gate at 12:00 UTC on its first day (born November 2008: an adult from 1 November 2026 12:00 UTC; born 2008 with no month: from 1 January 2027 12:00 UTC). Every other age keeps the January default and the local date, so that person's profile reads 18 beside the adults-only card through 2026 (accepted). Every surface (the plan, the reminder schedule, the form, the chat context) asks the gate over the birth year and month the plan keeps (`knownMinorOf`): one outside the plan's bounds (birth year 1900 to this year, month 1 to 12) counts as missing, so no surface calls someone a minor while the plan has no age for them.
+The gate's age (`isKnownMinor`) is the one in section 1, except that a missing birth month is strict: the person is a minor until 1 January of the year after the year they turn 18 (birth year + 19), so no one counts as 18 early. Someone born in 2008 with no month is a minor through 31 December 2026 and an adult from 1 January 2027. A known month keeps the birthday-month rule. The gate reads the date at UTC−12, the zone furthest behind, whatever zone it runs in (the hosted server runs in UTC), so no one anywhere counts as 18 early: the new month or year starts for the gate at 12:00 UTC on its first day (born November 2008: an adult from 1 November 2026 12:00 UTC; born 2008 with no month: from 1 January 2027 12:00 UTC). Every other age keeps the January default and the local date (the screening gates and reminders read the UTC month, section 1), so that person's profile reads 18 beside the adults-only card through 2026 (accepted). Every surface (the plan, the reminder schedule, the form, the chat context) asks the gate over the birth year and month the plan keeps (`knownMinorOf`): one outside the plan's bounds (birth year 1900 to this year, month 1 to 12) counts as missing, so no surface calls someone a minor while the plan has no age for them.
 
 For a known minor, every surface also withholds:
 
@@ -788,7 +790,8 @@ Three-file sync: `evidence.ts` changes one sentence, `trig-nutrition`'s reason (
 |----|-----------|----------|
 | `hba1c-diabetic` | >= 47.5 mmol/mol (>= 6.5%) | urgent |
 | `hba1c-prediabetic` | >= 38.8 mmol/mol (>= 5.7%) | attention |
-| `hba1c-normal` | < 38.8 mmol/mol | info |
+
+Below 38.8 mmol/mol there is no card: the HbA1c result row and tile already say Normal (Brad 2026-11-23, US-07 AC18; the `hba1c-normal` card, "Your HbA1c of {value} is in the normal range. Continue healthy habits to maintain this.", is gone).
 
 ### Atherogenic Lipid Hierarchy
 
@@ -812,7 +815,8 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 |----|-----------|----------|
 | `lpa-elevated` | >= 125 nmol/L | attention |
 | `lpa-borderline` | 75-125 nmol/L | info |
-| `lpa-normal` | < 75 nmol/L | info |
+
+Below 75 nmol/L (in any unit it was typed in) there is no card: the Lp(a) result row and tile already say Normal (Brad 2026-11-23, US-07 AC18; the `lpa-normal` card, "Your Lp(a) is in the normal range (<75 nmol/L). This is a one-time test…", is gone). Nothing in the plan asks for Lp(a) to be tested again: no card, reminder or prompt ever did.
 
 **Elevated Lp(a) checklist** (modifiable risk factors):
 - Lipids (ApoB > non-HDL > LDL, on-treatment targets; ⚠️ at or above the target, shown as "target <X")
@@ -1038,9 +1042,11 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 **Text:** "With a BMI of {bmi}{ and {reasons}}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health." The reasons join as "a, b and c".
 
+**"No" (US-06 AC22, Brad 2026-11-23):** the GLP-1, SGLT2 inhibitor and metformin pickers each offer "No" (`'no'`), just before "Not tolerated". It means the person is not taking the medicine and has decided, perhaps with their doctor: that medicine's card stops showing and the cascade moves on to the next step, exactly as "Not tolerated" does. GLP-1 "No" asks no dose question and no new step-up question (a step-up answer already recorded still shows, as it does for "Not tolerated") and goes to the SGLT2 inhibitor; SGLT2 inhibitor "No" goes to metformin; metformin "No" ends the cascade. "No" records no medicine as started. The picker stays on the form, so choosing "Haven't tried yet" again brings the card back. Same word and value, different effect: on a tolerated statin, ezetimibe or PCSK9 inhibitor "No" keeps that card showing (with the statin not tolerated it moves on, US-06 AC20). The weight sequence has a next step to move to, and Brad (2026-11-23) chose "stop suggesting it" for these three; the lipid behaviour is unchanged while Brad decides whether to align them.
+
 ### Step 2: GLP-1 Escalation (`weight-med-glp1-increase` or `weight-med-glp1-switch`)
 
-**Condition:** On a GLP-1 (or on 'other') AND escalation gate `glp1Escalation` is `undefined` or `'not_yet'`.
+**Condition:** On a GLP-1 (or on 'other'; not `'no'` or `'not_tolerated'`) AND escalation gate `glp1Escalation` is `undefined` or `'not_yet'`.
 
 - `canIncreaseGlp1Dose(drug, dose)`: Higher dose available for current drug
 - `shouldSuggestGlp1Switch(drug, dose)`: On `'other'`, OR on max dose of non-tirzepatide GLP-1
@@ -1056,7 +1062,7 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 ### Step 4: Metformin (`weight-med-metformin`)
 
-**Condition:** SGLT2i handled (on one or not tolerated) AND metformin is `undefined` or `'none'`.
+**Condition:** SGLT2i handled (on one, `'no'` or not tolerated) AND metformin is `undefined` or `'none'`.
 
 ### Standalone GLP-1 Suggestion (`weight-glp1`)
 
@@ -1097,7 +1103,7 @@ Options: `'not_yet'`, `'yes'`, `'no'`, `'not_tolerated'`.
 | semaglutide_oral | 3, 7, 14 |
 | dulaglutide | 0.75, 1.5, 3, 4.5 |
 
-Additional options: `'none'`, `'other'`, `'not_tolerated'`.
+Additional options: `'none'`, `'other'`, `'no'`, `'not_tolerated'`.
 
 **Max potency drug:** tirzepatide (switch target in escalation).
 
@@ -1109,11 +1115,11 @@ Additional options: `'none'`, `'other'`, `'not_tolerated'`.
 | dapagliflozin | 5, 10 |
 | canagliflozin | 100, 300 |
 
-Status options: `'none'`, actual drug name, `'not_tolerated'`.
+Status options: `'none'`, actual drug name, `'no'`, `'not_tolerated'`.
 
 ### Metformin
 
-Options: `'none'`, `'ir_500'` through `'ir_2000'`, `'xr_500'` through `'xr_2000'`, `'not_tolerated'`. IR = Immediate Release, XR = Extended Release.
+Options: `'none'`, `'ir_500'` through `'ir_2000'`, `'xr_500'` through `'xr_2000'`, `'no'`, `'not_tolerated'`. IR = Immediate Release, XR = Extended Release.
 
 ---
 
@@ -1129,7 +1135,7 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | Breast | 40+ | Female | 40-44 optional (info), 45+ recommended (attention) |
 | Cervical | 25-65 | Female | — |
 | Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (ACS 2023; no quit window) |
-| Prostate | 45+ | Male | Shared decision |
+| Prostate | 45+ | Male | Shared decision; the 45-49 note names the men the ACS advises to start at 45 (Black men; a close relative with prostate cancer); the tool asks no risk question |
 | Endometrial | 45+ | Female | Abnormal bleeding = urgent |
 | DEXA | Female >= 50, Male >= 70 | Both | — |
 
@@ -1156,7 +1162,7 @@ Lung follow-up: once an abnormal low-dose CT is recorded, its follow-up stays in
 | `pap_every_3yr` | 36 |
 | `annual_ldct` | 12 |
 | `will_screen`, PSA < 2.5 | 24 |
-| `will_screen`, PSA 2.5 to < 4.0, or no PSA value | 12 |
+| `will_screen`, PSA 2.5 to < 4.0, or no PSA value (unless the 3-month rule holds) | 12 |
 | any answer, PSA >= 4.0 | 3 |
 | `other` (fallback) | 12 |
 | `dexa_normal` | 60 (5 years) |
@@ -1198,12 +1204,12 @@ overdue = now > nextDue
 ### Prostate-Specific
 
 - PSA >= 4.0 ng/mL -> `screening-prostate-elevated` (attention), whatever the screening answer. While it shows, `screening-prostate` (the discussion card) does not (Brad 2026-11-12).
-- `elected_not_to` -> no screening card; no PSA reminder while the newest PSA is below 4.0. A saved PSA of 4.0 or above still shows `screening-prostate-elevated` (Brad 2026-11-03), and from 3 months on `screening-prostate-repeat` and the `screening_prostate` reminder (Brad 2026-11-12); so does the 3-month rule held through a vague newer PSA (US-06 AC21 item 6, below).
-- The next PSA follows the newest usable PSA (Brad 2026-11-12): 24 months below 2.5 ng/mL and 12 months from 2.5 for men who will screen (Dr Brad's suggestion, after earlier ACS guidance; the ACS guideline revised 2026-11-12 sets the interval by age and risk, not by PSA level); 3 months at 4.0 or above for every man, whatever his answer, until a newer PSA below 4.0 is saved (Dr Brad's suggestion; the ACS advises repeating a high PSA to confirm it, preferably 2 weeks to 3 months later). A man who declined screening sees `screening-prostate-repeat` ("Repeat PSA test") in place of the overdue card.
-- A newer PSA printed as a limit that does not decide against 4.0 ("< 5", "<= 4.0") keeps the 3-month rule (Brad 2026-11-13): it holds while the newest PSA that decides is 4.0 or above, and the next PSA is due 3 months after the newest test. `screening-prostate-elevated` does not show, and `screening-prostate` (the discussion card) still shows for a man with no answer or `not_yet`, and `screening-prostate-upcoming` does not; `screening-prostate-repeat` reads "An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening." in place of its "Your last PSA" sentence.
+- `elected_not_to` -> no screening card; no PSA reminder while the newest PSA is below 4.0. A saved PSA of 4.0 or above still shows `screening-prostate-elevated` (Brad 2026-11-03), and from 3 months on `screening-prostate-repeat` and the `screening_prostate` reminder (Brad 2026-11-12); so does the 3-month rule held through a vague newer PSA or a newer old answer with a date and no usable value (US-06 AC21, below).
+- The next PSA follows the newest usable PSA (Brad 2026-11-12): 24 months below 2.5 ng/mL and 12 months from 2.5 for men who will screen (Dr Brad's suggestion, after earlier ACS guidance; the ACS guideline revised 2026-11-12 sets the interval by age and risk, not by PSA level); 3 months at 4.0 or above for every man, whatever his answer, until a newer PSA below 4.0 is saved (Dr Brad's suggestion; the ACS advises repeating a high PSA to confirm it, preferably 2 weeks to 3 months later). A man who declined screening, has not yet decided (`not_yet`) or recorded no answer sees `screening-prostate-repeat` ("Repeat PSA test") in place of the overdue card; for `not_yet` or no answer its first sentence is left out (Brad 2026-11-13).
+- A newer PSA printed as a limit that does not decide against 4.0 ("< 5", "<= 4.0"), or a newer old answer with a date and no usable value (none, or one outside the PSA range), keeps the 3-month rule (Brad 2026-11-13): it holds while the newest PSA that decides is 4.0 or above, and the next PSA is due 3 months after the newest test, the answer's date included. Only a newer PSA that decides below 4.0 (a value, or a limit such as "< 3") ends it. `screening-prostate-elevated` does not show, and `screening-prostate` (the discussion card) still shows for a man with no answer or `not_yet`, and `screening-prostate-upcoming` does not; `screening-prostate-repeat` reads "An earlier PSA was 4.0 or higher, and your latest result does not show it is below 4.0, so checking it again is about that result, not screening." in place of its "Your last PSA" sentence.
 - Every surface takes that one fact, never its own slice of the record (Brad 2026-11-13): `raisedBefore`, "an earlier PSA was 4.0 or above", is worked out once in health-core from the full record (`planPsa`; for a chat, `buildMeasurementHistory` before its 24-point cap, and the chat mirror when it is written) and rides on the newest PSA point a chat sends. The chat's plan takes it as sent; no earlier PSA value or date is sent for it.
-- Where the PSA comes from (US-06 AC14): the newest usable active `psa` row, its value and its day, a core lab row since US-66. Usable: a value in the PSA range (0 to 10,000 ng/mL) and a real day no later than the latest day anywhere on Earth (UTC+14), so a server in UTC still counts the person's today; a newer unusable row never hides an older usable one. On one day the later time wins, then the later `createdAt`, then the id (US-07 AC4). A PSA printed as a limit (US-12 AC20) is graded only when the limit decides against 4.0: "> 100" and ">= 4.0" are elevated (">= 4.0" since Brad 2026-11-12), and the card shows the limit as printed ("Your PSA of > 100.0 ng/mL ..."); "< 0.1" is not; "< 5" and "<= 4.0" leave it uncertain, so no elevated card. Its day still dates the next test. The old answers `prostate_psa_value` and `prostate_last_date` count only when there is no usable row or when they are newer by date, value and day together; an answer that gives only a month loses to a row from that month. The web plan, `computePlan`, the reminder schedule and the chat's plan all read it this way.
-- While `screening-prostate-elevated` shows, or the 3-month rule holds through a vague newer PSA, `screening-prostate-upcoming` ("PSA test up to date") does not: beside a raised PSA it reads as all clear. `screening-prostate-overdue` and the `screening_prostate` reminder follow the PSA rows of the intervals table (US-06 AC17, Brad 2026-11-03).
+- Where the PSA comes from (US-06 AC14): the newest usable active `psa` row, its value and its day, a core lab row since US-66. Usable: a value in the PSA range (0 to 10,000 ng/mL) and a real day no later than the latest day anywhere on Earth (UTC+14), so a server in UTC still counts the person's today; a newer unusable row never hides an older usable one. On one day the later time wins, then the later `createdAt`, then the id (US-07 AC4). A PSA printed as a limit (US-12 AC20) is graded only when the limit decides against 4.0: "> 100" and ">= 4.0" are elevated (">= 4.0" since Brad 2026-11-12), and the card shows the limit as printed ("Your PSA of > 100.0 ng/mL ..."); "< 0.1" is not; "< 5" and "<= 4.0" leave it uncertain, so no elevated card. Its day still dates the next test. The old answers `prostate_psa_value` and `prostate_last_date` count only when there is no usable row or when they are newer by date, value and day together; an answer that gives only a month loses to a row from that month. An answer whose value is outside the PSA range keeps its date and has no value (Brad 2026-11-13); a newer answer with no value keeps the 3-month rule (above). The web plan, `computePlan`, the reminder schedule and the chat's plan all read it this way.
+- While `screening-prostate-elevated` shows, or the 3-month rule holds through a vague newer PSA or a newer dated answer with no usable value, `screening-prostate-upcoming` ("PSA test up to date") does not: beside a raised PSA it reads as all clear. `screening-prostate-overdue` and the `screening_prostate` reminder follow the PSA rows of the intervals table (US-06 AC17, Brad 2026-11-03).
 - A PSA below 4.0 never prints as 4.0 (US-06 AC18, turned round with the 4.0 line, Brad 2026-11-12): where one decimal would print 4.0, a PSA below 4.0 prints two, rounded down (3.96 reads 3.96, not 4.0), on `get_plan` and the PSA field's line on the web and the iPhone (`formatGradedReading`). Any other PSA prints to one decimal, so 4.04 reads 4.0, which is raised. A limit prints as printed.
 - A PSA typed in the prostate section (US-06 AC15) is saved as a `psa` row on the day picked beside it (a full date, today until changed; never after today), as every blood test is dated. That day is also the last PSA test for the due card and the reminder: no client asks for or writes `prostate_last_date` any more.
 
@@ -1327,7 +1333,7 @@ Threshold: **12 months**. Only for metrics the user has previously tracked.
 
 ### Medication Review
 
-Triggers when ANY active medication (drug name not in `['none', 'not_yet', 'not_tolerated', 'no']`) has `updatedAt` older than 12 months. Returns a single aggregate reminder (not per-medication).
+One aggregate reminder (not per-medication), with the same label and opt-out whichever rows count, due on the earliest candidate among the medications it counts (`countsForMedicationReview`). A drug taken (drug name not in `['none', 'not_yet', 'not_tolerated', 'no']`) is due 12 months after its `updatedAt`, and may be overdue. A decision against one (`isDeclinedMedicine`): "No" (`'no'`), "Not tolerated" (`'not_tolerated'`), or bempedoic acid's "Not taking" (`'none'`; on every other picker `none` is "Haven't tried yet") is reviewed once a year, on the anniversary of the decision: its candidate is the first of `updatedAt` + 12, 24, … months that is not before today's UTC day (US-23 AC17, Brad 2026-11-23). So the reminder for a decline is never overdue, and nobody is emailed about an old decision the moment this ships. A decline can bring the review earlier than a taker's date only to today or later; a taker's overdue review stays as it was. While a decline exists the review is always within 12 months, so the annual check-in floor does not also fire: the review takes its place. There is no "reviewed" action, so the review never clears (a lead, not built; a taker's review has none either). "Haven't tried yet" decides nothing and counts for nothing; an escalation answer is not a medication. The iPhone follows this rule once the engine release that carries it is signed.
 
 ### Screening Reminders
 

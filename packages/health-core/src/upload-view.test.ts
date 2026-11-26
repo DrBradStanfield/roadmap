@@ -138,27 +138,44 @@ describe('upload view: section 4 screens', () => {
   it('US-14 AC13: a Save that wrote no value and no shown document and kept an original heads with the kept line alone', () => {
     const done = (values: number, documents: number, archived: number, unstored?: number): UploadState =>
       ({ phase: 'done', platform: 'phone', run: 1, files: [], started: NOW, firstRead: null, outcome: { values, documents, archived, ...(unstored === undefined ? {} : { unstored }) } });
-    const unstored = "The original file couldn't be stored; its details are saved.";
+    const bare = "The original file couldn't be stored.";
     // What the done screen draws (UploadReviewView): `line` as its headline, then `archived`, then `unstored`.
     const drawn = (s: UploadState) => { const d = viewOf(s, EMPTY, NOW).done!; return [d.line, d.archived, d.unstored].filter((x) => x !== null); };
     expect(drawn(done(0, 0, 1))).toEqual(['1 original file kept in your cloud.']);
     expect(drawn(done(0, 0, 3))).toEqual(['3 original files kept in your cloud.']);
-    expect(drawn(done(0, 0, 1, 1))).toEqual(['1 original file kept in your cloud.', unstored]);
+    expect(drawn(done(0, 0, 1, 1))).toEqual(['1 original file kept in your cloud.', bare]);
     expect(drawn(done(2, 0, 1))).toEqual(['Saved 2 values.', '1 original file kept in your cloud.']);
     expect(drawn(done(0, 1, 1))).toEqual(['Saved 1 document.', '1 original file kept in your cloud.']);
     // Nothing saved and nothing kept: unchanged.
     expect(drawn(done(0, 0, 0))).toEqual(['Saved 0 values.']);
-    expect(drawn(done(0, 0, 0, 1))).toEqual(['Saved 0 values.', unstored]);
+    expect(drawn(done(0, 0, 0, 1))).toEqual(['Saved 0 values.', bare]);
+  });
+
+  // Brad 2026-11-23 ("this", option 2): a lab report saved with nothing ticked saves no details, so its failed original
+  // is said alone; a Save that wrote a value or a shown document keeps the full sentence, whatever the count.
+  it('US-14 AC12: a Save that saved no details says only that the original could not be stored', () => {
+    const done = (values: number, documents: number, archived: number, unstored: number): UploadState =>
+      ({ phase: 'done', platform: 'web', run: 1, files: [], started: NOW, firstRead: null, outcome: { values, documents, archived, unstored } });
+    const said = (s: UploadState) => viewOf(s, EMPTY, NOW).done!.unstored;
+    for (const n of [1, 3]) {
+      expect(said(done(0, 0, 0, n)), `${n}`).toBe("The original file couldn't be stored.");
+      expect(said(done(0, 0, 2, n)), `${n} kept`).toBe("The original file couldn't be stored.");
+      expect(said(done(1, 0, 0, n)), `${n} value`).toBe("The original file couldn't be stored; its details are saved.");
+      expect(said(done(0, 1, 0, n)), `${n} document`).toBe("The original file couldn't be stored; its details are saved.");
+    }
   });
 });
 
 describe('upload plan: documents and originals', () => {
-  it('a letter is saved by default with the person\'s fixes; a held metadata-only row gives the starting title and date', () => {
+  it('a letter is saved by default with the person\'s fixes; it starts from the reader\'s title and date, never a row the record holds for its bytes', () => {
+    // A metadata-only row for the same bytes that another writer added after the file was read (owner ruling on PR 1957,
+    // 2026-11-22; US-14 AC4): the card, and Save, keep the reader's answer.
     const held = documentRow({ documentType: 'clinic_letter', title: 'Held title', documentDate: '2026-09-01', contentMd: '', metadata: {}, sourceFileName: 'old.pdf' },
       { id: 'd1', contentHash: 'h-l', mimeType: '', addedAt: NOW });
     const record = { ...EMPTY, documents: [held] };
     const plain = planOf(open([read('l', letterX())]), record, NOW);
-    expect(plain.documents[0].fields).toMatchObject({ title: 'Held title', documentDate: '2026-09-01', documentType: 'clinic_letter', contentMd: '## Plan', sourceFileName: 'l.pdf' });
+    expect(plain.documents[0].fields).toMatchObject({ title: 'Cardiology letter', documentDate: '2026-10-20', documentType: 'clinic_letter', contentMd: '## Plan', sourceFileName: 'l.pdf' });
+    expect(planOf(open([read('l', letterX())]), EMPTY, NOW).documents).toEqual(plain.documents);
     const fixed = planOf(open([read('l', letterX(), { ...CHOICES, document: { title: 'Mine', kind: 'discharge_summary', date: null } })]), record, NOW);
     expect(fixed.documents[0].fields).toMatchObject({ title: 'Mine', documentType: 'discharge_summary', documentDate: null });
   });

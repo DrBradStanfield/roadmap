@@ -5,6 +5,7 @@ Two ledgers track the untangle work (method: `.claude/skills/untangle`).
 - `leads/`: where each item of the November 2026 structural audit stands on `main`.
 - `state-leads/`: the leads from our own surveys of implicit state in the web widget.
 - `test-audit/`: the test-suite audit of 2026-11-13 (ledger row `leads/TA-1.csv`); its many rows live here, outside the one-row-per-file ledgers.
+- [ROOT-FIXES.md](ROOT-FIXES.md): the ranked root fixes from the owner's triage of 2026-11-25, each above the state leads it closes.
 
 ## One file per lead
 
@@ -106,6 +107,13 @@ scripts, from the same survey).
 This ledger has no `durability_check` column: a done row names its check in
 `evidence`.
 
+**Finish line (owner, 2026-11-25).** Surveys find leads faster than PRs close
+them, so the programme has an end. It ends when (1) no known bug risks
+privacy, data loss or a wrong health value, (2) every async flow with modes
+is one named state, and (3) logic lives once in health-core. A new lead that
+serves none of these is closed at birth, not filed.
+After this README, a new session reads [ROOT-FIXES.md](ROOT-FIXES.md) and [docs/decisions-for-brad.md](../decisions-for-brad.md).
+
 Status here comes from the survey sessions' notes and the merged PR list
 on 2026-11-10. It was not rechecked line by line against the code. Rows may be
 added later, as above.
@@ -118,5 +126,6 @@ it still needs its PR) and **awaits Brad**. A lead decided to leave is
 change together with nothing saying so), an implicit state, surplus code,
 a behaviour for Brad to choose, or a note.
 
-Still to survey: the composition of these machines in `HealthTool`
-(events against machines), `BloodTestTimeline`, and chat send.
+Still to survey: `BloodTestTimeline` as a whole. The composition in
+`HealthTool` (section `composition`, 33 rows) and chat send (`web chat` rows;
+`packages/health-core/src/chat-turn.ts`) are surveyed.

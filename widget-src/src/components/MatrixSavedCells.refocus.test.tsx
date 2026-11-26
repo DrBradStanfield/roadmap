@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import { ValueCell } from './MatrixSavedCells';
+import { getShownErase } from '../lib/roadmap-data';
 
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -38,7 +39,7 @@ describe('US-04 AC1 — a refocus cancels a pending click-away save', () => {
     fireEvent.blur(input);
     await wait(200);
     expect(onCorrect).toHaveBeenCalledTimes(1);
-    expect(onCorrect).toHaveBeenCalledWith('r1', 3.6);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.6, getShownErase());
   });
 
   // A guard, not an H40 pin: submit() already cleared the timer before the fix.
@@ -52,7 +53,7 @@ describe('US-04 AC1 — a refocus cancels a pending click-away save', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
     await wait(2000);
     expect(onCorrect).toHaveBeenCalledTimes(1);
-    expect(onCorrect).toHaveBeenCalledWith('r1', 3.6);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.6, getShownErase());
   });
 
   it('a save waiting on a held press is cancelled by coming back too', async () => {
@@ -71,6 +72,6 @@ describe('US-04 AC1 — a refocus cancels a pending click-away save', () => {
     fireEvent.blur(input);
     await wait(200);
     expect(onCorrect).toHaveBeenCalledTimes(1);
-    expect(onCorrect).toHaveBeenCalledWith('r1', 3.6);
+    expect(onCorrect).toHaveBeenCalledWith('r1', 3.6, getShownErase());
   });
 });
