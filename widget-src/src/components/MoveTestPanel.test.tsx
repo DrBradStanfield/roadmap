@@ -11,12 +11,20 @@ import { bloodTestRows, createCoreRow } from '@roadmap/health-core/blood-tests';
 import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { planBloodTestMove } from '@roadmap/health-core/record-edits';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { BatchDateCell, BloodTestTimeline, SAVE_ERRORS } from './BloodTestTimeline';
-import { AdditionalLabRows } from './AdditionalLabRows';
-import { MOVE_CHANGED, MOVE_LPA, MOVE_TYPED, useMoveTest } from './MoveTestPanel';
 import type { ApiLabValue } from '../lib/api-types';
-import { getShownErase } from '../lib/roadmap-data';
 import { pickDraftDate, turnFrom } from '../testing/matrix-gestures';
+
+// An Lp(a) row kept as saved is remembered for the page's life, in module state:
+// each test gets a fresh module graph, as a fresh page would.
+let BatchDateCell: typeof import('./BloodTestTimeline').BatchDateCell;
+let BloodTestTimeline: typeof import('./BloodTestTimeline').BloodTestTimeline;
+let SAVE_ERRORS: typeof import('./BloodTestTimeline').SAVE_ERRORS;
+let AdditionalLabRows: typeof import('./AdditionalLabRows').AdditionalLabRows;
+let MOVE_CHANGED: typeof import('./MoveTestPanel').MOVE_CHANGED;
+let MOVE_LPA: typeof import('./MoveTestPanel').MOVE_LPA;
+let MOVE_TYPED: typeof import('./MoveTestPanel').MOVE_TYPED;
+let useMoveTest: typeof import('./MoveTestPanel').useMoveTest;
+let getShownErase: typeof import('../lib/roadmap-data').getShownErase;
 
 const FROM = '2024-03-12';
 const TO = '2024-02-21';
@@ -25,9 +33,14 @@ const NOW = '2026-10-30T00:00:00.000Z';
 let file: RoadmapFile;
 const day = (d: string) => `${d}T00:00:00.000Z`;
 
-beforeEach(() => {
-  vi.useFakeTimers();
+beforeEach(async () => {
   localStorage.clear();
+  vi.resetModules();
+  ({ BatchDateCell, BloodTestTimeline, SAVE_ERRORS } = await import('./BloodTestTimeline'));
+  ({ AdditionalLabRows } = await import('./AdditionalLabRows'));
+  ({ MOVE_CHANGED, MOVE_LPA, MOVE_TYPED, useMoveTest } = await import('./MoveTestPanel'));
+  ({ getShownErase } = await import('../lib/roadmap-data'));
+  vi.useFakeTimers();
   file = createEmptyFile({ deviceId: 'move_ui', now: NOW });
   file.labValues.push(
     createCoreRow({ id: 'ldl1', metric: 'ldl', value: 3.2, recordedAt: day(FROM), createdAt: day(FROM) }),

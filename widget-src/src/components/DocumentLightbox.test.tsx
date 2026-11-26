@@ -25,6 +25,9 @@ let click: ReturnType<typeof vi.spyOn>;
 let downloads: string[];
 
 beforeEach(() => {
+  // restoreAllMocks leaves a module mock's calls and answers in place; each test starts with none.
+  vi.mocked(deleteDocument).mockReset();
+  vi.mocked(readDocumentFile).mockReset();
   opened = [];
   downloads = [];
   URL.createObjectURL = vi.fn((b: Blob) => { opened.push(b); return 'blob:x'; }) as typeof URL.createObjectURL;

@@ -23,9 +23,11 @@ beforeAll(() => {
 });
 
 beforeEach(async () => {
+  // Clear before the import: lib/storage reads the device's log-off id once, at module load, so the
+  // fresh module graph must load against this test's storage, not the one the last test left.
+  localStorage.clear();
   vi.resetModules();
   ({ BackendPickerModal } = await import('./backend-picker'));
-  localStorage.clear();
   localStorage.setItem(BACKEND_KEY, 'dropbox');
   localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({
     accessToken: 'sl.SYNTHETIC_ACCESS', refreshToken: 'SYNTHETIC_REFRESH', expiresAt: Date.now() + 3_600_000,
