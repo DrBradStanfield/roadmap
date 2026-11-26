@@ -179,7 +179,7 @@ struct MyDataView: View {
                 })
             }
             if !page[.skin].isEmpty { topicSection(.skin, page) }
-            topicSection(.bloodTests, page, controls: { recordButtons }, rows: { bloodTestRows(page) })
+            topicSection(.bloodTests, page, rows: { bloodTestRows(page) })
             topicSection(.supplements, page, footer: page.ownershipLine, after: {
                 SupplementsSection(store: store, supplements: data.supplements, saved: saved)
             })

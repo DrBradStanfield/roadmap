@@ -10,13 +10,21 @@
  * user pays for it, so it stays on Haiku (its body still comes from modelParams).
  *
  * Haiku 5.5 since 2026-10-16 (Brad, no benchmark): the classifier, extraction and
- * BYOK chat, all with thinking off (US-15 AC34).
+ * BYOK chat, all with thinking off (US-15 AC34). Since 2026-11-26 also YOUTUBE_MODEL, the
+ * YouTube bot's router (thinking off) and answer (adaptive thinking, medium effort; AC78).
  */
 
-/** Main chat answer (web, Discord, YouTube). */
+/** Main chat answer on the web and Discord. */
 export const CHAT_MODEL = 'claude-sonnet-5-5';
 /**
- * Retrieval router: a handle list, thinking off (modelParams' default).
+ * The YouTube bot's main answer and router (US-15 AC78); its classifier is CLASSIFIER_MODEL,
+ * also Haiku. Haiku 5.5 since 2026-11-26 (Brad), to cut cost: the bot was about $8 a day,
+ * near half of all API spend. Same prompts, effort and caps as the web. Haiku's prompt cache
+ * is its own, so YouTube turns no longer warm the web chat's Sonnet caches (accepted).
+ */
+export const YOUTUBE_MODEL = 'claude-haiku-5-5';
+/**
+ * Retrieval router on the web and Discord: a handle list, thinking off (modelParams' default).
  * Sonnet 5.5 since 2026-09-29: 297/304 on tools/test-queries.json (Haiku 281/304 on the
  * audit-day prompt, 276/304 on this one),
  * at about 3x the cost (~$15.3 vs ~$5.1 per 1000 calls, warm cache).

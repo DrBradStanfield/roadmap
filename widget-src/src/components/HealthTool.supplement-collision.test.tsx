@@ -7,14 +7,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
-import { flushRoadmapStore, initRoadmapStore, saveSupplement } from '../lib/roadmap-data';
+import { flushRoadmapStore, initRoadmapStore, saveSupplement, getShownErase } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { seedGuest, useHealthToolLifecycle, wait } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async importOriginal => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
@@ -169,11 +169,11 @@ describe('US-06: collision-safe custom supplement additions', () => {
 
   it('skips occupied suffixes while legacy row edits keep their IDs and keys', async () => {
     await seed();
-    await saveSupplement('custom_alanine', 'β-alanine', 3, 'g');
+    await saveSupplement('custom_alanine', 'β-alanine', 3, 'g', undefined, undefined, getShownErase());
     // A naturally normalized name can already own the proposed _2 suffix.
-    await saveSupplement('custom_alanine_2', 'alanine 2', 100, 'mg');
+    await saveSupplement('custom_alanine_2', 'alanine 2', 100, 'mg', undefined, undefined, getShownErase());
     // Even a hidden stopped row loaded from storage must keep its identity.
-    await saveSupplement('custom_alanine_3', 'alanine!', 200, 'mg', 'stopped');
+    await saveSupplement('custom_alanine_3', 'alanine!', 200, 'mg', 'stopped', undefined, getShownErase());
     await flushRoadmapStore();
     const before = await persisted();
     const view = await page();
@@ -202,7 +202,7 @@ describe('US-06: collision-safe custom supplement additions', () => {
 
   it('preserves a stopped custom row when another name collides in the same page', async () => {
     await seed();
-    await saveSupplement('custom_alanine', 'β-alanine', 3, 'g');
+    await saveSupplement('custom_alanine', 'β-alanine', 3, 'g', undefined, undefined, getShownErase());
     await flushRoadmapStore();
     const original = (await persisted()).supplements[0];
     const view = await page();

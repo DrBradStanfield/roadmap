@@ -79,7 +79,7 @@ function host(store: StorageAdapter): RecordHost {
 async function afterFailedSave(real: StorageAdapter): Promise<{ run: Promise<boolean> | null; due: boolean }> {
   const store = new Handover(new MemoryCloud());
   const session = await RecordSession.open(host(store));
-  session.edit((file) => void file.measurements.push(createMeasurement({ id: 'a', metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date().toISOString() })));
+  session.edit((file) => void file.measurements.push(createMeasurement({ id: 'a', metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date().toISOString() })), session.shownErase);
   store.real = real;
   await expect(session.flush()).rejects.toThrow();
   const due = session.retryDue;
@@ -94,7 +94,7 @@ const retryAfterFailedSave = async (real: StorageAdapter) => (await afterFailedS
 async function retryAfterVerifyFails(real: StorageAdapter): Promise<{ run: Promise<boolean> | null; due: boolean }> {
   const store = new VerifyHandover(new MemoryCloud());
   const session = await RecordSession.open(host(store));
-  session.edit((file) => void file.measurements.push(createMeasurement({ id: 'a', metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date().toISOString() })));
+  session.edit((file) => void file.measurements.push(createMeasurement({ id: 'a', metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date().toISOString() })), session.shownErase);
   store.real = real;
   await expect(session.flush()).rejects.toThrow();
   expect(store.wrote).toBe(true);

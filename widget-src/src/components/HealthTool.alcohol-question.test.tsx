@@ -10,14 +10,15 @@ import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-libra
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
+import { flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 
 // Only off-device boundaries are mocked; the plan, form, autosave and store are real.
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
@@ -44,7 +45,7 @@ beforeEach(async () => {
   trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
   // BMI 31.6: the plan shows "Reduce alcohol intake".
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si', weightKg: 100 }, {});
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si', weightKg: 100 }, {}, getShownErase());
   await flushRoadmapStore();
 });
 afterEach(async () => {
@@ -64,11 +65,23 @@ const dismiss = async (root: HTMLElement, prompt = 'Do you drink alcohol?') => {
   expect(dialog()).not.toBeNull();
   expect(within(dialog()!).getByRole('heading').textContent).toBe(prompt);
 };
+// The line under the question (one shared copy, alcohol-question-words.ts), named as the dialog's description.
+const message = () => {
+  const id = dialog()!.getAttribute('aria-describedby');
+  expect(id).toBe('alcohol-dialog-message');
+  return dialog()!.querySelector(`#${id}`)!.textContent;
+};
+// A record in this browser alone reaches no other device; one in a cloud does (US-60 AC6).
+const KEPT = 'Your answer is kept in your record.';
+const KEPT_IN_CLOUD = 'Your answer is kept in your record, so your plan follows it on every device.';
 const still = (section: string) => `This stays on your plan because the advice applies to anyone who drinks. You can change your answer in ${section}.`;
 
 it('US-60 AC3: "I don\'t drink" takes the card off the plan and saves the answer; the event carries no answer', async () => {
   const view = render(<HealthTool />);
   await dismiss(view.container);
+  // A complete record in this browser alone: About you's rows show, so the line names them (US-60 AC4),
+  // and it claims no other device (US-60 AC6).
+  expect(message()).toBe(`${KEPT} You can change it in About you.`);
   // Only this card has a Dismiss.
   expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(1);
   fireEvent.click(within(dialog()!).getByText("I don't drink"));
@@ -101,11 +114,12 @@ it('US-60 AC3 (C4): "I drink" saves the answer and the card stays; Cancel saves 
 });
 
 it('US-60 AC3 (Brad 2026-11-01): a drinker\'s Dismiss asks "Do you still drink alcohol?"; "I still drink" saves nothing and says why the card stays', async () => {
-  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   expect(view.container.querySelectorAll('.suggestion-dismiss')).toHaveLength(1);
   await dismiss(view.container, 'Do you still drink alcohol?');
+  expect(message()).toBe('Tell us if this has changed.');
   expect([...dialog()!.querySelectorAll('button')].map((b) => b.textContent)).toEqual(["I've stopped", 'I still drink', 'Cancel']);
   const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
   // The saved file, stamps and all, before the tap: "I still drink" writes nothing.
@@ -136,7 +150,7 @@ it('US-60 AC3 (Brad 2026-11-01): on a phone with sex and height in, the "I still
   vi.stubGlobal('matchMedia', (q: string) => ({
     matches: q.includes('max-width'), media: q, addEventListener() {}, removeEventListener() {},
   }));
-  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => openSettings(view.container)); // About you sits in Settings (US-62 AC24)
@@ -149,7 +163,7 @@ it('US-60 AC3 (Brad 2026-11-01): on a phone with sex and height in, the "I still
 });
 
 it('US-60 AC3 (Brad 2026-11-01): a drinker\'s "I\'ve stopped" saves \'none\' through the profile autosave and the card leaves; the event carries no answer', async () => {
-  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await dismiss(view.container, 'Do you still drink alcohol?');
@@ -170,7 +184,7 @@ it('US-60 AC4 (Brad 2026-11-02): mid-onboarding there is no Alcohol row, and "I 
   // blood test opens the whole form (opensFullForm), where the plan's cards show (US-62 AC25).
   localStorage.clear();
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {});
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {}, getShownErase());
   await flushRoadmapStore();
   for (const phone of [false, true]) {
     stub(phone);
@@ -179,9 +193,35 @@ it('US-60 AC4 (Brad 2026-11-02): mid-onboarding there is no Alcohol row, and "I 
     expect(view.container.querySelector('#alcohol')).toBeNull();
     expect(within(view.container.querySelector<HTMLElement>('.about-card')!).queryByText(/alcohol/i)).toBeNull(); // Starting Info asks nothing of it
     await dismiss(view.container, 'Do you still drink alcohol?');
+    expect(message()).toBe('Tell us if this has changed.');
     fireEvent.click(within(dialog()!).getByText('I still drink'));
     expect(dialog()!.textContent).toBe('This stays on your plan because the advice applies to anyone who drinks.OK');
+    expect(dialog()!.hasAttribute('aria-describedby')).toBe(false);
     fireEvent.click(within(dialog()!).getByText('OK'));
+    view.unmount();
+  }
+});
+
+it('US-60 AC6: with a cloud connected, the line says the plan follows the answer on every device', async () => {
+  await initRoadmapStore(new MemoryAdapter(new MemoryCloud()));
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si', weightKg: 100 }, {}, getShownErase());
+  await flushRoadmapStore();
+  const view = render(<HealthTool />);
+  await dismiss(view.container);
+  expect(message()).toBe(`${KEPT_IN_CLOUD} You can change it in About you.`);
+});
+
+it('US-60 AC4 (lead M10): mid-onboarding, unanswered, the line under the question names no section, on desktop and a phone', async () => {
+  localStorage.clear();
+  await initRoadmapStore(new LocalStorageAdapter());
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, hba1c: 35 }, {}, getShownErase());
+  await flushRoadmapStore();
+  for (const phone of [false, true]) {
+    stub(phone);
+    const view = render(<HealthTool />);
+    await dismiss(view.container);
+    expect(message()).toBe(KEPT);
+    fireEvent.click(within(dialog()!).getByText('Cancel'));
     view.unmount();
   }
 });
@@ -190,7 +230,7 @@ it('US-60 AC4 with US-62 AC12: once the birth date finishes the onboarding and i
   for (const phone of [false, true]) {
     localStorage.clear();
     await initRoadmapStore(new LocalStorageAdapter());
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178, unitSystem: 'si', weightKg: 100, alcohol: 'drinks', hba1c: 35 }, {}, getShownErase());
     await flushRoadmapStore();
     stub(phone);
     const view = render(<HealthTool />);
@@ -254,7 +294,7 @@ it('US-60 AC4, AC4b (Brad 2026-11-02): About you\'s rows hold an Alcohol row tha
 // Since US-62 AC18 the triglycerides advice sits under Cholesterol and the alcohol card under
 // Weight & diabetes, so the two no longer share a grouped card; the answer still reaches both.
 it('US-60 AC3 (C2): the Dismiss sits on the alcohol card, and "I don\'t drink" also drops "limit alcohol" from the triglycerides card', async () => {
-  await saveChangedMeasurements({ triglycerides: 2.0 }, {});
+  await saveChangedMeasurements({ triglycerides: 2.0 }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await dismiss(view.container);
@@ -332,7 +372,7 @@ it('US-60 AC3a: Cancel, Escape, a click on the backdrop and "I drink" give the f
 });
 
 it('US-60 AC3a: after "I still drink", the line\'s OK keeps the focus while shown and gives it back to Dismiss', async () => {
-  await saveChangedMeasurements({ alcohol: 'drinks' }, {});
+  await saveChangedMeasurements({ alcohol: 'drinks' }, {}, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await dismiss(view.container, 'Do you still drink alcohol?');

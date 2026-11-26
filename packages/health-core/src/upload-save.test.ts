@@ -38,11 +38,11 @@ function cloud(): UploadSaveIO<string> & { stored: Map<string, string> } {
   const stored = new Map<string, string>();
   let n = 0;
   return {
-    stored, holds: () => true, original: (fileId) => `bytes of ${fileId}`, mimeType: () => 'application/pdf',
+    stored, stopped: () => false, holds: () => true, original: (fileId) => `bytes of ${fileId}`, mimeType: () => 'application/pdf',
     write: async (ref, bytes) => void stored.set(ref, bytes), now: () => NOW, newId: () => `id-${n++}`,
   };
 }
-const offCloud = (): UploadSaveIO<string> => { let n = 0; return { holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `id-${n++}` }; };
+const offCloud = (): UploadSaveIO<string> => { let n = 0; return { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `id-${n++}` }; };
 
 /** One Save as a caller runs it: the originals, then the commit on the same record. */
 async function saveOn(s: UploadState, record: RoadmapFile, cloudOn: boolean, io: UploadSaveIO<string>) {
@@ -190,7 +190,7 @@ async function webSave(s: UploadState, record: RoadmapFile, cloudOn: boolean, io
     ...plan.archiveOnly.map((d) => ({ ...d.fields, file: file(d.fileId), contentHash: hash(d.fileId) })),
   ];
   const hashOf = new Map(payloads.flatMap((p) => (p.file ? [[p.file, p.contentHash!]] : [])));
-  const docs = await saveDocuments(written.file, payloads, { hash: async (f) => hashOf.get(f)!, write: (ref, f) => io.write(ref, f, ''), mimeType: () => io.mimeType(''), now: io.now, newId: io.newId });
+  const docs = await saveDocuments(written.file, payloads, { stopped: () => false, hash: async (f) => hashOf.get(f)!, write: (ref, f) => io.write(ref, f, ''), mimeType: () => io.mimeType(''), now: io.now, newId: io.newId });
   const next = { ...written.file, documents: written.file.documents.map((d) => ({ ...d })) };
   docs.commit(next);
   return next;

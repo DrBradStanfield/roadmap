@@ -27,7 +27,6 @@ import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { streamingPost } from '../lib/capped-body.test-helpers';
 import { action as googleToken } from './api.google-token';
 import { action as resendWebhook } from './api.resend-webhook';
-import { action as ordersPaid } from './webhooks.orders-paid';
 import { action as appUninstalled } from './webhooks.app.uninstalled';
 import { action as scopesUpdate } from './webhooks.app.scopes_update';
 import { action as authLogin } from './auth.login/route';
@@ -76,7 +75,6 @@ describe('body cap (US-09 AC25)', () => {
 describe('body cap before the Shopify library reads the body (US-09 AC25)', () => {
   const WEBHOOK_CAP = 5 * 1024 * 1024;
   const routes = [
-    { name: 'webhooks/orders/paid', action: ordersPaid, lib: shopify.authenticate.webhook, cap: WEBHOOK_CAP },
     { name: 'webhooks/app/uninstalled', action: appUninstalled, lib: shopify.authenticate.webhook, cap: WEBHOOK_CAP },
     { name: 'webhooks/app/scopes_update', action: scopesUpdate, lib: shopify.authenticate.webhook, cap: WEBHOOK_CAP },
     { name: 'auth/login', action: authLogin, lib: shopify.login, cap: SMALL_BODY_CAP },

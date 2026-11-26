@@ -100,3 +100,7 @@ the archive). Exempt from the 200-line operative cap.
 - 2026-08-07: v1, authored in-session with Brad. Encodes the
   measure-then-revert rule, the six ground truths, and the empty-handle
   category baseline.
+- 2026-11-22 (Brad): Delivery lands by PR, per the constitution's new landing rule (W46 and W47 pushes to main
+  refused). Same day, Brad's first `lint-allowlist.json` entry: ApoB 0.5 g/L, no conflict (the aim is below 0.5).
+- 2026-11-22, later (Brad): by-PR delivery reversed; the loop commits straight to main again (standing permission,
+  constitution Repo rules). Psyllium dose line: Brad said leave it; allow-listed.

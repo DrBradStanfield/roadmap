@@ -28,7 +28,7 @@ describe('Replace on a cleared value (item 4)', () => {
     let s = transition(open, { type: 'chose', id: 'lab', change: { tick: 'v0', on: false }, now: NOW }).state;
     s = transition(s, { type: 'chose', id: 'lab', change: { replace: 'v0', correctsId: held }, now: NOW }).state;
     s = transition(s, { type: 'saveStarted' }).state;
-    const out = await uploadSave(s, record, NOW, false, { holds: () => false, original: () => null, mimeType: () => '', write: async () => {} });
+    const out = await uploadSave(s, record, NOW, false, { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => {} });
     if (!out.ok) throw new Error(out.reason);
     const { file } = out.commit(record);
     const ldl = file.labValues.filter((m) => m.metricName === 'ldl');

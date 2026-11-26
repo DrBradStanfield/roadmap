@@ -123,7 +123,7 @@ export function isNetworkOrTimeoutError(err: unknown): boolean {
  * closed-list error type (US-15 AC40). SyntaxError is deliberate: classifyChatError still tags it 'parse'.
  * No `cause`, so nothing of the body survives serialisation either.
  */
-async function parseJsonBody(response: Response): Promise<any> {
+async function parseJsonBody(response: Response): Promise<MessagesReply> {
   try {
     return await response.json();
   } catch (err) {
@@ -134,6 +134,12 @@ async function parseJsonBody(response: Response): Promise<any> {
     throw err;
   }
 }
+
+/** The four token counts toUsage reads. Anthropic's usage has other keys too (some not numbers); nothing reads them. */
+export type TokenUsage = { input_tokens?: number; output_tokens?: number; cache_creation_input_tokens?: number; cache_read_input_tokens?: number };
+
+/** The reply fields readJson reads. It describes them; nothing checks the body against it. */
+interface MessagesReply { content?: unknown; usage?: TokenUsage; stop_reason?: string | null; stop_details?: { category?: unknown } }
 
 /** Refusal handling and the empty-answer check, shared by the JSON and streamed reads. */
 export function toResult(

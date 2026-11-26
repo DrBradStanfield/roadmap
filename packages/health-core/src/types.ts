@@ -282,7 +282,7 @@ export const GLP1_NAMES = [
   { value: 'semaglutide_oral', label: 'Semaglutide oral (Rybelsus)' },
   { value: 'dulaglutide', label: 'Dulaglutide (Trulicity)' },
   { value: 'other', label: 'Other GLP-1' },
-  { value: 'not_tolerated', label: 'Not tolerated' },
+  { value: 'no', label: 'No' }, { value: 'not_tolerated', label: 'Not tolerated' },
 ] as const;
 
 export type Glp1NameValue = typeof GLP1_NAMES[number]['value'];
@@ -300,7 +300,7 @@ export function canIncreaseGlp1Dose(drug: string | undefined, dose: number | nul
 
 /** Check if user should switch to tirzepatide (on max dose of a less potent GLP-1). */
 export function shouldSuggestGlp1Switch(drug: string | undefined, dose: number | null): boolean {
-  if (!drug || drug === 'none' || drug === 'not_tolerated') return false;
+  if (!drug || drug === 'none' || drug === 'no' || drug === 'not_tolerated') return false;
   if (drug === 'other') return true;
   if (dose === null) return false;
   if (drug === MAX_GLP1_DRUG) return false;
@@ -326,7 +326,7 @@ export const SGLT2I_NAMES = [
   { value: 'empagliflozin', label: 'Empagliflozin (Jardiance)' },
   { value: 'dapagliflozin', label: 'Dapagliflozin (Farxiga)' },
   { value: 'canagliflozin', label: 'Canagliflozin (Invokana)' },
-  { value: 'not_tolerated', label: 'Not tolerated' },
+  { value: 'no', label: 'No' }, { value: 'not_tolerated', label: 'Not tolerated' },
 ] as const;
 
 export type Sglt2iNameValue = typeof SGLT2I_NAMES[number]['value'];
@@ -346,7 +346,7 @@ export const METFORMIN_OPTIONS = [
   { value: 'xr_1000', label: 'XR 1000mg/day' },
   { value: 'xr_1500', label: 'XR 1500mg/day' },
   { value: 'xr_2000', label: 'XR 2000mg/day' },
-  { value: 'not_tolerated', label: 'Not tolerated' },
+  { value: 'no', label: 'No' }, { value: 'not_tolerated', label: 'Not tolerated' },
 ] as const;
 
 export type MetforminValue = typeof METFORMIN_OPTIONS[number]['value'];
@@ -397,8 +397,10 @@ export interface ScreeningInputs {
   // Prostate
   prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
   prostatePsaValue?: number;
-  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. `raisedBefore`: it does not decide and an earlier PSA was 4.0 or above (`planPsa`, US-06 AC21 item 6). Derived, never stored. */
-  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number; raisedBefore?: true };
+  /** The saved PSA was printed as this limit (US-12 AC20): the card shows it, never `prostatePsaValue`. Derived, never stored. */
+  prostatePsaLimit?: { comparator: import('./lab-limits').Comparator; bound: number };
+  /** The newest PSA (a limit that does not decide, or an old answer with a date and no usable value) does not show it is below 4.0, and an earlier PSA was 4.0 or above: the 3-month rule holds (US-06 AC21). Derived, never stored. */
+  prostatePsaRaisedBefore?: true;
   prostateLastDate?: string;
 
   // Endometrial
@@ -503,22 +505,8 @@ export function getPostFollowupDueDate(
   return new Date(year, month - 1 + months);
 }
 
-/**
- * Human-readable follow-up information for abnormal screening results.
- * Keyed by "{screeningType}_{method}".
- */
-export const SCREENING_FOLLOWUP_INFO: Record<string, { followupName: string; abnormalMeans: string; opening?: string }> = {
-  colorectal_fit_annual: { followupName: 'colonoscopy', abnormalMeans: 'positive FIT test' },
-  colorectal_colonoscopy_10yr: { followupName: 'repeat colonoscopy', abnormalMeans: 'polyps found on colonoscopy' },
-  colorectal_other: { followupName: 'follow-up investigation', abnormalMeans: 'abnormal result' },
-  breast_annual: { followupName: 'diagnostic imaging/biopsy', abnormalMeans: 'abnormal mammogram' },
-  breast_biennial: { followupName: 'diagnostic imaging/biopsy', abnormalMeans: 'abnormal mammogram' },
-  cervical_hpv_every_5yr: { followupName: 'colposcopy', abnormalMeans: 'HPV positive result' },
-  cervical_pap_every_3yr: { followupName: 'colposcopy', abnormalMeans: 'abnormal Pap test' },
-  cervical_other: { followupName: 'colposcopy', abnormalMeans: 'abnormal result' },
-  lung_annual_ldct: { followupName: 'follow-up imaging', abnormalMeans: 'abnormal LDCT result' },
-  dexa_dexa_scan: { followupName: 'treatment review', abnormalMeans: 'recorded result of osteoporosis', opening: 'You recorded a result of osteoporosis, which is usually treated and monitored.' },
-};
+// Moved byte-pure to screening-followup-info.ts (keeps types.ts from growing); importers keep this path.
+export { SCREENING_FOLLOWUP_INFO } from './screening-followup-info';
 
 /**
  * Statin medication input with separate drug and dose (FHIR-compatible).

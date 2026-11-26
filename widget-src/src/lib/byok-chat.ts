@@ -25,7 +25,7 @@ import { modelParams } from '@roadmap/health-core/models';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import * as Sentry from '@sentry/react';
 import { askChatHistory, getChatHistory } from './chat-history-access';
-import { chatAskedUnder } from './chat-erase';
+import { chatAskedUnder, recordEraseIn } from './chat-erase';
 import { recordFailure } from './error-diagnostics';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 // Types come from chat-api.ts, the one home callers compile against. `import
@@ -70,11 +70,10 @@ export function getChatGate(): ChatGate | null {
 // construction — see chat-history-access.ts): if the store isn't available,
 // chat still answers, it just doesn't remember.
 
+/** No store is a failed read, never an empty list, so the next open reads again (US-15 AC64a, AC69). */
 export async function listConversations(): Promise<ChatListResult | null> {
-  return {
-    conversations: (await getChatHistory())?.listConversations() ?? [],
-    isGuest: false,
-  };
+  const store = await getChatHistory();
+  return store ? { conversations: store.listConversations(), isGuest: false } : null;
 }
 
 /** chat-api's union (N2): no store, or a read that throws, is 'failed', never an empty thread a send could go out from. */
@@ -217,6 +216,7 @@ export async function sendMessage(
     .then(({ store, askedMarks }) =>
       chatAskedUnder() !== asked ? undefined : store?.recordExchange({
         askedMarks,
+        askedUnder: recordEraseIn(asked),
         conversationId: convId,
         isNew: !conversationId,
         userText: message,

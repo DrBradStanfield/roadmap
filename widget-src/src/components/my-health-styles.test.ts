@@ -60,6 +60,23 @@ describe('US-62 AC30: My health styles', () => {
     expect(cascaded(title, 'font-size', DESKTOP)).toBe('28px');
     expect(cascaded(title, 'clip', DESKTOP)).toBeUndefined();
   });
+
+  it('US-73 AC13: on desktop the doctor line shares the title row, wrapping its words beside the title, dropping under it only below 180px', () => {
+    const line = nest('mh-header', 'mh-heading', 'p|mh-education');
+    const heading = line.parentElement!;
+    expect(cascaded(heading, 'display', DESKTOP)).toBe('flex');
+    expect(cascaded(heading, 'flex-wrap', DESKTOP)).toBe('wrap');
+    // Its last line on the title's baseline: two 13px lines then fit the 44px row, so the
+    // cards still line up with the chat column's at 1200px with a long Reconnect (2026-11-23).
+    expect(cascaded(heading, 'align-items', DESKTOP)).toBe('last baseline');
+    // A browser that drops `last baseline` (an older Safari) keeps plain baseline, declared first.
+    const [headingBlock] = blocks(/\.mh-heading\s*$/);
+    expect(headingBlock.replace(/\s+/g, ' ')).toContain('align-items: baseline; align-items: last baseline;');
+    expect(cascaded(line, 'flex', DESKTOP)).toBe('1 1 180px'); // fills the room beside the title; drops only below 180px
+    expect(cascaded(line, 'margin-top', DESKTOP)).toBe('0'); // no offset from the title's baseline
+    expect(cascaded(line, 'margin-bottom', DESKTOP)).toBe('0'); // nothing to push the row past 44px
+    expect(cascaded(nest('mh-title'), 'flex', DESKTOP)).toBe('0 0 auto'); // the title never shrinks or wraps
+  });
 });
 
 describe('US-62 AC35: the Account tab design', () => {

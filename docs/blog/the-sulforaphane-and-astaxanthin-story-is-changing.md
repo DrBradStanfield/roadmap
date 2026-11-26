@@ -15,7 +15,7 @@ summary: "Sulforaphane or astaxanthin worth taking? Broccoli sprouts, NRF2, bloo
 
 > “…there’s just so much data on animals and lots of mechanisms at play. But ultimately, I think the bottom line here is that we should be eating either our cruciferous vegetables or supplementing with sulforaphane or eating the broccoli sprouts.” FoundMyFitness, 2025 [2]
 
-That’s Dr Rhonda Patrick, across nearly ten years of talks. She argues that a molecule from broccoli sprouts, sulforaphane, flips a switch inside your cells called NRF2, and your body turns up its own defences and detox enzymes. Astaxanthin, the red pigment in salmon, is also marketed as an NRF2 switch. And at the end of 2023, it made male mice live longer [29].
+That’s Dr Rhonda Patrick, across nearly ten years of talks. She argues that a molecule from broccoli sprouts, sulforaphane, flips a switch inside your cells called NRF2, and your body turns up its own defences and detox enzymes. [Astaxanthin](/blogs/articles/astaxanthin-benefits-forms-dosing-and-side-effects), the red pigment in salmon, is also marketed as an NRF2 switch. And at the end of 2023, it made male mice live longer [29].
 
 So should we supplement with these molecules?
 
