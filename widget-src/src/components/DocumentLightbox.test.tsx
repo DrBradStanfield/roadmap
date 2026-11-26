@@ -83,6 +83,12 @@ describe('US-14 AC14: View original follows the shared rule', () => {
     expect(click).not.toHaveBeenCalled();
   });
 
+  it('opens a name that looks active but has no extension only as the table type (PR 2204 review R4)', async () => {
+    await viewOriginal('Other documents/evil.html ', new Blob(['png'], { type: 'application/octet-stream' }), 'image/png; name=evil.html');
+    expect(open).toHaveBeenCalledWith('blob:x', '_blank', 'noopener');
+    expect(opened[0].type).toBe('image/png');
+  });
+
   it('downloads an original with no extension whose stored type can carry script', async () => {
     await viewOriginal('Other documents/2024-06-01 Scan', new Blob(['<svg/>']), 'image/svg+xml');
     expect(open).not.toHaveBeenCalled();

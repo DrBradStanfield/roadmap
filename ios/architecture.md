@@ -2176,7 +2176,9 @@ temporary file for Quick Look, removed when the preview closes; the read is canc
 goes, and `DocumentPage.sweep` clears leftovers when a page opens. Only the web's passive kinds open,
 by one rule both clients use (health-core `file-kinds.ts` `originalPreview`, US-14 AC14): the engine
 sends each original's `previewName`, and Swift keeps no table; with no name (an older engine) nothing
-opens, stricter than the rule, never looser. The engine
+opens, stricter than the rule, never looser. The engine's `original.previewName` is the only rule
+for which originals open, so Android can share it: the phone keeps no second list, and the engine's
+signature is the trust root for this field, as for everything else the phone shows (PR 2204 review R1). The engine
 completes legacy rows with the web's defaults and Swift decodes the list row by row (review R1). No delete on the phone yet: the engine has no
 document delete door, and the web's delete is its store's own tombstone (Brad's call).
 

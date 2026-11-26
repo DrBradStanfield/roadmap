@@ -68,6 +68,27 @@ describe('US-14 AC14: originalPreview', () => {
   });
 });
 
+// PR 2204 review R4: a name that looks active but has no extension is typed by the table alone.
+describe('US-14 AC14: names that look active but have no extension', () => {
+  it('a passive stored type names it with the table extension and type; with no stored type it downloads', () => {
+    const cases: Array<[string, string]> = [
+      ['evil.html ', 'evil.html .png'], ['.html', '.html.png'], ['evil.html.', 'evil.html..png'], ['evil\uFF0Ehtml', 'evil\uFF0Ehtml.png'],
+    ];
+    for (const [name, previewed] of cases) {
+      expect(open(name, 'image/png'), name).toEqual({ name: previewed, type: 'image/png' });
+      expect(open(name, ''), name).toBeNull();
+      expect(open(name, null), name).toBeNull();
+    }
+  });
+
+  it('is never rescued: a trailing tab, a double extension, an active stored type, a type list', () => {
+    expect(open('evil.html\t', 'image/png')).toBeNull();
+    expect(open('x.pdf.html', 'application/pdf')).toBeNull();
+    expect(open('evil.html ', 'image/svg+xml')).toBeNull();
+    expect(open('evil.html ', 'application/pdf, text/html')).toBeNull();
+  });
+});
+
 // The web's AC3 cases, moved here with the rule: the bytes as the cloud served them, no stored type.
 describe('US-14 AC3: the served type', () => {
   const served = (fileRef: string, type: string) => originalPreview(fileRef, '', type)?.type ?? null;
