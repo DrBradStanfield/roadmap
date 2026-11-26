@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H412,my health,"After a refused save, focus stays on the control the person used, also when that control is the Add form's Save button",lead,not started,Filed 2026-11-26 from the day's reviews: The Save button is disabled while saving. Build: focus lands on that control after the refusal; needs a real-browser check. (H412),,no

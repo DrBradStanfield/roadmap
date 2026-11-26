@@ -1,21 +1,28 @@
 import { useCallback, useRef } from 'react';
 import { labEgfrOf } from '@roadmap/health-core/plan';
-import { planPsa } from '@roadmap/health-core/measurement-history';
-import { screeningsToInputs } from '@roadmap/health-core/mappings';
 import type { LatestMeasurementsResult } from '../lib/api-types';
-import { loadAllHistory, loadAllHistorySync, loadLabValues, loadLatestMeasurements } from '../lib/roadmap-data';
-import { loadFromLocalStorage, patchMirror, saveToLocalStorage } from '../lib/storage';
+import { loadAllHistory, loadLabValues, loadLatestMeasurements } from '../lib/roadmap-data';
+import { loadFromLocalStorage } from '../lib/storage';
+import { writeMirror } from '../lib/chat-mirror';
 import type { useRecordState } from './useRecordState';
 
 type RecordSetters = Pick<ReturnType<typeof useRecordState>, 'setPreviousMeasurements' | 'setHistory' | 'setLabValueHistory'>;
 
 /** The chat mirror (US-15 AC10): the record as read, for the storefront chat
  *  embed and the bubble, with the lab eGFR and the newest usable PSA, its
- *  `raisedBefore` worked out here from the full record (US-06 AC21 item 6). */
-export async function mirrorRecord(result: LatestMeasurementsResult): Promise<void> {
-  saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, undefined,
-    labEgfrOf(await loadLabValues() ?? []), planPsa(loadAllHistorySync(), new Date(), screeningsToInputs(result.screenings)));
+ *  `raisedBefore` worked out from the full record (US-06 AC21 item 6, lib/chat-mirror).
+ *  `shown` is asked as the mirror is written, after the lab read (US-34 AC9, AC10). */
+export async function mirrorRecord(result: LatestMeasurementsResult, shown?: ShownCopy): Promise<void> {
+  const labRows = await loadLabValues() ?? [];
+  const copy = shown?.();
+  if (copy === null) return;
+  const { inputs, medications, screenings } = copy ?? result;
+  writeMirror({ profile: inputs, latest: result.previousMeasurements, medications, screenings, labRows });
 }
+
+/** What a read writes beside its values, decided as it writes: undefined, the record read; the page's saved profile
+ *  and the mirror's saved lists while a change is held (US-34 AC9, AC10); null, nothing (a read the page does not show). */
+export type ShownCopy = () => Pick<LatestMeasurementsResult, 'inputs' | 'medications' | 'screenings'> | null | undefined;
 
 /**
  * The page's reads of the record (US-21, US-34, US-15 AC10): the values the
@@ -28,32 +35,35 @@ export function useRecordReads({ setPreviousMeasurements, setHistory, setLabValu
   // A generation count: an older lab read that answers after a newer one is dropped.
   const labReads = useRef(0);
   /** The lab rows (US-21). A failed read keeps the rows shown. */
-  const refreshLabValues = useCallback(() => {
+  const readLabs = useCallback((moved: () => boolean) => {
     const read = ++labReads.current;
     return loadLabValues().then(rows => {
-      if (rows && read === labReads.current) {
+      if (rows && read === labReads.current && !moved()) {
         setLabValueHistory(rows);
         // A lab eGFR added by hand reaches the other chats too (US-07 AC7).
-        const labEgfr = labEgfrOf(rows);
         const cached = loadFromLocalStorage();
-        if (cached && JSON.stringify(cached.labEgfr) !== JSON.stringify(labEgfr)) patchMirror({ labEgfr });
+        if (cached && JSON.stringify(cached.labEgfr) !== JSON.stringify(labEgfrOf(rows))) writeMirror({ labRows: rows });
       }
     }).catch(() => {});
   }, [setLabValueHistory]);
+  const refreshLabValues = useCallback(() => readLabs(() => false), [readLabs]);
 
   /** Every measurement, for both matrices. */
   const loadHistory = useCallback(() => loadAllHistory().then(setHistory), [setHistory]);
 
-  /** Re-read every value the page shows. Hands back what it read. */
-  const reloadValues = useCallback(async () => {
+  /** Re-read every value the page shows. Hands back what it read. `shown`: see mirrorRecord. */
+  const reloadValues = useCallback(async (shown?: ShownCopy) => {
     const result = await loadLatestMeasurements();
+    // Asked before each write: a read the page does not show, or stops showing, writes nothing from then on (H16).
+    const moved = () => shown?.() === null;
+    if (moved()) return result;
     if (result) {
       setPreviousMeasurements(result.previousMeasurements);
-      await mirrorRecord(result);
+      await mirrorRecord(result, shown);
     }
-    await Promise.all([refreshLabValues(), loadHistory()]);
+    await Promise.all([readLabs(moved), loadAllHistory().then(rows => { if (!moved()) setHistory(rows); })]);
     return result;
-  }, [refreshLabValues, loadHistory, setPreviousMeasurements]);
+  }, [readLabs, setHistory, setPreviousMeasurements]);
 
   return { reloadValues, refreshLabValues, loadHistory };
 }

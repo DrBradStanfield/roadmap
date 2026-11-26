@@ -10,14 +10,14 @@ import type { ChatEditTarget } from '../hooks/useChatState';
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import type { ProposedEdit } from '@roadmap/health-core/chat-edits';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 
 const chat = vi.hoisted(() => ({ proposeEdit: null as null | ((edits: ProposedEdit[]) => void) }));
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({
@@ -50,9 +50,9 @@ afterEach(async () => {
 
 type View = ReturnType<typeof render>;
 async function renderTool(): Promise<View> {
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {});
-  await addMeasurement('weight', 82, '2026-09-01');
-  await addMeasurement('ldl', 3.0, '2026-09-01');
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1975, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+  await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+  await addMeasurement('ldl', 3.0, '2026-09-01', getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(chat.proposeEdit).toBeTruthy());

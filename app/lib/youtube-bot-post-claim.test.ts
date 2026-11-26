@@ -8,17 +8,18 @@
  * global fetch for Google, and a mocked runPipeline. Each "machine" is a fresh
  * module instance (vi.resetModules) on the one shared table.
  *
- * The cleanup RPC is modelled as its SQL reads (supabase/rls-policies.sql,
- * youtube_bot_cleanup_skipped): delete posted=false rows past the newest
- * `keepNewest`. Tests that set keepNewest to 0 stand for "200 newer skips pushed it
- * out". The real SQL is not run here; there is no Postgres in vitest.
+ * The cleanup is a plain DELETE of old posted=false rows (US-15 AC68); the fake stamps each claim's
+ * processed_at as Postgres's default does. Tests that set claimsBornOld stand for "the claim is past
+ * the cleanup window", so cleanup would remove it unless it is marked posted. The fake also keeps the
+ * old youtube_bot_cleanup_skipped RPC as its SQL reads (keep the newest 200 posted=false rows), so the
+ * AC68 regression test fails on code that still calls it.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Row = {
   id: number; youtube_comment_id: string; posted: boolean; video_id: string | null;
   posted_at: string | null; posted_youtube_id: string | null; user_channel: string | null;
-  user_comment: string | null; reply_text: string | null;
+  user_comment: string | null; reply_text: string | null; processed_at?: string; classification?: string | null;
 };
 type Req = { method: string; path: string; params: URLSearchParams; body: string; prefer: string };
 
@@ -33,7 +34,8 @@ const db = vi.hoisted(() => {
   return {
     table: [] as Row[],
     nextId: 1,
-    keepNewest: 200,
+    /** Claims are stamped 30 days old, past the cleanup window. */
+    claimsBornOld: false,
     requests: [] as Req[],
     /** Answers a request instead of the table when it returns a Response. */
     fail: null as null | ((r: Req) => Response | null),
@@ -48,15 +50,23 @@ vi.mock('@sentry/react-router', () => ({
 
 const ctl = vi.hoisted(() => ({
   pipelineCalls: [] as string[],
+  /** The text of each comment the pipeline ran on, in order. */
+  pipelineTexts: [] as string[],
   /** Holds the next pipeline answers until released; null runs at once. */
   hold: null as null | Array<() => void>,
+  /** The model declines (SKIP_NO_REPLY) instead of answering. */
+  skip: false,
+  /** The video has no readable companion article. */
+  noVideo: false,
 }));
 vi.mock('./youtube-bot-pipeline.server', async (orig) => ({
   ...(await orig<typeof import('./youtube-bot-pipeline.server')>()),
-  loadVideoBody: () => ({ entry: { title: 'T', handle: 'h', url: 'https://example.test/h', tags: [], publishedAt: '2026-09-01' }, body: 'body' }),
+  loadVideoBody: () => ctl.noVideo ? null : ({ entry: { title: 'T', handle: 'h', url: 'https://example.test/h', tags: [], publishedAt: '2026-09-01' }, body: 'body' }),
   runPipeline: async (thread: { topLevelCommentId: string; text: string }) => {
     ctl.pipelineCalls.push(thread.topLevelCommentId);
+    ctl.pipelineTexts.push(thread.text);
     if (ctl.hold) await new Promise<void>((resolve) => ctl.hold!.push(resolve));
+    if (ctl.skip) return { posted: false, skipReason: 'main-LLM returned SKIP_NO_REPLY', classification: 'ROUTE', routerHandles: [] };
     return { posted: true, replyText: `Answer ${MARKER} for you`, classification: 'QUESTION', routerHandles: [] };
   },
 }));
@@ -81,6 +91,11 @@ vi.mock('./supabase-client.server', async () => {
     if (op === 'eq') return (r) => r[column] !== null && String(r[column]) === value;
     if (op === 'gt') return (r) => Number(r[column]) > Number(value);
     if (op === 'gte') return (r) => r[column] !== null && String(r[column]) >= value;
+    if (op === 'lt') return (r) => r[column] != null && String(r[column]) < value;
+    if (op === 'in') {
+      const list = new Set(value.slice(1, -1).split(',').map((v) => v.replace(/^"(.*)"$/, '$1')));
+      return (r) => list.has(String(r[column]));
+    }
     throw new Error(`fake PostgREST: unsupported operator ${op}`);
   }
 
@@ -96,7 +111,7 @@ vi.mock('./supabase-client.server', async () => {
     if (injected) return injected;
 
     if (url.pathname === '/rest/v1/rpc/youtube_bot_cleanup_skipped') {
-      const keep = new Set(db.table.filter((r) => !r.posted).sort((a, b) => b.id - a.id).slice(0, db.keepNewest).map((r) => r.id));
+      const keep = new Set(db.table.filter((r) => !r.posted).sort((a, b) => b.id - a.id).slice(0, 200).map((r) => r.id));
       db.table = db.table.filter((r) => r.posted || keep.has(r.id));
       return new Response(null, { status: 204 });
     }
@@ -126,7 +141,8 @@ vi.mock('./supabase-client.server', async () => {
         }
         const full: Row = {
           id: db.nextId++, youtube_comment_id: '', posted: false, video_id: null, posted_at: null,
-          posted_youtube_id: null, user_channel: null, user_comment: null, reply_text: null, ...row,
+          posted_youtube_id: null, user_channel: null, user_comment: null, reply_text: null, classification: null,
+          processed_at: new Date(Date.now() - (db.claimsBornOld ? 30 * 86_400_000 : 0)).toISOString(), ...row,
         };
         db.table.push(full);
         return json(shape([full]), 201);
@@ -241,9 +257,12 @@ async function tickTo(ms: number, n: number): Promise<void> {
 }
 
 const row = (id: string) => db.table.find((r) => r.youtube_comment_id === id);
-const tableReqs = (method: string) => db.requests.filter((r) => r.path === '/rest/v1/youtube_bot_log' && r.method === method);
+/** The end-of-tick cleanup (US-15 AC68), the only request filtered by processed_at. */
+const isCleanup = (r: Req) => r.params.has('processed_at');
+/** Requests on the table, the cleanup left out: the claim lifecycle's own reads and writes. */
+const tableReqs = (method: string) => db.requests.filter((r) => r.path === '/rest/v1/youtube_bot_log' && r.method === method && !isCleanup(r));
 /** The posting mark: an UPDATE guarded by posted=false that sets posted=true. */
-const markReqs = () => tableReqs('PATCH').filter((r) => r.params.get('posted') === 'eq.false');
+const markReqs = () => tableReqs('PATCH').filter((r) => r.params.get('posted') === 'eq.false' && (JSON.parse(r.body) as { posted?: boolean }).posted === true);
 const markToken = (r: Req) => (JSON.parse(r.body) as { posted_at: string }).posted_at;
 
 function seedPosted(id: string, over: Partial<Row> = {}): Row {
@@ -256,13 +275,22 @@ function seedPosted(id: string, over: Partial<Row> = {}): Row {
   return r;
 }
 
+/** A claim with no decision recorded on it, made `ageMs` before NOW. */
+function seedClaim(id: string, ageMs: number): void {
+  db.table.push({
+    id: db.nextId++, youtube_comment_id: id, posted: false, video_id: null, posted_at: null, posted_youtube_id: null,
+    user_channel: null, user_comment: null, reply_text: null, classification: null,
+    processed_at: new Date(NOW.getTime() - ageMs).toISOString(),
+  });
+}
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
   vi.setSystemTime(NOW);
   process.env.YOUTUBE_BOT_FORCE_START = 'true';
-  Object.assign(db, { table: [], nextId: 1, keepNewest: 200, requests: [], fail: null });
+  Object.assign(db, { table: [], nextId: 1, claimsBornOld: false, requests: [], fail: null });
   Object.assign(g, { threads: [], replies: new Map(), posts: [], plan: [], calls: [] });
-  Object.assign(ctl, { pipelineCalls: [], hold: null });
+  Object.assign(ctl, { pipelineCalls: [], pipelineTexts: [], hold: null, skip: false, noVideo: false });
   persisted.length = 0;
   spy.captureException.mockReset();
   spy.captureMessage.mockReset();
@@ -287,7 +315,7 @@ describe('US-27 AC5: a post whose outcome is unknown is counted and never posted
   it('a post that times out after Google took it: posted=true with no id, counted, no second post', async () => {
     g.threads = ['c1'];
     g.plan = ['timeout'];
-    db.keepNewest = 0; // 200 newer skips have pushed it out of the cleanup window
+    db.claimsBornOld = true; // cleanup would remove the claim unless it is marked posted
     await bootMachine();
     await tickTo(FIRST_TICK_MS, 1);
 
@@ -301,7 +329,7 @@ describe('US-27 AC5: a post whose outcome is unknown is counted and never posted
 
   it('the success write fails after a 200: the row stays posted, no second post', async () => {
     g.threads = ['c1'];
-    db.keepNewest = 0;
+    db.claimsBornOld = true;
     db.fail = (r) => (r.method === 'PATCH' && r.body.includes('posted_youtube_id')
       ? new Response(JSON.stringify({ message: 'synthetic outage' }), { status: 503 }) : null);
     await bootMachine();
@@ -356,7 +384,7 @@ describe('US-27 AC5: a post whose outcome is unknown is counted and never posted
       { id: 'T1.r2', author: 'Viewer', channel: 'UC_viewer', text: `${MARKER} and what about at night?`, publishedAt: '2026-11-12T09:50:00.000Z' },
     ]);
     g.plan = ['timeout'];
-    db.keepNewest = 0;
+    db.claimsBornOld = true;
     await bootMachine();
     await tickTo(FIRST_TICK_MS, 1);
 
@@ -649,6 +677,22 @@ describe('(c) the second unreadable 400 in one tick ends its posting', () => {
     expect(row('T1.r2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
   });
 
+  // US-15 AC71 (lead H49): an account-wide refusal ends this tick's posting, follow-ups included; the next tick posts.
+  it('an account-wide refusal skips this tick\'s follow-ups only', async () => {
+    seedFollowUp('T1');
+    g.threads = ['c1'];
+    g.plan = [{ status: 403, reason: 'quotaExceeded' }];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(g.calls.filter((c) => c === 'GET /youtube/v3/comments')).toHaveLength(0);
+    expect(tickLogs()[0]).toMatchObject({ followUpsPosted: 0, halted: 'accountWide' });
+
+    await tickTo(TICK_MS, 2);
+    expect(row('T1.r2')).toMatchObject({ posted: true, posted_youtube_id: expect.any(String) });
+    expect(tickLogs()[1]).not.toHaveProperty('halted');
+  });
+
   it('one, then a success: the tick goes on, follow-ups included', async () => {
     seedFollowUp('T1');
     g.threads = ['c1', 'c2'];
@@ -744,7 +788,7 @@ describe('condition 1: two machines, one comment, one public reply', () => {
     expect(g.posts).toHaveLength(1);
     expect(markReqs()).toHaveLength(2);
     expect(row('c1')).toMatchObject({ posted: true, posted_youtube_id: 'posted-1' });
-    const raceWrites = db.requests.slice(before).filter((r) => r.path === '/rest/v1/youtube_bot_log' && r.method !== 'GET' && r.method !== 'HEAD');
+    const raceWrites = db.requests.slice(before).filter((r) => r.path === '/rest/v1/youtube_bot_log' && r.method !== 'GET' && r.method !== 'HEAD' && !isCleanup(r));
     // Two marks and the winner's success write; the loser neither unclaims nor alters the row.
     expect(raceWrites.map((r) => r.method)).toEqual(['PATCH', 'PATCH', 'PATCH']);
     expect(tickLogs().map((l) => l.posted).sort()).toEqual([0, 1]);
@@ -781,11 +825,184 @@ describe('token collision: the mark is matched by the claim row, not only its to
   });
 });
 
+describe('US-15 AC68: a YouTube comment or follow-up is handled once, whatever the outcome', () => {
+  it('a follow-up the model skipped is not run again after 200 newer skips (chat-health W46)', async () => {
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    g.replies.set('T1', [
+      { id: 'bot-1', author: 'Dr Brad', channel: 'UC_brad', text: 'first answer', publishedAt: '2026-11-12T09:10:00.000Z' },
+      { id: 'T1.r2', author: 'Viewer', channel: 'UC_viewer', text: `${MARKER} and what about at night?`, publishedAt: '2026-11-12T09:50:00.000Z' },
+    ]);
+    ctl.skip = true;
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    expect(ctl.pipelineCalls).toEqual(['T1']);
+
+    // A busy day: 200 newer comments are claimed and skipped (too short, greetings, declined).
+    for (let i = 0; i < 200; i++) seedClaim(`skip-${i}`, 0);
+    await tickTo(TICK_MS, 2);
+    await tickTo(TICK_MS, 3);
+
+    expect(ctl.pipelineCalls).toEqual(['T1']);
+    expect(row('T1.r2')).toMatchObject({ posted: false });
+    expect(g.posts).toHaveLength(0);
+  });
+
+  it('cleanup forgets only claims older than COMMENT_MAX_AGE_DAYS plus a day; posted rows stay', async () => {
+    seedClaim('old-skip', 8 * 86_400_000 + 60_000);
+    seedClaim('week-skip', 7 * 86_400_000);
+    seedPosted('old-post', { processed_at: new Date(NOW.getTime() - 90 * 86_400_000).toISOString() });
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(db.table.map((r) => r.youtube_comment_id).sort()).toEqual(['old-post', 'week-skip']);
+  });
+
+  // An earlier follow-up the bot handled no longer holds the thread; one still being handled does (AC56, AC68).
+  const BOT_1 = { id: 'bot-1', author: 'Dr Brad', channel: 'UC_brad', text: 'first answer', publishedAt: '2026-11-12T09:10:00.000Z' };
+  const viewerReply = (n: number, text: string, publishedAt: string) =>
+    ({ id: `T1.r${n}`, author: 'Viewer', channel: 'UC_viewer', text, publishedAt });
+  const R2 = 'thanks doc, that was really helpful';
+  const R3 = 'now I have chest pain and feel dizzy';
+  const R4 = 'should I take it with food or not';
+
+  it('a skipped follow-up no longer holds its thread: a later addressed reply is evaluated on the next tick, once', async () => {
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    const thread = [BOT_1, viewerReply(2, R2, '2026-11-12T09:50:00.000Z')];
+    g.replies.set('T1', thread);
+    ctl.skip = true;
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    expect(ctl.pipelineTexts).toEqual([R2]);
+
+    thread.push(viewerReply(3, R3, '2026-11-12T10:20:00.000Z'));
+    ctl.skip = false;
+    await tickTo(TICK_MS, 2);
+    expect(ctl.pipelineTexts).toEqual([R2, R3]);
+    expect(g.posts).toHaveLength(1);
+
+    await tickTo(TICK_MS, 3);
+    expect(ctl.pipelineTexts).toEqual([R2, R3]);
+    expect(g.posts).toHaveLength(1);
+  });
+
+  for (const listed of [true, false]) {
+    it(`an answered follow-up plus a later one: the thread cap holds, no third reply (the bot's follow-up ${listed ? 'listed' : 'not listed yet'})`, async () => {
+      seedPosted('T1', { posted_youtube_id: 'bot-1' });
+      const thread = [BOT_1, viewerReply(2, `${MARKER} and what about at night?`, '2026-11-12T09:50:00.000Z')];
+      g.replies.set('T1', thread);
+      await bootMachine();
+      await tickTo(FIRST_TICK_MS, 1);
+      expect(g.posts).toHaveLength(1);
+
+      if (listed) thread.push({ id: 'posted-1', author: 'Dr Brad', channel: 'UC_brad', text: 'second answer', publishedAt: '2026-11-12T10:01:00.000Z' });
+      thread.push(viewerReply(3, R3, '2026-11-12T10:20:00.000Z'));
+      await tickTo(TICK_MS, 2);
+      await tickTo(TICK_MS, 3);
+      expect(ctl.pipelineCalls).toHaveLength(1);
+      expect(g.posts).toHaveLength(1);
+      expect(row('T1.r3')).toBeUndefined();
+    });
+  }
+
+  it('two ticks never evaluate the same reply twice: each skipped reply runs once, oldest first', async () => {
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    g.replies.set('T1', [
+      BOT_1,
+      viewerReply(2, R2, '2026-11-12T09:20:00.000Z'),
+      viewerReply(3, R3, '2026-11-12T09:30:00.000Z'),
+      viewerReply(4, R4, '2026-11-12T09:40:00.000Z'),
+    ]);
+    ctl.skip = true;
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    expect(ctl.pipelineTexts).toEqual([R2]);
+    await tickTo(TICK_MS, 2);
+    expect(ctl.pipelineTexts).toEqual([R2, R3]);
+    await tickTo(TICK_MS, 3);
+    await tickTo(TICK_MS, 4);
+    expect(ctl.pipelineTexts).toEqual([R2, R3, R4]);
+    expect(g.posts).toHaveLength(0);
+  });
+
+  it('a follow-up claimed with no decision yet (another machine running it) still holds the thread', async () => {
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    seedClaim('T1.r2', 60_000);
+    g.replies.set('T1', [BOT_1, viewerReply(2, R2, '2026-11-12T09:20:00.000Z'), viewerReply(3, R3, '2026-11-12T09:30:00.000Z')]);
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+
+    expect(ctl.pipelineCalls).toHaveLength(0);
+    expect(row('T1.r3')).toBeUndefined();
+  });
+
+  it('cost bound: the 4th addressed follow-up in a thread makes no model call; a different thread is unaffected', async () => {
+    const R5 = 'and does the dose change with age';
+    const T2_TEXT = 'is this safe for my kidneys too';
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    g.replies.set('T1', [
+      BOT_1,
+      viewerReply(2, R2, '2026-11-12T09:20:00.000Z'),
+      viewerReply(3, R3, '2026-11-12T09:30:00.000Z'),
+      viewerReply(4, R4, '2026-11-12T09:40:00.000Z'),
+      viewerReply(5, R5, '2026-11-12T09:50:00.000Z'),
+    ]);
+    ctl.skip = true;
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    await tickTo(TICK_MS, 2);
+    await tickTo(TICK_MS, 3);
+    expect(ctl.pipelineTexts).toEqual([R2, R3, R4]);
+
+    seedPosted('T2', { posted_youtube_id: 'bot-2' });
+    g.replies.set('T2', [
+      { id: 'bot-2', author: 'Dr Brad', channel: 'UC_brad', text: 'first answer', publishedAt: '2026-11-12T09:10:00.000Z' },
+      { id: 'T2.r2', author: 'Viewer', channel: 'UC_viewer', text: T2_TEXT, publishedAt: '2026-11-12T09:50:00.000Z' },
+    ]);
+    await tickTo(TICK_MS, 4);
+    await tickTo(TICK_MS, 5);
+    expect(ctl.pipelineTexts).toEqual([R2, R3, R4, T2_TEXT]);
+    expect(row('T1.r5')).toBeUndefined();
+    expect(tickLogs()[4].followUpGates).toMatchObject({ 'thread-evaluations-cap': 1 });
+  });
+
+  it('a follow-up on a video with no article is done: it does not hold its thread', async () => {
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    const thread = [BOT_1, viewerReply(2, R2, '2026-11-12T09:50:00.000Z')];
+    g.replies.set('T1', thread);
+    ctl.noVideo = true;
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    expect(ctl.pipelineCalls).toHaveLength(0);
+    expect(row('T1.r2')?.classification).toEqual(expect.any(String));
+
+    ctl.noVideo = false;
+    thread.push(viewerReply(3, R3, '2026-11-12T10:20:00.000Z'));
+    await tickTo(TICK_MS, 2);
+    expect(ctl.pipelineTexts).toEqual([R3]);
+    expect(g.posts).toHaveLength(1);
+  });
+
+  it('a follow-up whose post YouTube refused is done: it does not hold its thread', async () => {
+    seedPosted('T1', { posted_youtube_id: 'bot-1' });
+    const thread = [BOT_1, viewerReply(2, R2, '2026-11-12T09:50:00.000Z')];
+    g.replies.set('T1', thread);
+    g.plan = [{ status: 403, reason: 'forbidden' }];
+    await bootMachine();
+    await tickTo(FIRST_TICK_MS, 1);
+    expect(row('T1.r2')).toMatchObject({ posted: false, classification: expect.any(String) });
+
+    thread.push(viewerReply(3, R3, '2026-11-12T10:20:00.000Z'));
+    await tickTo(TICK_MS, 2);
+    expect(ctl.pipelineTexts).toEqual([R2, R3]);
+    expect(row('T1.r3')).toMatchObject({ posted: true });
+  });
+});
+
 describe('condition 3: a crash between the mark and the post', () => {
   it('leaves posted=true with no id: counted in both caps, kept by unclaim and cleanup, never retried', async () => {
     g.threads = ['c1'];
     g.plan = ['hang']; // the process dies with the post in flight
-    db.keepNewest = 0;
+    db.claimsBornOld = true;
     const a = await bootMachine();
     await vi.advanceTimersByTimeAsync(FIRST_TICK_MS);
     await vi.waitFor(() => expect(g.posts).toHaveLength(1), { timeout: 3000, interval: 1 });

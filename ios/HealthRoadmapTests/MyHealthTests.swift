@@ -106,6 +106,14 @@ final class MyHealthTests: XCTestCase {
         }
     }
 
+    /// "Upload labs" sits on Weight & diabetes, Cholesterol and Blood tests only, each naming its
+    /// heading, the same three the web's `UPLOAD_LABS_PLACEMENTS` names.
+    func testUploadLabsSitsOnThreeHeadingsEachNamingItself_US73_AC14() {
+        let carried = HealthTopic.allCases.compactMap { topic in topic.uploadLabsEvent.map { (topic, $0) } }
+        XCTAssertEqual(carried.map { $0.0 }, [.weight, .cholesterol, .bloodTests])
+        XCTAssertEqual(carried.map { $0.1.rawValue }, ["Upload labs weight", "Upload labs cholesterol", "Upload labs blood tests"])
+    }
+
     func testWithinASectionUrgentLeadsAndAResultLeadsAdvice_US73_AC4() throws {
         let rank = ["urgent": 0, "attention": 1, "info": 2]
         for (name, json) in try records() {

@@ -16,13 +16,31 @@ vi.mock('./anthropic.server', async (orig) => ({
 // (37%) came within 5 minutes of the one before (audit F9). Every cached block is 1h.
 describe('prompt cache TTL on the router and classifier hops', () => {
   it('marks every system block ephemeral with a 1-hour TTL', async () => {
-    await routeQuery('vitamin d');
-    await classifyMessage('vitamin d');
+    await routeQuery('vitamin d', undefined, undefined, 'CHAT');
+    await classifyMessage('vitamin d', undefined, undefined, 'CHAT');
     const bodies = vi.mocked(callAnthropicWithUsage).mock.calls.map(c => c[0] as { system: Array<{ cache_control?: unknown }> });
     expect(bodies).toHaveLength(2);
     for (const body of bodies) {
       for (const block of body.system) expect(block.cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
     }
+  });
+});
+
+// US-15 AC78: the router runs on ROUTER_MODEL unless a caller (the YouTube bot) names another.
+describe('US-15 AC78: the router model', () => {
+  it('sends Sonnet 5.5 with thinking off when no model is given (web, Discord)', async () => {
+    vi.mocked(callAnthropicWithUsage).mockClear();
+    await routeQuery('vitamin d', undefined, undefined, 'CHAT');
+    expect(vi.mocked(callAnthropicWithUsage).mock.calls[0][0])
+      .toMatchObject({ model: 'claude-sonnet-5-5', max_tokens: 200, thinking: { type: 'between_tools' } });
+  });
+  it('sends the model it is given, in that family\'s thinking-off shape', async () => {
+    vi.mocked(callAnthropicWithUsage).mockClear();
+    await routeQuery('vitamin d', undefined, undefined, 'YOUTUBE', 'claude-haiku-5-5');
+    const body = vi.mocked(callAnthropicWithUsage).mock.calls[0][0] as Record<string, unknown>;
+    expect(body).toMatchObject({ model: 'claude-haiku-5-5', max_tokens: 200, thinking: { type: 'disabled' } });
+    expect(body).not.toHaveProperty('output_config');
+    expect(vi.mocked(callAnthropicWithUsage).mock.calls[0][1]).toBe('YOUTUBE');
   });
 });
 
@@ -141,7 +159,7 @@ describe('US-15 AC27: router_error carries no lone surrogate', () => {
       content: 'Hi there 😀 how can I help',
       usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
     } as Awaited<ReturnType<typeof callAnthropicWithUsage>>);
-    const r = await routeQuery('hello');
+    const r = await routeQuery('hello', undefined, undefined, 'CHAT');
     expect(r.error).toBeTruthy();
     expect(JSON.stringify(r.error)).not.toMatch(/\\u[dD][89a-fA-F]/);
   });
@@ -154,9 +172,9 @@ describe('US-15 AC37: router output tokens', () => {
       content: '{"handles":[]}',
       usage: { inputTokens: 5, outputTokens: 37, cacheCreationTokens: 0, cacheReadTokens: 0 },
     } as Awaited<ReturnType<typeof callAnthropicWithUsage>>);
-    expect((await routeQuery('hello')).usage.outputTokens).toBe(37);
+    expect((await routeQuery('hello', undefined, undefined, 'CHAT')).usage.outputTokens).toBe(37);
     vi.mocked(callAnthropicWithUsage).mockRejectedValueOnce(new DOMException('The operation was aborted due to timeout', 'TimeoutError'));
-    const failed = await routeQuery('hello');
+    const failed = await routeQuery('hello', undefined, undefined, 'CHAT');
     expect(failed.error).toBeTruthy();
     expect(failed.usage.outputTokens).toBe(0);
   });
@@ -166,7 +184,7 @@ describe('US-15 AC37: router output tokens', () => {
       content: '{"handles":["apob","vitam',
       usage: { inputTokens: 900, outputTokens: 200, cacheCreationTokens: 0, cacheReadTokens: 800 },
     } as Awaited<ReturnType<typeof callAnthropicWithUsage>>);
-    const cut = await routeQuery('hello');
+    const cut = await routeQuery('hello', undefined, undefined, 'CHAT');
     expect(cut.error).toBeTruthy();
     expect(cut.usage.outputTokens).toBe(200);
     expect(cut.usage.inputTokens).toBe(900);
@@ -184,14 +202,14 @@ describe('US-15 AC28: a corrected second object routes the turn', () => {
 
   it('routes on the correction, with no router_error', async () => {
     reply('{"handles": ["diet", "this-study-proved-we-were-wrong-about-vitamin-d"]}\n\nWait — correction. The second handle was a mistake; returning only the relevant ones:\n\n{"handles": ["diet", "best-diet-confirmed-by-5248916-person-year-study", "diet-strongly-suspected-best"]}');
-    const r = await routeQuery('what is the best diet');
+    const r = await routeQuery('what is the best diet', undefined, undefined, 'CHAT');
     expect(r.error).toBeNull();
     expect(r.handles).toEqual(['diet', 'best-diet-confirmed-by-5248916-person-year-study', 'diet-strongly-suspected-best']);
   });
 
   it('a reply with no object still fails with the same router_error', async () => {
     reply('Sorry, nothing fits.');
-    const r = await routeQuery('hello');
+    const r = await routeQuery('hello', undefined, undefined, 'CHAT');
     expect(r.handles).toEqual([]);
     expect(r.error).toMatch(/^Unexpected token/);
   });

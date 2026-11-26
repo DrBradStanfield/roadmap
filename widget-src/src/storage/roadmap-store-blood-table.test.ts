@@ -105,7 +105,7 @@ describe('US-66 AC7 / AC8: the screens read core rows as blood tests', () => {
   it('a typed blood test is saved as a core lab row and read back as a measurement', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const added = store.addMeasurement('apob', 0.9, DAY);
+    const added = store.addMeasurement('apob', 0.9, DAY, store.shownErase);
     expect(added).toMatchObject({ status: 'inserted', row: { metricType: 'apob', value: 0.9 } });
     expect(added.status === 'inserted' && 'metricName' in added.row).toBe(false);
     await store.flush();
@@ -130,14 +130,14 @@ describe('US-66 AC15: a saved record holding a core row is schemaVersion 3', () 
     const cloud = new MemoryCloud();
     await seedOldShape(cloud, (file) => { file.measurements = file.measurements.filter((m) => m.metricType === 'weight'); });
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect(store.addMeasurement('apob', 0.9, DAY).status).toBe('inserted');
+    expect(store.addMeasurement('apob', 0.9, DAY, store.shownErase).status).toBe('inserted');
     await store.flush();
     expect(readCloudFile(cloud).schemaVersion).toBe(3);
 
     const local = createEmptyFile({ deviceId: 'old_app', now: NOW });
     await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, local, null);
     const device = await RoadmapStore.create(new LocalStorageAdapter());
-    expect(device.addMeasurement('ldl', 3.1, DAY).status).toBe('inserted');
+    expect(device.addMeasurement('ldl', 3.1, DAY, device.shownErase).status).toBe('inserted');
     await device.flush();
     expect((await readLocal()).schemaVersion).toBe(3);
   });
@@ -146,7 +146,7 @@ describe('US-66 AC15: a saved record holding a core row is schemaVersion 3', () 
     const cloud = new MemoryCloud();
     await seedOldShape(cloud, (file) => { file.measurements = file.measurements.filter((m) => m.metricType === 'weight'); });
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect(store.addMeasurement('weight', 81, '2024-06-02T00:00:00.000Z').status).toBe('inserted');
+    expect(store.addMeasurement('weight', 81, '2024-06-02T00:00:00.000Z', store.shownErase).status).toBe('inserted');
     await store.flush();
     expect(readCloudFile(cloud).schemaVersion).toBe(1);
   });

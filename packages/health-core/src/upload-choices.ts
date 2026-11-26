@@ -11,7 +11,8 @@ import { isCellMetric, type CellUnit } from './cell-unit';
 import { validDay } from './record-edits';
 
 /** A document's corrections before Save (design Q3 (a)). `date` null: the person removed it. */
-export interface DocumentFix { title?: string; kind?: string; date?: string | null }
+/** `screening`: the person's tick on the letter's screening box (web only, upload-screening.ts); absent, the default. */
+export interface DocumentFix { title?: string; kind?: string; date?: string | null; screening?: boolean }
 
 /**
  * `ticks`: by value ref; absent, ticked: saved unless cleared, on both clients (Brad 2026-11-20).

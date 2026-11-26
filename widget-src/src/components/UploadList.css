@@ -75,16 +75,30 @@
 .upload-list-row--cleared .upload-list-label,
 .upload-list-row--cleared .upload-list-value { opacity: 0.55; }
 .upload-list-show-all { margin: 0; padding: 8px 0 8px 30px; border-bottom: 1px solid var(--color-gray-border); }
+/* With no row shown above it, Show all lines up with the list's edge, not a label. */
+.upload-list-groups:not(:has(.upload-list-row:not([hidden]))) .upload-list-show-all { padding-left: 0; }
+/* The list's one accent is teal: Show all / Hide as the other text buttons. */
+.upload-list .review-disclosure { color: var(--color-brand-text); font-size: 14px; text-underline-offset: 2px; min-height: 44px; }
 
 /* From 600px: fixed tracks, so every value shares one edge beside its name. */
 @media (min-width: 600px) {
   .upload-list-row { grid-template-columns: 30px 16em 12em minmax(0, 1fr); }
   .upload-list-row > .upload-list-check { grid-column: 1 / 3; }
   .upload-list-row > .upload-list-value { grid-column: 3; grid-row: 1; }
+  /* Everything about a value hangs under the value: its printed note, reasons, caption, error and Replace. */
   .upload-list-row > .upload-list-caption,
-  .upload-list-row > .upload-list-error { grid-column: 2 / -1; }
+  .upload-list-row > .upload-list-error,
+  .upload-list-row > .upload-list-replace,
   .upload-list-row > .upload-list-reasons,
   .upload-list-row > .upload-list-printed { grid-column: 3 / -1; }
+  /* Save sized to its words, at the right; Cancel beside it. */
+  .upload-list-actions { justify-content: flex-end; }
+  .upload-list .review-save-btn { flex: 0 1 auto; min-width: 220px; padding-inline: 24px; }
+}
+/* Phone: Save and Cancel stacked full width, Save first, so Save's words never wrap. */
+@media (max-width: 599px) {
+  .upload-list-actions { flex-direction: column; align-items: stretch; }
+  .upload-list .review-save-btn, .upload-list-actions .review-cancel-btn { width: 100%; white-space: nowrap; }
 }
 
 /* Letters. */
@@ -120,3 +134,34 @@
 .upload-list .review-save-btn[aria-disabled="true"] { background: var(--color-gray-light); }
 
 .upload-list.upload-done p { max-width: 44ch; margin-inline: auto; }
+
+/* Mount 3b design pass (PR 1972 review): touch targets, hierarchy and contrast; no rule, no words. */
+/* A fixed unit reads as text, a switchable one as a pill; both sit in the same box, so a row never shifts. */
+.upload-list-unit-text { display: inline-block; padding: 1px 7px; border: 1px solid transparent; line-height: 1.2; }
+/* 44px targets on the phone: Stop, Cancel, the done screen's Done. */
+.upload-list .review-cancel-btn { min-height: 44px; }
+.upload-list .upload-done-btn { min-height: 44px; }
+/* A day picker reads as a date control, with room for a finger, when it holds no day yet. */
+.upload-list-picker-button--empty { min-width: 88px; }
+.upload-list-picker-button::before {
+  content: ""; display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+/* Letters: the file name under the section heading, never above it; 44px title and kind; a readable preview. */
+.upload-list-document > .upload-list-file-name { font-size: 14px; font-weight: 600; }
+.upload-list-document .review-title-input { box-sizing: border-box; min-height: 44px; padding: 10px 12px; border-radius: 6px; }
+.upload-list-document .upload-list-kind {
+  -webkit-appearance: none; appearance: none; padding: 10px 36px 10px 12px;
+  border: 1px solid var(--color-gray-border); border-radius: 6px; color: var(--color-text);
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23666' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 12px center / 12px 8px;
+}
+.upload-list-document .upload-list-letter-text { font-size: 13px; color: var(--color-text-secondary); }
+.upload-list-document .review-screening-update { flex: 1 1 100%; min-height: 44px; }
+.upload-list-document .review-screening-update input[type="checkbox"] { width: 20px; height: 20px; flex: none; margin: 0; }
+/* The phone's done screen sits in the middle of its sheet (61px: the sheet's header). */
+.upload-modal--mobile .upload-list.upload-done {
+  min-height: calc(100vh - 61px); min-height: calc(100dvh - 61px); box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+}

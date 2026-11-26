@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: vi.fn(), sendGuestReport: vi.fn(), getReportEmailCaptured: () => false, markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
-vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: mocks.trackProductEvent }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: mocks.trackProductEvent }));
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; }, LOCAL_FIRST: true }));
 vi.mock('../lib/market-country', async (original) => ({
   ...await original<typeof import('../lib/market-country')>(),

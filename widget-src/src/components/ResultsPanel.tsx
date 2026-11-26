@@ -6,11 +6,11 @@
 import React, { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import type { HealthResults } from '@roadmap/health-core/types';
 import type { StatTile } from '@roadmap/health-core/stat-tiles';
-import { planSections, topicSections, type TopicCard, type TopicLayout } from '@roadmap/health-core/plan-sections';
-import type { FormSection } from '@roadmap/health-core/input-form';
+import { planSections, topicSections, type TopicId } from '@roadmap/health-core/plan-sections';
 // US-61 AC5: called only under SHOPIFY_SURFACE, so the Pages build drops the module.
-import { usProductSections, type UsPlanSection, type UsProduct, type UsSuggestion } from '@roadmap/health-core/us-products';
+import { usProductSections, type UsPlanSection, type UsProduct } from '@roadmap/health-core/us-products';
 import { trackProductEvent } from '../lib/server-api';
+import type { PlanForms } from '../lib/plan-forms';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
 import { GuideLink } from './GuideLink';
 import { FeedbackForm } from './FeedbackForm';
@@ -22,24 +22,21 @@ import { GroupedSuggestionCard, NO_HIGHLIGHTS, QuickStats, SuggestionCard, type 
 import { emailPulses, pdfBox, PlanPdf, storagePulse, useEmailCaptureState, usePlanPrint } from './PlanPdf';
 import { useHighlights } from '../hooks/useHighlights';
 
-/** The plan's view on My health (US-62 AC17-AC26): its cards by topic (health-core's
- *  `topicSections`, with US-61's overlay on Shopify), the new-card highlight, the urgent
+/** The plan's view on My health (US-62 AC17-AC26): its sections (with US-61's overlay on Shopify),
+ *  which My health lays out by topic (health-core's `planTopics`), the new-card highlight, the urgent
  *  banner's target, and the foot. Built once, in HealthTool; InputPanel draws it. */
-/** One topic's cards, the urgent ones apart: they lead the topic, over its rows (US-62 AC18). */
-export interface TopicCards { urgent: TopicCard<UsSuggestion>[]; others: TopicCard<UsSuggestion>[]; ownershipLine?: string }
-
 export interface PlanView {
-  layout: TopicLayout<UsSuggestion>;
-  /** Each topic's cards, split once (US-62 AC18). */
-  topics: ReadonlyMap<string, TopicCards>;
+  /** The plan's sections and the form's questions: what My health hands `planTopics` (US-62 AC40). */
+  sections: UsPlanSection[];
+  forms: PlanForms;
   /** A valid plan is on hand. */
   planned: boolean;
   highlights: Highlights;
   alcoholQuestion?: AlcoholQuestion;
   /** The first urgent card in topic order, for the banner (US-62 AC19). */
   urgent: { title: string; cardId: string } | null;
-  /** Each card's DOM id: its place on the page, never what it found (US-09 AC7d). */
-  cardIds: ReadonlyMap<TopicCard<UsSuggestion>, string>;
+  /** Each topic's card DOM ids, urgent and the rest, in its cards' order: their place on the page, never what they found (US-09 AC7d). */
+  cardIds: ReadonlyMap<TopicId, { urgent: string[]; others: string[] }>;
   /** The reasons open on screen; the PDF prints them open (US-62 AC28). Provide it as OpenEvidenceContext. */
   evidence: OpenEvidence;
   /** US-61 AC8: on the Supplements section, so its products count once it is on screen. */
@@ -106,7 +103,7 @@ interface PlanViewOptions {
   /** The plan's tiles, for the PDF. */
   tiles: StatTile[];
   /** The form's questions, so a medicine or screening suggestion sits on the row that asks it. */
-  forms: { medications: readonly FormSection[]; screenings: readonly FormSection[] };
+  forms: PlanForms;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => Promise<unknown>;
   showEmailCapture?: boolean;
@@ -154,16 +151,20 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
     return (SHOPIFY_SURFACE && usProductSections(plain, results, getMarketCountry() === 'US', 'web')) || plain;
   }, [results]);
   const layout = useMemo(() => topicSections(sections, forms), [sections, forms]);
-  const topics = useMemo(() => new Map(layout.sections.map(({ topic, cards, ownershipLine }) => [topic, {
-    urgent: cards.filter(c => c.priority === 'urgent'), others: cards.filter(c => c.priority !== 'urgent'), ownershipLine,
-  }])), [layout]);
-  // A card's DOM id is its place on the page: Sentry's click paths keep ids (US-09 AC7d).
-  const cardIds = useMemo(() => new Map(layout.sections.flatMap(s => s.cards).map((card, i) => [card, `mh-card-${i}`])), [layout]);
+  // A card's DOM id is its place on the page: Sentry's click paths keep ids (US-09 AC7d). Each topic's,
+  // its urgent cards apart as planTopics splits the same cards (they lead the topic, US-62 AC18).
+  const cardIds = useMemo(() => {
+    let i = 0;
+    return new Map(layout.sections.map(({ topic, cards }) => {
+      const ids = cards.map(card => ({ urgent: card.priority === 'urgent', id: `mh-card-${i++}` }));
+      return [topic, { urgent: ids.filter(c => c.urgent).map(c => c.id), others: ids.filter(c => !c.urgent).map(c => c.id) }];
+    }));
+  }, [layout]);
   // The banner names the first urgent card in topic order (US-62 AC19).
   const urgent = useMemo(() => {
     for (const section of layout.sections) {
       const card = section.cards.find(c => c.priority === 'urgent');
-      if (card) return { title: (card.suggestions.find(s => s.priority === 'urgent') ?? card.suggestions[0]).title, cardId: cardIds.get(card)! };
+      if (card) return { title: (card.suggestions.find(s => s.priority === 'urgent') ?? card.suggestions[0]).title, cardId: cardIds.get(section.topic)!.urgent[0] };
     }
     return null;
   }, [layout, cardIds]);
@@ -193,7 +194,7 @@ export function usePlanView({ results, shownErase, isValid, tiles, forms, hasUns
   );
   const foot = <PlanFoot planned={planned}/>;
 
-  return { layout, topics, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, report };
+  return { sections, forms, planned, highlights, alcoholQuestion, urgent, cardIds, evidence, supplementsRef, pdf, foot, attention, report };
 }
 
 /** My health's foot (US-62 AC26): the disclaimer, feedback, Supercharge and the privacy link. */

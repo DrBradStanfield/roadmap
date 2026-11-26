@@ -36,10 +36,6 @@ export const PLAN_STORAGE_NOTICE = sentence('plan');
 export const PLAN_STORAGE_CTA = 'Keep my record in Dropbox or Google Drive';
 /** The picker's own title: the question the button opens. */
 export const PICKER_TITLE = 'Where do you want to keep your health record?';
-/** The upload modal's own paragraph (plain prose; the CTA button beneath it is
- *  the affordance there). */
-export const UPLOAD_STORAGE_NOTICE =
-  'Keep the files themselves in your own Dropbox or Google Drive, sorted into Lab results, Clinic letters and Scans. Our server never stores them.';
 
 export function openBackendPicker(): void {
   window.dispatchEvent(new Event(OPEN_PICKER_EVENT));

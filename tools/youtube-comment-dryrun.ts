@@ -41,7 +41,7 @@ import { routerView, routerIndexBlock, preferMasters } from '../app/lib/router-v
 import { stripFrontmatter } from '../app/lib/frontmatter';
 import { isUnreadableAnswer } from '../app/lib/chat-classifier.server';
 import {
-  CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, ROUTER_MODEL, getArg as getArgOf, modelParams, parseClassification, SILENT_ON_YOUTUBE, type Classification,
+  CHAT_EFFORT, CHAT_MAX_TOKENS, CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, PROMPT_CACHE, YOUTUBE_MODEL, getArg as getArgOf, modelParams, parseClassification, SILENT_ON_YOUTUBE, type Classification,
 } from '../packages/health-core/src/models';
 import { extractVideoId, filterComment, type BlogPost, type DryRunResult, type YouTubeComment } from './youtube-comment-dryrun-rules';
 
@@ -142,7 +142,10 @@ function fetchComments(videoId: string, count: number): YouTubeComment[] {
 // Pipeline: classifier → conditional router → main LLM
 // ---------------------------------------------------------------------------
 
-async function callAnthropic(body: object): Promise<{ ok: boolean; text: string; raw: any }> {
+/** What callAnthropic keeps: the reply, or the status and a clipped error body, or the refusal. */
+interface CallRaw { status?: number; error?: string; stop_reason?: string; content?: Array<{ type: string; text?: string }> }
+
+async function callAnthropic(body: object): Promise<{ ok: boolean; text: string; raw: CallRaw }> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -185,7 +188,7 @@ async function classify(comment: string): Promise<{ classification: Classificati
 
 async function routeQuery(comment: string): Promise<{ handles: string[]; raw: string; error: string | null }> {
   const body = {
-    ...modelParams(ROUTER_MODEL, 200),
+    ...modelParams(YOUTUBE_MODEL, 200), // the bot's router model (US-15 AC78)
     system: [
       { type: 'text', text: ROUTER_PROMPT, cache_control: PROMPT_CACHE },
       { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: PROMPT_CACHE },
@@ -231,7 +234,8 @@ async function callMainLLM(comment: string, blogPost: BlogPost, matchedHandles: 
   }
 
   const body = {
-    ...modelParams(CHAT_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
+    // The bot's own answer model, so a dry run matches production (US-15 AC78).
+    ...modelParams(YOUTUBE_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT),
     system: [...cachedBlocks, ...perRequestBlocks],
     messages: [{ role: 'user', content: comment }],
   };
@@ -401,7 +405,7 @@ function renderHTML(results: DryRunResult[], blogPost: BlogPost): string {
 </style>
 </head><body>
 <h1>YouTube comment dry-run</h1>
-<div class="subtitle">Video: <a href="https://youtu.be/${VIDEO_ID}">${escapeHtml(blogPost.title)}</a> · Blog: <code>${escapeHtml(blogPost.slug)}.md</code> · Model: ${CHAT_MODEL}</div>
+<div class="subtitle">Video: <a href="https://youtu.be/${VIDEO_ID}">${escapeHtml(blogPost.title)}</a> · Blog: <code>${escapeHtml(blogPost.slug)}.md</code> · Model: ${YOUTUBE_MODEL}</div>
 
 <div class="summary">
   <strong>Summary</strong>

@@ -23,7 +23,7 @@ import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter'
 import { stampFields } from '@roadmap/health-core/merge';
 import { ERASE_UNREACHABLE, RoadmapStore } from '../storage/roadmap-store';
 import { BACKEND_KEY } from '../storage/web-record-host';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, getShownErase } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import type { SendMessageResult } from '../lib/chat-api';
 import { trackProductEvent } from '../lib/server-api';
@@ -54,8 +54,6 @@ vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn(), captureMe
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
   trackProductEvent: vi.fn(),
-  trackABImpression: vi.fn(),
-  trackABConversion: vi.fn(),
 }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
@@ -111,9 +109,9 @@ class HeldCloud extends MemoryAdapter {
 async function userOnStatin(adapter: HeldCloud, seed?: () => Promise<unknown>): Promise<RenderResult> {
   localStorage.setItem(BACKEND_KEY, 'memory'); // a cloud page runs with its backend remembered (US-11 AC6)
   await initRoadmapStore(adapter);
-  await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
-  await addMeasurement('weight', 82, '2026-09-01');
-  await saveMedication('statin', 'rosuvastatin', 10, 'mg');
+  await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {}, getShownErase());
+  await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+  await saveMedication('statin', 'rosuvastatin', 10, 'mg', getShownErase());
   await seed?.();
   await flushRoadmapStore();
   const view = render(<HealthTool />);
@@ -444,7 +442,7 @@ describe('US-16 AC2a (A6 Codex R1): a dose changed just before "Delete all my da
   it('the record is not re-read: the waiting save lands, and the screen and the stored record agree on the new dose', async () => {
     const cloud = new MemoryCloud();
     const adapter = new HeldCloud(cloud);
-    const view = await userOnStatin(adapter, () => addMeasurement('ldl', 4.2, '2026-09-01')); // the statin's dose shows with an LDL
+    const view = await userOnStatin(adapter, () => addMeasurement('ldl', 4.2, '2026-09-01', getShownErase())); // the statin's dose shows with an LDL
     const dose = await waitFor(() => { const select = view.container.querySelector<HTMLSelectElement>('#statin-dose'); expect(select).not.toBeNull(); return select!; });
     expect(dose.value).toBe('10');
     vi.spyOn(RoadmapStore.prototype, 'loadLatestMeasurements');
@@ -463,6 +461,37 @@ describe('US-16 AC2a (A6 Codex R1): a dose changed just before "Delete all my da
     const stored = JSON.parse(await cloudMedications(cloud)) as RoadmapFile['medications'];
     expect(stored.find(m => m.medicationKey === 'statin')?.doseValue).toBe(20);
     expect(view.container.querySelector<HTMLSelectElement>('#statin-dose')!.value).toBe('20');
+    expect(alert.mock.calls.map(([words]) => words)).toEqual([ERASE_UNREACHABLE]);
+  });
+});
+
+// Lead H107: the list save comes due while the erase reads, and is refused; the erase then stops short. The page re-reads
+// once for the refusal; its apply runs any list save still waiting whose erase is still shown (useRecordApply, H52).
+describe('US-16 AC5, AC2a (A6, H107): a dose save refused while this tab\'s erase reads, then the erase stops short', () => {
+  it.each([
+    ['nothing else waiting: the refused dose is gone, the screen shows the stored one', null, 10],
+    ['a later dose waiting at the stop: it lands in the re-read, and the screen agrees', '40', 40],
+  ])('%s', async (_name, later, expected) => {
+    const cloud = new MemoryCloud();
+    const adapter = new HeldCloud(cloud);
+    const view = await userOnStatin(adapter, () => addMeasurement('ldl', 4.2, '2026-09-01', getShownErase()));
+    const dose = () => view.container.querySelector<HTMLSelectElement>('#statin-dose')!;
+    await waitFor(() => expect(dose()).not.toBeNull());
+    const read = adapter.holdRead(true);
+    const alert = vi.fn();
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', alert);
+    fireEvent.change(dose(), { target: { value: '20' } }); // saves in 300 ms
+    fireEvent.click(deleteButton()!);
+    await read.reached;
+    await wait(400); // the dose save comes due while the erase reads, and is refused
+    if (later) fireEvent.change(dose(), { target: { value: later } }); // waiting on its timer at the stop
+    read.release();
+    await waitFor(() => expect(alert).toHaveBeenCalledWith(ERASE_UNREACHABLE));
+    await wait(600);
+    const stored = JSON.parse(await cloudMedications(cloud)) as RoadmapFile['medications'];
+    expect(stored.find(m => m.medicationKey === 'statin')?.doseValue).toBe(expected);
+    expect(dose().value).toBe(String(expected));
     expect(alert.mock.calls.map(([words]) => words)).toEqual([ERASE_UNREACHABLE]);
   });
 });

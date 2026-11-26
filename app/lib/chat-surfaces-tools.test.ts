@@ -34,7 +34,7 @@ afterEach(() => { vi.unstubAllGlobals(); });
 describe('US-15 AC19: Discord and YouTube never send the form tools', () => {
   it('Discord', async () => {
     const bodies = stubAnthropic();
-    const result = await platformChatCompletion({ message: 'my LDL was 3.8 on June 1', history: [] });
+    const result = await platformChatCompletion({ message: 'my LDL was 3.8 on June 1', history: [], purpose: 'DISCORD' });
     expect(result.content).toBe('An answer.');
     expect(bodies()).toHaveLength(1);
     expect(bodies()[0]).not.toHaveProperty('tools');
@@ -42,7 +42,7 @@ describe('US-15 AC19: Discord and YouTube never send the form tools', () => {
 
   it('Discord never runs run_roadmap (US-15 AC33)', async () => {
     const bodies = stubAnthropic([{ type: 'text', text: 'An answer.' }, RUN_ROADMAP_USE]);
-    const result = await platformChatCompletion({ message: 'analyse: LDL 3.8 mmol/L', history: [] });
+    const result = await platformChatCompletion({ message: 'analyse: LDL 3.8 mmol/L', history: [], purpose: 'DISCORD' });
     expect(result.content).toBe('An answer.');
     expect(bodies()).toHaveLength(1);
   });
@@ -58,7 +58,7 @@ describe('US-15 AC19: Discord and YouTube never send the form tools', () => {
   // US-15 AC29 (Brad, 2026-10-14): Discord and YouTube get the answer bank too.
   it('Discord gets the writing style and the answer bank (US-15 AC29)', async () => {
     const bodies = stubAnthropic();
-    await platformChatCompletion({ message: 'Can the biotin interfere with blood tests?', history: [] });
+    await platformChatCompletion({ message: 'Can the biotin interfere with blood tests?', history: [], purpose: 'DISCORD' });
     const system = bodies()[0].system.map((b: { text: string }) => b.text).join('\n');
     expect(system).toContain('## WRITING STYLE');
     expect(system).toContain('## ANSWER BANK');

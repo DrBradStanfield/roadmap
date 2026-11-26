@@ -43,7 +43,8 @@ export type ListStatus =
  * iPhone's row shows them, in any status: the extractor's question, then the guessed-unit note. Apart from `caption`, which
  * says what Save does with the row (one line, from its status), as `question` and `unitNote` sit apart from `conflict` on
  * the iPhone. `name`: its accessible name (US-13 AC10), "<test> value from <file>, <day>", the day it saves on left out
- * while none, ", another reading" on a later row of the same test there (KNOWN: a third shares the second's name).
+ * while none, ", another reading" on a later row of the same test there (KNOWN: a third shares the second's name). Its parts,
+ * for a screen that names the row from text it shows: `dayLine`, the day in words (null while none), and `again`.
  * `replaceLabel`: the Replace control's name with that day in words, while there is a Replace and a day. `unit`: its
  * unit control (`RowUnit`). `printed`: what the report printed, while the row shows another number or a guessed unit
  * (`printedNote`, the grid's "Printed:" line, US-13 AC11), from the value as read in the person's unit, an edit or not.
@@ -53,11 +54,11 @@ export interface ListRow {
   status: ListStatus; caption: string | null; saves: boolean;
   ticked: boolean; typed: TypedText | null; shown: ShownValue; error: string | null; input: 'number' | 'none';
   replaces: string | null; replacing: boolean; held: string | null;
-  attention: boolean; reasons: string[]; name: string; replaceLabel: string | null; unit: RowUnit; printed: string | null;
+  attention: boolean; reasons: string[]; name: string; dayLine: string | null; again: boolean; replaceLabel: string | null; unit: RowUnit; printed: string | null;
 }
 
 /**
- * A row's unit, as the grid's unit chip and Lp(a) control draw it (ReviewMatrix.tsx, US-05 AC2), so the screen knows no
+ * A row's unit, as the old grid's unit chip and Lp(a) control drew it (ReviewMatrix.tsx, US-05 AC2), so the screen knows no
  * unit itself. The person's choice lives in the web (hooks/useUnits.ts per-field overrides, lib/lpa-unit.ts the record's
  * Lp(a) unit); the engine reads it only through `unitOf`. `label`: the unit beside the input: held text's own unit, the one
  * it was typed in (`typed.unit`, US-13 AC5), else the unit its number shows in. `typeIn`: the unit a commit from the row is
@@ -196,7 +197,8 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
     const shown = shownValue(c.at, c.edit, c.at.kind === 'core' && isCellMetric(c.at.value.metric) ? unitOf(c.at.value.metric) : 'si', choices.editUnits?.[c.ref]);
     const error = errorWords(c.fault, unitOf);
     const replaces = c.v.copy ? null : review.held.get(`${c.file}:${c.ref}`) ?? null;
-    const on = savesOn(lab.days[c.ref], lab.day, now);
+    // A row is named with the day its control shows; one under no control (a column printed on a day still to come) with none.
+    const on = days.has(section) ? savesOn(lab.days[c.ref], lab.day, now) : null;
     const dayLine = on && (longDate(on) ?? on);
     const from = [lab.name, dayLine].filter(Boolean).join(', ');
     const again = named.has(`${c.v.label}\n${from}`);
@@ -212,7 +214,7 @@ export function uploadList(s: UploadState, record: RoadmapFile, now: string, rev
       shown, error,
       replaces, replacing, held: heldText(replaces ? rowsById.get(replaces) : undefined, record),
       attention: check || touched, reasons,
-      name: REVIEW_CELL_TEXT.rowName(c.v.label, from, again),
+      name: REVIEW_CELL_TEXT.rowName(c.v.label, from, again), dayLine: dayLine || null, again,
       replaceLabel: replaces && dayLine ? REVIEW_CELL_TEXT.replaceLabel(c.v.label, dayLine) : null,
       unit: rowUnit(c.at, c.typed, shown, unitOf),
       printed: c.at.kind === 'core' ? printedNote(c.at.value, isCellMetric(c.at.value.metric) ? unitOf(c.at.value.metric) : 'si') : null,

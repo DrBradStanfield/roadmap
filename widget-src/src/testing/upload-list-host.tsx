@@ -3,16 +3,14 @@
 // the record changes (US-13 AC21, as the iPhone's door does), and draws `UploadList` from `uploadList`, `uploadView` and
 // `uploadListPage`. A unit press sets that test's unit, as the web's setters do (hooks/useUnits.ts per-field overrides,
 // lib/lpa-unit.ts for Lp(a)); the engine reads it back through `unitOf`. Not shipped: only tests and the harness page
-// import it. The later mount PR builds the same adapter into useUploadFlow.
+// import it. The page's mount (components/UploadReviewList.tsx) is the same adapter over useUploadFlow.
 import { useRef, useState, type MutableRefObject } from 'react';
 import type { CellUnit } from '@roadmap/health-core/cell-unit';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import type { MetricType } from '@roadmap/health-core/units';
 import { transition, type UploadEvent, type UploadState } from '@roadmap/health-core/upload-flow';
-import { uploadList } from '@roadmap/health-core/upload-list';
-import { uploadListPage } from '@roadmap/health-core/upload-list-page';
 import { lostReplaces, reviewedWrites, uploadReview } from '@roadmap/health-core/upload-review';
-import { uploadView } from '@roadmap/health-core/upload-view';
+import { uploadScreens } from '../lib/upload-screens';
 import { UploadList } from '../components/UploadList';
 
 type UnitOf = (m: MetricType) => CellUnit;
@@ -32,13 +30,7 @@ export interface ListHost {
   see: () => ReturnType<typeof engineSee>;
 }
 
-export function engineSee(s: UploadState, record: RoadmapFile, now: string, unitOf: UnitOf) {
-  const review = uploadReview(s, record, now);
-  return {
-    review, list: uploadList(s, record, now, review, unitOf), view: uploadView(s, record, now, review, false, unitOf),
-    page: uploadListPage(s, record, now, review, false),
-  };
-}
+export const engineSee = (s: UploadState, record: RoadmapFile, now: string, unitOf: UnitOf) => uploadScreens({ uploadReview }, s, record, now, false, unitOf);
 
 export function UploadListHost({ initial, record, now, unitOf = () => 'si', host }: {
   initial: UploadState; record: RoadmapFile; now: string; unitOf?: UnitOf; host?: MutableRefObject<ListHost | null>;
