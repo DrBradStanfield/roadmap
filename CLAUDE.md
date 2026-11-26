@@ -41,7 +41,7 @@ A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
 - Two builds, same source: Shopify storefront (`build:shopify-prod`, both
   stores; tool page on both: drstanfield.com /pages/roadmap, microvitamin.com /pages/health-plan in brand posture)
   and GitHub Pages self-host (`build:pages`, no Brad server, BYOK). Flags: `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only — gates Brad-server features). Detail: docs/deploy-runbook.md.
-- **iOS app (native SwiftUI, spike under way):** lives in `ios/`; its rules: [ios/CLAUDE.md](ios/CLAUDE.md); every
+- **iOS app (native SwiftUI, in TestFlight and App Store review):** lives in `ios/`; its rules: [ios/CLAUDE.md](ios/CLAUDE.md); every
   decision and its why: [ios/architecture.md](ios/architecture.md) — keep it current.
 
 ## Clinical Content — three-file sync (HARD RULE)
@@ -55,15 +55,7 @@ before deploying.
 
 ## Shared Data with claude_business
 
-(`~/Documents/claude_business.nosync/`)
-
-- **`docs/products.md` is the MASTER here — a real tracked file** (inverted 2026-08-10; claude_business
-  holds the symlink). Edit it in a worktree; claude_business edits land uncommitted here: own PR (docs/git-workflow.md).
-- **`docs/chatbot/` is GENERATED (claude_business `tools/sync-shared-docs.mjs`), never edit.** `scripts/check-symlinks.mjs` keeps it, products.md and writing-style.md REAL files (mode 100644) and checks the synced hashes.
-- `docs/blog/*.md` — chatbot blog cache from claude_business `/blog-post`; after a frontmatter edit, `npm run rebuild-index` rebuilds `docs/blog/index.json` (CI checks it is in sync).
-- **Customer-service gateway (live):** its OWN Fly app; code only in private claude_business `customer-service-gateway/`. Spec: its `docs/customer-service.md`.
-  **Replying to mail sent to brad@microvitamin.com** (the Gmail connector reaches only drstanfield.com): find it with claude_business `node tools/gmail.js search --account microvitamin`, send Brad's approved text in that thread via the gateway's `POST /send-reply` — never a new email from drstanfield.com (Brad 2026-10-16).
-- **Chatbot docs are private (Brad 2026-10-22):** start at claude_business `docs/chat-start-here.md`; knowledge-pipeline docs in its `docs/roadmap-chat/`. No licensed third-party clinical text, and no account of how the private pipeline uses it, in this public repo.
+Shared data with claude_business (products.md master (`scripts/check-symlinks.mjs`), generated `docs/chatbot/`, blog cache, the customer-service gateway and replying to brad@microvitamin.com, private chatbot docs): [docs/reference.md](docs/reference.md) § Shared Data with claude_business.
 
 ## Anti-Entropy & Writing Style
 
@@ -73,7 +65,7 @@ before deploying.
 - Skills (`.claude/`) and on-demand docs (docs/reference.md, docs/deploy-runbook.md): ≤500 lines — split by topic
   at the cap. Loop files: per [docs/loops/LOOP.md](docs/loops/LOOP.md) (always-loaded ≤200; notes ≤500;
   reports ≤150; changelogs + CSVs are history/data, cap-exempt).
-- **Production code (Brad 2026-11-09):** target 300–500 lines per file, split by what changes together; a file over 500 never grows (split it first).
+- **Production code (Brad 2026-11-09):** target 300–500 lines per file, split by what changes together; a file over 500 never grows (split it first); no explicit `any` in TypeScript, and a file's count only falls (Brad 2026-11-23).
 - **Docs are Markdown; Artifacts are built from them (HARD, Brad 2026-10-12, both repos):** `node tools/md-artifact.mjs <file.md>`, republish to its `artifact:` URL; never hand-edit an Artifact or write a new HTML doc.
 - Memory: 200 lines/25KB, hard-enforced. Structured records → CSV, never prose.
 
@@ -126,7 +118,7 @@ only check, and the notification issue is a heads-up, not a veto. Trigger:
 Actions → Deploy → Run workflow, or the Tier 3 pipeline (claude-review →
 auto-ship → dispatch). **Standing deploy permission (Brad 2026-10-22):** the main session may run the CI
 Deploy (`gh workflow run deploy.yml`) once CI is green and the required reviews are done (once per
-batch of merges), then reports each deploy (sha, result, live checks) to Brad.
+batch of merges, at the checkpoint), then reports each deploy (sha, result, live checks) to Brad.
 **Commit before any deploy** — `fly deploy` ships the working tree. `.env`
 has every variable; the list and per-Fly-app secrets: docs/deploy-runbook.md
 § Environment variables. Secret names: docs/deploy-runbook.md § Environment variables (GitHub Actions).
@@ -159,7 +151,7 @@ test. Miss a step = the value silently fails to round-trip.
 
 - **Lane A (bug fix):** find the violated US-xx AC (add it if missing) →
   failing test citing the US-id → fix → pass → /simplify → CI green →
-  deploy → verify live (desktop + REAL WebKit) → update story test-status.
+  merge → deploy and verify live at the checkpoint (desktop + REAL WebKit) → update story test-status.
 - **Lane B (new feature):** story + ACs FIRST → **declare the usage signal**
   (`product_events` event; unmeasurable features can't be evaluated) → gate
   check (clinical → three-file sync; merge/security/FHIR → the
@@ -168,7 +160,7 @@ test. Miss a step = the value silently fails to round-trip.
   thin charters + [REGISTRY.md](docs/loops/REGISTRY.md). Loops are features:
   registry row + success signal before first run. Tier 3 ships via auto-ship's 30-min veto.
 - **No staging — production is the acceptance environment.** Small changes,
-  deploy promptly, verify immediately; lean on funnel events, Clarity, Sentry.
+  deploy each batch promptly, verify at once; lean on funnel events, Clarity, Sentry.
 
 ## Development Rules
 
@@ -176,7 +168,7 @@ test. Miss a step = the value silently fails to round-trip.
   EnterWorktree `path`; hooks deny main-checkout edits and an un-PR'd turn end, and clone node_modules in.
   Merge gate per PR = CI green on its head sha, one review by class, citation numbering, the owner's word on that
   sha; merge main in only as docs/git-workflow.md step 4 says (PR 150). Only `gh pr merge <n> --merge --match-head-commit <sha>`
-  (or auto-ship). Deploy, simulator run and live checks wait for the checkpoint. Contributor PRs: Brad's sessions, batches, `hold` on.
+  (or auto-ship). Deploy, simulator run and live checks wait for the checkpoint (a bridge PR's simulator run excepted: docs/git-workflow.md § Checkpoints). Contributor PRs: Brad's sessions, batches, `hold` on.
   Live writes and deploys run merged code only; then `tools/worktree-done.sh`. Steps: docs/git-workflow.md.
 - **One owner per PR (HARD):** whoever opens it merges or closes it before ending, or the final report names
   it. `stale-pr-watch.yml` (PRs idle >48h) and `stranded-branch-watch.yml` email Brad. Work found uncommitted

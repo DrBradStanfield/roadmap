@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H420,web sync,"The device-full failure carries a typed reason, as 'storage-full' does for clouds, so a stopped switch can name it",lead,not started,Filed 2026-11-26 from the day's reviews: storage-full is in packages/health-core/src/adapter.ts. Build: a typed reason on the local-storage full failure. (H420),,no

@@ -20,7 +20,13 @@
  * previewed with its edit. The test names its seeds (a web read lab report holding an edit on a value the review does
  * not send, whose answer differs once that preview is undone), asserts the changed seeds are exactly those and AC11's,
  * and that with the preview undone each hashes to main's answer. Every phone seed, edits included, answers as main did:
- * the phone's preview never reads an edit. Unreachable today: the web never calls the engine's view yet. Synthetic values only.
+ * the phone's preview never reads an edit. Unreachable today: the web never calls the engine's view yet.
+ *
+ * Owner ruling on PR 1957 (2026-11-22) changes, on purpose, one more class, on both platforms: a read letter starts from
+ * the reader's answer in the upload state, never from a row the record holds for its bytes. The test names its seeds from
+ * the inputs alone (the record holds the metadata-only letter row `held-doc` for `h-f1`, and f1 is a read letter), asserts
+ * the changed seeds are exactly those and the classes above, and that with the held row's title and date put back where
+ * the person made no fix (in the plan and in the view's documents row) each hashes to main's answer. Synthetic values only.
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -33,8 +39,8 @@ import { NO_CHOICES, type FileChoices } from './upload-choices';
 import type { UploadFile, UploadState } from './upload-flow';
 import { labReadFound, planIsEmpty, uploadSavePlan, type UploadSavePlan } from './upload-plan';
 import { uploadReview } from './upload-review';
-import { UPLOAD_TEXT } from './upload-text';
-import { uploadView } from './upload-view';
+import { FILE_NOTICE_TEXT, UPLOAD_TEXT } from './upload-text';
+import { documentDateLine, uploadView } from './upload-view';
 
 const GOLDEN = join(__dirname, '__fixtures__', 'upload-pr0-golden.json');
 const SEEDS = 800;
@@ -47,6 +53,8 @@ const FUTURE = '2026-12-01';
 const AC11_SEEDS = 15;
 /** How many seeds the web list PR 1b rule names (`editPreviewCandidate`): 19, all on the web. */
 const EDIT_PREVIEW_SEEDS = 19;
+/** How many seeds the read-letter ruling names (`heldLetter`): the spread, on both platforms. */
+const HELD_LETTER_SEEDS = 35;
 
 /** Kept here, not shared: a shared generator that changed would change every seed and the golden with it. */
 function mulberry32(seed: number): () => number {
@@ -162,6 +170,10 @@ function canonical(value: unknown): string {
   });
 }
 
+/** The Save label as main's rule gave it, in every phase. */
+const mainLabel = ({ values, documents, originals }: UploadSavePlan['counts']) =>
+  (values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals));
+
 /** Main's answer for a case: the new fields checked (no column waits), then left out. `days` is the review's
  *  own record of each value's day, which main kept inside the review; its effect is in the plan and view. */
 function parts(c: Case, previewEdits = true) {
@@ -169,14 +181,18 @@ function parts(c: Case, previewEdits = true) {
   // which turns the edit's preview on for the web only; the review reads the platform for nothing else).
   const review = uploadReview(previewEdits ? c.state : { ...c.state, platform: 'phone' }, c.record, NOW);
   const plan = uploadSavePlan(c.state, c.record, NOW, review, c.cloud);
-  const view = uploadView(c.state, c.record, NOW, review, c.cloud);
+  const drawn = uploadView(c.state, c.record, NOW, review, c.cloud);
+  // US-12 AC6 (2026-11-23): Save says "Saving..." while it saves, on both platforms, on purpose. Undone here for every
+  // saving seed, after checking it: the label main drew then, the plan's words.
+  if (c.state.phase === 'saving') expect(drawn.save.label).toBe(UPLOAD_TEXT.saving);
+  const view = c.state.phase === 'saving' ? { ...drawn, save: { ...drawn.save, label: mainLabel(plan.counts) } } : drawn;
   const labFiles = review.labFiles.map((l) => {
     const { needsColumnDay, waits, days: _days, ...old } = l as typeof l & { needsColumnDay?: boolean; waits?: readonly string[]; days?: unknown };
     expect(needsColumnDay ?? false).toBe(false);
     expect(waits ?? []).toEqual([]);
     return old;
   });
-  return { review: { ...review, labFiles }, plan, view: mainView(view) };
+  return { review: { ...review, labFiles }, plan, view: mainView(view, c.state) };
 }
 const answer = (c: Case): string => canonical(parts(c));
 
@@ -220,24 +236,66 @@ function asMain(c: Case, kept: ReturnType<typeof keptAlone>): string {
   const { review, plan, view } = parts(c);
   const ids = new Set(kept.map((k) => k.fileId));
   const main: UploadSavePlan = { ...plan, labArchives: plan.labArchives.filter((a) => !ids.has(a.fileId)), counts: { ...plan.counts, originals: plan.counts.originals - kept.length } };
-  const { values, documents, originals } = main.counts;
-  const label = values || documents || !originals ? UPLOAD_TEXT.saveBoth(values, documents) : UPLOAD_TEXT.saveOriginals(originals);
+  const label = mainLabel(main.counts);
   // Only an open page asks the plan whether Save has anything to do; nothing else in the view reads these fields.
   const empty = c.state.phase === 'open' && view.save.why === null && planIsEmpty(main);
   const save = { ...view.save, label, ...(empty ? { enabled: false, why: UPLOAD_TEXT.saveNothing } : {}) };
   return canonical({ review, plan: main, view: { ...view, save } });
 }
 
+/** The metadata-only letter row `genRecord` may hold, for `h-f1`: its title and date, as main's plan started from them. */
+const HELD_ROW = { title: 'Held letter', date: '2026-01-01' };
+
+/** The read-letter ruling's seeds, from the inputs alone: the record holds `held-doc` and f1 is a read letter. */
+function heldLetter(c: Case): UploadFile | null {
+  if (!c.record.documents.some((d) => d.id === 'held-doc' && d.contentHash === 'h-f1' && !d.fileRef)) return null;
+  const f = 'files' in c.state ? c.state.files.find((x) => x.id === 'f1') : undefined;
+  return f?.status.s === 'read' && f.status.extraction.classification !== 'lab_report' && f.status.extraction.document ? f : null;
+}
+
+/** The answer with the ruling undone: the letter's title and date as the held row gave them where the person made no
+ *  fix, in the plan and in the view's documents row drawn from it. */
+function asMainHeld(c: Case, f: UploadFile): string {
+  const { review, plan, view } = parts(c);
+  const fix = f.status.s === 'read' ? f.status.choices.document : {};
+  const undo = <T extends { title: string; documentDate: string | null }>(x: T): T =>
+    ({ ...x, ...(fix.title === undefined ? { title: HELD_ROW.title } : {}), ...('date' in fix ? {} : { documentDate: HELD_ROW.date }) });
+  const documents = plan.documents.map((d) => (d.fileId === f.id ? { ...d, fields: undo(d.fields) } : d));
+  const fields = documents.find((d) => d.fileId === f.id)!.fields;
+  const rows = view.documents && view.documents.rows.map((r) => (r.fileId !== f.id ? r : {
+    ...r, title: fields.title, date: documentDateLine(fields.documentDate), dateKnown: fields.documentDate !== null, day: fields.documentDate?.slice(0, 10) ?? null,
+  }));
+  return canonical({ review, plan: { ...plan, documents }, view: { ...view, documents: view.documents && { ...view.documents, rows } } });
+}
+
 /**
  * The view as main drew it: the web list's new keys (PR 1a) deleted, and nothing else touched. Each row's `saves`, each
  * day section's `key`, and Save's `blockers`. No `unitOf` is passed, so no row has `shown`.
+ *
+ * PR 1974's one placement rule for a file's reason (US-12 AC9) moves, on purpose, a read file's empty-read line: main put
+ * it both in its Files row and in `notices`; now it sits in one of them, by what the screen draws. Undone here for every
+ * seed: each Files row's `notFullyRead` deleted, and the line put back in both places. No seed is cut short, so the
+ * empty-read lines are the only soft reasons. Before that, each line is checked to sit in exactly one place: in the
+ * notices beside a row reading "Read" on the iPhone's review, else in the row with no notice.
  */
 const MAIN_VIEW_OMITS = { row: ['saves'], section: ['key'], save: ['blockers'] } as const;
-function mainView(view: ReturnType<typeof uploadView>) {
+function mainView(view: ReturnType<typeof uploadView>, s: UploadState) {
   const omit = <T extends object>(x: T, keys: readonly string[]) => Object.fromEntries(Object.entries(x).filter(([k]) => !keys.includes(k)));
   const row = (r: object) => omit(r, MAIN_VIEW_OMITS.row);
+  const empty: readonly string[] = [FILE_NOTICE_TEXT.noValues, FILE_NOTICE_TEXT.documentOnly];
+  if (s.platform === 'phone' && s.phase !== 'done') {
+    expect(view.files.rows.filter((r) => empty.includes(r.status))).toEqual([]);
+    for (const n of view.notices) expect(view.files.rows.find((r) => r.fileId === n.fileId)?.status).toBe(UPLOAD_TEXT.statusRead);
+    expect(new Set(view.notices.map((n) => n.fileId)).size).toBe(view.notices.length);
+  } else {
+    expect(view.notices).toEqual([]);
+  }
+  const soft = new Map([...view.files.rows.filter((r) => empty.includes(r.status)).map((r) => [r.fileId, r.status] as const),
+    ...view.notices.map((n) => [n.fileId, n.line] as const)]);
   return {
     ...view,
+    files: { ...view.files, rows: view.files.rows.map(({ notFullyRead: _, ...r }) => ({ ...r, status: soft.get(r.fileId) ?? r.status })) },
+    notices: view.files.rows.filter((r) => soft.has(r.fileId)).map((r) => ({ fileId: r.fileId, name: r.name, line: soft.get(r.fileId)! })),
     sections: view.sections.map((x) => omit('rows' in x && x.kind === 'unsure' ? { ...x, rows: x.rows.map(row) } : x, MAIN_VIEW_OMITS.section)),
     sure: view.sure && { ...view.sure, rows: view.sure.rows.map(row) },
     save: omit(view.save, MAIN_VIEW_OMITS.save),
@@ -262,9 +320,19 @@ describe('US-13 AC24: PR 0 is inert with none of its choices set', () => {
       const c = genCase(Number(seed));
       return editPreviewCandidate(c) && hash(canonical(parts(c, false))) !== now[seed];
     });
-    expect(changed).toEqual(Object.keys(now).filter((seed) => ac11.includes(seed) || previewed.includes(seed)));
+    const held = Object.keys(now).filter((seed) => heldLetter(genCase(Number(seed))) !== null);
+    expect(changed).toEqual(Object.keys(now).filter((seed) => ac11.includes(seed) || previewed.includes(seed) || held.includes(seed)));
     expect(ac11).toHaveLength(AC11_SEEDS);
     expect(previewed.filter((seed) => !ac11.includes(seed))).toHaveLength(EDIT_PREVIEW_SEEDS);
+    // The read-letter class shares no seed with the others, so each is undone alone.
+    expect(held.filter((seed) => ac11.includes(seed) || previewed.includes(seed))).toEqual([]);
+    expect(held).toHaveLength(HELD_LETTER_SEEDS);
+    expect(new Set(held.map((seed) => genCase(Number(seed)).state.platform))).toEqual(new Set(['web', 'phone']));
+    // And how: with the held row's title and date put back where the person made no fix, each answers as main did.
+    for (const seed of held) {
+      const c = genCase(Number(seed));
+      expect(hash(asMainHeld(c, heldLetter(c)!)), seed).toBe(golden[seed]);
+    }
     // And how: with the edit's preview undone, each answers as main did.
     for (const seed of previewed.filter((x) => !ac11.includes(x))) expect(hash(canonical(parts(genCase(Number(seed)), false))), seed).toBe(golden[seed]);
     // And how: each kept report is one new `labArchives` entry, `originals` counts it, the label says so; undone, main's answer.

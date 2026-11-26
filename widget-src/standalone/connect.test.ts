@@ -188,10 +188,14 @@ describe('storageState', () => {
  * browser would hold none of it, so the switch stops instead.
  */
 describe('prepareSwitch (US-09 AC13)', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     disconnectSpy.mockClear();
     cloudReadSpy.mockClear();
     Object.defineProperty(globalThis, 'localStorage', { value: makeStorage(), writable: true, configurable: true });
+    // A fresh page on this storage: one loaded on an earlier test's logged-off storage reads as logged off (US-09 AC56).
+    vi.resetModules();
+    ({ prepareSwitch } = await import('./connect'));
+    local = await import('../src/storage/local-storage-adapter');
   });
   afterEach(() => {
     Reflect.deleteProperty(globalThis, 'localStorage');

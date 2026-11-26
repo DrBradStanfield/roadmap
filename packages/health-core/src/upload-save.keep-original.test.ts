@@ -35,7 +35,7 @@ function cloudIO(fail: { notHeld?: string[]; refused?: string[] } = {}): UploadS
   const stored: string[] = [];
   let n = 0;
   return {
-    stored, holds: (id) => !fail.notHeld?.includes(id), original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf',
+    stored, stopped: () => false, holds: (id) => !fail.notHeld?.includes(id), original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf',
     write: async (ref, _b, id) => { if (fail.refused?.includes(id)) throw new Error('refused'); stored.push(ref); },
     now: () => NOW, newId: () => `doc-${n++}`,
   };
@@ -147,7 +147,7 @@ describe('US-14 AC11: the counts come from what Save wrote', () => {
     expect(stored).toEqual([]);
     expect(archives(file).every((d) => !d.fileRef)).toBe(true); // its hash alone, so a later upload can still store it
     expect(outcome).toEqual({ values: 0, documents: 0, archived: 0, unstored: 1 });
-    expect(done).toMatchObject({ archived: null, unstored: UPLOAD_TEXT.unstoredLine });
+    expect(done).toMatchObject({ archived: null, unstored: UPLOAD_TEXT.unstoredAlone }); // no details were saved (Brad 2026-11-23)
   });
 
   it('a ticked report and a letter the caller does not hold are counted unstored too', async () => {
@@ -161,7 +161,7 @@ describe('US-14 AC11: the counts come from what Save wrote', () => {
     expect(stored).toEqual([]);
     expect(archives(file).every((d) => !d.fileRef)).toBe(true);
     expect(outcome).toEqual({ values: 0, documents: 0, archived: 0, unstored: 1 });
-    expect(done).toMatchObject({ archived: null, unstored: UPLOAD_TEXT.unstoredLine });
+    expect(done).toMatchObject({ archived: null, unstored: UPLOAD_TEXT.unstoredAlone }); // no details were saved (Brad 2026-11-23)
   });
 });
 

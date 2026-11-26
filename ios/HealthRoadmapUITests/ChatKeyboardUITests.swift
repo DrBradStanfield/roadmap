@@ -43,7 +43,7 @@ final class ChatKeyboardUITests: XCTestCase {
         // isHittable ignores the keyboard's window, so the check is a tap: where My health
         // was, the keyboard takes it.
         app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: myHealth.midX, dy: myHealth.midY)).tap()
-        XCTAssertFalse(app.buttons["Add medical records"].firstMatch.waitForExistence(timeout: 2), "the keyboard covers the tab bar: My health did not open")
+        XCTAssertFalse(app.buttons["Settings"].firstMatch.waitForExistence(timeout: 2), "the keyboard covers the tab bar: My health did not open")
         XCTAssertTrue(app.keyboards.firstMatch.exists, "the keyboard is still up")
         keepScreenshot(app.screenshot(), named: "keyboard up")
     }
@@ -55,7 +55,7 @@ final class ChatKeyboardUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [wait], timeout: 5), .completed, "the keyboard went down")
         XCTAssertTrue(app.tabBars.buttons["My health"].isHittable, "My health is one tap away")
         app.tabBars.buttons["My health"].tap()
-        XCTAssertTrue(app.buttons["Add medical records"].firstMatch.waitForExistence(timeout: 5), "one tap opens My health")
+        XCTAssertTrue(app.buttons["Settings"].firstMatch.waitForExistence(timeout: 5), "one tap opens My health")
     }
 
     @MainActor

@@ -23,8 +23,8 @@ export const PSA_REPEAT_NAME = 'Repeat PSA (your last result)';
 export const psaRaised = (s: ScreeningInputs): boolean =>
   s.prostatePsaValue !== undefined && s.prostatePsaValue >= PSA_THRESHOLDS.normal;
 
-/** The 3-month rule holds: raised, or a vague newer limit after a raised PSA (`planPsa`, item 6). */
-export const psaRuleHolds = (s: ScreeningInputs): boolean => psaRaised(s) || s.prostatePsaLimit?.raisedBefore === true;
+/** The 3-month rule holds: raised, or a newer PSA that does not decide after a raised one (`withPsaMeasurement`, item 6). */
+export const psaRuleHolds = (s: ScreeningInputs): boolean => psaRaised(s) || s.prostatePsaRaisedBefore === true;
 
 /** Below 2.5: a value, or a limit only when it decides ("< 1.0" does, "< 3" does not). */
 function belowBiennialLine(s: ScreeningInputs): boolean {

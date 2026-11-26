@@ -26,6 +26,29 @@ async function docx(body: string, parts: Record<string, string> = {}): Promise<A
 }
 const hdr = (xml: string) => `<w:hdr ${NS}>${xml}</w:hdr>`;
 const ftr = (xml: string) => `<w:ftr ${NS}>${xml}</w:ftr>`;
+type Read = Awaited<ReturnType<typeof docxToText>>;
+/** The fastest of three reads, in ms, each checked. */
+async function fastest(file: ArrayBuffer, check: (r: Read) => void): Promise<number> {
+  let best = Infinity;
+  for (let i = 0; i < 3; i++) {
+    const t0 = performance.now();
+    check(await docxToText(file));
+    best = Math.min(best, performance.now() - t0);
+  }
+  return best;
+}
+/** Times growth, not speed (an absolute budget fails on a loaded machine, docs/gotchas.md 2026-11-13, lead
+ *  TA-3): each 4x step must take under 10x the time (linear about 4, quadratic about 16). Under 1 ms is timer
+ *  noise; 10 s is a last-resort backstop. */
+async function expectLinear(sizes: number[], build: (n: number) => string, check: (r: Read) => void) {
+  let previous = 0;
+  for (const [step, n] of sizes.entries()) {
+    const took = await fastest(await docx(build(n)), check);
+    expect(took, `at ${n}`).toBeLessThan(10_000);
+    if (step) expect(took / Math.max(previous, 1), `growth from ${sizes[step - 1]} to ${n}`).toBeLessThan(10);
+    previous = took;
+  }
+}
 
 describe('US-12 AC13: docxToText', () => {
   it('keeps each table row on one line, its cells in order, an empty previous result in its column', async () => {
@@ -98,13 +121,10 @@ describe('US-12 AC13: docxToText', () => {
   });
 
   it('reads crafted XML of unclosed tags in linear time, not quadratic', async () => {
-    // 1 MB of `<w:t ` and `<mc:Fallback` opens with no close: each once scanned to the end of the part.
-    const crafted = '<w:t x'.repeat(90_000) + '<mc:Fallback>'.repeat(40_000);
-    expect(crafted.length).toBeGreaterThan(1_000_000);
-    const file = await docx(crafted);
-    const started = performance.now();
-    expect((await docxToText(file)).text).toBe('');
-    expect(performance.now() - started).toBeLessThan(1000);
+    // Up to 1 MB of `<w:t ` and `<mc:Fallback` opens with no close: each once scanned to the end of the part.
+    const crafted = (n: number) => '<w:t x'.repeat(n) + '<mc:Fallback>'.repeat(n * 4 / 9);
+    expect(crafted(90_000).length).toBeGreaterThan(1_000_000);
+    await expectLinear([5_625, 22_500, 90_000], crafted, (r) => expect(r.text).toBe(''));
   });
 
   it('keeps every line of a document with more paragraphs than a call takes arguments', async () => {
@@ -330,43 +350,39 @@ describe('US-12 AC13: vertical merges, run-level deletions and loose attribute s
   it('stops copying merged text once past the cap: a thousand rows of merged columns finish fast, truncated', async () => {
     // 15 merged columns of 40,000 characters down 1,000 rows: 600 million
     // characters copied, past the longest string JavaScript can hold.
-    const restart = 'Long unit note '.repeat(2667);
     const cols = 15;
-    const rows = [
+    const rows = (restart: string) => tbl(
       `<w:tr>${tc('Test')}${vm('restart', restart).repeat(cols)}</w:tr>`,
       ...Array.from({ length: 1000 }, (_, i) => `<w:tr>${tc(`T${i}`)}${vm(null, '').repeat(cols)}</w:tr>`),
-    ];
-    const started = performance.now();
-    const { text, truncated } = await docxToText(await docx(tbl(...rows)));
-    expect(performance.now() - started).toBeLessThan(3000);
-    expect(truncated).toBe(true);
-    expect(text.length).toBeLessThanOrEqual(60_000);
+    );
+    // Timed against the same table with a one-word note, read on the same machine at once, so load cancels
+    // out (an absolute budget fails on a loaded machine, lead TA-3). Stopped at the cap, the long note reads
+    // in about the time of the short one (37 ms whole test, 2026-11-26); copying past it costs hundreds of times that.
+    const short = await fastest(await docx(rows('Note')), () => undefined);
+    const long = await fastest(await docx(rows('Long unit note '.repeat(2667))), ({ text, truncated }) => {
+      expect(truncated).toBe(true);
+      expect(text.length).toBeLessThanOrEqual(60_000);
+    });
+    expect(long / Math.max(short, 1)).toBeLessThan(5);
   });
 
   // Review of c1362acd (Codex + adversary).
   it('reads many open rows then many cell closes, and deep balanced nesting, in linear time', async () => {
     // 64 open rows (the cap) and many cell closes, so every close runs the running count.
-    let started = performance.now();
-    await docxToText(await docx('<w:tr>'.repeat(64) + '<w:tc></w:tc>'.repeat(200_000)));
-    expect(performance.now() - started).toBeLessThan(3000);
+    await expectLinear([12_500, 50_000, 200_000], (n) => '<w:tr>'.repeat(64) + '<w:tc></w:tc>'.repeat(n), () => undefined);
     const nest = (depth: number): string => (depth ? `<w:tbl><w:tr><w:tc>${nest(depth - 1)}</w:tc></w:tr></w:tbl>` : p('core'));
     // Within the cap of 64 open rows, nesting reads whole.
     expect(await docxToText(await docx(nest(64)))).toMatchObject({ text: 'core', truncated: false });
     // Past it, reading stops and says so (Word never nests tables near that deep).
-    started = performance.now();
-    expect(await docxToText(await docx(p('top') + nest(2000)))).toMatchObject({ text: 'top', truncated: true });
-    expect(performance.now() - started).toBeLessThan(1000);
+    await expectLinear([125, 500, 2000], (n) => p('top') + nest(n), (r) => expect(r).toMatchObject({ text: 'top', truncated: true }));
   });
 
   // The adversary's perf probe: 16,000 nested rows around 1 MB of text would
   // copy it up through every level.
   it('stops at the nesting cap before deep rows copy a long text up each level', async () => {
-    const depth = 16_000;
-    const body = '<w:tr><w:tc>'.repeat(depth) + `<w:p><w:r><w:t>${'a '.repeat(500_000)}</w:t></w:r></w:p>` + '</w:tc><w:tc></w:tc></w:tr>'.repeat(depth);
-    const file = await docx(body);
-    const started = performance.now();
-    expect((await docxToText(file)).truncated).toBe(true);
-    expect(performance.now() - started).toBeLessThan(1000);
+    // Depth and text grow together, so each 4x step copies 16x the text without the cap.
+    const body = (depth: number) => '<w:tr><w:tc>'.repeat(depth) + `<w:p><w:r><w:t>${'a '.repeat(depth * 32)}</w:t></w:r></w:p>` + '</w:tc><w:tc></w:tc></w:tr>'.repeat(depth);
+    await expectLinear([1000, 4000, 16_000], body, (r) => expect(r.truncated).toBe(true));
   });
 
   // stop2 R1: rows nested in a deleted row are deleted too.

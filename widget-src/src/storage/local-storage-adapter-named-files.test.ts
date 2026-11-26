@@ -84,6 +84,7 @@ describe('US-09 AC2c: the on-device adapter writes a named file only while the p
       expect(error).toBeInstanceOf(core.StorageError);
       expect((error as Error).name).toBe('WritesStoppedError');
       expect((error as Error).message).toBe('On-device roadmap persistence stopped for logout.');
+      expect((error as { outcome?: unknown }).outcome).toBe('refused'); // US-10 AC17: named by its own constructor
     }
   });
 

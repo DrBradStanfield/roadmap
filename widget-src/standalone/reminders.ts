@@ -289,6 +289,8 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
   if (isKnownMinorNow()) return; // US-07 AC6: never enrol a known minor
 
   const optIn = getReminderOptIn();
+  // The erase the opt-in was read under: the provider sync below writes under it, or not at all (US-16 AC2a).
+  const erase = getShownErase();
   if (optIn?.status === 'cancelled') return; // AC4 — their decision, on every device, forever
   if (optIn?.status === 'active' && optIn.provider === backend) return;
 
@@ -306,7 +308,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       const address = identity && 'email' in identity ? identity.email
         : backend === 'google-drive' ? new GoogleDriveAdapter(googleDriveConfig()).accountEmail() : null;
       if (address && sameAddress(address, current.email)) {
-        setReminderOptIn({ ...current, provider: backend });
+        setReminderOptIn({ ...current, provider: backend }, erase);
         await flushRoadmapStore();
         return;
       }
@@ -451,6 +453,8 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
  */
 export async function pushReminderSchedule(backend: Backend, keepalive = false): Promise<void> {
   const optIn = getReminderOptIn();
+  // The erase the opt-in was read under: a 404's clean-up writes under it, or not at all (US-16 AC2a).
+  const erase = getShownErase();
   if (optIn?.status !== 'active') return;
   // US-07 AC6: a known minor is due nothing, and the server fills any pushed
   // schedule with its annual check-in. So a row enrolled earlier is turned
@@ -483,7 +487,7 @@ export async function pushReminderSchedule(backend: Backend, keepalive = false):
     // about the current one (Codex R1, 2026-10-14).
     if (res.status === 404 && !cancelledBySwitch
       && safeGetItem(SWITCH_CANCELLED_KEY) !== optIn.token && sameOptIn(getReminderOptIn(), optIn)) {
-      setReminderOptIn({ ...optIn, status: 'cancelled' });
+      setReminderOptIn({ ...optIn, status: 'cancelled' }, erase);
       window.dispatchEvent(new Event('hr:reminders-changed'));
     }
   } catch (error) {

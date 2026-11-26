@@ -148,6 +148,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   harness cannot catch a fabricated citation, so the veto issue tells Brad what
   he accepts by waiting. The next run compares live chat (misses, fallbacks)
   with the prior week; a regression is a revert PR through the same pipeline.
+  That comparison filters out `platform=youtube`: those rows run on Haiku since US-15 AC78.
   Never edit the pin on main directly. Signal: a newer Sonnet is qualified or
   rejected within one week of release, evidenced by the PR.
 

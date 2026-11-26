@@ -14,7 +14,7 @@ import { validateHealthInputs } from '@roadmap/health-core/validation';
 import { saveTasksToStore } from '../hooks/useLongitudinalSave';
 import { activeRowIndex, slotOf, type SaveTask } from '../lib/matrix-save';
 import {
-  correctValue, countMeasuresAdded, currentSaveStatus, flushRoadmapStore, getBackendKind, getInitialInputsSync, getShownErase,
+  correctValue, countMeasuresAdded, currentSaveStatus, flushRoadmapStore, getBackendKind, getInitialInputsSync,
   loadAllHistorySync, loadLatestMeasurementsSync, saveChangedMeasurements,
 } from '../lib/roadmap-data';
 import { healthWritesAllowed, loadUnitPreference } from '../lib/storage';
@@ -141,11 +141,11 @@ export type SaveOutcome =
  * a weight and a waist as today's values through the full app's own save.
  * Each replaces only what the person saw (`seen`, review A4). Then wait for
  * the store to keep it (review A3). `values` hold no errors (readBoxes).
+ * `erase`: the erase the page showed when the save was asked; a record at another one takes nothing (US-75 AC8).
  */
-export async function saveMeasured(values: Measured, entered: Set<Field>, seen: Seen, system: UnitSystem): Promise<SaveOutcome> {
+export async function saveMeasured(values: Measured, entered: Set<Field>, seen: Seen, system: UnitSystem, erase: string): Promise<SaveOutcome> {
   const none: Staged = { saved: [], inserted: [] };
   if (getBackendKind() === 'local' && !healthWritesAllowed()) return { kind: 'failed', staged: none };
-  const erase = getShownErase();
   const saved: Field[] = [], changed: Field[] = [], refused: Field[] = [];
   if (entered.has('height') && values.heightCm !== undefined) {
     const recorded = getInitialInputsSync().heightCm;

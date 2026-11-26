@@ -17,7 +17,7 @@ import { CHAT_MEDS_UNREADABLE, CHAT_VALUES_UNREADABLE } from '@roadmap/health-co
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, saveMedication, getShownErase } from '../lib/roadmap-data';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 
 const sentry = vi.hoisted(() => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
@@ -40,8 +40,6 @@ vi.mock('../lib/observe-visibility', () => ({ observeVisibility: (_el: Element, 
 vi.mock('../lib/server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
   trackProductEvent: vi.fn(),
-  trackABImpression: vi.fn(),
-  trackABConversion: vi.fn(),
 }));
 vi.mock('./ChatSection', () => ({ ChatSection: () => null }));
 vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
@@ -60,10 +58,10 @@ const badLdl = { kind: 'field', field: 'ldlC', displayValue: '3.2', unitSystem: 
 /** A synthetic user on rosuvastatin who said they did not tolerate a higher dose. */
 async function userOnStatin(cloud: MemoryCloud): Promise<RenderResult> {
   await initRoadmapStore(new MemoryAdapter(cloud));
-  await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {});
-  await addMeasurement('weight', 82, '2026-09-01');
-  await saveMedication('statin', 'rosuvastatin', 10, 'mg');
-  await saveMedication('statin_escalation', 'not_tolerated', null, null);
+  await saveChangedMeasurements({ birthYear: 1974, birthMonth: 1, sex: 'male', heightCm: 180 }, {}, getShownErase());
+  await addMeasurement('weight', 82, '2026-09-01', getShownErase());
+  await saveMedication('statin', 'rosuvastatin', 10, 'mg', getShownErase());
+  await saveMedication('statin_escalation', 'not_tolerated', null, null, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector('.health-tool-chat textarea')).toBeTruthy());

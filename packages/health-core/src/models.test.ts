@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, EXTRACTION_MODEL, EXTRACTION_STOP_CODES, PROMPT_CACHE, ROUTER_MODEL, extractionStopCode, getArg, modelParams, summaryLine, toStat } from './models';
+import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, CLASSIFIER_MODEL, EXTRACTION_MODEL, EXTRACTION_STOP_CODES, PROMPT_CACHE, ROUTER_MODEL, YOUTUBE_MODEL, extractionStopCode, getArg, modelParams, summaryLine, toStat } from './models';
 
 // Request shapes per model family (claude_business docs/roadmap-chat/chat-audit-2026-09-29.md F1, US-15 AC13).
 // Sonnet 5 and 5.5 400 on sampling params; 5.5 also 400s on `disabled` thinking.
@@ -58,6 +58,17 @@ describe('modelParams', () => {
       thinking: { type: 'adaptive', display: 'summarized' },
       output_config: { effort: 'medium' },
     });
+  });
+  it('US-15 AC78: the YouTube answer and router bodies: Haiku 5.5, the web\'s effort and caps, no sampling param', () => {
+    expect(YOUTUBE_MODEL).toBe('claude-haiku-5-5');
+    expect(modelParams(YOUTUBE_MODEL, CHAT_MAX_TOKENS, CHAT_EFFORT)).toEqual({
+      model: 'claude-haiku-5-5',
+      max_tokens: 4096,
+      thinking: { type: 'adaptive', display: 'summarized' },
+      output_config: { effort: 'medium' },
+    });
+    expect(modelParams(YOUTUBE_MODEL, 200))
+      .toEqual({ model: 'claude-haiku-5-5', max_tokens: 200, thinking: { type: 'disabled' } });
   });
   it('the production router body: Sonnet 5.5 with thinking off, as chat-router.server.ts sends it', () => {
     expect(modelParams(ROUTER_MODEL, 200))

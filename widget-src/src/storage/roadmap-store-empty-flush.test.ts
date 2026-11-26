@@ -18,7 +18,7 @@ class CountingAdapter extends MemoryAdapter {
   async write(fileName: string, body: object, expected: string | null) {
     if (fileName === ROADMAP_FILE_NAME) this.writes += 1;
     if (this.gate) await this.gate;
-    if (this.failWrites) throw new StorageError('unreachable');
+    if (this.failWrites) throw new StorageError('unreachable', undefined, undefined, undefined, undefined, 'may-have-landed');
     return super.write(fileName, body, expected);
   }
 }
@@ -31,7 +31,7 @@ describe('RoadmapStore.flush with nothing unsaved (US-10 AC5a)', () => {
     const adapter = new CountingAdapter(cloud);
     const store = await RoadmapStore.create(adapter);
 
-    store.markReportEmailCaptured();
+    store.markReportEmailCaptured(store.shownErase);
     await store.flush();
     expect(adapter.writes).toBe(1);
     const lamport = stored(cloud).meta.lamport;
@@ -47,7 +47,7 @@ describe('RoadmapStore.flush with nothing unsaved (US-10 AC5a)', () => {
     const adapter = new CountingAdapter(cloud);
     const store = await RoadmapStore.create(adapter);
 
-    store.markReportEmailCaptured();
+    store.markReportEmailCaptured(store.shownErase);
     await new Promise((r) => setTimeout(r, 0));
     expect(adapter.writes).toBe(0); // not yet: the debounce holds it
     await new Promise((r) => setTimeout(r, PERSIST_DEBOUNCE_MS + 300));
@@ -62,7 +62,7 @@ describe('RoadmapStore.flush with nothing unsaved (US-10 AC5a)', () => {
     await store.flush();
     expect(adapter.writes).toBe(0);
 
-    store.markReportEmailCaptured();
+    store.markReportEmailCaptured(store.shownErase);
     await store.flush();
     expect(adapter.writes).toBe(1);
     expect(stored(cloud).profile.reportEmailCaptured).toBe(true);
@@ -72,7 +72,7 @@ describe('RoadmapStore.flush with nothing unsaved (US-10 AC5a)', () => {
     const cloud = new MemoryCloud();
     const adapter = new CountingAdapter(cloud);
     const store = await RoadmapStore.create(adapter);
-    store.markReportEmailCaptured();
+    store.markReportEmailCaptured(store.shownErase);
     adapter.failWrites = true;
     await expect(store.flush()).rejects.toThrow();
 
@@ -90,7 +90,7 @@ describe('RoadmapStore.flush with nothing unsaved (US-10 AC5a)', () => {
     let release!: () => void;
     adapter.gate = new Promise((r) => { release = r; });
 
-    store.markReportEmailCaptured();
+    store.markReportEmailCaptured(store.shownErase);
     const saving = store.flush();
     await new Promise((r) => setTimeout(r, 0)); // the write is held at the gate
     let joinedDone = false;
@@ -118,10 +118,10 @@ describe('RoadmapStore.flush with nothing unsaved, on fake timers (US-10 AC5a)',
     let release!: () => void;
     adapter.gate = new Promise((r) => { release = r; });
 
-    store.markReportEmailCaptured();
+    store.markReportEmailCaptured(store.shownErase);
     const saving = store.flush();
     await vi.advanceTimersByTimeAsync(0); // the first write is held at the gate
-    store.setLpaUnit('nmol/L'); // lands mid-save: the loop goes round, and a debounce is set
+    store.setLpaUnit('nmol/L', store.shownErase); // lands mid-save: the loop goes round, and a debounce is set
     adapter.gate = null;
     release();
     await saving;
@@ -140,10 +140,10 @@ describe('RoadmapStore.flush with nothing unsaved, on fake timers (US-10 AC5a)',
     let release2!: () => void;
     adapter.gate = new Promise((r) => { release1 = r; });
 
-    store.markReportEmailCaptured();
+    store.markReportEmailCaptured(store.shownErase);
     const saving = store.flush();
     await vi.advanceTimersByTimeAsync(0); // pass 1 is held at the gate
-    store.setLpaUnit('nmol/L'); // lands mid-save: pass 2 takes it, and a debounce is set
+    store.setLpaUnit('nmol/L', store.shownErase); // lands mid-save: pass 2 takes it, and a debounce is set
     adapter.gate = new Promise((r) => { release2 = r; });
     release1();
     // Pass 2 is held past the debounce, which fires while it runs (a slow cloud write).
