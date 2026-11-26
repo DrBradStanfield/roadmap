@@ -9,6 +9,7 @@ import { StorageError } from '@roadmap/health-core/adapter';
 import { DropboxAdapter } from '../src/storage/dropbox';
 import { GitHubAdapter } from '../src/storage/github';
 import { WritesStoppedError } from '../src/lib/error-diagnostics';
+import { WRITES_STOPPED_CASES } from '../src/testing/writes-stopped-cases';
 import { switchStopCause, type SwitchStop } from './switch-stop';
 
 let local: Map<string, string>;
@@ -44,7 +45,6 @@ describe('switchStopCause (US-09 AC56)', () => {
 
   const cases: Array<[string, () => unknown, boolean, SwitchStop['kind']]> = [
     ['the device write refused after a log-off', () => new WritesStoppedError(), false, 'writesRefused'],
-    ['a WritesStoppedError, whatever the flag read', () => new WritesStoppedError(), true, 'writesRefused'],
     ['any failure once this browser takes no writes', () => new TypeError('Failed to fetch'), false, 'writesRefused'],
     ['a token the provider refused (auth)', () => new StorageError('refused', undefined, undefined, 401, undefined, 'refused'), true, 'signInRefused'],
     ['a sign-in only a new one mends (reconnect)', () => new StorageError('reconnect', undefined, undefined, 400, 'reconnect', 'refused'), true, 'signInRefused'],
@@ -56,6 +56,12 @@ describe('switchStopCause (US-09 AC56)', () => {
   ];
   it.each(cases)('US-09 AC56: %s', (_name, make, writesAllowed, kind) => {
     expect(switchStopCause(make(), writesAllowed)).toEqual({ kind });
+  });
+
+  // US-09 AC64: the switch is the fifth log-off reader. It reads AC59's typed reason, as the other four do, so a
+  // refusal reads the same wherever the page meets it. Reported rows are the ones the switch does not call a log-off.
+  it.each(WRITES_STOPPED_CASES)('US-09 AC64: $name, while this browser still takes writes', ({ error, reports }) => {
+    expect(switchStopCause(error(), true)).toEqual({ kind: reports === 0 ? 'writesRefused' : 'unreachable' });
   });
 
   it('US-09 AC56: a GitHub page with no stored sign-in fails its read with no typed reason, so it stays unreachable', async () => {

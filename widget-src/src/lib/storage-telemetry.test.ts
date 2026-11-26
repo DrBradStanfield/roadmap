@@ -7,7 +7,6 @@ import { ConflictError, StorageError } from '@roadmap/health-core/adapter';
 import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage';
-import { stopRoadmapLocalWrites } from '../storage/local-storage-adapter';
 import { Sentry, scrubEvent } from './sentry';
 import { EXPECTED_NETWORK_ERRORS, recordFailure, storageCauseClass, storageFailureClass } from './error-diagnostics';
 import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
@@ -231,11 +230,16 @@ describe('cloud-storage telemetry boundary', () => {
       expect(await persistTags(() => { armed = true; })).toEqual({ ...local, causeClass: 'none' });
     });
 
-    // Last on purpose: the logout latch is page-lifetime module state with no
-    // reset, so no device-tier save in this file may run after it.
+    // The logout latch is page-lifetime module state with no reset, so this test
+    // latches its own module graph and the file's other device-tier saves stay open.
     it('A15: a device save after logout never reaches the write, sends no Cloud sync failed report, and still fails', async () => {
       localStorage.clear();
       vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.resetModules();
+      const { RoadmapStore } = await import('../storage/roadmap-store');
+      const { LocalStorageAdapter } = await import('../storage');
+      const { stopRoadmapLocalWrites } = await import('../storage/local-storage-adapter');
+      expect((await import('./sentry')).Sentry.getClient()).toBe(Sentry.getClient()); // its reports reach this file's transport
       const store = await RoadmapStore.create(new LocalStorageAdapter());
       store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z', store.shownErase);
       await store.flush();

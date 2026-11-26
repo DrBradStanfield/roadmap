@@ -132,7 +132,8 @@ struct BloodTestsTip: TourTip {
 extension View {
     /// Anchors one of the tour's tips here (US-57). Its Next, or a tap outside it, moves
     /// the tour on (review R2a), and Next then runs `next`; "Skip tour" ends it; the last
-    /// tip's own action goes to `action`, first so a trailing closure binds to it.
+    /// tip's own action goes to `action`, first so a trailing closure binds to it. Attach it
+    /// before the tip is due: a popover added once its tip is due never shows (docs/gotchas.md 2026-11-27).
     func tourTip<T: TourTip>(_ tip: T, arrowEdge: Edge = .top, action: @escaping @MainActor () -> Void = {},
                              next: @escaping @MainActor () -> Void = {}) -> some View {
         modifier(TourTipAnchor(tip: tip, arrowEdge: arrowEdge, next: next, action: action))

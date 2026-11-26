@@ -37,6 +37,8 @@ struct AppleHealthSection: View {
                     if case .failed(let why) = health.status { Text(why).foregroundStyle(.red) }
                     if health.status == .notAllowed { Text(LiveFooter.access) }
                     if health.owedFooter { Text(EraseText.healthOwed) }
+                    // Seen once it was drawn and the person leaves (US-72 AC18).
+                    if health.undatedFooter { Text(Self.undated).onDisappear { health.undatedSeen() } }
                     Text("Weight, height, waist and blood pressure come in from Health. Values you type here go to Health. A value you typed is never replaced by Health, and deleting a reading in Health leaves it here.")
                     if live?.available == true { Text(LiveFooter.cards) }
                 }
@@ -51,6 +53,9 @@ struct AppleHealthSection: View {
             }
         }
     }
+
+    /// A lab result was skipped for a bad date (US-72 AC18, the owner's words).
+    static let undated = "Some results could not be read."
 
     static func text(_ status: AppleHealthSync.Status) -> String {
         switch status {

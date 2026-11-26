@@ -43,7 +43,7 @@ process.env.ANTHROPIC_API_KEY ??= 'sk-test-dummy';
 import { action } from './api.chat';
 import { platformChatCompletion } from '../lib/platform-chat.server';
 import { runPipeline } from '../lib/youtube-bot.server';
-import { BRAND_POSTURE, DOCTOR_POSTURE } from '../lib/chat.server';
+import { surfacePosture } from '../lib/chat.server';
 import { DISCORD_SAVED_CHAT, SAVED_CHAT_BY_RETENTION, YOUTUBE_SAVED_CHAT, savedChatBlock } from '../lib/chat-save-answers';
 
 let bodies: () => Array<{ system: Array<{ text: string }> }>;
@@ -95,7 +95,7 @@ describe('C1: one saved-chat sentence per surface in the assembled prompt (US-15
     expect(bodies()).toHaveLength(1);
     const texts = bodies()[0].system.map((b) => b.text);
     const system = texts.join('\n');
-    const posture = texts.indexOf(DOCTOR_POSTURE);
+    const posture = texts.indexOf(surfacePosture('doctor'));
     expect(posture).toBeGreaterThan(0);
     expect(texts[posture + 1]).toBe(savedChatBlock(ALL[surface]));
     for (const [other, sentence] of Object.entries(ALL)) {
@@ -114,7 +114,7 @@ describe('C1: one saved-chat sentence per surface in the assembled prompt (US-15
       vi.unstubAllEnvs();
     }
     const texts = bodies()[0].system.map((b) => b.text);
-    expect(texts[texts.indexOf(BRAND_POSTURE) + 1]).toBe(savedChatBlock(ALL.bubble));
+    expect(texts[texts.indexOf(surfacePosture('brand')) + 1]).toBe(savedChatBlock(ALL.bubble));
     for (const claim of RETIRED) expect(texts.join('\n'), claim).not.toContain(claim);
   });
 

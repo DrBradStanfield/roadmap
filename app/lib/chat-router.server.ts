@@ -9,12 +9,9 @@
  * Separate from chat.server.ts for single-responsibility and testability.
  */
 import * as Sentry from '@sentry/react-router';
-import fs from 'fs';
-import path from 'path';
 import * as z from '../../packages/health-core/src/zod';
 import { callAnthropicWithUsage, type AnthropicUsage, type ChatPurpose } from './anthropic.server';
-import { loadBlogIndex } from './blog-index.server';
-import { routerView, routerIndexBlock } from './router-view';
+import { requireChatDocs } from './chat-system-prompt.server';
 import { parseRouterReply } from './router-reply';
 // The router's model lives with the other pins; modelParams gives its family's body shape.
 import { PROMPT_CACHE, ROUTER_MODEL, modelParams } from '../../packages/health-core/src/models';
@@ -31,15 +28,16 @@ import { cutText } from '../../packages/health-core/src/chat-history';
 // 5: condition guides: rule 1 routes a symptom or condition to a condition guide only when the guide covers it directly (US-70 AC5).
 export const ROUTER_VERSION = 5;
 
-// The router's view, not the full index: the allow-list, the index block and
-// {{ENTRY_COUNT}} all come from it (US-50 AC3). loadBlogIndex() stays whole.
-const ROUTER_VIEW = routerView(loadBlogIndex());
+// The router's prompt, index block and allow-list come from the chat docs
+// (chat-system-prompt.server.ts, US-15 AC80), built there from the router's
+// view, not the full index (US-50 AC3). loadBlogIndex() stays whole. On
+// 'missing' (an entry that skipped its AC65 guard) routeQuery returns the
+// error and makes no call.
 
-// ---------------------------------------------------------------------------
-// Valid handles allowlist — O(1) lookup to drop hallucinated handles
-// ---------------------------------------------------------------------------
-
-export const VALID_HANDLES = new Set(ROUTER_VIEW.map(e => e.handle));
+/** Valid handles allowlist — O(1) lookup to drop hallucinated handles. */
+export function routerHandles(): ReadonlySet<string> {
+  return requireChatDocs().router.handles;
+}
 
 /**
  * Repair the one handle malformation the router makes systematically: emitting
@@ -60,51 +58,19 @@ export const VALID_HANDLES = new Set(ROUTER_VIEW.map(e => e.handle));
  * Deliberately narrow: only strips a leading `<type>-` when the remainder is a
  * real handle. It can never invent or broaden a match.
  */
-export function repairHandle(h: string): string {
-  if (VALID_HANDLES.has(h)) return h;
+export function repairHandle(h: string, valid: ReadonlySet<string> = routerHandles()): string {
+  if (valid.has(h)) return h;
   for (const t of ['guideline', 'reference', 'article']) {
     if (h.startsWith(`${t}-`)) {
       const stripped = h.slice(t.length + 1);
-      if (VALID_HANDLES.has(stripped)) return stripped;
+      if (valid.has(stripped)) return stripped;
     }
   }
   return h;
 }
 
-// Router index block (router-view.ts): one line per entry, in a locked order.
-const ROUTER_INDEX_BLOCK = routerIndexBlock(ROUTER_VIEW);
-
-// ---------------------------------------------------------------------------
-// Router system prompt — loaded from chat-router-prompt.md with 60s TTL so
-// Brad can edit the prompt and see effects within a minute without restart.
-// ---------------------------------------------------------------------------
-
-let cachedPrompt: string | null = null;
-let promptCachedAt = 0;
-const PROMPT_TTL_MS = 60_000;
-const PROMPT_PATH = path.join(process.cwd(), 'app/lib/chat-router-prompt.md');
 /** One attempt; anthropic-fetch retries once (chat-dedup.server.ts CHAT_TURN_TTL_MS counts on it). */
 export const ROUTER_TIMEOUT_MS = 5_000;
-
-function getRouterPrompt(): string {
-  if (cachedPrompt && Date.now() - promptCachedAt < PROMPT_TTL_MS) {
-    return cachedPrompt;
-  }
-  try {
-    // {{ENTRY_COUNT}} is substituted from the loaded index so the prompt can't
-    // drift from the data. It was a hard-coded "991" in the .md until
-    // 2026-08-07, by which point the index held 1,015 — we were stating the
-    // wrong size of the very list being handed to the model in the same prompt.
-    cachedPrompt = fs
-      .readFileSync(PROMPT_PATH, 'utf-8')
-      .replace(/\{\{ENTRY_COUNT\}\}/g, String(ROUTER_VIEW.length));
-    promptCachedAt = Date.now();
-    return cachedPrompt;
-  } catch {
-    console.warn('chat-router: chat-router-prompt.md not found');
-    return '';
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Sanitization — strip control chars, cap per-string length
@@ -191,9 +157,10 @@ export const RouterOutput = z.object({
  */
 export function sanitizeRawHandles(handles: unknown, valid?: ReadonlySet<string>): unknown {
   if (!Array.isArray(handles)) return handles;
+  const allowed = valid ?? routerHandles();
   const kept = handles
     .filter((h): h is string => typeof h === 'string')
-    .map(h => repairHandle(h.trim().toLowerCase().replace(/[^a-z0-9-]/g, '')))
+    .map(h => repairHandle(h.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''), allowed))
     .filter(h => h.length > 0 && (!valid || valid.has(h)));
   return [...new Set(kept)].slice(0, 3);
 }
@@ -222,42 +189,40 @@ export async function routeQuery(
     ? `Conversation context:\n${contextLines.map(l => `  ${l}`).join('\n')}\n\n`
     : '';
 
-  // The prompt file ends with "Knowledge base index:" — the index entries go in
-  // the second system block, each with its own cache marker. The cache is by
-  // prefix, so an index change keeps the prompt entry, but a prompt edit also
-  // rewrites the index entry behind it (about 75K tokens on Sonnet 5.5 by
-  // count_tokens, 2026-09-29; about a third of that by character count since
-  // the pathways left, 2026-10-22).
-  const routerPrompt = getRouterPrompt();
-
-  const body = {
-    ...modelParams(model, 200),
-    system: [
-      {
-        type: 'text',
-        text: routerPrompt,
-        cache_control: PROMPT_CACHE,
-      },
-      {
-        type: 'text',
-        text: ROUTER_INDEX_BLOCK,
-        cache_control: PROMPT_CACHE,
-      },
-    ],
-    messages: [
-      {
-        role: 'user',
-        content: `${contextBlock}Current query: ${currentMessage}`,
-      },
-    ],
-  };
-
   let rawJson: string | null = null;
   // A reply that arrived but did not parse (cut off at max_tokens, a refusal)
   // keeps its real counts (US-15 AC37); only a missing reply reads 0.
   let usage = EMPTY_USAGE;
 
   try {
+    const { router } = requireChatDocs();
+    // The prompt file ends with "Knowledge base index:" — the index entries go in
+    // the second system block, each with its own cache marker. The cache is by
+    // prefix, so an index change keeps the prompt entry, but a prompt edit also
+    // rewrites the index entry behind it (about 75K tokens on Sonnet 5.5 by
+    // count_tokens, 2026-09-29; about a third of that by character count since
+    // the pathways left, 2026-10-22).
+    const body = {
+      ...modelParams(model, 200),
+      system: [
+        {
+          type: 'text',
+          text: router.prompt,
+          cache_control: PROMPT_CACHE,
+        },
+        {
+          type: 'text',
+          text: router.indexBlock,
+          cache_control: PROMPT_CACHE,
+        },
+      ],
+      messages: [
+        {
+          role: 'user',
+          content: `${contextBlock}Current query: ${currentMessage}`,
+        },
+      ],
+    };
     const result = await callAnthropicWithUsage(body, purpose, ROUTER_TIMEOUT_MS);
     rawJson = result.content;
     usage = result.usage;
@@ -265,7 +230,7 @@ export async function routeQuery(
     const rawParsed = parseRouterReply(rawJson) as { handles?: unknown };
     // Allowlist: drop any handle the router hallucinated — but repair the ONE
     // systematic malformation first (see repairHandle).
-    rawParsed.handles = sanitizeRawHandles(rawParsed.handles, VALID_HANDLES);
+    rawParsed.handles = sanitizeRawHandles(rawParsed.handles, router.handles);
     const validHandles = RouterOutput.parse(rawParsed).handles;
 
     const latencyMs = Date.now() - t0;

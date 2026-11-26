@@ -1,13 +1,14 @@
 /**
  * Why the picker's switch stopped (US-09 AC13, AC56): one named cause, read from the caught copy-down
- * failure by type and from whether this browser still takes the record's writes, never from message words.
+ * failure by its typed reason and from whether this browser still takes the record's writes, never from message words.
  * - writesRefused: this browser takes no record writes (another tab logged off, US-09 AC2c). The log-off
  *   also forgot the cloud's sign-in, so the copy-down fails at its cloud read before its device write.
+ *   A failure whose typed reason is a log-off refusal counts too (`writesStopped`, US-09 AC59, AC64).
  * - signInRefused: the provider refused the sign-in or its token (`reconnect`, `auth`; US-10 AC18).
  * - unreachable: any other failure, as the switch has always named it.
  */
 import { StorageError } from '../src/storage';
-import { WritesStoppedError } from '../src/lib/error-diagnostics';
+import { writesStopped } from '../src/lib/error-diagnostics';
 
 export type SwitchStop = { kind: 'writesRefused' } | { kind: 'signInRefused' } | { kind: 'unreachable' };
 
@@ -17,7 +18,7 @@ export function signInRefused(error: unknown): boolean {
 }
 
 export function switchStopCause(error: unknown, writesAllowed: boolean): SwitchStop {
-  if (!writesAllowed || error instanceof WritesStoppedError) return { kind: 'writesRefused' };
+  if (!writesAllowed || writesStopped(error)) return { kind: 'writesRefused' };
   if (signInRefused(error)) return { kind: 'signInRefused' };
   return { kind: 'unreachable' };
 }

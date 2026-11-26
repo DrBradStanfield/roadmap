@@ -25,11 +25,10 @@
  * Separate file from chat-router.server.ts so the two prompts evolve
  * independently and the router cache stays untouched.
  */
-import fs from 'fs';
-import path from 'path';
 import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, type AnthropicUsage, type ChatPurpose } from './anthropic.server';
 import { sanitizeForRouter } from './chat-router.server';
+import { chatDocs } from './chat-system-prompt.server';
 import { CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, Classification, PROMPT_CACHE, modelParams, parseClassification } from '../../packages/health-core/src/models';
 
 // ---------------------------------------------------------------------------
@@ -74,32 +73,8 @@ export function isUnreadableAnswer(result: Pick<ClassificationResult, 'classific
     && (result.error === 'refusal' || result.error?.startsWith('unparseable:') === true);
 }
 
-// ---------------------------------------------------------------------------
-// Classifier prompt — loaded from chat-classifier-prompt.md with a 60s TTL,
-// mirroring chat-router.server.ts. Lets Brad edit the prompt and see effects
-// within a minute without a redeploy. The same file is read by
-// tools/test-classifier.ts so the regression suite can never drift.
-// ---------------------------------------------------------------------------
-
-let cachedPrompt: string | null = null;
-let promptCachedAt = 0;
-let promptMissingReported = false;
-const PROMPT_TTL_MS = 60_000;
-const PROMPT_PATH = path.join(process.cwd(), 'app/lib/chat-classifier-prompt.md');
 /** One attempt; anthropic-fetch retries once (chat-dedup.server.ts CHAT_TURN_TTL_MS counts on it). */
 export const CLASSIFIER_TIMEOUT_MS = 5_000;
-
-function getClassifierPrompt(): string {
-  if (cachedPrompt && Date.now() - promptCachedAt < PROMPT_TTL_MS) return cachedPrompt;
-  try {
-    cachedPrompt = fs.readFileSync(PROMPT_PATH, 'utf-8');
-    promptCachedAt = Date.now();
-    return cachedPrompt;
-  } catch {
-    console.warn('chat-classifier: chat-classifier-prompt.md not found');
-    return '';
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Core function
@@ -113,17 +88,11 @@ export async function classifyMessage(
 ): Promise<ClassificationResult> {
   const t0 = Date.now();
 
-  // No prompt means every answer would be unparseable, which YouTube drops for
-  // good (US-15 AC48). Fail open instead, without a wasted call; Sentry once.
-  const prompt = getClassifierPrompt();
+  // The prompt is a chat doc (US-15 AC81). None means every answer is unparseable,
+  // which YouTube drops for good (AC48), so fail open, without a wasted call.
+  const docs = chatDocs();
+  const prompt = docs.kind === 'missing' ? '' : docs.docs.classifierPrompt;
   if (!prompt) {
-    if (!promptMissingReported) {
-      promptMissingReported = true;
-      Sentry.captureMessage('Chat classifier: prompt missing', {
-        level: 'error',
-        tags: { feature: 'chat', subsystem: 'classifier' },
-      });
-    }
     return {
       classification: Classification.ERROR,
       routerSkipped: false,

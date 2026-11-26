@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   getChatCompletion: vi.fn(),
   rootPem: '',
 }));
-vi.mock('./chat-system-prompt.server', () => ({ get CHAT_PROMPT() { return mocks.prompt; } }));
+vi.mock('./chat-system-prompt.server', () => ({ chatDocs: () => mocks.prompt }));
 vi.mock('../shopify.server', () => ({ authenticate: { public: { appProxy: vi.fn() } } }));
 vi.mock('./supabase-client.server', () => ({ supabaseAdmin: null, createUserClient: supa.createUserClient }));
 // api.chat.ts imports these from their defining modules (S-14).
@@ -26,7 +26,7 @@ vi.mock('./supabase-account.server', async (o) => ({ ...await o<object>(), getPr
 vi.mock('./chat.server', async (original) => (await import('./chat-server.test-helpers')).chatServerStub(await original<typeof import('./chat.server')>(), {
   resolveChatContext: () => ({ userContextJson: 'null' }),
   buildConversationMessages: (history: unknown[], message: string) => [...history, { role: 'user', content: message }],
-  DOCTOR_POSTURE: 'doctor', BRAND_POSTURE: 'brand',
+  surfacePosture: (surface: string) => surface,
   getChatCompletion: mocks.getChatCompletion,
   generateTitle: () => 't',
 }));

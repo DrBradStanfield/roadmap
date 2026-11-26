@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { routeQuery, sanitizeRawHandles, VALID_HANDLES } from './chat-router.server';
+import { routeQuery, routerHandles, sanitizeRawHandles } from './chat-router.server';
 import { callAnthropicWithUsage } from './anthropic.server';
 
 vi.mock('./anthropic.server', async (orig) => ({
@@ -17,7 +17,7 @@ const reply = (handles: unknown[]) => vi.mocked(callAnthropicWithUsage).mockReso
   usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
 } as Awaited<ReturnType<typeof callAnthropicWithUsage>>);
 
-const [a, b, c, d] = [...VALID_HANDLES];
+const [a, b, c, d] = [...routerHandles()];
 
 describe('routeQuery: US-15 AC28a only known handles fill the three places', () => {
   it('has four known handles to test with', () => {

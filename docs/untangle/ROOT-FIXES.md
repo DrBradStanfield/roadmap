@@ -21,6 +21,7 @@ an engine release, so it cannot land on CI alone.
 5. **R4** Each off-file leftover (matrix draft, stored original, Lp(a) answer) carries the erase it was written under; a clear removes only older ones; one report per failed clear. [record erase] `record-session.ts`, `record-session-erase.ts`, `cleared-erase.ts`, `roadmap-data.ts`, `roadmap-store.ts`
    - A23
    - Design: docs/drafts/r4-leftover-stamps-design.md
+   - Status: PR 1 done (US-11 AC12); PR 2, test-only pins of what each clear removes, in review (PR 2182); PRs 3 and 4 wait for R5.
 6. **R6** Every storage failure carries a typed reason, set where it is raised (definite, may have landed, no answer); nothing reads words. Two halves. [record save/merge] health-core: `write-refusal.ts`, `save-state.ts`, `drive-rest-*.ts`, `sync-manager.ts`, `dropbox.ts`; phone: `ios/engine/cloud-adapters.ts`, `shim.ts`, `EngineNatives.swift`, `OAuthClient.swift`
    - health-core half: S62b S57c H127 M8 (web)
    - phone half: H134 M6 M8 (phone) S57d
@@ -98,7 +99,8 @@ an engine release, so it cannot land on CI alone.
 Checked against `main` at `b2548fe3d` and each PR's state.
 
 - **R25** closed: PR 1846 removed the batch poll it named before the triage; lead C18 closed (PR 2121).
-- **R24** chat docs load as one state (PR 2124); lead T28 partial.
+- **R24** chat docs load as one state (PR 2124); the rest (every doc, read once at server start, `createChatDocs(root)`) in PR 2184 (draft, held); lead T28 done with it.
+- **R24** follow-up, lead T38: the classifier prompt joins the state (PR 2187, US-15 AC81); the YouTube prompt template waits on open PR 2183, which changes `app/lib/youtube-context.ts`.
 - **R31** done (PR 2123). The erase test pins H107 and H109 are done (PR 2128).
 - **R26** merged (PR 2126).
 - **R20** web half merged (PR 2130); the phone half is left.
@@ -127,3 +129,9 @@ Merged: PRs 1604 (old PSA answers), 1610 (prostate words), 1805, 1806, 1607, 208
 for IPv6 keys; lead S-21 partial), 2173, 2175 and 2176. Closed as superseded: PR 1601. Decided and not built: the
 Apple Health malformed-date skip (next iPhone build), the prostate stop age and flag line, and the 45 to 49 card,
 which waits for Brad's look.
+
+## Status, 27 Nov 2026
+
+- **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR 2188, held).
+  H127's other web checks (transport silence, refused Drive grant, busy write, corrupt device copy) need a typed
+  field that does not exist yet: a design first. The Drive grant check sits in files held PR 2099 edits.

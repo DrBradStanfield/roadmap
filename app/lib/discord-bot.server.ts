@@ -26,7 +26,7 @@ import { routerTurn } from './chat-router-stage.server';
 import { claimChatTurn } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
-import { CHAT_PROMPT } from './chat-system-prompt.server';
+import { chatDocs } from './chat-system-prompt.server';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { supabaseAdmin } from './supabase-client.server';
 import { createRateLimiter } from './rate-limiter';
@@ -102,8 +102,9 @@ export function startDiscordBot(): void {
     return;
   }
 
-  if (CHAT_PROMPT.kind === 'missing') {
-    console.warn(`Discord bot: chat docs missing (${CHAT_PROMPT.files.join(', ')}) — bot disabled`);
+  const docs = chatDocs();
+  if (docs.kind === 'missing') {
+    console.warn(`Discord bot: chat docs missing (${docs.files.join(', ')}) — bot disabled`);
     return;
   }
 

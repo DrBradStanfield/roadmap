@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 // US-05 AC2: which unit Lp(a)'s field opens in. US-05 AC3: which saved Lp(a)
 // rows the page asks about.
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { MeasurementSource } from '@roadmap/health-core/validation';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { effectiveLpaUnit, keepLpaAsIs, lpaRowsToCheck } from './lpa-unit';
-import { LPA_CHECK_KEPT_KEY, stopLocalHealthWrites } from './storage';
+import { effectiveLpaUnit } from './lpa-unit';
+import { LPA_CHECK_KEPT_KEY } from './storage';
 
 describe('US-05 AC2 — the unit Lp(a)’s field opens in', () => {
   it('with nothing chosen: mg/dL in US units, nmol/L in any other', () => {
@@ -37,7 +37,17 @@ describe('US-05 AC2 — the unit Lp(a)’s field opens in', () => {
 // asked about.
 describe('US-05 AC3 — the Lp(a) rows the page asks about', () => {
   const LEGACY_KEY = 'health_roadmap_unit_overrides';
-  beforeEach(() => localStorage.clear());
+  // The rows kept on this page and the write latch are page-lifetime module state:
+  // each test gets a fresh module graph, as a fresh page would.
+  let keepLpaAsIs: typeof import('./lpa-unit').keepLpaAsIs;
+  let lpaRowsToCheck: typeof import('./lpa-unit').lpaRowsToCheck;
+  let stopLocalHealthWrites: typeof import('./storage').stopLocalHealthWrites;
+  beforeEach(async () => {
+    localStorage.clear();
+    vi.resetModules();
+    ({ keepLpaAsIs, lpaRowsToCheck } = await import('./lpa-unit'));
+    ({ stopLocalHealthWrites } = await import('./storage'));
+  });
   const lpa = (over: Partial<ApiMeasurement> = {}): ApiMeasurement => ({
     id: 'r1', metricType: 'lpa', value: 37.44, recordedAt: '2026-09-18T00:00:00.000Z',
     createdAt: '2026-09-20T04:00:00.000Z', source: 'manual', status: 'active', ...over,
@@ -115,7 +125,7 @@ describe('US-05 AC3 — the Lp(a) rows the page asks about', () => {
   });
 
   it("US-09 AC2e: after another tab's log-off, a row kept as saved is kept on this page only, so a move is not left waiting", () => {
-    stopLocalHealthWrites(); // last in this file: the latch lasts for the module's life
+    stopLocalHealthWrites();
     keepLpaAsIs('r5');
     expect(localStorage.getItem(LPA_CHECK_KEPT_KEY)).toBeNull();
     expect(lpaRowsToCheck([lpa({ id: 'r5' }), lpa({ id: 'r6' })], 'conventional').map((c) => c.row.id)).toEqual(['r6']);

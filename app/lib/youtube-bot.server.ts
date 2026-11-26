@@ -81,7 +81,7 @@ import {
 import { safeErrorFields } from './safe-error-fields.server';
 import { postClaimed, countSent } from './youtube-bot-post.server';
 import { nextPosting, OPEN_POSTING, type Posting } from './youtube-bot-post-result';
-import { CHAT_PROMPT } from './chat-system-prompt.server';
+import { chatDocs } from './chat-system-prompt.server';
 import { transition, type Effect, type Lifecycle, type LifecycleEvent } from './youtube-bot-lifecycle';
 
 // The pipeline names this file exported before the split (issue #429).
@@ -129,8 +129,9 @@ export function startYouTubeBot(): void {
     return;
   }
 
-  if (CHAT_PROMPT.kind === 'missing') {
-    console.warn(`YouTube bot: chat docs missing (${CHAT_PROMPT.files.join(', ')}) — bot disabled`);
+  const docs = chatDocs();
+  if (docs.kind === 'missing') {
+    console.warn(`YouTube bot: chat docs missing (${docs.files.join(', ')}) — bot disabled`);
     return;
   }
 
