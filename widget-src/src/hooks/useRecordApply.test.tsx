@@ -13,6 +13,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
+import type { ShownCopy } from './useRecordReads';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import type { EraseEffect, EraseState } from '../lib/erase-machine';
 
@@ -26,6 +27,9 @@ vi.mock('../lib/roadmap-data', () => ({
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../storage/roadmap-store', () => ({ REMOTE_CHANGED_EVENT: 'hr:remote-changed' }));
+// The chat mirror's saved lists: a statin at 10 mg (US-15 AC10).
+const MIRRORED = vi.hoisted(() => ({ medications: [{ medicationKey: 'statin', doseValue: 10 }], screenings: [{ screeningKey: 'psa_last_date' }] }));
+vi.mock('../lib/storage', async (original) => ({ ...(await original<typeof import('../lib/storage')>()), loadFromLocalStorage: () => MIRRORED }));
 
 import { trackProductEvent } from '../lib/server-api';
 import * as recordApply from './useRecordApply';
@@ -38,12 +42,15 @@ const RESULT = {
 function setup(loaded = true) {
   const fx = {
     setInputs: vi.fn(),
-    reloadValues: vi.fn(async () => RESULT),
+    reloadValues: vi.fn(async (_shown?: ShownCopy) => RESULT),
     applyLists: vi.fn(),
     units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
     // The erase machine as apply sees it: the screen shows 'erase-1'; `dispatch` records each read's erase.
     erase: { getSnapshot: () => ({ shown: 'erase-1' }) as EraseState, dispatch: vi.fn((): EraseEffect[] => []) },
-    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn() },
+    later: {
+      markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn(),
+      savedProfile: vi.fn(() => ({ heightCm: 170, birthYear: 1980 })),
+    },
   };
   const hook = renderHook(() => useRecordApply({
     setInputs: fx.setInputs, reloadValues: fx.reloadValues, applyLists: fx.applyLists,
@@ -85,7 +92,7 @@ async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
   };
   // The save that cleans the profile: a change still held applies now, read and counted once.
   vi.clearAllMocks();
-  await act(async () => { hook.result.current.saved(); });
+  await act(async () => { hook.result.current.settled(); });
   await settle();
   return { ...seen, holdLeft: counted() === 1 && fx.reloadValues.mock.calls.length === 1 };
 }
@@ -139,6 +146,24 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(done).toBe(true);
   });
 
+  it('US-34 AC9 (H15), AC10 (H16b), US-15 AC10: an own save\'s read mirrors the saved profile and the mirror\'s saved lists (never the page\'s) while a change is held, the record\'s otherwise; the read that ends the hold mirrors the record', async () => {
+    const { fx, hook } = setup();
+    /** The profile each read hands the chat mirror, asked now (useRecordReads asks it as the mirror is written). */
+    const mirrored = () => fx.reloadValues.mock.calls.map(([shown]) => shown?.());
+    await act(async () => { await hook.result.current.ownSave(); });
+    expect(mirrored()).toEqual([undefined]); // nothing held
+    fx.later.profileDirty.mockReturnValue(true);
+    await act(async () => { await hook.result.current.signal('remote'); }); // held
+    fx.reloadValues.mockClear();
+    await act(async () => { await hook.result.current.ownSave(); });
+    expect(mirrored()).toEqual([{ inputs: { heightCm: 170, birthYear: 1980 }, ...MIRRORED }]); // never the page's lists, which can hold an unsaved edit
+    fx.reloadValues.mockClear();
+    await act(async () => { hook.result.current.settled(); });
+    await settle();
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1);
+    expect(mirrored()).toEqual([undefined]); // the hold's read: the record's
+  });
+
   it('US-34 AC4a: ownSave keeps its identity across renders, so a save built on it is not rebuilt each render', () => {
     const { hook } = setup();
     const first = hook.result.current.ownSave;
@@ -181,7 +206,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(fx.later.clearAnswered.mock.calls).toEqual([[]]);
     expect(counted()).toBe(0); // the machine counts the erase
     // The hold is over: the save that cleans the profile reads nothing more.
-    await act(async () => { hook.result.current.saved(); });
+    await act(async () => { hook.result.current.settled(); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(counted()).toBe(0);
@@ -227,15 +252,25 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(counted()).toBe(1);
   });
 
-  it('US-34 AC4a (today, fix 4 owns erase events): another device erased between the save and its re-read: the new record\'s values show beside the old form, and nothing is written back', async () => {
+  it('US-34 AC10 (H16): a read under an earlier erase than the page shows, or one the store moved away from, writes nothing, and the form stays', async () => {
     const { fx, hook } = setup();
-    erase.now = 'erase-2'; // the store holds the other device's erase; the screen still shows erase-1
+    const at = (epoch: number) => JSON.stringify([epoch, `2026-11-0${epoch}T10:00:00.000Z`]);
+    fx.erase.getSnapshot = () => ({ shown: at(2) }) as EraseState; // the page shows a later erase than the store's read
+    erase.now = at(1);
     await act(async () => { await hook.result.current.signal('own-save'); });
     await settle();
-    // The values, lab rows, matrices and chat mirror are the new record's (reloadValues reads the store).
+    // One values read, told to write nothing (useRecordReads: a null copy replaces and writes nothing).
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
-    // The form, its saved copy and the units stay the old record's, and the erase is not shown:
-    // a mixed picture until the erase's own remote signal applies (never held across an erase).
+    const shown = fx.reloadValues.mock.calls[0][0]!;
+    expect(shown()).toBeNull();
+    // A read of the erase shown writes the record's (nothing held); the store moves while it is on its way: nothing.
+    erase.now = at(2);
+    await act(async () => { await hook.result.current.signal('own-save'); });
+    const moved = fx.reloadValues.mock.calls[1][0]!;
+    expect(moved()).toBeUndefined();
+    erase.now = at(3);
+    expect(moved()).toBeNull();
+    // The form, its saved copy and the units stay the old record's, and the erase is not shown here.
     expect(fx.setInputs).not.toHaveBeenCalled();
     expect(fx.later.markSaved).not.toHaveBeenCalled();
     expect(fx.units.shown).not.toHaveBeenCalled();

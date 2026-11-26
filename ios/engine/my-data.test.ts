@@ -564,7 +564,7 @@ describe('readRecord (AC4, adversary R4)', () => {
     expect(notRecord).toMatchObject({ name: 'Refusal', message: 'This file is not a health record.' });
     const record = newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland');
     const tooNew = refusal(JSON.stringify({ ...record, schemaVersion: 999 }));
-    expect(tooNew).toMatchObject({ name: 'Refusal', message: 'A newer version of Health Roadmap wrote this record. Update the app to open it.' });
+    expect(tooNew).toMatchObject({ name: 'Refusal', message: 'A newer version of this app wrote this record. Update the app to open it.' });
     // A broken record is no refusal: its text stays hidden.
     expect(refusal(JSON.stringify({ hello: 1 }))).not.toBeInstanceOf(Refusal);
   });
@@ -739,6 +739,15 @@ describe('forms (AC8)', () => {
   it('with an age and no sex and no question that applies, says the sexed questions wait for sex', () => {
     const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
       { kind: 'profile', birthYear: 2004, birthMonth: 1, height: 170 });
+    const data = myData(file, NOW);
+    expect(data.screenings).toEqual([]);
+    expect(data.screeningNote).toBe('Some screening questions depend on your sex. Add it in About you.');
+  });
+
+  // US-07 AC1k: from 86 with no sex no cancer group applies, so the app draws no empty cancer section and says why.
+  it('from 86 with no sex, shows no empty cancer section and says the sexed questions wait for sex', () => {
+    const file = edited(newRecord(NOW, 'phone', 'en-NZ', 'Pacific/Auckland'),
+      { kind: 'profile', birthYear: 1940, birthMonth: 1, height: 170 });
     const data = myData(file, NOW);
     expect(data.screenings).toEqual([]);
     expect(data.screeningNote).toBe('Some screening questions depend on your sex. Add it in About you.');

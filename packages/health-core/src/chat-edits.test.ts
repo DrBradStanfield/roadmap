@@ -471,7 +471,7 @@ describe('US-16 AC3: a chat medication answer is saved as its question’s own v
 
   it.each([
     ['ezetimibe', 'atorvastatin'], ['ezetimibe', 'constructor'], ['pcsk9i', 'ezetimibe'], ['bempedoic_acid', 'yes'],
-    ['metformin', 'yes'], ['statin_escalation', 'none'], ['glp1', 'no'], ['glp1', 'yes'], ['statin', 'yes'],
+    ['metformin', 'yes'], ['statin_escalation', 'none'], ['statin', 'no'], ['glp1', 'yes'], ['statin', 'yes'],
     ['glp1', 'atorvastatin'], ['statin', 'ezetimibe'], ['sglt2i', 'ir_1000'], ['statin', 'other'],
   ])('US-16 AC3: %s answered "%s" is not saved, and the model is told to ask', (medicationKey, drugName) => {
     expect(parseProposedEdit(MED, { medicationKey, drugName })).toBeNull();

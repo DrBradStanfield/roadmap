@@ -3,7 +3,11 @@
 // a screening test), and the tiles sit on their rows' pages. Imported by tests only.
 import { fireEvent } from '@testing-library/react';
 
-const rowTitle = (row: Element) => row.querySelector('.mh-info-btn')?.getAttribute('aria-label')?.replace(/^About: /, '') ?? '';
+/** A row suggestion's title, from its info button's name ("About: <title>", named by the text it points at). */
+export function rowTitle(row: Element): string {
+  const ids = row.querySelector('.mh-info-btn')?.getAttribute('aria-labelledby')?.split(' ') ?? [];
+  return ids.map(id => row.ownerDocument.getElementById(id)?.textContent ?? '').join(' ').replace(/^About: /, '');
+}
 
 /** Every suggestion's title on the page: the cards' and the rows'. */
 export function planTitles(root: ParentNode = document): string[] {

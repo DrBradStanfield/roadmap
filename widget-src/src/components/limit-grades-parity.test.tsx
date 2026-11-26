@@ -8,12 +8,16 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
 import { LIMIT_NOT_GRADED, type Comparator } from '@roadmap/health-core/lab-limits';
 import { calculateHealthResults, knownMinorOf } from '@roadmap/health-core/calculations';
-import type { ApiMeasurement } from '@roadmap/health-core/mappings';
+import { BLOOD_TEST_METRICS, METRIC_TO_FIELD, type ApiMeasurement } from '@roadmap/health-core/mappings';
+import type { MetricType } from '@roadmap/health-core/units';
 import type { SuggestionInputs } from '@roadmap/health-core/types';
 import type { RoadmapFile } from '../../../packages/health-core/src/roadmap-file';
 import { applyEdit, myData, newRecord } from '../../../ios/engine/my-data';
 import { currentValueRows } from '../../../packages/health-core/src/blood-tests';
-import { BLOOD_ROWS, MetricRows, coreRow, pressureRow, type RowContext } from './MyDataRows';
+import { MetricRows, coreRow, pressureRow, type RowContext } from './MyDataRows';
+
+/** The core blood tests' rows, in the grid's order (PSA is asked under prostate screening). */
+const BLOOD_ROWS = BLOOD_TEST_METRICS.filter(m => m !== 'psa' && METRIC_TO_FIELD[m]) as MetricType[];
 
 afterEach(cleanup);
 

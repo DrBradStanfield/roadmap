@@ -1000,3 +1000,27 @@ describe('US-03 AC7 — the record refuses 0 for lipids and ApoB, and takes it f
     expect(ok(appendMeasurement(base(), { metricType: 'ldl', value: 0.2, recordedAt: '2026-08-01', now: NOW })).row.value).toBe(0.2);
   });
 });
+
+// Mount 3a (US-29 AC4a): a bare day and ISO midnight name one slot, so an append in one form onto an active row held in
+// the other is skipped as the same slot, for a core value and for another lab, both ways.
+describe('bulkAppendValues: a bare day and ISO midnight are one slot', () => {
+  const ISO = '2025-09-02T00:00:00.000Z';
+  const DAY = '2025-09-02';
+  it.each([
+    ['a core value, ISO held, bare day appended', 'measurement', ISO, DAY],
+    ['a core value, bare day held, ISO appended', 'measurement', DAY, ISO],
+    ['another lab, ISO held, bare day appended', 'lab', ISO, DAY],
+    ['another lab, bare day held, ISO appended', 'lab', DAY, ISO],
+  ] as const)('%s: skipped, no second active row', (_case, kind, held, appended) => {
+    const row = (recordedAt: string, value: number) => (kind === 'measurement'
+      ? { kind, metricType: 'ldl', value, recordedAt, source: 'lab_import' as const }
+      : { kind, metricName: 'ferritin', value, unit: 'µg/L', recordedAt, source: 'lab_import' as const });
+    const first = bulkAppendValues(base(), [row(held, 2.8)], NOW);
+    expect(first.saved).toHaveLength(1);
+    const second = bulkAppendValues(first.file, [row(appended, 3.1)], NOW);
+    expect(second.saved).toEqual([]);
+    expect(second.skippedDuplicates).toBe(1);
+    const name = kind === 'measurement' ? 'ldl' : 'ferritin';
+    expect(second.file.labValues.filter((l) => l.metricName === name && l.status === 'active' && l.recordedAt.startsWith(DAY))).toHaveLength(1);
+  });
+});

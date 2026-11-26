@@ -80,7 +80,7 @@ const surfaces: Array<[keyof typeof ALL, () => Promise<unknown>]> = [
   ['app', () => chat({ history: [] }, { [Symbol.for('roadmap.us52.app-attested')]: true })],
   ['widget', () => chat({ localFirst: true, sessionToken: 'tok' })],
   ['bubble', () => chat({ sessionToken: 'tok' })],
-  ['discord', () => platformChatCompletion({ message: 'is this chat saved?', history: [] })],
+  ['discord', () => platformChatCompletion({ message: 'is this chat saved?', history: [], purpose: 'DISCORD' })],
   ['youtube', () => runPipeline(thread, entry, 'Video body')],
 ];
 

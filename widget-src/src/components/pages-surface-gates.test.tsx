@@ -20,7 +20,6 @@ vi.mock('../lib/roadmap-data', () => ({
   markReportEmailCaptured: vi.fn(), getShownErase: () => 'erase-1',
 }));
 vi.mock('../lib/server-api', () => ({
-  trackABConversion: vi.fn(),
   trackProductEvent: vi.fn(),
   sendFeedback: vi.fn(),
 }));

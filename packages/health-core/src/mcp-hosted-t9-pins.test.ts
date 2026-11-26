@@ -3,7 +3,7 @@
  * which does not read the save's `warning`, never has a warning to read.
  *
  * Of the REST adapters only Google Drive returns one, and only for a write
- * that passes an unreadable copy's hold (drive-rest.ts, `writeDriveRecord`).
+ * that passes an unreadable copy's hold (drive-rest-record.ts, `writeDriveRecord`).
  * The hold lets through only a write whose eraseEpoch is past every readable
  * copy's, which is an erase.
  *
@@ -29,7 +29,7 @@ const NOW = '2026-09-01T09:00:00.000Z';
 const TODAY = NOW.slice(0, 10);
 const EPOCH = 3;
 const SAVED = 'Saved to the user’s Google Drive.';
-/** Words of drive-rest's ERASE_KEPT_COPY text. */
+/** Words of drive-rest-record.ts's ERASE_KEPT_COPY text. */
 const KEPT_COPY = 'the erase left it untouched';
 
 /** A readable record at erase counter EPOCH, holding one weight and one LDL row made after the erase. */

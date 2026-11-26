@@ -15,6 +15,7 @@
  */
 import type { UsProductCardId } from './types';
 import { SCREENING_EVIDENCE } from './evidence-screening';
+import { BMI_THRESHOLDS } from './bmi-thresholds';
 
 export interface SuggestionReference {
   label: string;
@@ -323,14 +324,6 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     ],
   },
 
-  'hba1c-normal': {
-    reason: 'A normal HbA1c (below 5.7% / below 38.8 mmol/mol) indicates healthy blood sugar control over the past 2–3 months. Maintaining this through diet, exercise, and healthy weight reduces your long-term risk of diabetes.',
-    guidelines: ['ADA Standards of Care'],
-    references: [
-      { label: 'ADA – Standards of Medical Care in Diabetes', url: 'https://diabetesjournals.org/care/issue/47/Supplement_1' },
-    ],
-  },
-
   // ── Blood Work: Atherogenic Lipids ─────────────────────────
 
   'apob-very-high': {
@@ -397,12 +390,6 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
 
   'lpa-borderline': {
     reason: 'Your Lp(a) is in the borderline range. Lp(a) is genetically determined and does not change with lifestyle. The 2026 ACC/AHA guideline recommends measuring Lp(a) at least once in all adults. Borderline levels still warrant attention to other cardiovascular risk factors.',
-    guidelines: ['ACC/AHA 2026', 'EAS 2022'],
-    references: REFS_LPA,
-  },
-
-  'lpa-normal': {
-    reason: 'Your Lp(a) is in the normal range. Since Lp(a) is genetically determined and does not change significantly over time, this is typically a one-time test. The 2026 ACC/AHA guideline recommends measuring Lp(a) at least once in all adults.',
     guidelines: ['ACC/AHA 2026', 'EAS 2022'],
     references: REFS_LPA,
   },
@@ -783,7 +770,7 @@ export function getProteinEvidence(ibwKg: number, proteinRate: number, eGFR?: nu
 export function getBmiEvidence(bmi: number, sex: 'male' | 'female', waistToHeightRatio?: number): SuggestionEvidence {
   const range = sex === 'male' ? '23-26' : '20-23';
   // BMI 25–29.9 is the band a healthy waist reclassifies as Normal (getBMICategory)
-  const whtrNote = bmi >= 25 && bmi < 30 && waistToHeightRatio === undefined
+  const whtrNote = bmi >= BMI_THRESHOLDS.overweight && bmi < BMI_THRESHOLDS.obese && waistToHeightRatio === undefined
     ? '\n\nMeasuring your waist circumference would help refine this — a waist-to-height ratio <0.5 can reclassify Overweight BMI as Normal per AACE 2025.'
     : '';
   const guidelines = whtrNote ? ['AACE 2025'] : [];

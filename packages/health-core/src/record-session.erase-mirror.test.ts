@@ -11,18 +11,18 @@ import { describe, expect, it } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { RecordSession } from './record-session';
 import type { RecordHost } from './record-host';
-import { ConflictError, LostUpdateError, ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { answerOutcome, ConflictError, LostUpdateError, ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { createMeasurement, type RoadmapFile } from './roadmap-file';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { transition, writtenNowhere, type SaveState } from './save-state';
 import { SyncManager } from './sync-manager';
-import { isDefiniteRefusal, mayHaveLanded, uncertainWrite } from './write-refusal';
+import { mayHaveLanded, uncertainWrite } from './write-refusal';
 
 /** A memory store whose writes can be made to fail, or land and then fail the re-read after them. */
 class FailingStore extends MemoryAdapter {
   failWrites = false;
-  /** What a failing write throws: by default a definite refusal (a full store). */
-  failure: () => Error = () => new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }));
+  /** What a failing write throws: by default a definite refusal (a full store, raised refused). */
+  failure: () => Error = () => new StorageError('refused', undefined, Object.assign(new Error('full'), { name: 'QuotaExceededError' }), undefined, undefined, 'refused');
   private failReadAfterWrite = false;
   private wrote = false;
   /** From now on: reads work until a write lands, then fail. */
@@ -31,7 +31,7 @@ class FailingStore extends MemoryAdapter {
     this.wrote = false;
   }
   async read(fileName: string) {
-    if (this.failReadAfterWrite && this.wrote) throw new StorageError('unreachable');
+    if (this.failReadAfterWrite && this.wrote) throw new StorageError('unreachable', undefined, undefined, undefined, undefined, 'no-answer');
     return super.read(fileName);
   }
   /** A failing write stores its body first, then throws (localStorage's record landed, its revision did not). */
@@ -81,7 +81,7 @@ function setup() {
 
 const weight = (id: string) =>
   createMeasurement({ id, metricType: 'weight', value: 80, recordedAt: '2026-11-01', createdAt: new Date(clock).toISOString() });
-const add = (session: RecordSession, id: string) => session.edit((file) => void file.measurements.push(weight(id)));
+const add = (session: RecordSession, id: string) => session.edit((file) => void file.measurements.push(weight(id)), session.shownErase);
 const stored = (store: MemoryAdapter): RoadmapFile => JSON.parse(store.cloud.files.get(ROADMAP_FILE_NAME)!.json);
 const ids = (file: RoadmapFile) => file.measurements.map((m) => m.id).sort();
 
@@ -141,7 +141,7 @@ describe('RecordSession.erase when neither the cloud nor the device takes it (le
     cloud.failWrites = true; // a definite refusal (a full store)
     device.failWrites = true;
     device.landBeforeFailing = true;
-    device.failure = () => uncertainWrite(new StorageError('Could not save on this device (local storage may be full).', 'This change may have been stored.'));
+    device.failure = () => new StorageError('Could not save on this device (local storage may be full).', 'This change may have been stored.', undefined, undefined, undefined, 'may-have-landed');
     const result = await session.erase();
     // The device holds the erased copy and its marker: the next session lifts it into the cloud. Putting the copy back here
     // would skip the caller's commit (the reminders cancel) for an erase that then lands.
@@ -165,14 +165,14 @@ describe('RecordSession.erase when neither the cloud nor the device takes it (le
     // Another tab moves the device copy's revision; this write stores nothing (a full record write).
     device.failure = () => {
       device.cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(ROADMAP_DOC.migrate(null, { deviceId: 'tab', now: new Date(clock).toISOString() })), version: 50 });
-      return new StorageError(FULL, undefined, quota());
+      return new StorageError(FULL, undefined, quota(), undefined, undefined, 'refused');
     };
     // The erase's read of the cloud waits until the save has failed, then fails: the erase stops before its swap.
     let release!: () => void;
     const gate = new Promise<void>((r) => { release = r; });
     const read = cloud.read.bind(cloud);
     let reads = 0;
-    cloud.read = async (name: string) => { if (++reads === 2) { await gate; throw new StorageError('unreachable'); } return read(name); };
+    cloud.read = async (name: string) => { if (++reads === 2) { await gate; throw new StorageError('unreachable', undefined, undefined, undefined, undefined, 'no-answer'); } return read(name); };
     add(session, 'b');
     const saving = session.flush();
     const erasing = session.erase();
@@ -207,7 +207,7 @@ describe('RecordSession.erase when neither the cloud nor the device takes it (le
     await session.flush();
     const before = session.eraseIdentity;
     cloud.failWrites = true;
-    cloud.failure = () => new StorageError('Dropbox did not answer', 'The change may have landed.');
+    cloud.failure = () => new StorageError('Dropbox did not answer', 'The change may have landed.', undefined, undefined, undefined, 'may-have-landed');
     device.failWrites = true;
     const result = await session.erase();
     // The upload may have landed, so the copy is not put back; a relaunch before a retry lands brings the record back (S57).
@@ -278,27 +278,28 @@ describe('what says a failed pass wrote nowhere (lead S57)', () => {
   });
 });
 
-describe('isDefiniteRefusal: only a failure that certainly stored nothing (owner ruling A)', () => {
-  const status = (n: number) => new StorageError(`write failed (${n})`, undefined, undefined, n);
-  const quota = Object.assign(new Error('full'), { name: 'QuotaExceededError' });
-  const stopped = Object.assign(new StorageError('stopped'), { name: 'WritesStoppedError' });
-  const rows: Array<[string, unknown, boolean]> = [
-    ['a refused precondition (ConflictError)', new ConflictError(), true],
-    ['a write that landed then vanished (LostUpdateError)', new LostUpdateError('lost'), false],
-    ['a full provider (reason storage-full)', new StorageError('Dropbox is full', 'Nothing was written.', undefined, 409, 'storage-full'), true],
-    ['a full device store (QuotaExceededError)', quota, true],
-    ['a storage error caused by a full store', new StorageError('refused', undefined, quota), true],
-    ['a page whose device writes stopped (WritesStoppedError)', stopped, true],
-    ...[400, 401, 403, 404, 409, 412, 413, 422].map((n): [string, unknown, boolean] => [`HTTP ${n}`, status(n), true]),
-    ...[408, 429, 500, 502, 503, 504, 507].map((n): [string, unknown, boolean] => [`HTTP ${n}`, status(n), false]),
-    ['no answer (fetchOrFail: no status)', new StorageError('Dropbox did not answer', 'The change may have landed.'), false],
-    ['an abort', new DOMException('aborted', 'AbortError'), false],
-    ['a plain error', new Error('network'), false],
-    ['not an error at all', 'oops', false],
-    ['a 403 an adapter marked as after its upload (Drive verify)', uncertainWrite(status(403)), false],
+describe('US-10 AC16, AC17: the outcome a failure is raised with (owner ruling A)', () => {
+  /** A provider's answer, classified as a raise site does: `answerOutcome`, called on purpose. */
+  const status = (n: number, upload = false) => new StorageError(`write failed (${n})`, undefined, undefined, n, undefined, answerOutcome(n, upload));
+  const rows: Array<[string, unknown, string]> = [
+    ['a full provider (reason storage-full)', new StorageError('Dropbox is full', 'Nothing was written.', undefined, 409, 'storage-full', 'refused'), 'refused'],
+    ['a page whose device writes stopped (WritesStoppedError, raised refused)', Object.assign(new StorageError('stopped', undefined, undefined, undefined, undefined, 'refused'), { name: 'WritesStoppedError' }), 'refused'],
+    ...[400, 401, 403, 404, 409, 412, 413, 422].map((n): [string, unknown, string] => [`HTTP ${n} to an upload`, status(n, true), 'refused']),
+    ...[408, 429, 500, 502, 503, 504, 507].map((n): [string, unknown, string] => [`HTTP ${n} to a call that sent no write`, status(n), 'no-answer']),
+    ...[408, 429, 500, 502, 503, 504, 507].map((n): [string, unknown, string] => [`HTTP ${n} to an upload`, status(n, true), 'may-have-landed']),
+    ['a 403 an adapter marked as after its upload (Drive verify)', uncertainWrite(status(403)), 'may-have-landed'],
   ];
-  it.each(rows)('%s', (_name, error, refused) => {
-    expect(isDefiniteRefusal(error)).toBe(refused);
+  it.each(rows)('%s', (_name, error, outcome) => {
+    expect((error as StorageError).outcome).toBe(outcome);
+    expect(mayHaveLanded(error)).toBe(outcome === 'may-have-landed');
+  });
+
+  it('AC17: a raise that names no outcome does not compile, and the status alone names none', () => {
+    // @ts-expect-error the outcome is a required argument: every raise site names one.
+    const unnamed = new StorageError('write failed (403)', undefined, undefined, 403, undefined);
+    // At run time (a call the compiler did not see) nothing fills it from the status: the old default made this 'refused'.
+    expect(unnamed.outcome).toBeUndefined();
+    expect(mayHaveLanded(unnamed)).toBe(false);
   });
 
   it('a thrown value that is not an object cannot carry the mark, so it counts as may have landed', () => {
@@ -312,13 +313,32 @@ describe('isDefiniteRefusal: only a failure that certainly stored nothing (owner
     const sync = new SyncManager(store, 'phone', ROADMAP_DOC, { now: () => ctx.now });
     const file = ROADMAP_DOC.migrate(null, ctx);
     store.failWrites = true;
-    const gateway = new StorageError('Dropbox write failed (502)', undefined, undefined, 502);
+    const gateway = new Error('Dropbox write failed (502)'); // a failure no adapter named (every StorageError names one, US-10 AC17)
     store.failure = () => gateway;
     const thrown = await sync.save(file).catch((e: unknown) => e);
     expect(thrown).toBe(gateway); // never rewrapped: the words the page shows are the adapter's
     expect(mayHaveLanded(thrown)).toBe(true);
     store.failure = () => status(403);
     expect(mayHaveLanded(await sync.save(file).catch((e: unknown) => e))).toBe(false);
+  });
+
+  // What a write throws, read through SyncManager as the erase reads it: only a refused
+  // precondition stored nothing; anything its raiser did not name may have landed.
+  const thrownByWrite: Array<[string, () => unknown, boolean]> = [
+    ['a refused precondition (ConflictError)', () => new ConflictError(), false],
+    ['a write that landed then vanished (LostUpdateError)', () => new LostUpdateError('lost'), true],
+    ['an abort (AbortError)', () => new DOMException('aborted', 'AbortError'), true],
+    ['a plain error', () => new Error('network'), true],
+    ['not an error at all', () => 'oops', true],
+  ];
+  it.each(thrownByWrite)('a write that threw %s: may have landed is %s', async (_name, failure, landed) => {
+    const ctx = { deviceId: 'phone', now: new Date(clock).toISOString() };
+    const store = new FailingStore();
+    const sync = new SyncManager(store, 'phone', ROADMAP_DOC, { now: () => ctx.now });
+    store.failWrites = true;
+    store.failure = failure as () => Error;
+    const thrown = await sync.save(ROADMAP_DOC.migrate(null, ctx)).catch((e: unknown) => e);
+    expect(mayHaveLanded(thrown)).toBe(landed);
   });
 });
 
@@ -362,8 +382,8 @@ function deviceSetup() {
 const quota = () => Object.assign(new Error('full'), { name: 'QuotaExceededError' });
 const FULL = 'Could not save on this device (local storage may be full).';
 const deviceFailures: Array<[string, () => Error]> = [
-  ['the record write is full (nothing stored)', () => new StorageError(FULL, undefined, quota())],
-  ['writes stopped by a log-off (WritesStoppedError)', () => Object.assign(new Error('stopped'), { name: 'WritesStoppedError' })],
+  ['the record write is full (nothing stored)', () => new StorageError(FULL, undefined, quota(), undefined, undefined, 'refused')],
+  ['writes stopped by a log-off (WritesStoppedError)', () => Object.assign(new Error('stopped'), { name: 'WritesStoppedError', outcome: 'refused' })],
 ];
 
 describe('S69, US-11 AC4c: an erase the device tier refused outright is put back', () => {
@@ -393,7 +413,7 @@ describe('S69, US-11 AC4c: an erase the device tier refused outright is put back
     await session.flush();
     const before = session.eraseIdentity;
     store.failWrites = true;
-    store.failure = () => uncertainWrite(new StorageError(FULL, 'This change may have been stored. Read the record again before trying it a second time.', quota()));
+    store.failure = () => new StorageError(FULL, 'This change may have been stored. Read the record again before trying it a second time.', quota(), undefined, undefined, 'may-have-landed');
     const result = await session.erase();
     expect(result.success).toBe(false);
     expect(result.error).toBeTruthy();
@@ -424,7 +444,7 @@ describe('S69, US-11 AC4c: an erase the device tier refused outright is put back
   it('control: over an unreadable record, a write that may have stored keeps the erased copy', async () => {
     const { session, store, before } = await unreadable();
     store.failWrites = true;
-    store.failure = () => uncertainWrite(new StorageError(FULL, 'This change may have been stored.', quota()));
+    store.failure = () => new StorageError(FULL, 'This change may have been stored.', quota(), undefined, undefined, 'may-have-landed');
     const result = await session.erase();
     expect(result.success).toBe(false);
     expect(result.error).toBe(FULL);

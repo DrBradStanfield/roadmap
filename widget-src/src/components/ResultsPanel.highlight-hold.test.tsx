@@ -21,7 +21,7 @@ vi.mock('../lib/roadmap-data', () => ({
   getReportHtml: mocks.getReportHtml, sendGuestReport: mocks.sendGuestReport,
   getReportEmailCaptured: () => false, markReportEmailCaptured: mocks.markReportEmailCaptured, getShownErase: () => 'erase-1',
 }));
-vi.mock('../lib/server-api', () => ({ trackABConversion: vi.fn(), trackProductEvent: vi.fn() }));
+vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 vi.mock('../lib/build-flags', () => ({ get SHOPIFY_SURFACE() { return mocks.shopify.value; } }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => false }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));

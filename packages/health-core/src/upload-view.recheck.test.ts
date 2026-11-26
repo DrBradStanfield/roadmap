@@ -71,11 +71,14 @@ describe('US-13 AC7: a Replace never follows its value to another day', () => {
 });
 
 describe('US-12 AC9: a file read only in part is named', () => {
-  it('in the open review and on the done screen, in the web\'s words', () => {
+  it('in the open review and on the done screen, in the web\'s words: in its Files row (PR 1974\'s one rule)', () => {
     const s = open([read('a', {}, true)]);
-    expect(both(s).view.notices).toEqual([{ fileId: 'a', name: 'a.pdf', line: FILE_NOTICE_TEXT.truncated }]);
     const done: UploadState = { ...s, phase: 'done', outcome: { values: 1, documents: 0, archived: 0 } } as UploadState;
-    expect(both(done).view.notices).toEqual([{ fileId: 'a', name: 'a.pdf', line: FILE_NOTICE_TEXT.truncated }]);
+    for (const state of [s, done]) {
+      const { view } = both(state);
+      expect(view.files.rows).toEqual([{ fileId: 'a', name: 'a.pdf', status: FILE_NOTICE_TEXT.truncated, notFullyRead: true }]);
+      expect(view.notices).toEqual([]);
+    }
   });
 });
 

@@ -182,7 +182,7 @@ To support healthy testosterone levels, consider these four strategies:
 *   Lose weight if overweight
 *   Exercise regularly, focusing on resistance and aerobic training
 *   Get adequate sleep
-*   **Optionally,** explore TMG supplements
+*   **Optionally,** explore [TMG supplements](/blogs/articles/tmg-betaine-exploding-popularity)
 
 ## **References**
 

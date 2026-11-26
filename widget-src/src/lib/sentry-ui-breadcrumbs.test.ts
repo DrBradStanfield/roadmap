@@ -4,12 +4,12 @@ import { webcrypto } from 'node:crypto';
 import { createElement } from 'react';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { Sentry, scrubBreadcrumb, scrubEvent } from './sentry';
-import { addMeasurement, flushRoadmapStore } from './roadmap-data';
+import { addMeasurement, flushRoadmapStore, getShownErase } from './roadmap-data';
 import { seedGuest } from '../testing/health-tool-harness';
 
 vi.mock('./server-api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('./chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('../components/ChatEmbed', () => ({ ChatEmbed: () => null }));
@@ -117,7 +117,7 @@ it('My health: a card body, its Urgent label, the banner, a nav dot and the alco
   Element.prototype.scrollIntoView ??= () => {};
   await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1968, birthMonth: 6, unitSystem: 'si' },
     [['weight', 100], ['systolic_bp', 162], ['diastolic_bp', 101]], [], '2026-10-12');
-  await addMeasurement('hba1c', 50, '2026-10-12');
+  await addMeasurement('hba1c', 50, '2026-10-12', getShownErase());
   await flushRoadmapStore();
   const view = render(createElement(HealthTool));
   await waitFor(() => expect(view.container.querySelector('.mh-banner')).not.toBeNull());
