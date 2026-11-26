@@ -2,15 +2,18 @@ import { useCallback, useLayoutEffect, useRef, useState, type Dispatch, type Set
 import type { HealthInputs } from '@roadmap/health-core/types';
 import { LONGITUDINAL_FIELDS } from '@roadmap/health-core/mappings';
 import { inputRangeFault } from '@roadmap/health-core/validation';
+import { eraseLater } from '@roadmap/health-core/erase-identity';
 import { VITALS_INPUT_FIELDS } from '@roadmap/health-core/chat-edits';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import { getBackendKind, getEraseIdentity } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
+import { loadFromLocalStorage } from '../lib/storage';
 import { createRemoteChangeRelay } from '../lib/remote-replay';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import type { RemoteChange } from '@roadmap/health-core/record-host';
 import type { useRecordState } from './useRecordState';
+import type { ShownCopy } from './useRecordReads';
 import type { useUnits } from './useUnits';
 import type { EraseStore } from '../lib/erase-machine';
 
@@ -26,7 +29,7 @@ type ReadPolicy = { read: 'record'; relay: 'arrive' | 'reread'; spends: boolean 
  * Each re-read reason's effects (US-34 AC4, AC4a). A held change ends only
  * through a `record` read; `remote` is held while the profile is dirty or a
  * unit switch waits (that test is read in `signal`). A held `remote` does
- * nothing until the save that cleans the profile. An erase the screen does not
+ * nothing until the next profile save settles, landed or refused (AC8). An erase the screen does not
  * yet show never enters the relay: REMOTE_CHANGED with one goes to the erase
  * machine (`arrived`), whose read (`shows`) ends a hold, clears the answer
  * mark and counts nothing here; the machine counts the erase. One carrying the
@@ -68,14 +71,15 @@ interface Later {
   flushListSaves: () => void;
   profileDirty: () => boolean;
   clearAnswered: (spend?: boolean) => void;
+  savedProfile: () => Partial<HealthInputs>;
 }
 
 /**
  * The record shown on the page, at load and on every whole re-read (US-34 AC4, AC7).
  *
  * Remote changes are idle or held (lib/remote-replay.ts): a change from
- * another writer is held while the profile has an unsaved edit, and the save
- * that carries the edit up (`saved`) applies it. Every whole re-read goes
+ * another writer is held while the profile has an unsaved edit, and the next
+ * profile save to settle (`settled`, landed or refused, AC8) applies it. Every whole re-read goes
  * through `signal`, so a record re-read that shows a held change ends the hold:
  * the record is read once and the change counted once (survey R8). The page's
  * own save reads the values only (`ownSave`) and leaves a hold as it is
@@ -98,7 +102,7 @@ const reportReadFailure = (error: unknown) => { Sentry.captureException(error, {
 
 export function useRecordApply(args: {
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
-  reloadValues: () => Promise<LatestMeasurementsResult | null>;
+  reloadValues: (shown?: ShownCopy) => Promise<LatestMeasurementsResult | null>;
   applyLists: ReturnType<typeof useRecordState>['applyLists'];
   units: ReturnType<typeof useUnits>['record'];
   /** The erase machine (hooks/useErase): each whole re-read dispatches `read` to it. */
@@ -150,6 +154,7 @@ export function useRecordApply(args: {
       const sameRecord = erase === machine.getSnapshot().shown;
       // This tab's unit switch, still unsaved, rides through too: the save then writes it (US-34 AC7a, H2).
       const switched = units.pending();
+      // Keep the read from `settled` to here free of real async waits: a valid value typed during one would be replaced below.
       showRecord(result, prev => {
         if (!sameRecord) return result.inputs;
         const next: Partial<HealthInputs> = typing && LONGITUDINAL_FIELDS.includes(typing) && prev[typing] !== undefined
@@ -171,7 +176,7 @@ export function useRecordApply(args: {
     if (remote) latest.current.later().clearAnswered(); // another writer's change is no answer given here (US-62 AC13)
     if (counts) trackProductEvent('remote_change_applied', { backend: getBackendKind() });
     const read = apply();
-    // A remote change's re-read is dropped by the relay (arrived, loaded, saved): a failure is reported here, not left unhandled.
+    // A remote change's re-read is dropped by the relay (arrived, loaded, settled): a failure is reported here, not left unhandled.
     if (remote) read.catch(reportReadFailure);
     return read;
   }));
@@ -181,11 +186,25 @@ export function useRecordApply(args: {
     const { later } = latest.current;
     const policy = READ_POLICY[reason];
     // The page's own save: the values, lab rows, both matrices and the chat mirror, nothing else (US-34 AC4a).
-    if (policy.read === 'values') return latest.current.reloadValues().then(() => {});
+    // Asked as each is written. The store moved during the read, or it read an erase older than the one shown:
+    // nothing. It read a later erase than the one shown (its read failed, L1): the record read, never the earlier
+    // copy (H16). While a change is held, the mirror keeps the saved profile and its own lists (AC9, AC10): every
+    // writer of its lists writes saved ones, never a list edit still waiting on its save (US-15 AC10).
+    if (policy.read === 'values') {
+      const erase = getEraseIdentity(); // read with the record, in one turn
+      return latest.current.reloadValues(() => {
+        const shown = latest.current.erase.getSnapshot().shown;
+        if (getEraseIdentity() !== erase) return null;
+        if (erase !== shown) return eraseLater(erase, shown) ? undefined : null;
+        if (!relay.holding()) return undefined;
+        const kept = loadFromLocalStorage();
+        return { inputs: later().savedProfile(), medications: kept?.medications ?? [], screenings: kept?.screenings ?? [] };
+      }).then(() => {});
+    }
     // Not while the user is mid-typing: the re-read replaces the form's
     // inputs, and a remote change landing on a half-entered height would take
-    // those keystrokes with it. The relay HOLDS it: the next profile save
-    // carries the edit up and then replays the change. This tab's unsaved unit
+    // those keystrokes with it. The relay HOLDS it: the next profile save to
+    // settle replays the change (AC8). This tab's unsaved unit
     // switch holds it too: applied now, the record's units would undo it
     // (US-34 AC7a, H2). A page that cannot save never keeps a switch pending
     // (useProfileSave). Another writer's erase never comes here (the listener).
@@ -229,5 +248,5 @@ export function useRecordApply(args: {
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
   }, [signal, relay, dirty]);
 
-  return { showRecord, signal, ownSave, shows, saved: relay.saved, firstReadShown, firstReadFailed };
+  return { showRecord, signal, ownSave, shows, settled: relay.settled, firstReadShown, firstReadFailed };
 }

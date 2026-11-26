@@ -131,7 +131,7 @@ Again, though, few studies have definitively proven these benefits. It's also a 
 
 Magnesium taurinate, also known as magnesium taurate, combines magnesium with taurine, another amino acid. Taurine is well-studied and has several tangible benefits that have been proven in human clinical trials. If you want to know more, [I have a video on taurine here](https://youtu.be/XF-FnjhBVF4).
 
-Magnesium taurinate may combine the benefits of taurine with the added magnesium to treat deficiency, which is why it's the form of magnesium I chose for the Microvitamin.
+Magnesium taurinate may combine the [benefits of taurine](/blogs/articles/taurine-benefits-forms-dosing-and-side-effects) with the added magnesium to treat deficiency, which is why it's the form of magnesium I chose for the Microvitamin.
 
 ### Magnesium Lactate
 

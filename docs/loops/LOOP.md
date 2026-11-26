@@ -119,15 +119,18 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   gotcha archiving, plus the essentials restated below.
 - **First git act:** `git fetch origin main && git checkout main && git merge --ff-only origin/main` (cloud copies arrive
   on a detached HEAD since 2026-10-01, where pull and push fail).
-- Commit everything to main and push (no branches, no PRs; the cloud copy holds only this run's work, so local
-  sessions' worktree + PR rule doesn't apply — EXCEPT Tier 3 code changes, which go via `claude/` branch + PR).
-  `docs/products.md` must be a REAL file (mode 100644), never a symlink
-  (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
-- **Landing check — the run's LAST git act**: `git rev-list --count
-  origin/main..HEAD` prints 0, or an OPEN Tier 3 PR holds the commits — else
-  push to main before ending. **Push rejected** (someone pushed meanwhile):
-  `git fetch origin main && git merge origin/main` (never force or rebase;
-  conflicts keep BOTH sides' rows), push again, up to 3 tries; the cloud copy
+- Commit to main and land it with `node tools/loop-push.mjs`, never a raw `git push` to main, by Brad's standing permission
+  for every run (2026-11-22). It pushes HEAD only as a fast-forward of origin's main, and refuses any path outside
+  `docs/loops/` and `docs/user-stories.md`, Brad's files (REGISTRY.md, _TEMPLATE.md, any LOOP.md or lint-allowlist.json),
+  any gitlink or symlink, and unknown git config. Out-of-scope work (e.g. chat-health's knowledge-base summary lines,
+  `tools/test-queries.json`) and Tier 3 code go in a SEPARATE commit on a `claude/` branch with a PR, never in the
+  report commit. The cloud copy holds only this run's work, so the local worktree rule doesn't apply.
+  `docs/products.md` must be a REAL file (mode 100644), never a symlink (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
+- **Landing check — the run's LAST git act**: after `git fetch origin main`, `git rev-list --count
+  origin/main..main` prints 0 (the report commit landed), AND every pushed `claude/` branch holding
+  out-of-scope commits has an open PR — else run `node tools/loop-push.mjs` before ending. **Main has moved** (someone pushed meanwhile):
+  `git fetch origin main`, then `git merge --no-edit origin/main` (never force or rebase;
+  conflicts keep BOTH sides' rows), run the script again, up to 3 tries; the cloud copy
   is discarded, so unpushed work is lost. Session branches strand work invisibly
   (chat-health W34, twice, 2026-08). Backstop: `stranded-branch-watch.yml`.
 - Never print secret values; never commit real user data or health values;

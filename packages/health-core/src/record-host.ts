@@ -5,7 +5,7 @@
  * (widget-src/src/storage/web-record-host.ts); the iPhone app will build one
  * from its container file and Dropbox or Drive. No DOM and no Node here.
  */
-import type { ReadResult, StorageAdapter, WriteResult } from './adapter';
+import { httpStatusTag, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
 import { eraseIdentityOf, eraseLater, readErase } from './erase-identity';
 import { mergeFiles } from './merge';
 import { ROADMAP_DOC } from './roadmap-doc';
@@ -48,23 +48,32 @@ export function tellSaveStatus(host: RecordHost, told: SaveTold, now: SaveTold):
   }
 }
 
-/** Report a failed save (`persist`). Only the device tier names its refusal
- *  (6M): a cloud failure's cause is the transport, which the host's report
- *  already classifies. A device refuses every retry the same way, and each
- *  hide retries a refused save, so each kind of refusal is reported once per
- *  session (`reported` holds the kinds). The kind includes what the error
- *  wrapped: `other` pools refusals the browser did not name, and the host
- *  tells them apart by it (US-09 AC28). */
-export function reportSaveFailure(host: RecordHost, error: unknown, reported: Set<string>): void {
-  const cause = host.tier === 'device' ? host.failureCause(error) : undefined;
-  let repeat = false;
-  if (cause) {
-    const wrapped = error instanceof Error ? (error as { cause?: unknown }).cause : undefined;
-    const kind = `${error instanceof Error ? error.name : ''}/${cause}/${wrapped instanceof Error ? wrapped.name : ''}`;
-    repeat = reported.has(kind);
-    reported.add(kind);
-  }
-  host.report(error, { op: 'persist', cause, repeat });
+/** What a failed save is reported under: its cause, and the grant it met. */
+export interface SaveReportKey { cause: string; grant: string }
+
+/** A failed save is reported once per cause and grant until a save lands
+ *  (US-09 AC58): the same cause under the same grant as the last report repeats
+ *  it; a new cause or a new grant reports again, and a landed save clears
+ *  `previous` (the session's). Every retry, hide and edit after a refusal meets
+ *  the same refusal, so without this each one would report. */
+export function shouldReport(previous: SaveReportKey | null, now: SaveReportKey): boolean {
+  return previous === null || previous.cause !== now.cause || previous.grant !== now.grant;
+}
+
+/** Report a failed save (`persist`) under `grant` (one session holds one: a
+ *  reconnect opens a new page); answer the key it was reported under. Only the
+ *  device tier names its refusal as a tag (6M): a cloud failure's cause is the
+ *  transport, which the host's report already classifies, and its key reads the
+ *  typed reason and outcome and the status's closed-list tag. A device kind includes what the error wrapped:
+ *  `other` pools refusals the browser did not name, and the host tells them
+ *  apart by it. */
+export function reportSaveFailure(host: RecordHost, error: unknown, previous: SaveReportKey | null, grant: string): SaveReportKey {
+  const tag = host.tier === 'device' ? host.failureCause(error) : undefined;
+  const wrapped = error instanceof Error ? (error as { cause?: unknown }).cause : undefined;
+  const typed = error instanceof StorageError ? `${error.reason ?? ''}/${error.outcome}/${httpStatusTag(error)}` : '';
+  const key = { cause: `${error instanceof Error ? error.name : ''}/${tag ?? typed}/${wrapped instanceof Error ? wrapped.name : ''}`, grant };
+  host.report(error, { op: 'persist', cause: tag, repeat: !shouldReport(previous, key) });
+  return key;
 }
 
 /**
@@ -226,7 +235,7 @@ interface HostBase {
    *  off-file clear an erase taken in owes (`clear-off-file`, retried in this
    *  session until it lands), a throw after a save's write landed (`after-save`), or a
    *  cloud page's departure write to the device copy (`mirror-write`). `repeat`:
-   *  this kind of device refusal, this erase's failed clear, or a departure
+   *  a failed save's cause under this grant (`shouldReport`), this erase's failed clear, or a departure
    *  write, was already reported this session. Gets the error and closed tags only, never
    *  record content. */
   report(error: unknown, at: { op: RecordFailureOp; cause?: string; repeat: boolean }): void;

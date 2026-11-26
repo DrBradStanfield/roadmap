@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C35,web sync,Picker switch stop: a device store with no room as its own cause,gap,not started,"switchStopCause (widget-src/standalone/switch-stop.ts) has three causes; a copy-down whose device write is refused for room reads as unreachable and shows the provider sentence (US-09 AC56 limits). A fourth cause would need its own words.",,yes

@@ -24,11 +24,12 @@ vi.mock('../lib/roadmap-data', () => ({
   loadAllHistory: async () => data.history,
   loadAllHistorySync: () => data.syncHistory,
   loadLatestMeasurements: async () => data.latest,
+  loadLatestMeasurementsSync: () => data.latest,
+  loadLabValuesSync: () => data.labRows,
 }));
-const mirror = vi.hoisted(() => ({ saved: [] as unknown[][], patches: [] as unknown[], cached: null as unknown }));
+const mirror = vi.hoisted(() => ({ saved: [] as unknown[][], cached: null as unknown }));
 vi.mock('../lib/storage', () => ({
   saveToLocalStorage: (...a: unknown[]) => { mirror.saved.push(a); },
-  patchMirror: (p: unknown) => { mirror.patches.push(p); },
   loadFromLocalStorage: () => mirror.cached,
 }));
 
@@ -44,7 +45,7 @@ function setup() {
 
 beforeEach(() => {
   data.labReads = []; data.latest = null; data.history = []; data.hold = true; data.labRows = []; data.syncHistory = [];
-  mirror.saved = []; mirror.patches = []; mirror.cached = null;
+  mirror.saved = []; mirror.cached = null;
 });
 
 describe('US-21: the lab rows', () => {
@@ -66,17 +67,23 @@ describe('US-21: the lab rows', () => {
     expect(setters.setLabValueHistory).not.toHaveBeenCalled();
   });
 
-  it('US-07 AC7: a changed lab eGFR is patched into an existing chat mirror; an unchanged one is not', async () => {
+  it('US-07 AC7, US-34 AC11: a changed lab eGFR is written into an existing chat mirror, its PSA flag worked out again; an unchanged one is not', async () => {
     const { view } = setup();
-    mirror.cached = { labEgfr: null };
+    const screenings = [{ screeningKey: 'prostate_psa_value', value: '6.5' }, { screeningKey: 'prostate_last_date', value: '2026-03' }];
+    mirror.cached = { inputs: { birthYear: 1962 }, medications: [], screenings, labEgfr: null };
+    data.syncHistory = [{ id: 'vague', metricType: 'psa', value: 5, comparator: '<', recordedAt: '2026-06-01T00:00:00Z', status: 'active' }];
     let read!: Promise<void>;
     act(() => { read = view.result.current.refreshLabValues(); });
     await act(async () => { data.labReads[0].resolve([egfrRow(40)]); await read; });
-    expect(mirror.patches).toHaveLength(1);
-    mirror.cached = mirror.patches[0];
+    expect(mirror.saved).toHaveLength(1);
+    const [inputs, , , kept, labEgfr, psa] = mirror.saved[0];
+    expect([inputs, kept]).toEqual([{ birthYear: 1962 }, screenings]); // the mirror's own profile and lists
+    expect(labEgfr).toMatchObject({ labEgfr: 40 });
+    expect(psa).toMatchObject({ id: 'vague', raisedBefore: true });
+    mirror.cached = { ...(mirror.cached as object), labEgfr };
     act(() => { read = view.result.current.refreshLabValues(); });
     await act(async () => { data.labReads[1].resolve([egfrRow(40)]); await read; });
-    expect(mirror.patches).toHaveLength(1);
+    expect(mirror.saved).toHaveLength(1);
   });
 });
 
@@ -97,10 +104,70 @@ describe('US-15 AC10: reloadValues', () => {
     expect(mirror.saved).toHaveLength(1);
     expect(mirror.saved[0].slice(0, 4)).toEqual([latest.inputs, latest.previousMeasurements, [], []]);
     // The lab eGFR and the newest usable PSA ride in the mirror too (US-07 AC7).
-    expect(mirror.saved[0][5]).toMatchObject({ labEgfr: 40 });
-    expect(mirror.saved[0][6]).toMatchObject({ id: 'p1', value: 1.2 });
+    expect(mirror.saved[0][4]).toMatchObject({ labEgfr: 40 });
+    expect(mirror.saved[0][5]).toMatchObject({ id: 'p1', value: 1.2 });
     expect(setters.setHistory).toHaveBeenCalledWith(data.history);
     expect(setters.setLabValueHistory).toHaveBeenCalledWith([egfrRow(40)]);
+  });
+
+  it('US-34 AC9 (H15): the mirror carries the profile the page shows, asked as it is written; none given, the record\'s', async () => {
+    const latest = { inputs: { heightCm: 170, birthYear: 1981 }, previousMeasurements: [], medications: [], screenings: [] };
+    data.latest = latest;
+    const page = { heightCm: 170, birthYear: 1980 };
+    // Held while the mirror's lab read waits: the page's profile.
+    let shown: () => { inputs: typeof page; medications: []; screenings: [] } | undefined = () => ({ inputs: page, medications: [], screenings: [] });
+    const { view } = setup();
+    let read!: Promise<unknown>;
+    act(() => { read = view.result.current.reloadValues(() => shown() as never); });
+    await act(async () => { await Promise.resolve(); });
+    await act(async () => { data.labReads[0].resolve([]); await Promise.resolve(); });
+    await act(async () => { data.labReads[1].resolve([]); await read; });
+    expect(mirror.saved.map((args) => args[0])).toEqual([page]);
+    // The hold ends while the read is on its way: the mirror takes the record read, not the profile from before.
+    act(() => { read = view.result.current.reloadValues(() => shown() as never); });
+    await act(async () => { await Promise.resolve(); });
+    shown = () => undefined;
+    await act(async () => { data.labReads[2].resolve([]); await Promise.resolve(); });
+    await act(async () => { data.labReads[3].resolve([]); await read; });
+    expect(mirror.saved.map((args) => args[0])).toEqual([page, latest.inputs]);
+  });
+
+  it('US-34 AC10 (H16b): a copy of what the page shows gives the mirror its profile and lists, beside the values read', async () => {
+    const statin = { medicationKey: 'statin', doseValue: 20 };
+    data.latest = { inputs: { birthYear: 1981 }, previousMeasurements: [{ metricType: 'ldl', value: 1.9 }], medications: [statin], screenings: [{ screeningKey: 'colorectal_method' }] };
+    data.hold = false;
+    const { view } = setup();
+    const page = { inputs: { birthYear: 1980 }, medications: [], screenings: [] };
+    await act(async () => { await view.result.current.reloadValues(() => page as never); });
+    expect(mirror.saved.map((args) => args.slice(0, 4))).toEqual([[page.inputs, [{ metricType: 'ldl', value: 1.9 }], [], []]]);
+  });
+
+  it('US-34 AC10 (H16): a read the page does not show (null) replaces and writes nothing; one that stops being shown while its lab read waits writes nothing from then on', async () => {
+    data.latest = { inputs: { heightCm: 170 }, previousMeasurements: [{ metricType: 'weight', value: 70 }], medications: [], screenings: [] };
+    data.hold = false;
+    const { view, setters } = setup();
+    let got: unknown;
+    await act(async () => { got = await view.result.current.reloadValues(() => null); });
+    expect(got).toBe(data.latest); // handed back, so the save that waits on it ends
+    expect(setters.setPreviousMeasurements).not.toHaveBeenCalled();
+    expect(setters.setHistory).not.toHaveBeenCalled();
+    expect(setters.setLabValueHistory).not.toHaveBeenCalled();
+    expect(mirror.saved).toEqual([]);
+    // Shown when read, not when the mirror is written: from the move on, no mirror, lab rows, matrices or lab eGFR patch.
+    data.hold = true;
+    data.history = [{ metricType: 'weight', value: 70 }];
+    mirror.cached = { labEgfr: null }; // a changed lab eGFR would be patched in
+    let shown: () => null | undefined = () => undefined;
+    let read!: Promise<unknown>;
+    act(() => { read = view.result.current.reloadValues(() => shown()); });
+    await act(async () => { await Promise.resolve(); });
+    expect(setters.setPreviousMeasurements).toHaveBeenCalledTimes(1); // written before the store moved
+    shown = () => null;
+    await act(async () => { data.labReads[0].resolve([egfrRow(40)]); await Promise.resolve(); });
+    await act(async () => { data.labReads[1].resolve([egfrRow(40)]); await read; });
+    expect(mirror.saved).toEqual([]); // nor the lab eGFR's write
+    expect(setters.setLabValueHistory).not.toHaveBeenCalled();
+    expect(setters.setHistory).not.toHaveBeenCalled();
   });
 
   it('nothing on record: no values replaced and no mirror written, but labs and history are still read', async () => {

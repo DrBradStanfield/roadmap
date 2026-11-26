@@ -78,7 +78,7 @@ final class AppStoreScreenshots: XCTestCase {
         // Add medical records: the photo the script added, consent, then the reading screen.
         // The script's listener on the Mac holds the send open, so the read stays on screen;
         // nothing answers it and the review is not reached.
-        app.buttons["Add medical records"].firstMatch.tap()
+        app.buttons["Upload labs"].firstMatch.tap()
         let photos = app.buttons["labSource.photos"]
         XCTAssertTrue(photos.waitForExistence(timeout: 5), "Photos is offered")
         photos.tap()

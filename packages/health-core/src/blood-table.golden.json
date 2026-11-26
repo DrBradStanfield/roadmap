@@ -353,24 +353,6 @@
           ]
         },
         {
-          "id": "hba1c-normal",
-          "category": "bloodwork",
-          "priority": "info",
-          "title": "HbA1c in normal range",
-          "description": "Your HbA1c of 38 mmol/mol is in the normal range. Continue healthy habits to maintain this.",
-          "ingredients": [],
-          "reason": "A normal HbA1c (below 5.7% / below 38.8 mmol/mol) indicates healthy blood sugar control over the past 2–3 months. Maintaining this through diet, exercise, and healthy weight reduces your long-term risk of diabetes.",
-          "guidelines": [
-            "ADA Standards of Care"
-          ],
-          "references": [
-            {
-              "label": "ADA – Standards of Medical Care in Diabetes",
-              "url": "https://diabetesjournals.org/care/issue/47/Supplement_1"
-            }
-          ]
-        },
-        {
           "id": "bp-stage1",
           "category": "blood_pressure",
           "priority": "attention",
@@ -2948,24 +2930,6 @@
           ]
         },
         {
-          "id": "hba1c-normal",
-          "category": "bloodwork",
-          "priority": "info",
-          "title": "HbA1c in normal range",
-          "description": "Your HbA1c of 38 mmol/mol is in the normal range. Continue healthy habits to maintain this.",
-          "ingredients": [],
-          "reason": "A normal HbA1c (below 5.7% / below 38.8 mmol/mol) indicates healthy blood sugar control over the past 2–3 months. Maintaining this through diet, exercise, and healthy weight reduces your long-term risk of diabetes.",
-          "guidelines": [
-            "ADA Standards of Care"
-          ],
-          "references": [
-            {
-              "label": "ADA – Standards of Medical Care in Diabetes",
-              "url": "https://diabetesjournals.org/care/issue/47/Supplement_1"
-            }
-          ]
-        },
-        {
           "id": "med-ezetimibe",
           "category": "medication",
           "priority": "attention",
@@ -4036,7 +4000,7 @@
           "title": "Discuss prostate cancer screening",
           "description": "PSA testing is an option after an informed discussion with your doctor. Benefits and risks vary by individual.",
           "ingredients": [],
-          "reason": "Prostate cancer screening via PSA testing is a shared decision between patient and doctor. The benefits (early detection) must be weighed against the risks (overdiagnosis and overtreatment of slow-growing cancers). Long-term follow-up of the Prostate Cancer Prevention Trial showed that 5-alpha reductase inhibitors can reduce prostate cancer incidence. If you choose to be tested, Dr Brad suggests retesting every 2 years if your PSA is below 2.5 ng/mL, and every year if it is 2.5 or higher. These intervals are his suggestion, based on earlier American Cancer Society guidance. The Society's November 2026 guideline sets the interval by age and risk instead.",
+          "reason": "Prostate cancer screening via PSA testing is a shared decision between patient and doctor. The American Cancer Society (November 2026) recommends screening from 50 to 69 for men at average risk, and from 45 to 69 for Black men and men with a close relative (father, brother or son) who has had prostate cancer. Within those ages, it recommends a PSA test every year for Black men. For other men with a family history, it recommends every year if a close relative was diagnosed before 65 or more than one has had prostate cancer, and every 2 years if one close relative was diagnosed at 65 or older. The tool does not ask about these risks, so its suggestions do not depend on them. The benefits (early detection) must be weighed against the risks (overdiagnosis and overtreatment of slow-growing cancers). Long-term follow-up of the Prostate Cancer Prevention Trial showed that 5-alpha reductase inhibitors can reduce prostate cancer incidence. If you choose to be tested, Dr Brad suggests retesting every 2 years if your PSA is below 2.5 ng/mL, and every year if it is 2.5 or higher. These intervals are his suggestion, based on earlier American Cancer Society guidance. The Society's November 2026 guideline sets the interval by age and risk instead.",
           "guidelines": [],
           "references": [
             {

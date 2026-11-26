@@ -70,7 +70,7 @@ describe('safe storage accessors', () => {
       const guestData = {
         inputs: { heightCm: 180, sex: 'male' },
         savedAt: new Date().toISOString(),
-        // Note: no medications, no screenings, no previousMeasurements, no reminderPreferences
+        // Note: no medications, no screenings, no previousMeasurements
       };
       const mockStorage = {
         getItem: vi.fn().mockReturnValue(JSON.stringify(guestData)),
@@ -85,7 +85,6 @@ describe('safe storage accessors', () => {
       // loadFromLocalStorage defaults missing arrays to [] (not undefined)
       expect(loaded!.medications).toEqual([]);
       expect(loaded!.screenings).toEqual([]);
-      expect(loaded!.reminderPreferences).toEqual([]);
       expect(loaded!.previousMeasurements).toEqual([]);
     });
   });

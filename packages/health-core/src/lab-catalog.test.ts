@@ -1048,8 +1048,9 @@ describe('US-21 AC19 — the audit\'s missing tests are catalogued, in SI', () =
     for (const name of ['Osmolality', 'Urine Osmolality', 'Osmolality, Urine']) expect(resolveLabCatalogEntry(name), name).toBeUndefined();
   });
 
-  it('US-21 AC19 — what the audit left out stays uncatalogued: FTI, the unitless ratios, INR, PT, APTT, bare T4, T3 and troponin', () => {
-    for (const name of ['Free Thyroxine Index', 'FTI', 'T7', 'T7 Index', 'Cholesterol (total/HDL)', 'Chol/HDL Ratio', 'INR', 'PT', 'APTT',
+  // "Chol/HDL Ratio" left this list with US-21 AC29 (Brad 2026-11-23): the TC/HDL ratio is catalogued now.
+  it('US-21 AC19 — what the audit left out stays uncatalogued: FTI, the other unitless ratios, INR, PT, APTT, bare T4, T3 and troponin', () => {
+    for (const name of ['Free Thyroxine Index', 'FTI', 'T7', 'T7 Index', 'Cholesterol (total/HDL)', 'INR', 'PT', 'APTT',
       'Free Androgen Index', 'HOMA-IR', 'A/G Ratio', 'BUN/Creatinine Ratio', 'T4', 'T3', 'Troponin', 'Base Excess', 'Lymphs', 'Eos', 'Baso']) {
       expect(resolveLabCatalogEntry(name), name).toBeUndefined();
     }

@@ -3,6 +3,7 @@
 // identity) answers not-open and writes nothing to the new one. `./cloud` is a stand-in here whose
 // open session the test swaps, as in upload-save-door.session.test.ts.
 import { describe, expect, it, vi } from 'vitest';
+import { BusyError } from '../../packages/health-core/src/adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 
 const NOW = '2026-10-21T08:00:00.000Z';
@@ -38,6 +39,28 @@ describe('documentSave keeps to the session it was asked of (US-52 AC13d)', () =
     await holding;
     expect(JSON.parse(await queued)).toMatchObject({ ok: false, reason: 'not-open' });
     expect(b.puts).toEqual([]);
+    expect(cloud.commits).toEqual([]);
+  });
+});
+
+describe('documentSave checks for an erase before every write, retries included (US-11 AC1a)', () => {
+  it('a busy refusal, then an erase during the wait: no second write, erased, nothing committed', async () => {
+    vi.useFakeTimers();
+    const a = session('a');
+    let erased = false;
+    a.at.session.refuses = () => erased;
+    a.at.host.store.writeDocument = async (ref: string) => {
+      a.puts.push(ref);
+      setTimeout(() => { erased = true; }, 1); // the erase lands during the retry's wait
+      throw new BusyError('busy', 0, 409);
+    };
+    cloud.open = a.at;
+    cloud.commits.length = 0;
+    const answer = documentSave('', letter, choice, new Uint8Array([1]).buffer, '[0,null]', NOW, 'phone');
+    await vi.runAllTimersAsync();
+    vi.useRealTimers();
+    expect(JSON.parse(await answer)).toMatchObject({ ok: false, reason: 'erased' });
+    expect(a.puts).toHaveLength(1);
     expect(cloud.commits).toEqual([]);
   });
 });

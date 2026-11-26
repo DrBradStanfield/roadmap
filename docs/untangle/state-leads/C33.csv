@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+C33,web chat,Muted chat text is not split by surface,note,not started,"Filed 2026-11-26 with US-15 AC77. Before the onboarding is done, the panel and the pop-up show MUTED_CHAT (widget-src/src/components/chat-muted.ts) in place of the subtitle and the empty line, whatever the chat surface; chatCopy() (chat-copy.ts) holds the doctor and brand words for the rest.",2163,no

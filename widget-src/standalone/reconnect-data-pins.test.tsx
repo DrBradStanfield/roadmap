@@ -35,7 +35,7 @@ import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../src/lib/server-api', async (original) => ({
   ...(await original<typeof import('../src/lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('./reminders', () => ({ remindersSupported: () => false, clearAutoEnrolBlock: vi.fn() }));
 vi.mock('./reminders-control', () => ({ RemindersControl: () => null }));
@@ -215,7 +215,7 @@ const PANEL_EDIT = { day: '2026-06-01', value: 81 };
 const DEBOUNCED_EDIT = { day: '2026-06-02', value: 82 };
 
 async function edit({ day, value }: { day: string; value: number }): Promise<void> {
-  await act(async () => { expect((await page!.data.addMeasurement('weight', value, day)).status).toBe('inserted'); });
+  await act(async () => { expect((await page!.data.addMeasurement('weight', value, day, page!.data.getShownErase())).status).toBe('inserted'); });
 }
 
 /** Pin 2: one edit while the reconnect panel shows, landed on this browser before the exit. */
@@ -421,7 +421,8 @@ describe('US-09 AC48 (Q6 pins), lead A3: exit (b) the picker\'s move to another 
   async function moveDriveToGitHub(): Promise<Record<string, number>> {
     await chooseGitHub();
     await until(() => !!document.querySelector('dialog .hr-sync-error'), 'the refused move');
-    expect(document.querySelector('dialog .hr-sync-error')?.textContent).toMatch(/Google Drive could not be reached/);
+    // Its sign-in was refused, so the stop names that cause (US-09 AC56).
+    expect(document.querySelector('dialog .hr-sync-error')?.textContent).toBe('Google Drive did not connect, so nothing changed. Please try again.');
     expect(page!.switchFlow.getSwitchFlow().kind).toBe('idle');
     expect(reload).not.toHaveBeenCalled();
     expect(githubFile).toBeNull();

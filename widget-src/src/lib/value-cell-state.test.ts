@@ -9,7 +9,8 @@ import {
   type ValueCellEvent, type ValueCellState, type Step, type Verdict,
 } from './value-cell-state';
 
-const at = { row: 'r1', unit: 'si' as const, typed: '3.4' };
+// openAt: the erase the page showed as the editor opened (US-16 AC2a).
+const at = { row: 'r1', unit: 'si' as const, openAt: 'erase-at-open', typed: '3.4' };
 const STATES = {
   closed: CLOSED,
   closedSaid: { kind: 'closed', message: UNIT_CHANGED },
@@ -26,7 +27,7 @@ type S = keyof typeof STATES;
 
 const SAVE = { save: 1.7 };
 const EVENTS = {
-  opened: { type: 'opened', row: 'r2', unit: 'conventional', text: '62' },
+  opened: { type: 'opened', row: 'r2', unit: 'conventional', openAt: 'erase-2', text: '62' },
   typed: { type: 'typed', text: '3.6' },
   blurred: { type: 'blurred' },
   focused: { type: 'focused' },
@@ -55,7 +56,7 @@ const EVENTS = {
 type E = keyof typeof EVENTS;
 
 const to = (state: ValueCellState): Step => ({ state, effects: [] });
-const saves: Step = { state: { kind: 'saving', ...at }, effects: [{ type: 'save', row: 'r1', value: 1.7 }] };
+const saves: Step = { state: { kind: 'saving', ...at }, effects: [{ type: 'save', row: 'r1', value: 1.7, erase: 'erase-at-open' }] };
 const editingAgain = { kind: 'editing', ...at } as const;
 const closedWith = (message: string): Step => to({ kind: 'closed', message });
 
@@ -73,10 +74,10 @@ const pendingSubmits: Partial<Record<E, Step>> = {
 };
 
 const TABLE: Record<S, Partial<Record<E, Step>>> = {
-  closed: { opened: to({ kind: 'editing', row: 'r2', unit: 'conventional', typed: '62' }) },
-  closedSaid: { opened: to({ kind: 'editing', row: 'r2', unit: 'conventional', typed: '62' }) },
+  closed: { opened: to({ kind: 'editing', row: 'r2', unit: 'conventional', openAt: 'erase-2', typed: '62' }) },
+  closedSaid: { opened: to({ kind: 'editing', row: 'r2', unit: 'conventional', openAt: 'erase-2', typed: '62' }) },
   closedRefocus: {
-    opened: to({ kind: 'editing', row: 'r2', unit: 'conventional', typed: '62' }),
+    opened: to({ kind: 'editing', row: 'r2', unit: 'conventional', openAt: 'erase-2', typed: '62' }),
     refocused: closedWith(UNIT_CHANGED),
   },
   editing: {
@@ -157,6 +158,14 @@ describe('blurPending keeps a refusal the editor showed', () => {
   it('coming back shows it again', () => {
     const pending: ValueCellState = { kind: 'blurPending', ...at, error: SAVE_ERRORS.error, wait: 'delay' };
     expect(transition(pending, EVENTS.focused).state).toEqual({ kind: 'editing', ...at, error: SAVE_ERRORS.error });
+  });
+});
+
+describe('US-16 AC2a: a correction is written under the erase the editor opened at', () => {
+  it('every save, however late it comes due, names the open\'s erase, carried through each wait', () => {
+    let state = transition(CLOSED, EVENTS.opened).state;
+    for (const e of [EVENTS.typed, EVENTS.blurred, EVENTS.delayDuePressed, EVENTS.released] as ValueCellEvent[]) state = transition(state, e).state;
+    expect(transition(state, EVENTS.releaseDue).effects).toEqual([{ type: 'save', row: 'r2', value: 1.7, erase: 'erase-2' }]);
   });
 });
 

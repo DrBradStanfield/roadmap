@@ -1,7 +1,7 @@
 # The web upload list: the screen (PR 2)
 
-Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T12). Built
-unmounted: production keeps drawing ReviewTable's grid.
+Status: draft for review, 2026-11-22, round seven (the final re-check's T1-T12). Mounted in the upload modal by
+mount 3b (`UploadReviewList.tsx`); the grid is gone.
 Engine: `uploadList` (packages/health-core/src/upload-list.ts), `uploadView` (upload-view.ts) and `uploadListPage`
 (upload-list-page.ts).
 Stories: US-13 AC5, AC10, AC12, AC21, AC24, AC26; US-02 AC4, AC7; US-12; US-14 AC11-13.
@@ -12,11 +12,9 @@ The screen draws what the engine exposes and adds no rule. It never decides whet
 error, blocks Save or takes typing, nor which caption, reason or heading shows. It never parses a
 number and never counts. It owns one thing: the draft of the focused text input, with the unit it was typed in and that unit's label.
 Its view state, by owner ruling: Show all, a latch; the row holding the focus; and the list's last announcement.
-Show all's latch is set once, when the review first has rows, from one constant, `SHOW_ALL_AT_START` (UploadList.tsx):
-closed, as US-13 AC26 and Brad's decision of 2026-11-21 say; after that only its press changes it. The owner's earlier
-ruling (open while `list.check` is null) is withdrawn pending Brad's answer in docs/decisions-for-brad.md ("When a
-report has nothing to check, should the web list show its values straight away?"); a yes makes the constant
-`list.check === null`. Meanwhile a clean or undated report shows its day control, "Show all n" and a dimmed Save with its
+Show all's latch is set closed once, when the review first has rows, as US-13 AC26 and Brad's decisions of 2026-11-21
+and 2026-11-23 say (values with nothing to check stay behind "Show all"); after that only its press changes it. The
+constant that held this open for his answer is gone. A clean or undated report shows its day control, "Show all n" and a dimmed Save with its
 reason. Rows with `attention`, the draft's row and the focused row always show; so does every
 row shown since Show all was last pressed, so no row hides under the person's hand (K3i).
 
@@ -116,8 +114,11 @@ press read the view from before the commit. `choose` returns `void`, so restorin
   Tab to highlight each item") the button; Enter and Space call `showPicker()`, focus stays on the button. Without
   `showPicker` (Safari before 16) the press clicks the input instead. Not verified: choosing a day inside the native
   popover by keyboard, and VoiceOver (neither can be scripted). Owner ruling: keep the button and its click fallback.
-- The engine's fuller names (`ListRow.name`, `DayControl.name`) await Brad's yes (docs/decisions-for-brad.md, Open): one constant, `ENGINE_NAMES` in
-  widget-src/src/lib/upload-list-names.ts, switches every control to them. A letter's title is labelled by its
+- Each value's input and tick, and each day control, is named the engine's composition (`ListRow.name`, `DayControl.name`;
+  Brad's option 1, 2026-11-23; US-13 AC28), by `aria-labelledby` alone: the row's test label, the hidden words "value
+  from", its file's name in Files, a hidden comma and its day control's shown day while it has one, then the hidden
+  ", another reading"; a day control's label, a dated column's printed day and its file name in its header
+  (widget-src/src/lib/upload-list-names.ts). The name algorithm joins references with a space. A letter's title is labelled by its
   visible "Document title" and its file name; its kind select by its file name alone (no word for it yet).
 
 ## Phone first
@@ -149,7 +150,7 @@ The widget has no dark theme, so dark mode draws as light.
 
 ## Needs Brad
 
-1. Accessible names (decisions-for-brad.md, Open): his yes flips `ENGINE_NAMES`.
+1. Accessible names: decided 2026-11-23 (option 1), built in US-13 AC28.
 2. A label for a conflict's saved value. No existing words name it on the list; the grid shows it bare
    (ReviewMatrix.tsx `bt-cell-conflict-old`). Its only near words are a context cell's title "Already
    saved at this date". Drawn meanwhile: the saved value leads the caption, so it reads "2.9 mmol/L
@@ -181,7 +182,6 @@ The widget has no dark theme, so dark mode draws as light.
 - Untested at mount: paste and line breaks in a letter title; the live region once `view.done` ends the list; the CSS
   under the real modal portal; Clarity masking of the hidden proposed-value span; VoiceOver and keyboard date picking
   in real Safari, on a Mac and an iPhone (the native popover could not be scripted).
-- `ENGINE_NAMES` awaits Brad (Needs Brad 1).
 - UploadList.css must ship in the Shopify build: check the built CSS holds `.upload-list-row[hidden]`.
 
 ## What a later PR does

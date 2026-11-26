@@ -193,7 +193,7 @@ The upload modal (`UploadModal.tsx`) is a 5-state machine: `'select' | 'processi
 - Drag-and-drop zone + file browser
 - Accepts `.pdf`, `.jpg`, `.jpeg`, `.png`, `.zip`
 - `MAX_FILES = 200` per session; `MAX_FILE_SIZE` = `IMPORT_LIMITS.websiteFileMb` (10 MB), client-side; over-size files are listed by name with the limit, beside the files that were read, and never processed
-- Device-only users first see "Keep your original documents" (connect a cloud) with a "Continue without keeping my files" skip
+- Device-only users first see "Keep the original files too?" (connect a cloud) with a "Continue without keeping the files ›" skip, under the upload explainer (US-12 AC32)
 - "Extract Values" starts processing
 
 ### State 2: Processing
@@ -400,7 +400,7 @@ Key mechanics:
 - **Archiving behind a connector row** (US-35 AC8 / US-13 AC1): a live row with the hash and NO `fileRef` is the connector's metadata-only import. Uploading those bytes on the website offers Save even with nothing else selected ("Nothing new to save. Save will archive the original PDF…", button `Save 1 Original`). The store writes the blob into a NEW row and tombstones the connector's row only after the blob lands; documents are immutable under merge, so the old row is never edited. A clinic letter the name-dedup left unselected is filed the same way with its reviewed content (`connectorDocumentEntries`). Re-selecting the row saves it as a document instead, never both
 - **Tombstone deletes**: documents merge by union-by-id across devices, so a hard delete would resurrect from the cloud copy. `FileDocument.deleted` is a monotonic tombstone (merge ORs it; reads filter it)
 - **Blob writes fail gracefully** (GitHub's ~1 MB Contents cap, storage quota): the extracted values + metadata are still saved, only the original is skipped — EXCEPT behind a connector row, where a plain row beside it would list the letter twice and every later upload would offer to archive it again. There the store files nothing, keeps the connector row live and returns `errorCount`; the modal's "could not be saved" notice asks for a retry
-- Connect-first UX: device-only users see "Keep your original documents" (opens the backend picker) with an honest "Continue without keeping my files" skip; off-cloud, blobs are never attached at all
+- Connect-first UX: device-only users see "Keep the original files too?" (opens the backend picker) with an honest "Continue without keeping the files ›" skip; off-cloud, blobs are never attached at all
 
 ### 2. Server extraction endpoint (drstanfield.com only) — app-proxy HMAC since Phase 5
 

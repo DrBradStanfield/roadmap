@@ -29,7 +29,7 @@ export async function extractOneFile(
     // (fetchAnthropicRaw), kept for capacity blips; ~46 s answers make it rare (US-15 AC34).
     // Not on the app's route (US-52 AC7c). Both routes retry an Anthropic 429
     // once inside the deadline (US-12 AC1a); never our own daily-limit 429.
-    const result = await extractOrClassify(pages, { timeoutMs: 60_000, retryRateLimit: true, ...opts });
+    const result = await extractOrClassify(pages, { purpose: 'LABS', timeoutMs: 60_000, retryRateLimit: true, ...opts });
     return Response.json({ success: true, data: forWidget(result, data),...extra() });
   } catch (error) {
     // Declined or cut off: its own answer, so the widget does not say "try

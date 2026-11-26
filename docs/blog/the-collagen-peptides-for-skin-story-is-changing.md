@@ -146,7 +146,7 @@ Well, in cell experiments, we consistently see that collagen peptides stimulate 
 
 That’s all nice in theory, but what about human studies that directly compare collagen peptides to protein?
 
-To answer that, you need trials that compare collagen with the same amount of another protein. There are very few. One, from Korea, compared collagen with the same amount of casein, a milk protein, and elasticity improved more with collagen [10]. But the collagen group also got astaxanthin, a pigment from algae, so we can’t be sure which ingredient did the work.
+To answer that, you need trials that compare collagen with the same amount of another protein. There are very few. One, from Korea, compared collagen with the same amount of casein, a milk protein, and elasticity improved more with collagen [10]. But the collagen group also got [astaxanthin](/blogs/articles/astaxanthin-benefits-forms-dosing-and-side-effects), a pigment from algae, so we can’t be sure which ingredient did the work.
 
 The second is a trial in people with serious burns. Men received either 36 grams of collagen or 35 grams of soy protein a day for four weeks. Of the 31 who finished, every patient in the collagen group had fully healed, compared with fewer than half in the soy group [11].
 
