@@ -36,10 +36,8 @@ checks that the word is in that entry's Retired list here. Add a rule only for a
 it is scanned; it does not read comments, identifiers or tests.
 
 ## G1. The product's name (Agreed)
-- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
-- **Use:** Health by Dr Brad, in everything people read; "Health Roadmap" only where iOS shows the app's name; the
-  cloud folders keep "Health Plan by Dr Brad". **Means:** the whole product: the website, the iPhone app and the
-  connector people add to their AI assistant.
+- **Use:** Health by Dr Brad. **Means:** the whole product: the website, the iPhone app and the connector people add
+  to their AI assistant. **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Retired:** "Health Roadmap" (in prose people read, except where Apple shows the iPhone app's name); "health
   roadmap" in lower case ("Your health roadmap"); "Roadmap" as a name; "Health Plan by Dr Brad" (except the cloud
   folder names); "Brad's roadmap" (the guideline pages in `docs/guideline/`; Brad's lines); "Health Plan" as the
@@ -95,9 +93,8 @@ it is scanned; it does not read comments, identifiers or tests.
   `health_roadmap_local_erase_generation`; engine doors `cloudErase`, `cloudEraseHeld`, `erasePhoneJson`.
 
 ## G4. A blood test and its result (Agreed)
-- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Use:** blood test (the test) and result (its number). **Means:** a test done on a blood sample; its result is the
-  number the lab reported for it on one day.
+  number the lab reported for it on one day. **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Retired, in copy:** "lab value"; "lab test"; "lab result" (except inside the G2 and G15 labels); "labs" as a noun;
   "bloodwork" and "blood work"; "blood result"; "blood value"; "lab work"; "biomarker" (citations and history keep
   it).
@@ -210,10 +207,9 @@ it is scanned; it does not read comments, identifiers or tests.
   `health_roadmap_unit_system`.
 
 ## G11. The plan and its parts (Agreed)
-- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Use:** plan (the whole); suggestion (one item); recommendation only for what a guideline or Dr Brad recommends.
   **Means:** the plan is everything the product tells a person to do next; a suggestion is one item in it; a card is
-  how one suggestion is drawn.
+  how one suggestion is drawn. **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Retired:** "roadmap" as the output ("Your health roadmap" on the iPhone welcome screen); "recommendation" for a
   product suggestion; "card" and "plan card" in copy (fine in UI code and dev docs).
 - **Keep:**
@@ -228,9 +224,8 @@ it is scanned; it does not read comments, identifiers or tests.
   product suggestions; it stays as a stored name); MCP `get_plan` and `summarise_my_plan`.
 
 ## G12. How the doctor is named (Agreed)
-- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Use:** Dr Brad (no full stop); Dr Brad Stanfield for a formal first mention. **Means:** how the product names the
-  doctor behind it.
+  doctor behind it. **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Retired:** "Dr. Brad"; "Dr. Brad Stanfield" (for example the chat system prompt); "Dr Stanfield" and "Dr.
   Stanfield" in chat prompts.
 - **Keep:**
@@ -313,9 +308,8 @@ it is scanned; it does not read comments, identifiers or tests.
   `import_my_lab_files`; the iPhone consent id `consent.labUpload.v1`; events `upload_*`.
 
 ## G17. The person's basic facts (Agreed)
-- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Use:** About you. **Means:** the section that holds the facts the plan needs first: sex, birth year, height and
-  the like.
+  the like. **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Retired:** "starting info" and "starting information" (the web heading during first fill); "your details" and
   "personal details" (optional: prompts could name the section, "Fill in About you").
 - **Keep:**
@@ -437,9 +431,9 @@ it is scanned; it does not read comments, identifiers or tests.
 - **Stored names:** record sources `apple_health` and `health_records`.
 
 ## G26. Medicines (Agreed)
-- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
-- **Use:** medicine in sentences; Medications in form titles; drug only for drug names and classes in clinical
-  text. **Means:** a prescribed medicine the person takes.
+- **Use:** medicine in sentences; Medications in form titles; drug only for drug names and classes in clinical text.
+  **Means:** a prescribed medicine the person takes. **Answer:** Brad, 2026-11-26: go with your recommendations;
+  option A.
 - **Retired:** "meds" in copy; "medication" in sentences.
 - **Keep:**
   - Brad's approved education line says "medicines": "Talk to your doctor before you change anything about your health
@@ -453,25 +447,23 @@ it is scanned; it does not read comments, identifiers or tests.
   `propose_medication_edit`; event `medication_history_viewed`.
 
 ## G27. Names of individual tests (Agreed)
-- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
-- **Use:** one display name per test (ApoB, Lp(a), HbA1c), taken from the code labels, with the full name beside
-  it on first mention in prose. Renames go through the clinical three-file sync (CLAUDE.md), all three files in one
-  PR. **Means:** how each test is spelled, for example ApoB, Lp(a), HbA1c, LDL cholesterol.
+- **Use:** one display name per test (ApoB, Lp(a), HbA1c), taken from the code labels, with the full name beside it on
+  first mention in prose. **Means:** how each test is spelled, for example ApoB, Lp(a), HbA1c, LDL cholesterol.
+  **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Retired:** "apoB", "APOB" and "apo B" in prose; "A1c" on its own in prose.
 - **Keep:**
   - The full name beside the short one on first mention is house style (`docs/writing-style.md`), for example
     "Lipoprotein(a), a cholesterol-carrying particle like LDL...".
   - Display labels already come from one place (`UNIT_DEFS` labels and `LAB_CATALOG`).
-  - Any change goes through the clinical three-file sync (CLAUDE.md).
+  - Any change goes through the clinical three-file sync (CLAUDE.md), all three files in one PR.
 - **Code word:** identifiers follow each language's casing (`apoB`, `ApoB`, `HbA1c`, `LpaUnit`); they are not display
   names.
 - **Stored names:** metric types `apob`, `lpa`, `hba1c`, `ldl`; browser key `health_roadmap_lpa_check_kept`; events
   `lpa_unit_selected` and `lpa_check_answered`.
 
 ## G28. House spelling (Agreed)
-- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
-- **Use:** US spelling in everything people read. **Means:** whether prose uses US spelling (personalized,
-  catalog) or NZ/UK spelling (personalised, catalogue).
+- **Use:** US spelling in everything people read. **Means:** whether prose uses US spelling (personalized, catalog) or
+  NZ/UK spelling (personalised, catalogue). **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Retired, in copy:** "personalised"; "organised"; "catalogue" (the connector's text keeps it until its pins are
   re-taken).
 - **Keep:**
