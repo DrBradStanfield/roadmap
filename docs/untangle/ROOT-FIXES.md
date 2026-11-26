@@ -129,3 +129,9 @@ Merged: PRs 1604 (old PSA answers), 1610 (prostate words), 1805, 1806, 1607, 208
 for IPv6 keys; lead S-21 partial), 2173, 2175 and 2176. Closed as superseded: PR 1601. Decided and not built: the
 Apple Health malformed-date skip (next iPhone build), the prostate stop age and flag line, and the 45 to 49 card,
 which waits for Brad's look.
+
+## Status, 27 Nov 2026
+
+- **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR 2188, held).
+  H127's other web checks (transport silence, refused Drive grant, busy write, corrupt device copy) need a typed
+  field that does not exist yet: a design first. The Drive grant check sits in files held PR 2099 edits.
