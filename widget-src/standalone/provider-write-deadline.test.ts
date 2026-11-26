@@ -85,7 +85,7 @@ describe.each(providers)('%s record save that never answers (US-09 AC13d)', (bac
     let stalling = true;
     stall((url, init) => stalling && isPut(url, init));
     const store = await RoadmapStore.create(make());
-    store.addMeasurement('ldl', 3.2, '2024-06-01T09:00:00.000Z');
+    store.addMeasurement('ldl', 3.2, '2024-06-01T09:00:00.000Z', store.shownErase);
     let outcome = '';
     const flushing = store.flush().then(() => { outcome = 'saved'; }, () => { outcome = 'failed'; });
     await vi.advanceTimersByTimeAsync(30_000);
@@ -96,7 +96,7 @@ describe.each(providers)('%s record save that never answers (US-09 AC13d)', (bac
     expect(device.loadAllHistory().map(row => row.value)).toEqual([3.2]);
     expect(captureException).toHaveBeenCalled();
     stalling = false;
-    store.addMeasurement('hdl', 1.4, '2024-06-01T09:00:00.000Z');
+    store.addMeasurement('hdl', 1.4, '2024-06-01T09:00:00.000Z', store.shownErase);
     await expect(store.flush()).resolves.toBeUndefined();
   });
 

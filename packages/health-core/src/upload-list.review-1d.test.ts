@@ -182,7 +182,6 @@ describe('each day control carries its words (US-12 AC14, US-13 AC24)', () => {
 
   it('the words moved from the web\'s grid, byte for byte', () => {
     expect(DAY_CONTROL_TEXT.previous).toBe('Choose the date of the previous results');
-    expect(DAY_CONTROL_TEXT.column).toBe('Choose column date');
     expect(DAY_CONTROL_TEXT.pickDay('2024-06', '2026-03-10')).toBe('Pick a day in Jun 2024 before 10 Mar 2026');
     expect(DAY_CONTROL_TEXT.pickDay(null, '2026-03-10')).toBe('Pick a day before 10 Mar 2026');
     expect(DAY_CONTROL_TEXT.pickDay(null, null)).toBe('Pick a day');

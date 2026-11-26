@@ -43,7 +43,7 @@ type Page = Awaited<ReturnType<typeof loadPage>>;
 /** A store with one weight saved, opened on `page`. */
 async function withWeight(page: Page, adapter: ReturnType<Page['device'] | Page['cloud']>) {
   const store = await page.RoadmapStore.create(adapter);
-  store.addMeasurement('weight', 82, '2026-11-01');
+  store.addMeasurement('weight', 82, '2026-11-01', store.shownErase);
   await store.flush();
   return store;
 }

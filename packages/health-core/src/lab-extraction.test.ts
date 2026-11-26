@@ -898,7 +898,7 @@ describe('US-21 AC4: the prompt suggests the lab catalogue keys, and only those'
         '  Hormones: testosterone_total, free_testosterone, free_testosterone_calculated, shbg, estradiol, prolactin, cortisol_am, cortisol_random, cortisol_pm, psa_free, lh, fsh, progesterone, dhea_s, igf1, pth, amh, bioavailable_testosterone, psa_free_percent, estrone, androstenedione, oh_progesterone_17, dht, acth, gh, hcg',
         '  Vitamins & minerals: vitamin_d, vitamin_b12, b12_active, folate, ferritin, iron, tibc, transferrin, transferrin_sat, magnesium, calcium_corrected, calcium_total, phosphate, zinc, red_cell_folate, calcium_ionised, uibc, stfr, copper, caeruloplasmin, selenium, omega3_index, vitamin_a, vitamin_e, vitamin_c, vitamin_b6, vitamin_b1, mma',
         '  Inflammation: crp, esr, procalcitonin, ige, rf, anti_ccp, total_iga, ttg_iga',
-        '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck, nt_probnp, bnp, troponin_t, troponin_i, c_peptide, eag, vldl, lactate, fructosamine',
+        '  Metabolic: glucose, glucose_random, insulin, apoa1, homocysteine, ck, nt_probnp, bnp, troponin_t, troponin_i, c_peptide, eag, cholesterol_hdl_ratio, vldl, lactate, fructosamine',
         '  Any other test: use the best descriptive snake_case name.',
       ]);
     });

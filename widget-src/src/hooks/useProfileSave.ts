@@ -4,11 +4,17 @@ import type { UnitSystem } from '@roadmap/health-core/units';
 import { PREFILL_FIELDS, hasUnsavedProfileEdits } from '@roadmap/health-core/mappings';
 import { birthRefusedMessage } from '@roadmap/health-core/validation';
 import { getBackendKind, getShownErase, saveChangedMeasurements } from '../lib/roadmap-data';
-import { healthWritesAllowed, patchMirror } from '../lib/storage';
+import { healthWritesAllowed } from '../lib/storage';
+import { writeMirror } from '../lib/chat-mirror';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 
 /** The profile fields a save carries: height, sex, the birth date and the unit system. */
 const PROFILE_FIELDS: ReadonlyArray<keyof HealthInputs> = [...PREFILL_FIELDS, 'unitSystem'];
+
+/** Copy one field across; generic so tsc accepts the per-key copy without a cast. */
+function copyField<K extends keyof HealthInputs>(to: Partial<HealthInputs>, from: Partial<HealthInputs>, key: K): void {
+  to[key] = from[key];
+}
 
 /**
  * The profile's save: height, sex, birth month and year, and the unit system
@@ -27,19 +33,21 @@ const PROFILE_FIELDS: ReadonlyArray<keyof HealthInputs> = [...PREFILL_FIELDS, 'u
  *   birth edit.
  *
  * A remote change that arrived while the form was dirty is held by the relay
- * and released (`onClean`) once the form is clean (US-34 AC4): after a save
- * that left no out-of-range value in the form (a refused birth pair goes
- * back, so it counts as clean), or when nothing was left to save. Not while
- * an out-of-range value is still in the form (the re-read would replace it
- * and its error), nor while an edit made during the save's await is unsaved.
+ * and released (`onSettled`) when the next save settles (US-34 AC4, AC8):
+ * landed, a value refused, or nothing left to save. An out-of-range value
+ * still in the form rides through the re-read with its error (useRecordApply).
+ * Not while an edit made during the save's await is unsaved: its own save
+ * settles next.
  */
 export interface ProfileSave {
   /** Save any unsaved profile field now. True if saved or nothing to save; false if refused. */
-  flushProfile: (erase?: string) => Promise<boolean>;
+  flushProfile: (erase: string) => Promise<boolean>;
   /** The waiting save: run it now (a closing tab) or drop it (an erase). */
   profileTimer: { flush: () => void; cancel: () => void };
   /** The record's profile as last read or saved. */
   markSaved: (inputs: Partial<HealthInputs>) => void;
+  /** A copy of the record's profile as last read or saved: the profile the page shows as saved (US-34 AC9). */
+  savedProfile: () => Partial<HealthInputs>;
   /** The form holds a profile edit the record does not (US-34 AC4). */
   profileDirty: () => boolean;
   birthRefused: string | null;
@@ -51,20 +59,20 @@ export function useProfileSave(args: {
   inputsRef: MutableRefObject<Partial<HealthInputs>>;
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
   loaded: boolean;
-  /** The form is clean: a held remote change may apply (the relay's `saved`). */
-  onClean: () => void;
+  /** A save settled: a held remote change may apply (the relay's `settled`). */
+  onSettled: () => void;
   writeRefused: (erase?: string) => void;
   /** The units machine (useUnits' `record`): this tab's unsaved switch, and the save that wrote one. */
   units: { pending: () => UnitSystem | undefined; saved: (system: unknown) => void };
 }): ProfileSave {
-  const { inputs, inputsRef, setInputs, loaded, onClean, writeRefused, units } = args;
+  const { inputs, inputsRef, setInputs, loaded, onSettled, writeRefused, units } = args;
   const saved = useRef<Partial<HealthInputs>>({});
   const [birthRefused, setBirthRefused] = useState<string | null>(null);
 
   // A fresh function each render: the timer runs the one from the render that scheduled it.
-  async function flushProfile(erase?: string): Promise<boolean> {
+  async function flushProfile(erase: string): Promise<boolean> {
     // Writes stopped: nothing is saved, so this tab's switch ends, and a change the relay held during it applies (PR 1204).
-    if (getBackendKind() === 'local' && !healthWritesAllowed()) { units.saved(units.pending()); onClean(); return true; }
+    if (getBackendKind() === 'local' && !healthWritesAllowed()) { units.saved(units.pending()); onSettled(); return true; }
     const current: Partial<HealthInputs> = {};
     const previous: Partial<HealthInputs> = {};
     // This tab's unit switch is written even when the copy saved holds it: switched,
@@ -72,27 +80,27 @@ export function useProfileSave(args: {
     // otherwise apply the other device's units over this later choice (US-34 AC7a).
     const switched = units.pending() !== undefined;
     for (const field of PROFILE_FIELDS) {
-      if (inputs[field] !== undefined) (current as any)[field] = inputs[field];
-      if (saved.current[field] !== undefined && !(switched && field === 'unitSystem')) (previous as any)[field] = saved.current[field];
+      if (inputs[field] !== undefined) copyField(current, inputs, field);
+      if (saved.current[field] !== undefined && !(switched && field === 'unitSystem')) copyField(previous, saved.current, field);
     }
 
     const hasChanges = switched || PROFILE_FIELDS.some(f => inputs[f] !== saved.current[f]);
     // Clean (a refused value cleared or put back): a held remote change applies now (N1).
-    if (!hasChanges) { onClean(); return true; }
+    if (!hasChanges) { onSettled(); return true; }
 
     const result = await saveChangedMeasurements(current, previous, erase);
     if (!result.ok) {
       writeRefused(erase);
       return false;
     }
-    units.saved(inputs.unitSystem); // written; before onClean: a held change then finds the switch saved
+    units.saved(inputs.unitSystem); // written; before onSettled: a held change then finds the switch saved
     if (getBackendKind() === 'local' && !healthWritesAllowed()) return true;
     const refused = result.birthRefused;
     // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
     const kept = new Set(Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>);
     if (refused) { kept.add('birthYear'); kept.add('birthMonth'); }
     for (const field of PROFILE_FIELDS) {
-      if (!kept.has(field)) (saved.current as any)[field] = inputs[field];
+      if (!kept.has(field)) copyField(saved.current, inputs, field);
     }
     if (refused) {
       // US-54 AC5b: the form shows the record's pair again, unless typed over
@@ -103,11 +111,11 @@ export function useProfileSave(args: {
         : prev));
       setBirthRefused(birthRefusedMessage(refused.birthYear, refused.birthMonth));
     }
-    // The chat copy holds the saved profile beside the saved values it
-    // already has (US-15 AC10).
-    patchMirror({ profile: { ...saved.current } });
-    // Clean again: release a held remote change (see the header).
-    if (!result.refused && !PROFILE_FIELDS.some(f => inputsRef.current[f] !== inputs[f])) onClean();
+    // The chat copy holds the saved profile beside the record's saved values
+    // (US-15 AC10, US-34 AC11).
+    writeMirror({ profile: { ...saved.current } });
+    // Settled, landed or refused (AC8): release a held remote change (see the header).
+    if (!PROFILE_FIELDS.some(f => inputsRef.current[f] !== inputs[f])) onSettled();
     return true;
   }
 
@@ -122,8 +130,9 @@ export function useProfileSave(args: {
   }, [inputs, loaded, profileTimer, units]);
 
   const markSaved = useCallback((record: Partial<HealthInputs>) => { saved.current = { ...record }; }, []);
+  const savedProfile = useCallback(() => ({ ...saved.current }), []);
   const profileDirty = useCallback(() => hasUnsavedProfileEdits(inputsRef.current, saved.current), [inputsRef]);
   const clearBirthRefused = useCallback(() => setBirthRefused(null), []);
 
-  return { flushProfile, profileTimer, markSaved, profileDirty, birthRefused, clearBirthRefused };
+  return { flushProfile, profileTimer, markSaved, savedProfile, profileDirty, birthRefused, clearBirthRefused };
 }

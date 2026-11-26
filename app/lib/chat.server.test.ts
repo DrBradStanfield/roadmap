@@ -10,6 +10,8 @@ import {
   MAX_MESSAGE_LENGTH,
   loadMatchedArticlesFromHandles,
   FALLBACK_RESPONSE,
+  DOCTOR_POSTURE,
+  BRAND_POSTURE,
 } from './chat.server';
 import { REFUSAL_RESPONSES } from '../../packages/health-core/src/models';
 import { chatContextOf, MINOR_CHAT_RULE, NO_PLAN_CHAT_RULE, NO_SEX_CHAT_RULE } from '../../packages/health-core/src/chat-context';
@@ -201,6 +203,21 @@ describe('buildSystemBlocks', () => {
     expect(CHAT_EDIT_TOOLS.map(t => t.name)).toContain('propose_profile_edit');
     expect(EDITABLE_FIELDS).not.toContain('sex');
     expect(EDITABLE_FIELDS).not.toContain('heightCm');
+  });
+
+  // US-15 AC74: each chat doc reaches the model whole, read from its file on disk, and each store's
+  // posture is its own file (which store gets which: api.chat-saved-chat.test.ts).
+  it('US-15 AC74: the algorithm, the products doc and each posture file reach the system blocks whole', () => {
+    const doc = (file: string) => fs.readFileSync(path.join(process.cwd(), file), 'utf-8');
+    const [algorithm, products] = [doc('health_roadmap_algorithm.md'), doc('docs/products.md')];
+    const [doctor, brand] = [doc('app/lib/chat-posture-doctor.md'), doc('app/lib/chat-posture-brand.md')];
+    expect(doctor).not.toBe(brand);
+    for (const [surfaceContext, posture] of [[DOCTOR_POSTURE, doctor], [BRAND_POSTURE, brand]]) {
+      const texts = buildSystemBlocks('{}', { surfaceContext, savedChat }).map(b => b.text);
+      expect(texts[0].endsWith(algorithm)).toBe(true);
+      expect(texts.some(t => t.startsWith(`## Dr Stanfield's Products\n\n${products}`))).toBe(true);
+      expect(texts).toContain(posture);
+    }
   });
 
   it('includes evidence in second block', () => {

@@ -25,11 +25,19 @@ describe('guide-compare norm (US-64 AC30)', () => {
     expect(norm('<p>it&#39;s</p> and <b>&quot;y&quot;</b>')).toBe('<p>it\'s</p> and <b>"y"</b>');
   });
 
+  // Times growth, not speed (an absolute budget fails on a loaded machine, docs/gotchas.md 2026-11-13, lead TA-3):
+  // each 4x step must take under 10x the time (linear about 4, quadratic about 16), each size the fastest of three
+  // runs. Under 1 ms is timer noise; 10 s is a last-resort backstop.
   it('stays linear on 200k characters of unclosed tags', () => {
     for (const unit of ['<a "', '<']) {
-      const t = Date.now();
-      norm(unit.repeat(200_000 / unit.length));
-      expect(Date.now() - t).toBeLessThan(1000);
+      let previous = Infinity;
+      for (const size of [12_500, 50_000, 200_000]) {
+        const s = unit.repeat(size / unit.length);
+        const took = Math.min(...[0, 1, 2].map(() => { const t = performance.now(); expect(norm(s)).toBe(s); return performance.now() - t; }));
+        expect(took, `${unit} at ${size}`).toBeLessThan(10_000);
+        expect(took / Math.max(previous, 1), `${unit}: growth to ${size}`).toBeLessThan(10);
+        previous = took;
+      }
     }
   });
 

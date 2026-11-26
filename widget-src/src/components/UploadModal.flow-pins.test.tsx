@@ -5,19 +5,18 @@
 // review-error tests already pin are not repeated here.
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { UPLOAD_ENGINE } from '../testing/upload-engine';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { UploadModal } from './UploadModal';
-import { synthesizeLabArchiveEntries } from '../lib/archive-payloads';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/roadmap-data';
+import { getDocumentArchiveMode, saveUpload } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
-import type { UploadHistory } from '../lib/api-types';
 import { findReviewValue } from '../testing/import-review';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
-vi.mock('../lib/roadmap-data', () => ({ uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), bulkSaveMeasurements: vi.fn(), bulkSaveDocuments: vi.fn(), bulkSaveLabValues: vi.fn(), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
+vi.mock('../lib/roadmap-data', () => ({ recordFileSync: vi.fn(() => null), saveUpload: vi.fn(), uploadKnownIndex: vi.fn(() => new Map()), isLegacyUpload: vi.fn(() => false), getDocumentArchiveMode: vi.fn(() => 'cloud'), getLpaUnit: vi.fn(), setLpaUnit: vi.fn(), getEraseIdentity: vi.fn(() => ''), getShownErase: vi.fn(() => '') }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: vi.fn() }));
-vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => ''), synthesizeLabArchiveEntries: vi.fn(() => []) }));
+vi.mock('../lib/archive-payloads', async importOriginal => ({ ...await importOriginal<typeof import('../lib/archive-payloads')>(), sha256Blob: vi.fn(async () => '') }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 
@@ -29,14 +28,15 @@ function deferred<T>() {
 }
 type Pages = { pages: Array<{ type: string; content: string }>; truncated: boolean };
 const extraction = { result: { classification: 'lab_report', document: null, reportDate: '2024-06-01', values: [{ metric: 'ldl', valueSI: 3.9, displayValue: 3.9, displayUnit: 'mmol/L', confidence: 'high' }], additionalValues: [] } };
-const emptyHistory: UploadHistory = { measurements: [], labValues: [], documents: [] };
+/** The shared Save's answer when its commit landed (its counts are the store's tests'). */
+const LANDED: Awaited<ReturnType<typeof saveUpload>> = { ok: true, outcome: { values: 1, documents: 0, archived: 0, unstored: 0 }, added: [] };
 const extractFromPdf = vi.fn();
 const onClose = vi.fn();
 function Harness() {
   const [open, setOpen] = useState(true);
   return <><button onClick={() => setOpen(true)}>Upload records</button><UploadModal
     open={open} onOpen={() => setOpen(true)} onClose={() => { onClose(); setOpen(false); }}
-    unitSystem="si" grading={{}} history={emptyHistory} onComplete={() => {}}
+    unitSystem="si" onComplete={() => {}}
   /></>;
 }
 function pick(...files: File[]) {
@@ -62,15 +62,12 @@ const TOO_LARGE = 'Too large to read. The limit is 10 MB per file.';
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(synthesizeLabArchiveEntries).mockReset().mockReturnValue([]);
   vi.mocked(getDocumentArchiveMode).mockReturnValue('cloud');
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(extraction as Awaited<ReturnType<typeof labImport>>);
-  vi.mocked(bulkSaveMeasurements).mockReset().mockResolvedValue({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>);
-  vi.mocked(bulkSaveDocuments).mockReset().mockResolvedValue({ saved: [], errorCount: 0 });
-  vi.mocked(bulkSaveLabValues).mockReset().mockResolvedValue({ saved: [], skippedDuplicates: 0, errorCount: 0, refused: [] });
+  vi.mocked(saveUpload).mockReset().mockResolvedValue(LANDED);
   extractFromPdf.mockReset().mockResolvedValue({ pages: [{ type: 'text', content: 'synthetic' }], truncated: false });
-  Object.assign(window, { HealthUpload: { extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
+  Object.assign(window, { HealthUpload: { ...UPLOAD_ENGINE, extractFromPdf, isPdf: () => true, isZip: () => false, isImage: () => false } });
 });
 afterEach(cleanup);
 
@@ -149,19 +146,19 @@ describe('US-12 AC4/AC5: Escape closes only while the modal is open', () => {
     expect(screen.getByDisplayValue('4.2')).toBeTruthy();
   });
   it('US-12 AC5: Escape while hidden does nothing: a save that finishes hidden stays recoverable as done', async () => {
-    const saving = deferred<Awaited<ReturnType<typeof bulkSaveMeasurements>>>();
-    vi.mocked(bulkSaveMeasurements).mockReturnValue(saving.promise);
+    const saving = deferred<Awaited<ReturnType<typeof saveUpload>>>();
+    vi.mocked(saveUpload).mockReturnValue(saving.promise);
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     close();
-    await act(async () => saving.resolve({ saved: [{}], skippedDuplicates: 0, errorCount: 0, refused: [] } as unknown as Awaited<ReturnType<typeof bulkSaveMeasurements>>));
+    await act(async () => saving.resolve(LANDED));
     expect(indicator()!.textContent).toBe('Health records saved. Click to open');
     onClose.mockClear();
     escape();
     expect(onClose).not.toHaveBeenCalled();
     expect(indicator()!.textContent).toBe('Health records saved. Click to open');
     fireEvent.click(indicator()!);
-    expect(screen.getByText('Saved 1 blood test value')).toBeTruthy();
+    expect(screen.getByText('Saved 1 value.')).toBeTruthy();
   });
   it('US-12 AC5: Escape while hidden does nothing: a read failure that lands hidden stays recoverable', async () => {
     const reading = deferred<never>();
@@ -225,16 +222,16 @@ describe('US-12 AC4: Cancel from review', () => {
   it('US-12 AC4: discards the review, closes, and brings back the connect-first panel in device-only mode', async () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
     render(<Harness />);
-    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
     await ready();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(isOpen()).toBe(false);
     expect(onClose).toHaveBeenCalledOnce();
     expect(indicator()).toBeNull();
     reopen();
-    expect(screen.getByText('Keep your original documents')).toBeTruthy();
+    expect(screen.getByText('Keep the original files too?')).toBeTruthy();
     expect(screen.queryByDisplayValue('3.9')).toBeNull();
-    expect(bulkSaveMeasurements).not.toHaveBeenCalled();
+    expect(saveUpload).not.toHaveBeenCalled();
   });
 });
 
@@ -245,11 +242,11 @@ describe('US-12 AC6: Save', () => {
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     await screen.findByRole('button', { name: 'Done' });
-    expect(screen.getByText('Saved 1 blood test value')).toBeTruthy();
+    expect(screen.getByText('Saved 1 value.')).toBeTruthy();
     expect(events('upload_saved')).toEqual([['upload_saved', { count: 1 }]]);
   });
   it('US-12 AC6: a branch errorCount stays in review with "Failed to save. Please try again." and the hidden indicator needs attention', async () => {
-    vi.mocked(bulkSaveMeasurements).mockResolvedValueOnce({ saved: [], skippedDuplicates: 0, errorCount: 1, refused: [] });
+    vi.mocked(saveUpload).mockResolvedValueOnce({ ok: false, reason: 'erased', message: 'Failed to save. Please try again.' });
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
     expect(await screen.findByText('Failed to save. Please try again.')).toBeTruthy();

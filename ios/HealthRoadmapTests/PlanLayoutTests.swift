@@ -43,7 +43,7 @@ final class PlanLayoutTests: XCTestCase {
             ["exercise"],
             ["sleep"],
             ["screening-breast"],
-            ["hba1c-normal"],
+            // US-07 AC18 (Brad 2026-11-23): the sample's normal HbA1c gets no card.
         ])
     }
 

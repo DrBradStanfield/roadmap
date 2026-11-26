@@ -96,7 +96,7 @@ Imitate the examples; don't sprinkle their phrases. After each video, his two or
 - He has opinions and labels them as his. "I'm not convinced that we need a dedicated Lp(a) drug." "So not exactly a glowing endorsement." "To me, that misses the boat." "That's the really exciting part."
 - "We" is doctors and the field. He simplifies to teach, names the real term beside the plain one, and uses one unit, not two.
 - First person from the clinic and his own life is his normal voice, within CLAUDE.md's rules: what he does with patients, the medicines he takes, what he eats; never which supplements he takes. A clinic line about a medicine is his practice and opinion, not an instruction to the viewer.
-- He is plain. No drama words, no hype, no jokes at anyone's expense.
+- He is plain. No drama words, no hype. Jokes at his own expense are fine; at anyone else's only when obviously untrue ("Chris Hemsworth isn't good-looking enough"). Humour rules: `docs/script-pipeline/humor-techniques.md`.
 
 **What he deletes** (each was written for him and cut):
 

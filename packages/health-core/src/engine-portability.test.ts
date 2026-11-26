@@ -16,7 +16,7 @@ import { build } from 'esbuild';
 const SRC = dirname(fileURLToPath(import.meta.url));
 
 /** The modules the web store and the app share. Add each one as it moves. */
-const ENGINE_ENTRIES = ['chat-session.ts', 'chat-turn.ts', 'device-export.ts', 'document-save.ts', 'device-import.ts', 'input-form.ts', 'state-edits.ts', 'erase.ts', 'live-refresh.ts', 'record-host.ts', 'record-session.ts', 'record-transfer.ts', 'storage-self-test.ts'];
+const ENGINE_ENTRIES = ['chat-session.ts', 'chat-turn.ts', 'device-export.ts', 'document-save.ts', 'device-import.ts', 'input-form.ts', 'state-edits.ts', 'erase.ts', 'erase-outcome.ts', 'live-refresh.ts', 'record-host.ts', 'record-session.ts', 'record-transfer.ts', 'storage-self-test.ts'];
 
 const FORBIDDEN: Array<[string, RegExp]> = [
   ['a node: import', /from\s+['"]node:|require\(\s*['"]node:/],
@@ -171,7 +171,7 @@ describe('engine portability (ios/architecture.md D4)', () => {
       },
     };
     const session = await RecordSession.open(host);
-    expect(session.edit((file) => void (file.profile.sex = 'female'))).toBe(true);
+    expect(session.edit((file) => void (file.profile.sex = 'female'), session.shownErase)).toBe(true);
     await session.flush();
     expect((await session.erase()).success).toBe(true);
     expect(session.file.meta.eraseEpoch).toBe(1);

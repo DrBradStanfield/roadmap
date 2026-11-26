@@ -14,13 +14,13 @@ import { render, waitFor } from '@testing-library/react';
 import { buildChatContextJson } from '@roadmap/health-core/chat-context';
 import { localDay } from '@roadmap/health-core/merge';
 import { loadGuestInputs } from '../lib/storage';
-import { addMeasurement, flushRoadmapStore, saveScreening } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, saveScreening, getShownErase } from '../lib/roadmap-data';
 import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harness';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async importOriginal => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
@@ -35,9 +35,9 @@ useHealthToolLifecycle();
 /** A man born 1960, height on record, one saved HbA1c, who said he will have PSA screening. */
 async function plan(answers: Array<[string, string]>, psa?: [number, string], ...more: Array<[number, string]>) {
   await seedGuest({ sex: 'male', heightCm: 178, birthYear: 1960, birthMonth: 1, unitSystem: 'si' }, [['hba1c', 40]]);
-  await saveScreening('prostate_discussion', 'will_screen');
-  for (const [k, v] of answers) await saveScreening(k, v);
-  for (const [value, day] of psa ? [psa, ...more] : []) expect((await addMeasurement('psa', value, day)).status).toBe('inserted');
+  await saveScreening('prostate_discussion', 'will_screen', getShownErase());
+  for (const [k, v] of answers) await saveScreening(k, v, getShownErase());
+  for (const [value, day] of psa ? [psa, ...more] : []) expect((await addMeasurement('psa', value, day, getShownErase())).status).toBe('inserted');
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector('.suggestion-title')).not.toBeNull());

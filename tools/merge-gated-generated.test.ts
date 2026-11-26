@@ -100,6 +100,7 @@ json() { printf '%s\\n' "$1" | ${real('jq')} -r "$jqf"; }
 case "$*" in
   *"pr view"*state,headRefOid*) json "{\\"state\\":\\"OPEN\\",\\"headRefOid\\":\\"$HEAD_SHA\\"}" ;;
   *"pr view"*changedFiles*) json "$FILES" ;;
+  *"api --paginate"*"/files"*) json "$(printf '%s\\n' "$FILES" | ${real('jq')} -c '[.files[] | {filename: .path}]')" ;;
   *"pr view"*statusCheckRollup*) json '{"statusCheckRollup":[{"__typename":"CheckRun","name":"test","status":"COMPLETED","conclusion":"SUCCESS"}]}' ;;
   *"run list"*ci.yml*) json '[{"databaseId":1,"status":"completed","conclusion":"success","createdAt":"2026-11-13T00:00:00Z"}]' ;;
   *"run list"*deploy.yml*) json '[]' ;;

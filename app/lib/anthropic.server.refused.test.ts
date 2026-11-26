@@ -23,7 +23,7 @@ afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 describe('US-12 AC15: the server refuses a creatinine it cannot read', () => {
   it('single file', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ content: [{ type: 'text', text: ANSWER }], stop_reason: 'end_turn' })));
-    const result = await extractOrClassify([{ type: 'text', content: 'doc' }]);
+    const result = await extractOrClassify([{ type: 'text', content: 'doc' }], { purpose: 'LABS' });
     expect(result.values.map(v => [v.metric, v.unitGuessed])).toEqual([['ldl', true]]);
     expect(result.refusedValues).toEqual(REFUSED);
     expect(result.droppedValueCount).toBe(0);

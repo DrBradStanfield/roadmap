@@ -57,6 +57,7 @@ function callers(name: string, call = true, files: Source[] = FILES): string[] {
 const DEFINED_IN: Record<string, string> = {
   classifyMessage: 'app/lib/chat-classifier.server',
   routeQuery: 'app/lib/chat-router.server',
+  runRouter: 'app/lib/chat-router-stage.server',
   getChatCompletion: 'app/lib/chat.server',
   platformChatCompletion: 'app/lib/platform-chat.server',
   runPipeline: 'app/lib/youtube-bot-pipeline.server',
@@ -122,8 +123,13 @@ function entries(name: string, files: Source[] = FILES): string[] {
 const MODEL_CALLERS = ['app/lib/platform-chat.server.ts', 'app/lib/youtube-bot-pipeline.server.ts', 'app/routes/api.chat.ts'];
 
 describe('US-15 AC65: chat model entries, pinned (add a missing-prompt guard before changing this list)', () => {
-  it.each(['classifyMessage', 'routeQuery', 'getChatCompletion'])('%s is called or imported only by the three chat pipelines', (name) => {
+  it.each(['classifyMessage', 'runRouter', 'getChatCompletion'])('%s is called or imported only by the three chat pipelines', (name) => {
     expect(entries(name)).toEqual(MODEL_CALLERS);
+  });
+
+  // US-15 AC74: the router call has one caller, the stage the three pipelines share.
+  it('routeQuery is called or imported only by the shared router stage', () => {
+    expect(entries('routeQuery')).toEqual(['app/lib/chat-router-stage.server.ts']);
   });
 
   it('platformChatCompletion is called or imported only by the Discord bot', () => {

@@ -24,6 +24,8 @@ const SECTION = SPEC.slice(SPEC.indexOf('## Change 4 '), SPEC.indexOf('## Change
 const CHANGE_3 = SPEC.slice(SPEC.indexOf('## Change 3 '), SPEC.indexOf('## Change 4 ')).split('\n');
 // Brad 2026-11-14: the ACS revised its guideline; the amendment replaces Change 4's attribution sentences.
 const AMENDED = SPEC.slice(SPEC.indexOf('## Amendment, Brad 2026-11-14')).split('\n');
+// The ACS 2026 amendment replaces the page bullet's first sentence (the rectal exam, Item 1B).
+const ACS_2026 = SPEC.slice(SPEC.indexOf('## Amendment: the rectal exam and Change 5')).split('\n');
 const HTML = read('roadmap_text.html');
 const ALGO = read('health_roadmap_algorithm.md');
 
@@ -47,6 +49,17 @@ const [EMAIL_LABEL, PHONE_NAME] = quotes(specLine('**Reminders.**', '**Reminders
 // Change 3's card, with the sentence that "ships with Change 4" (spec line 94).
 const ELEVATED_LINE = specLine('**Elevated PSA card**', '- After:', CHANGE_3);
 const ELEVATED = quotes(ELEVATED_LINE.slice(ELEVATED_LINE.indexOf('After:')))[0];
+// The six algorithm-doc sentences PR 1604 proposed for old PSA answers (US-06 AC14, AC21), before and after;
+// Brad accepted them as proposed on 2026-11-26 ("do your recommendations"). They amend the spec lines above.
+const AMEND_26: ReadonlyArray<readonly [string, string]> = [
+  ['| `will_screen`, PSA 2.5 to < 4.0, or no PSA value | 12 |', '| `will_screen`, PSA 2.5 to < 4.0, or no PSA value (unless the 3-month rule holds) | 12 |'],
+  ['so does the 3-month rule held through a vague newer PSA (US-06 AC21 item 6, below).', 'so does the 3-month rule held through a vague newer PSA or a newer old answer with a date and no usable value (US-06 AC21, below).'],
+  ['A man who declined screening sees `screening-prostate-repeat` ("Repeat PSA test") in place of the overdue card.', 'A man who declined screening, has not yet decided (`not_yet`) or recorded no answer sees `screening-prostate-repeat` ("Repeat PSA test") in place of the overdue card; for `not_yet` or no answer its first sentence is left out (Brad 2026-11-13).'],
+  ['A newer PSA printed as a limit that does not decide against 4.0 ("< 5", "<= 4.0") keeps the 3-month rule (Brad 2026-11-13): it holds while the newest PSA that decides is 4.0 or above, and the next PSA is due 3 months after the newest test.', 'A newer PSA printed as a limit that does not decide against 4.0 ("< 5", "<= 4.0"), or a newer old answer with a date and no usable value (none, or one outside the PSA range), keeps the 3-month rule (Brad 2026-11-13): it holds while the newest PSA that decides is 4.0 or above, and the next PSA is due 3 months after the newest test, the answer\'s date included. Only a newer PSA that decides below 4.0 (a value, or a limit such as "< 3") ends it.'],
+  ['an answer that gives only a month loses to a row from that month. The web plan', 'an answer that gives only a month loses to a row from that month. An answer whose value is outside the PSA range keeps its date and has no value (Brad 2026-11-13); a newer answer with no value keeps the 3-month rule (above). The web plan'],
+  ['or the 3-month rule holds through a vague newer PSA, `screening-prostate-upcoming`', 'or the 3-month rule holds through a vague newer PSA or a newer dated answer with no usable value, `screening-prostate-upcoming`'],
+];
+const amend26 = (s: string) => AMEND_26.reduce((t, [before, after]) => t.replace(before, after), s);
 
 const NOW = new Date('2026-11-12T12:00:00Z');
 
@@ -158,6 +171,14 @@ describe('US-06 AC21: 4.0 or above, a man who declined or recorded no answer (sp
     expect(prostateItems(file)).toEqual([{ category: 'screening_prostate', group: 'screening', label: EMAIL_LABEL, dueAt: '2026-07-01' }]);
   });
 
+  it('"not yet" (Brad 2026-11-13), PSA 4.5 on 2026-04-10: Elevated alone in June; "Repeat PSA test" from July, no first sentence; reminder July', () => {
+    const file = fileWith([{ value: 4.5, day: '2026-04-10' }], 'not_yet');
+    expect(fileIds(file, new Date('2026-06-20T12:00:00Z'))).toEqual(['screening-prostate-elevated']);
+    expect(fileIds(file, new Date('2026-07-15T12:00:00Z'))).toEqual(['screening-prostate-repeat', 'screening-prostate-elevated']);
+    expect(card(raised('not_yet', '2026-08'), 'screening-prostate-repeat')).toMatchObject({ title: REPEAT_TITLE, description: REPEAT_NO_ANSWER });
+    expect(prostateItems(file)).toEqual([{ category: 'screening_prostate', group: 'screening', label: EMAIL_LABEL, dueAt: '2026-07-01' }]);
+  });
+
   it('a will-screen man never sees the repeat card: his overdue card takes its place', () => {
     expect(ids(raised('will_screen', '2026-08'))).toEqual(['screening-prostate-overdue', 'screening-prostate-elevated']);
   });
@@ -239,16 +260,27 @@ describe('US-06 AC21: the three files (spec lines 150-171)', () => {
     expect(ALGO).not.toContain(before);
     const rows = SECTION.slice(SECTION.findIndex((l) => l.startsWith(header))).filter((l) => l.startsWith('- "| ')).map((l) => quotes(l)[0]);
     expect(rows).toHaveLength(3);
-    expect(ALGO).toContain(`\n${rows.join('\n')}\n`);
+    expect(ALGO).toContain(`\n${amend26(rows.join('\n'))}\n`);
     expect(ALGO).not.toContain(outerQuote(specLine('And under Prostate-Specific', 'And under Prostate-Specific')));
-    expect(ALGO).toContain(`\n- ${outerQuote(specLine('And under Prostate-Specific', 'And under Prostate-Specific', AMENDED))}\n`);
+    expect(ALGO).toContain(`\n- ${amend26(outerQuote(specLine('And under Prostate-Specific', 'And under Prostate-Specific', AMENDED)))}\n`);
+  });
+
+  it('the algorithm doc: the six sentences for old PSA answers (Brad 2026-11-26, AC14, AC21)', () => {
+    for (const [before, after] of AMEND_26) {
+      expect(ALGO).toContain(after);
+      expect(ALGO).not.toContain(before);
+    }
   });
 
   it('the page paragraph and the Changelog line', () => {
     const [before, oldAfter] = quotes(specLine('**Page**', '- Before:')).concat(quotes(specLine('**Page**', '- After:')));
-    const [after] = quotes(specLine('**Page**', '- After:', AMENDED));
+    const [amendedAfter] = quotes(specLine('**Page**', '- After:', AMENDED));
+    const [oldFirst, newFirst] = quotes(specLine('**Page, the PSA bullet**', '- First sentence.', ACS_2026));
+    expect(amendedAfter.startsWith(oldFirst)).toBe(true);
+    const after = amendedAfter.replace(oldFirst, newFirst);
     expect(HTML).not.toContain(before);
     expect(HTML).not.toContain(oldAfter);
+    expect(HTML).not.toContain(amendedAfter);
     expect(HTML).toContain(`<li data-mce-fragment="1">${after}</li>`);
     const oldLine = quotes(specLine('**Page**', '- Changelog:'))[0];
     const line = quotes(specLine('**Page**', '- Changelog:', AMENDED))[0];
@@ -256,7 +288,8 @@ describe('US-06 AC21: the three files (spec lines 150-171)', () => {
     const log = HTML.slice(HTML.indexOf('<h2 id="changelog">'));
     expect(log).not.toContain(oldLine);
     expect(log).toContain(`\n<li>12<sup>th</sup> November 2026: ${line}</li>\n`);
-    expect(log).toContain(`<ul>\n<li>13<sup>th</sup> November 2026: ${added}</li>\n`);
+    // Second since the ACS 2026 entry (US-06 AC23, dated 26 November) went above it.
+    expect(log).toContain(`</li>\n<li>13<sup>th</sup> November 2026: ${added}</li>\n`);
     // After the existing same-date lines, before the 5 November one.
     expect(log.indexOf(line)).toBeLessThan(log.indexOf('<li>5<sup>th</sup> November 2026'));
     expect(log.indexOf(line)).toBeGreaterThan(log.indexOf('Colorectal follow-up: after a positive test'));
@@ -374,6 +407,6 @@ describe('US-06 AC21 item 6 (Brad 2026-11-13): a newer PSA that does not decide 
   });
 
   it('the algorithm doc states the rule', () => {
-    expect(ALGO).toContain(`\n- ${outerQuote(specLine('Item 6, under Prostate-Specific', 'Item 6, under Prostate-Specific'))}\n`);
+    expect(ALGO).toContain(`\n- ${amend26(outerQuote(specLine('Item 6, under Prostate-Specific', 'Item 6, under Prostate-Specific')))}\n`);
   });
 });

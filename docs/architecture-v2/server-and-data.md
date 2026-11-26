@@ -17,7 +17,6 @@ Part of [Health by Dr Brad — Architecture (v2, local-first)](../architecture-v
 | [api.reminders-v2.ts](../../app/routes/api.reminders-v2.ts) | Reminder opt-in / update / cancel; provider-verified email + capability token | Provider proof |
 | [api.google-token.ts](../../app/routes/api.google-token.ts) | Stateless Google OAuth code/refresh exchange (Drive) | CORS allow-list + rate limit |
 | [api.measurements.ts](../../app/routes/api.measurements.ts) | **Klaviyo capture only** (all v1 CRUD torn down) | App proxy + 5/day/email |
-| [api.ab.ts](../../app/routes/api.ab.ts) | A/B impression/conversion events | App proxy, rate-limited |
 | [api.feedback.ts](../../app/routes/api.feedback.ts) | Feedback form → email (Resend) | 3/hr per-IP |
 | [api.events.ts](../../app/routes/api.events.ts) | Product funnel events (`product_events`, value-free) | App proxy, 20/min per visitor |
 | [api.resend-webhook.ts](../../app/routes/api.resend-webhook.ts) | Resend delivery events | Svix signature |

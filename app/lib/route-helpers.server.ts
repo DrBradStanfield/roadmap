@@ -4,7 +4,7 @@
  */
 
 import * as Sentry from '@sentry/react-router';
-import { authenticate } from '../shopify.server';
+import { authenticate, type AdminApiContext } from '../shopify.server';
 import { getOrCreateSupabaseUser } from './supabase-identity.server';
 import { createUserClient } from './supabase-client.server';
 import { verifyAppProxySignature } from './local-first-route.server';
@@ -28,7 +28,7 @@ export function getCustomerId(request: Request): string | null {
  * Look up customer email and name from Shopify Admin API.
  */
 export async function getCustomerInfo(
-  admin: any,
+  admin: AdminApiContext,
   customerId: string,
 ): Promise<{ email: string; firstName: string | null; lastName: string | null } | null> {
   try {
@@ -94,7 +94,7 @@ export function isValidUuid(value: string): boolean {
  * Returns a formatted string summary. Never throws — returns empty string on failure.
  */
 export async function getCustomerOrders(
-  admin: any,
+  admin: AdminApiContext,
   customerId: string,
 ): Promise<string> {
   try {
@@ -123,7 +123,8 @@ export async function getCustomerOrders(
         }
       }
     `, { variables: { id: `gid://shopify/Customer/${customerId}` } });
-    const result = await response.json();
+    // The library's body type has no `errors`: it throws on GraphQL errors.
+    const result: Awaited<ReturnType<typeof response.json>> & { errors?: unknown } = await response.json();
     const edges = result?.data?.customer?.orders?.edges;
     if (result?.errors) console.error('Order GraphQL errors:', JSON.stringify(result.errors));
     if (!edges?.length) return '';
@@ -136,7 +137,7 @@ export async function getCustomerOrders(
       const money = order.totalPriceSet?.shopMoney;
       const total = money ? `$${parseFloat(money.amount).toFixed(2)} ${money.currencyCode}` : '';
       const items = order.lineItems?.edges
-        ?.map((e: any) => `${e.node.title} ×${e.node.quantity}`)
+        ?.map((e: { node: { title: string; quantity: number } }) => `${e.node.title} ×${e.node.quantity}`)
         .join(', ') ?? '';
       const tracking: string[] = [];
       for (const f of order.fulfillments ?? []) {
@@ -166,7 +167,7 @@ const APPSTLE_SUBSCRIBER_TAG = 'appstle_subscription_active_customer';
  * Returns 'subscriber' if the customer has the tag, 'free' otherwise.
  */
 export async function checkSubscriptionFromTags(
-  admin: any,
+  admin: AdminApiContext,
   customerId: string,
 ): Promise<'subscriber' | 'free'> {
   try {

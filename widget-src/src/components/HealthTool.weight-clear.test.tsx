@@ -11,14 +11,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor, within, type RenderResult } from '@testing-library/react';
 import { localDay } from '@roadmap/health-core/merge';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 
 vi.mock('../lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: true }));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackABImpression: vi.fn(), trackABConversion: vi.fn(),
 }));
 vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
@@ -53,8 +52,8 @@ const weightRows = async () => (await recordOnDisk()).measurements
 
 /** The onboarding with a height and a saved weight: the weight box holds it. */
 async function openWithWeight(day: string): Promise<{ view: RenderResult; box: HTMLInputElement }> {
-  await saveChangedMeasurements({ heightCm: 170 }, {});
-  await addMeasurement('weight', 90, day);
+  await saveChangedMeasurements({ heightCm: 170 }, {}, getShownErase());
+  await addMeasurement('weight', 90, day, getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   const box = await waitFor(() => { const b = view.container.querySelector<HTMLInputElement>('#weightKg'); expect(b?.value).toBe('90'); return b!; });
