@@ -37,6 +37,7 @@ const OPTIONAL_DOC_FILES = {
   writingStyle: PRODUCTS_BLOCK_FILES.writingStyle,
   answerBank: PRODUCTS_BLOCK_FILES.answerBank,
   routerPrompt: 'app/lib/chat-router-prompt.md',
+  classifierPrompt: 'app/lib/chat-classifier-prompt.md',
 } as const;
 
 /** What the prompt builders and the router read, assembled once at load. */
@@ -51,6 +52,8 @@ export interface ChatDocs {
   brandPosture: string;
   /** The router's view of the index (US-50 AC3): prompt with {{ENTRY_COUNT}} filled, index block, allow-list. */
   router: { prompt: string; indexBlock: string; handles: ReadonlySet<string> };
+  /** The pre-router classifier's system text, whole (US-15 AC81); '' fails it open. */
+  classifierPrompt: string;
 }
 
 export type ChatDocsState =
@@ -89,6 +92,7 @@ export function transition(state: ChatDocsState, event: ChatDocsEvent): ChatDocs
       indexBlock: routerIndexBlock(view),
       handles: new Set(view.map((e) => e.handle)),
     },
+    classifierPrompt: text(OPTIONAL_DOC_FILES.classifierPrompt),
   };
   return absent.length ? { kind: 'degraded', docs, absent } : { kind: 'loaded', docs };
 }

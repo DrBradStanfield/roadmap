@@ -4,7 +4,8 @@
  * 2026-10-16 smoke, one token from a cut-off label that parses as ERROR and
  * silently fires the router. The cap leaves room; unused tokens are not billed.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import path from 'path';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
 
 const call = vi.hoisted(() => vi.fn());
 vi.mock('./anthropic.server', () => ({ callAnthropicWithUsage: call }));
@@ -78,28 +79,56 @@ describe('unreadable classifier answers (US-15 AC48)', () => {
   });
 });
 
-describe('missing classifier prompt (US-15 AC48)', () => {
-  it('US-15 AC48: an unreadable prompt file fails open without calling the model, and reaches Sentry once', async () => {
+describe('US-15 AC81: the classifier prompt is a chat doc, read once with the others', () => {
+  const PROMPT_FILE = 'app/lib/chat-classifier-prompt.md';
+
+  /** Fresh modules, every read of the classifier prompt counted; `fail` makes that one file unreadable. */
+  async function fresh(fail = false) {
     vi.resetModules();
     call.mockReset();
     const fs = (await import('fs')).default;
-    const read = vi.spyOn(fs, 'readFileSync').mockImplementation(() => { throw new Error('ENOENT'); });
+    const real = fs.readFileSync.bind(fs);
+    let promptReads = 0;
+    vi.spyOn(fs, 'readFileSync').mockImplementation(((file: string, ...rest: unknown[]) => {
+      if (String(file).endsWith(PROMPT_FILE)) {
+        promptReads++;
+        if (fail) throw new Error('ENOENT');
+      }
+      return (real as (...a: unknown[]) => unknown)(file, ...rest);
+    }) as typeof fs.readFileSync);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     const sentry = await import('@sentry/react-router');
     vi.mocked(sentry.captureMessage).mockClear();
-    const fresh = await import('./chat-classifier.server');
-    try {
-      const first = await fresh.classifyMessage('Got my peptides from VendorX', undefined, undefined, 'CHAT');
-      const second = await fresh.classifyMessage('a question', undefined, undefined, 'CHAT');
-      for (const result of [first, second]) {
-        expect(result).toMatchObject({ classification: 'ERROR', routerSkipped: false, error: 'no prompt' });
-        expect(fresh.isUnreadableAnswer(result)).toBe(false);
-        expect(fresh.shouldFireRouter(result)).toBe(true);
-      }
-      expect(call).not.toHaveBeenCalled();
-      expect(sentry.captureMessage).toHaveBeenCalledTimes(1);
-      expect(sentry.captureMessage).toHaveBeenCalledWith('Chat classifier: prompt missing', expect.objectContaining({ level: 'error' }));
-    } finally {
-      read.mockRestore();
+    const classifier = await import('./chat-classifier.server');
+    return { classifier, captureMessage: vi.mocked(sentry.captureMessage), reads: () => promptReads, real };
+  }
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it('in this checkout the request carries the prompt file byte for byte, and a turn two minutes later reads nothing', async () => {
+    const { classifier, reads, real } = await fresh();
+    const file = real(path.join(process.cwd(), PROMPT_FILE), 'utf-8') as string;
+    const t0 = Date.now();
+    call.mockResolvedValue({ content: 'ROUTE', contentBlocks: [], usage, stopReason: 'end_turn' });
+    await classifier.classifyMessage('a question', undefined, undefined, 'CHAT');
+    vi.spyOn(Date, 'now').mockReturnValue(t0 + 120_000);
+    await classifier.classifyMessage('a second question', undefined, undefined, 'CHAT');
+    for (const [body] of call.mock.calls) expect(body.system).toEqual([{ type: 'text', text: file, cache_control: expect.anything() }]);
+    expect(call).toHaveBeenCalledTimes(2);
+    expect(reads()).toBe(1);
+  });
+
+  it('an unreadable prompt file fails open without calling the model, and one Sentry error names the file', async () => {
+    const { classifier, captureMessage } = await fresh(true);
+    const first = await classifier.classifyMessage('Got my peptides from VendorX', undefined, undefined, 'CHAT');
+    const second = await classifier.classifyMessage('a question', undefined, undefined, 'CHAT');
+    for (const result of [first, second]) {
+      expect(result).toMatchObject({ classification: 'ERROR', routerSkipped: false, error: 'no prompt' });
+      expect(classifier.isUnreadableAnswer(result)).toBe(false);
+      expect(classifier.shouldFireRouter(result)).toBe(true);
     }
+    expect(call).not.toHaveBeenCalled();
+    expect(captureMessage.mock.calls).toEqual([[`Chat knowledge file missing: ${PROMPT_FILE}`, { level: 'error', tags: { feature: 'chat', subsystem: 'system-prompt' } }]]);
   });
 });
