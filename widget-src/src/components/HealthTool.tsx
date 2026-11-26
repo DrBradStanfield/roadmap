@@ -7,12 +7,12 @@ import { validateHealthInputs, getValidationErrors, convertValidationErrorsToUni
 import { planInputsFrom, withLabEgfr, labEgfrOf } from '@roadmap/health-core/plan';
 import { type SuggestionInputs, type AlcoholAnswer, type HealthInputs, isSex } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, weightStepOpen, METRIC_TO_FIELD, withPsaMeasurement } from '@roadmap/health-core/mappings';
+import { LONGITUDINAL_FIELDS, medicationsToInputs, mergeLongitudinalInputs, screeningsToInputs, computeFormStage, weightStepOpen, withPsaMeasurement } from '@roadmap/health-core/mappings';
 import { chatContextOf, type ChatContextPayload } from '@roadmap/health-core/chat-context';
 import { statTiles } from '@roadmap/health-core/stat-tiles';
-import { medicationForm, screeningForm } from '@roadmap/health-core/input-form';
 import { localDay, dayOf } from '@roadmap/health-core/merge';
 import { planPsa } from '@roadmap/health-core/measurement-history';
+import { screeningAge } from '@roadmap/health-core/screening-rules';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { MoveTestApi } from './MoveTestPanel';
 import type { VitalsPrefillFn } from './StartingInfoVitals';
@@ -21,8 +21,9 @@ import { InputPanel, type PlanBasis } from './InputPanel';
 import { usePlanView } from './ResultsPanel';
 import { OpenEvidenceContext } from './PlanCards';
 import { PersonButton } from './SettingsSheet';
-import { EDUCATION_LINE, MyHealth, type FormSlots } from './MyHealth';
+import { MyHealth, type FormSlots } from './MyHealth';
 import { revealAndFocus } from '../lib/reveal';
+import { medicineInputs, planForms } from '../lib/plan-forms';
 import { CHAT_BUBBLES } from './icons';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
@@ -32,17 +33,13 @@ import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
 import { activeCellIn } from './NumericInputCell';
 import { inPsaRow } from './ScreeningQuestions';
-import {
-  saveToLocalStorage,
-  clearLocalStorage,
-} from '../lib/storage';
+import { NO_RECORD, writeMirror } from '../lib/chat-mirror';
 import {
   loadLatestMeasurements,
   hasSavedRecord,
   getInitialInputsSync,
   getEraseIdentity,
   clearOffFileAfterErase,
-  flushRoadmapStoreSync,
   loadLatestMeasurementsSync,
   loadDerivedSeries,
   moveBloodTest,
@@ -50,8 +47,9 @@ import {
   getBackendKind,
   getUnreadableCount,
 } from '../lib/roadmap-data';
-import { trackABImpression, trackProductEvent } from '../lib/server-api';
+import { trackProductEvent } from '../lib/server-api';
 import { observeVisibility } from '../lib/observe-visibility';
+import { onPageHide } from '../lib/page-hide';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { Grading } from '../lib/blood-test-cell';
 import { SHOPIFY_SURFACE } from '../lib/build-flags';
@@ -147,9 +145,9 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     shows: id => showErase(id), spend: () => clearAnswered(true),
   });
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
-  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, saved: profileClean, firstReadShown, firstReadFailed } = useRecordApply({
+  const { showRecord, signal: rereadRecord, ownSave, shows: showErase, settled: profileSettled, firstReadShown, firstReadFailed } = useRecordApply({
     setInputs, reloadValues, applyLists, units, erase: eraseStore,
-    later: () => ({ markSaved, flushPendingSave, flushListSaves, profileDirty, clearAnswered }), // declared below
+    later: () => ({ markSaved, flushPendingSave, flushListSaves, profileDirty, clearAnswered, savedProfile }), // declared below
   });
   // The medication, screening and supplement saves (hooks/useListSaves).
   const {
@@ -176,16 +174,13 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       } else {
         // Nothing on record: a new visitor, or another device erased it. The
         // bubble and the embed must not keep sending the old copy (US-11).
-        saveToLocalStorage({}, [], [], []);
+        writeMirror(NO_RECORD);
       }
       firstReadShown(); // the saves open (the erase machine's `read`, ledger H37)
     }
 
     void loadData().catch(firstReadFailed);
   }, [eraseStore, firstReadShown, firstReadFailed]);
-
-  // Fire A/B impression once on mount
-  useEffect(() => { trackABImpression(); }, []);
 
   // Effective inputs for results calculation: form inputs, then a fallback
   // to previousMeasurements, which the data layer has already reduced to the
@@ -270,8 +265,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }, [reached, epoch, chatPrefetch]);
 
   // The profile's save: height, sex, the birth date, the unit system (hooks/useProfileSave).
-  const { flushProfile, profileTimer, markSaved, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
-    inputs, inputsRef, setInputs, loaded, onClean: profileClean, writeRefused, units,
+  const { flushProfile, profileTimer, markSaved, savedProfile, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
+    inputs, inputsRef, setInputs, loaded, onSettled: profileSettled, writeRefused, units,
   });
 
   // The saved-value editor's correction, core or lab (US-04, US-21 AC5),
@@ -286,8 +281,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // name only; the page re-reads the record as after a correction.
   const moveTest = useMemo<MoveTestApi>(() => ({
     preview: previewMove,
-    move: async (from, to, expectedIds, keep) => {
-      const outcome = await moveBloodTest(from, to, expectedIds, keep);
+    move: async (from, to, expectedIds, keep, erase) => {
+      const outcome = await moveBloodTest(from, to, expectedIds, keep, erase);
       if (outcome.status === 'ok') {
         trackProductEvent('blood_test_moved');
         await ownSave();
@@ -303,42 +298,26 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   } = useLongitudinalSave({
     inputs, setInputs, history, unitOverrides, unitSystem, reread: ownSave,
     flushPendingProfileSave: flushProfile, typedIn,
-    firstSave: previousMeasurements.length === 0, // read once: a record holding a measurement at load sends no conversion (US-01 AC7)
   });
-  // Stage only queued edits, with the erase they were made against, then flush
-  // synchronously: the entrypoint's earlier listener may have flushed first.
-  // A matrix's draft stays on the device instead (US-03 AC5). A closing tab
-  // fires no blur, so focus still in the PSA row is moved out first: the
-  // row's blur commits it, with its own checks. The fields' waiting save and
-  // a committed PSA are then written at once, not on the timer or a promise,
-  // which would run after the flush (US-06 AC15; Brad 2026-11-03: weight,
-  // waist or BP save on tab close). iOS kills a hidden tab, so hiding stages
-  // the same, but leaves an unfinished PSA row alone: it waits for its date
-  // (Brad 2026-11-03, "Wait for the date").
-  useEffect(() => {
-    const stage = (closing: boolean) => {
-      const focused = document.activeElement;
-      if (closing && focused instanceof HTMLElement && inPsaRow(focused)) focused.blur();
-      profileTimer.flush();
-      stagePendingSave();
-      // The waiting medication, screening and supplement saves, each with the
-      // erase it was made against, so the write below holds them (US-06 AC13).
-      flushListSaves();
-      flushRoadmapStoreSync();
-    };
-    const onUnload = () => stage(true);
-    const onHidden = () => {
-      if (document.visibilityState === 'hidden') stage(false);
-    };
-    window.addEventListener('beforeunload', onUnload);
-    window.addEventListener('pagehide', onUnload);
-    document.addEventListener('visibilitychange', onHidden);
-    return () => {
-      window.removeEventListener('beforeunload', onUnload);
-      window.removeEventListener('pagehide', onUnload);
-      document.removeEventListener('visibilitychange', onHidden);
-    };
-  }, [stagePendingSave, profileTimer]);
+  // The page's stage on the one hide path (lib/page-hide.ts), which writes once
+  // after every stage: only queued edits, with the erase they were made
+  // against. A matrix's draft stays on the device instead (US-03 AC5). A
+  // closing tab fires no blur, so focus still in the PSA row is moved out
+  // first: the row's blur commits it, with its own checks. The fields' waiting
+  // save and a committed PSA are then staged at once, not on the timer or a
+  // promise, which would run after the write (US-06 AC15; Brad 2026-11-03:
+  // weight, waist or BP save on tab close). iOS kills a hidden tab, so hiding
+  // stages the same, but leaves an unfinished PSA row alone: it waits for its
+  // date (Brad 2026-11-03, "Wait for the date").
+  useEffect(() => onPageHide(closing => {
+    const focused = document.activeElement;
+    if (closing && focused instanceof HTMLElement && inPsaRow(focused)) focused.blur();
+    profileTimer.flush();
+    stagePendingSave();
+    // The waiting medication, screening and supplement saves, each with the
+    // erase it was made against, so the write holds them (US-06 AC13).
+    flushListSaves();
+  }), [stagePendingSave, profileTimer]);
 
   // A lab upload starts: both matrices commit their drafts, then the fields
   // save (US-03 AC5), before any file is read.
@@ -375,22 +354,21 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
       return { results: null, isValid: false, validationErrors: errors, planBasis: null };
     }
 
+    const now = new Date(); // one instant for the plan's cards and the screening questions (US-23 AC6c)
     const healthResults = calculateHealthResults(
       calcInputs,
       unitSystem,
       medicationsToInputs(medications),
       // US-06 AC14: the prostate cards read the newest usable saved PSA, as computePlan does.
-      withPsaMeasurement(screeningsToInputs(screenings), planPsa(history, new Date(), screeningsToInputs(screenings))),
-      metricUnitOverrides,
+      withPsaMeasurement(screeningsToInputs(screenings), planPsa(history, now, screeningsToInputs(screenings))),
+      metricUnitOverrides, now,
     );
-    // The form follows the plan: its recommendations, targets and cascade
-    // steps read what the plan was computed from (US-06 AC5): its age, BMI,
-    // weight target and validated height, its trigger and its lipid marker.
-    // The plan's medicine cards need a known age of 18 or over (US-07 AC6),
-    // so without one the form's medication sections are plain fields.
+    // The form follows the plan (US-06 AC5): its age, BMI, weight target, validated height, trigger and
+    // lipid marker; the screening questions and the upload gate read the cards' age (US-23 AC6c).
+    // The plan's medicine cards need a known age of 18 or over (US-07 AC6), so without one the form's medication sections are plain fields.
     const medicines = medicinesShown(healthResults);
     const planBasis: PlanBasis = {
-      ...healthResults,
+      ...healthResults, screeningAge: screeningAge(calcInputs, now),
       weightMedTrigger: medicines ? weightMedicationTrigger(calcInputs, healthResults) : { on: false, reasons: [] },
       lipidMarker: medicines ? lipidMarkerFor(calcInputs, healthResults) : null,
     };
@@ -474,8 +452,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // check's answers too: a failed write's store holds the erased copy. Stored
   // originals go by the session's rule, never by the page (US-11 AC6).
   const forgetRecord = useCallback(() => {
-    clearLocalStorage();
-    clearOffFileAfterErase(); // the second DRAFTS_CLEARED when the write lands; kept, since on a failed write the session clears nothing
+    clearOffFileAfterErase(); // the legacy blob, then the second DRAFTS_CLEARED when the write lands; kept, since on a failed write the session clears nothing
     setInputs({});
     clearForErase();
     cancelPendingSave();
@@ -535,23 +512,10 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     });
   }, [selectTab]);
 
-  // The form's medicine and screening questions, as health-core builds them
-  // (the InputPanel parity test pins the two together): a suggestion sits on
-  // the question that asks it (US-62 AC20).
-  const e = effectiveInputs;
-  const hasLipidInput = e.apoB !== undefined || e.ldlC !== undefined || e.totalCholesterol !== undefined || e.hdlC !== undefined;
-  const hasWeightInput = e.hba1c !== undefined || e.triglycerides !== undefined || (e.weightKg !== undefined && e.heightCm !== undefined);
-  const forms = useMemo(() => ({
-    medications: medicationForm(medicationsToInputs(medications), {
-      lipidMarker: planBasis?.lipidMarker ?? null,
-      weightMedTrigger: planBasis?.weightMedTrigger ?? { on: false, reasons: [] },
-      bmi: planBasis?.bmi,
-      hasLipidInput,
-      hasWeightInput,
-      unitFor: (metric) => unitOverrides[METRIC_TO_FIELD[metric]] ?? unitSystem,
-    }),
-    screenings: screeningForm(planBasis?.age, inputs.sex, screeningsToInputs(screenings)),
-  }), [hasLipidInput, hasWeightInput, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
+  // The form's medicine and screening questions (lib/plan-forms.ts): a suggestion sits on the question that asks it (US-62 AC20).
+  const { hasLipidInput, hasWeightInput } = medicineInputs(effectiveInputs);
+  const forms = useMemo(() => planForms({ hasLipidInput, hasWeightInput, medications, screenings, planBasis, sex: inputs.sex, unitOverrides, unitSystem }),
+    [hasLipidInput, hasWeightInput, medications, screenings, planBasis, inputs.sex, unitOverrides, unitSystem]);
 
   const plan = usePlanView({
     results, shownErase, isValid, tiles, forms, cardsShown: fullForm, // US-07 AC3: MyHealth draws the cards only then
@@ -607,7 +571,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
     recordHeld: readFailed || unreadable > 0 || Object.keys(inputs).length > 0 || [previousMeasurements, medications, screenings, supplements, documentHistory, labValueHistory].some(list => list.length > 0), onDelete: async () => { if (await eraseAll()) closeSettings(); }, isDeleting,
     storageAtFoot: getBackendKind() === 'local',
     onPlanReadyDismiss: planReady ? dismissPlanReady : undefined,
-    healthDocuments: documentHistory, onDocumentDeleted: dropDocument, educationAbove: !isMobile && isWideDesktop,
+    healthDocuments: documentHistory, onDocumentDeleted: dropDocument,
   };
   // The reasons open on screen are the PDF's too (US-62 AC28).
   const myHealth = (form: FormSlots) => (
@@ -703,8 +667,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         </>
       ) : (
         <div className="health-tool-content">
-          {/* US-62 AC16: one My health column, centred; from 1200px the chat beside it, the doctor line over both (US-73 AC13). */}
-          {isWideDesktop && <p className="mh-education mh-education--above">{EDUCATION_LINE}</p>}
+          {/* US-62 AC16: one My health column, centred; from 1200px the chat beside it. */}
           <div className="health-tool-main">{healthForm}</div>
           {isWideDesktop && chat}
         </div>
@@ -722,7 +685,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
         onComplete={() => { const read = rereadRecord('upload'); answered(null); return read; }} // an upload is an answer, after a held change is taken in
         onStart={handleUploadStart}
         onClose={() => setShowUploadModal(false)}
-        age={planBasis?.age}
+        age={planBasis?.screeningAge}
         sex={sex}
       />
 

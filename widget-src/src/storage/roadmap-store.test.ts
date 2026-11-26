@@ -18,7 +18,7 @@ describe('RoadmapStore — reportEmailCaptured lead flag', () => {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     expect(store.getReportEmailCaptured()).toBe(false);
 
-    store.markReportEmailCaptured();
+    store.markReportEmailCaptured(store.shownErase);
     expect(store.getReportEmailCaptured()).toBe(true);
     await store.flush();
 
@@ -30,8 +30,8 @@ describe('RoadmapStore — reportEmailCaptured lead flag', () => {
 
   it('is idempotent — marking twice stays true and does not throw', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter());
-    store.markReportEmailCaptured();
-    store.markReportEmailCaptured();
+    store.markReportEmailCaptured(store.shownErase);
+    store.markReportEmailCaptured(store.shownErase);
     expect(store.getReportEmailCaptured()).toBe(true);
   });
 });
@@ -41,11 +41,11 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
-    store.saveMedication('statin', 'atorvastatin', 20, 'mg'); // started
-    store.saveMedication('statin', 'atorvastatin', 20, 'mg'); // identical → no row
-    store.saveMedication('statin', 'atorvastatin', 40, 'mg'); // dose_changed
-    store.saveMedication('statin', 'rosuvastatin', 10, 'mg'); // switched
-    store.saveMedication('statin', 'none', null, null);       // stopped
+    store.saveMedication('statin', 'atorvastatin', 20, 'mg', store.shownErase); // started
+    store.saveMedication('statin', 'atorvastatin', 20, 'mg', store.shownErase); // identical → no row
+    store.saveMedication('statin', 'atorvastatin', 40, 'mg', store.shownErase); // dose_changed
+    store.saveMedication('statin', 'rosuvastatin', 10, 'mg', store.shownErase); // switched
+    store.saveMedication('statin', 'none', null, null, store.shownErase);       // stopped
     await store.flush();
 
     const file = readCloudFile(cloud);
@@ -73,10 +73,10 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
   it('US-06 AC4: projects saved changes after reload without inventing legacy events', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.saveMedication('statin', 'atorvastatin', 20, 'mg');
-    store.saveMedication('statin', 'atorvastatin', 40, 'mg');
-    store.saveMedication('statin', 'rosuvastatin', 10, 'mg');
-    store.saveMedication('statin', 'none');
+    store.saveMedication('statin', 'atorvastatin', 20, 'mg', store.shownErase);
+    store.saveMedication('statin', 'atorvastatin', 40, 'mg', store.shownErase);
+    store.saveMedication('statin', 'rosuvastatin', 10, 'mg', store.shownErase);
+    store.saveMedication('statin', 'none', undefined, undefined, store.shownErase);
     await store.flush();
     const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
     const before = readCloudFile(cloud);
@@ -94,7 +94,7 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
   it('US-06 AC4: keeps legacy and unknown events in the file without fabricating annotations', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    store.saveMedication('statin', 'atorvastatin', 20, 'mg', store.shownErase);
     await store.flush();
     const file = readCloudFile(cloud);
     const row = file.medicationHistory[0];
@@ -111,9 +111,9 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
-    store.saveMedication('ezetimibe', 'not_yet', null, null);
-    store.saveMedication('ezetimibe', 'not_tolerated', null, null);
-    store.saveMedication('ezetimibe', 'none', null, null);
+    store.saveMedication('ezetimibe', 'not_yet', null, null, store.shownErase);
+    store.saveMedication('ezetimibe', 'not_tolerated', null, null, store.shownErase);
+    store.saveMedication('ezetimibe', 'none', null, null, store.shownErase);
     await store.flush();
 
     expect(readCloudFile(cloud).medicationHistory).toEqual([]);
@@ -123,8 +123,8 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
-    store.saveMedication('statin_escalation', 'yes', null, null);
-    store.saveMedication('statin_escalation', 'not_yet', null, null);
+    store.saveMedication('statin_escalation', 'yes', null, null, store.shownErase);
+    store.saveMedication('statin_escalation', 'not_yet', null, null, store.shownErase);
     await store.flush();
 
     const file = readCloudFile(cloud);
@@ -135,7 +135,7 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
   it('US-06 AC11: an escalation row an earlier build wrote stays in the file but not in the history view', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    store.saveMedication('statin', 'atorvastatin', 20, 'mg', store.shownErase);
     await store.flush();
     const file = readCloudFile(cloud);
     const row = file.medicationHistory[0];
@@ -149,11 +149,11 @@ describe('RoadmapStore — medication history (append-only change log)', () => {
   it('history survives a reload (rides the sync loop, merged by id union)', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.saveMedication('statin', 'atorvastatin', 20, 'mg');
+    store.saveMedication('statin', 'atorvastatin', 20, 'mg', store.shownErase);
     await store.flush();
 
     const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
-    reloaded.saveMedication('statin', 'atorvastatin', 40, 'mg');
+    reloaded.saveMedication('statin', 'atorvastatin', 40, 'mg', reloaded.shownErase);
     await reloaded.flush();
 
     const history = readCloudFile(cloud).medicationHistory;
@@ -167,10 +167,10 @@ describe('RoadmapStore — supplement history (append-only change log)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
-    store.saveSupplement('microvitamin', 'MicroVitamin', 1, 'tablet'); // started
-    store.saveSupplement('microvitamin', 'MicroVitamin', 1, 'tablet'); // identical → no row
-    store.deleteSupplementApi('microvitamin');                          // stopped (soft)
-    store.deleteSupplementApi('microvitamin');                          // already stopped → no row
+    store.saveSupplement('microvitamin', 'MicroVitamin', 1, 'tablet', undefined, undefined, store.shownErase); // started
+    store.saveSupplement('microvitamin', 'MicroVitamin', 1, 'tablet', undefined, undefined, store.shownErase); // identical → no row
+    store.deleteSupplementApi('microvitamin', store.shownErase);                          // stopped (soft)
+    store.deleteSupplementApi('microvitamin', store.shownErase);                          // already stopped → no row
     await store.flush();
 
     const file = readCloudFile(cloud);
@@ -187,10 +187,10 @@ describe('RoadmapStore — supplement history (append-only change log)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
-    store.saveSupplement('omega3', 'Omega-3', 1000, 'mg');  // started
-    store.saveSupplement('omega3', 'Omega-3', 2000, 'mg');  // dose_changed
-    store.deleteSupplementApi('omega3');                     // stopped
-    store.saveSupplement('omega3', 'Omega-3', 2000, 'mg');  // restart → started
+    store.saveSupplement('omega3', 'Omega-3', 1000, 'mg', undefined, undefined, store.shownErase);  // started
+    store.saveSupplement('omega3', 'Omega-3', 2000, 'mg', undefined, undefined, store.shownErase);  // dose_changed
+    store.deleteSupplementApi('omega3', store.shownErase);                     // stopped
+    store.saveSupplement('omega3', 'Omega-3', 2000, 'mg', undefined, undefined, store.shownErase);  // restart → started
     await store.flush();
 
     const history = readCloudFile(cloud).supplementHistory;
@@ -207,9 +207,9 @@ describe('RoadmapStore — US-02 AC8: a blood pressure the wrong way up (review 
   it('answers invalid, not duplicate, and writes nothing; a taken slot is still a duplicate', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter(new MemoryCloud()));
     const day = '2024-03-01T09:00:00.000Z';
-    expect(store.addMeasurement('systolic_bp', 80, day).status).toBe('inserted');
-    expect(store.addMeasurement('diastolic_bp', 120, day)).toEqual({ status: 'invalid' });
-    expect(store.addMeasurement('systolic_bp', 130, day)).toEqual({ status: 'duplicate' });
+    expect(store.addMeasurement('systolic_bp', 80, day, store.shownErase).status).toBe('inserted');
+    expect(store.addMeasurement('diastolic_bp', 120, day, store.shownErase)).toEqual({ status: 'invalid' });
+    expect(store.addMeasurement('systolic_bp', 130, day, store.shownErase)).toEqual({ status: 'duplicate' });
     expect(store.loadAllHistory().filter((m) => m.metricType === 'diastolic_bp')).toEqual([]);
   });
 });
@@ -233,7 +233,7 @@ describe('RoadmapStore — deleted measurements stay deleted (no resurrection)',
     };
     for (const [field, metric] of Object.entries(FIELD_TO_METRIC)) {
       const v = cachedInputs[field];
-      if (v !== undefined) store.addMeasurement(metric, v); // no recordedAt ⇒ today
+      if (v !== undefined) store.addMeasurement(metric, v, undefined, store.shownErase); // no recordedAt ⇒ today
     }
   }
 
@@ -242,13 +242,13 @@ describe('RoadmapStore — deleted measurements stay deleted (no resurrection)',
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
     const past = '2024-03-01T09:00:00.000Z';
-    const sys = store.addMeasurement('systolic_bp', 128, past);
-    const dia = store.addMeasurement('diastolic_bp', 82, past);
+    const sys = store.addMeasurement('systolic_bp', 128, past, store.shownErase);
+    const dia = store.addMeasurement('diastolic_bp', 82, past, store.shownErase);
     expect(sys.status).toBe('inserted');
     expect(dia.status).toBe('inserted');
 
     // User corrects the systolic reading → the original flips to entered-in-error.
-    if (sys.status === 'inserted') store.correctValue(sys.row.id, 130);
+    if (sys.status === 'inserted') store.correctValue(sys.row.id, 130, store.shownErase);
     await store.flush();
 
     const file = readCloudFile(cloud);
@@ -287,16 +287,16 @@ describe('RoadmapStore — deleted measurements stay deleted (no resurrection)',
     const deviceA = await RoadmapStore.create(new MemoryAdapter(cloud));
 
     const past = '2024-03-01T09:00:00.000Z';
-    const bp = deviceA.addMeasurement('systolic_bp', 140, past);
-    const wt = deviceA.addMeasurement('weight', 90, past);
+    const bp = deviceA.addMeasurement('systolic_bp', 140, past, deviceA.shownErase);
+    const wt = deviceA.addMeasurement('weight', 90, past, deviceA.shownErase);
     await deviceA.flush();
 
     // Device B loads the same cloud (now both rows are active on B too).
     const deviceB = await RoadmapStore.create(new MemoryAdapter(cloud));
 
     // Device A deletes both (correction flips the originals to entered-in-error).
-    if (bp.status === 'inserted') deviceA.correctValue(bp.row.id, 138);
-    if (wt.status === 'inserted') deviceA.correctValue(wt.row.id, 88);
+    if (bp.status === 'inserted') deviceA.correctValue(bp.row.id, 138, deviceA.shownErase);
+    if (wt.status === 'inserted') deviceA.correctValue(wt.row.id, 88, deviceA.shownErase);
     await deviceA.flush();
 
     // Device B (which still had them active) now flushes → read-merge-write.
@@ -319,8 +319,8 @@ describe('RoadmapStore — screening current state (LWW singleton)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
-    store.saveScreening('colorectal_method', 'colonoscopy');
-    store.saveScreening('prostate_psa_value', '1.2'); // numeric key → parsed to a number
+    store.saveScreening('colorectal_method', 'colonoscopy', store.shownErase);
+    store.saveScreening('prostate_psa_value', '1.2', store.shownErase); // numeric key → parsed to a number
     await store.flush();
 
     // A fresh store over the SAME cloud = the user returning / a second device.
@@ -345,7 +345,7 @@ describe('RoadmapStore — screening current state (LWW singleton)', () => {
 
     // Device A picks a screening, then syncs into the existing cloud file.
     const deviceA = await RoadmapStore.create(new MemoryAdapter(cloud));
-    deviceA.saveScreening('colorectal_method', 'fit');
+    deviceA.saveScreening('colorectal_method', 'fit', deviceA.shownErase);
     await deviceA.flush();
 
     const cloudFile = readCloudFile(cloud);
@@ -362,8 +362,8 @@ describe('RoadmapStore — screening current state (LWW singleton)', () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
 
-    store.saveScreening('colorectal_method', 'fit');
-    store.saveScreening('colorectal_method', 'colonoscopy');
+    store.saveScreening('colorectal_method', 'fit', store.shownErase);
+    store.saveScreening('colorectal_method', 'colonoscopy', store.shownErase);
     await store.flush();
 
     const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
@@ -400,11 +400,11 @@ describe('RoadmapStore — profile and screenings merge field by field (US-10 AC
 
   it('B saves a height, then stale A saves a birth year and switches units: the cloud keeps all three', async () => {
     const [cloud, a, b] = await twoDevices();
-    b.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
+    b.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 }, b.shownErase);
     await b.flush();
 
     vi.setSystemTime(new Date(LATER));
-    a.saveChangedMeasurements({ birthYear: 1972, unitSystem: 'conventional' }, { birthYear: 1971, unitSystem: 'si' });
+    a.saveChangedMeasurements({ birthYear: 1972, unitSystem: 'conventional' }, { birthYear: 1971, unitSystem: 'si' }, a.shownErase);
     await a.flush();
 
     expect(readCloudFile(cloud).profile).toMatchObject({ sex: 'male', heightCm: 180, birthYear: 1972, unitSystem: 'conventional' });
@@ -413,11 +413,11 @@ describe('RoadmapStore — profile and screenings merge field by field (US-10 AC
 
   it('a stale device marking the email step done does not put back the old height', async () => {
     const [cloud, a, b] = await twoDevices();
-    b.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
+    b.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 }, b.shownErase);
     await b.flush();
 
     vi.setSystemTime(new Date(LATER));
-    a.markReportEmailCaptured();
+    a.markReportEmailCaptured(a.shownErase);
     await a.flush();
 
     expect(readCloudFile(cloud).profile).toMatchObject({ heightCm: 180, reportEmailCaptured: true });
@@ -425,11 +425,11 @@ describe('RoadmapStore — profile and screenings merge field by field (US-10 AC
 
   it('two devices answer different screening questions: the cloud keeps both answers', async () => {
     const [cloud, a, b] = await twoDevices();
-    a.saveScreening('colorectal_method', 'fit_annual');
+    a.saveScreening('colorectal_method', 'fit_annual', a.shownErase);
     await a.flush();
 
     vi.setSystemTime(new Date(LATER));
-    b.saveScreening('breast_frequency', 'annual');
+    b.saveScreening('breast_frequency', 'annual', b.shownErase);
     await b.flush();
 
     const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
@@ -454,8 +454,8 @@ describe('RoadmapStore — latest value per metric drives the plan (US-07 AC4)',
   /** The backfilled 2024 row inserted FIRST, the 2026 one second. */
   async function storeWithBackfilledLdl(cloud = new MemoryCloud()) {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.addMeasurement('ldl', 3.5, OLD);
-    store.addMeasurement('ldl', 1.8, NEW);
+    store.addMeasurement('ldl', 3.5, OLD, store.shownErase);
+    store.addMeasurement('ldl', 1.8, NEW, store.shownErase);
     return store;
   }
 
@@ -475,11 +475,11 @@ describe('RoadmapStore — latest value per metric drives the plan (US-07 AC4)',
   it('after a two-device merge the newest LDL still wins (uuid order is arbitrary)', async () => {
     const cloud = new MemoryCloud();
     const deviceA = await RoadmapStore.create(new MemoryAdapter(cloud));
-    deviceA.addMeasurement('ldl', 3.5, OLD);
+    deviceA.addMeasurement('ldl', 3.5, OLD, deviceA.shownErase);
     await deviceA.flush();
 
     const deviceB = await RoadmapStore.create(new MemoryAdapter(cloud));
-    deviceB.addMeasurement('ldl', 1.8, NEW);
+    deviceB.addMeasurement('ldl', 1.8, NEW, deviceB.shownErase);
     await deviceB.flush();
 
     // Both rows are now in the cloud, ordered by the merge's uuid sort.
@@ -502,8 +502,8 @@ describe('RoadmapStore — moving a blood test (US-04 AC5)', () => {
   it('previews without writing, moves as previewed, and refuses a stale preview as changed', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.addMeasurement('ldl', 3.2, '2024-03-12T00:00:00.000Z');
-    store.addMeasurement('weight', 82, '2024-03-12T00:00:00.000Z');
+    store.addMeasurement('ldl', 3.2, '2024-03-12T00:00:00.000Z', store.shownErase);
+    store.addMeasurement('weight', 82, '2024-03-12T00:00:00.000Z', store.shownErase);
     await store.flush();
     const before = JSON.stringify(readCloudFile(cloud));
 
@@ -513,8 +513,8 @@ describe('RoadmapStore — moving a blood test (US-04 AC5)', () => {
     await store.flush();
     expect(JSON.stringify(readCloudFile(cloud))).toBe(before);
 
-    expect(store.moveBloodTest('2024-03-12', '2024-02-21', ['not-the-row'], {})).toEqual({ status: 'changed' });
-    expect(store.moveBloodTest('2024-03-12', '2024-02-21', plan.rows.map((r) => r.id), {})).toEqual({ status: 'ok' });
+    expect(store.moveBloodTest('2024-03-12', '2024-02-21', ['not-the-row'], {}, store.shownErase)).toEqual({ status: 'changed' });
+    expect(store.moveBloodTest('2024-03-12', '2024-02-21', plan.rows.map((r) => r.id), {}, store.shownErase)).toEqual({ status: 'ok' });
     await store.flush();
     const active = toOldShape(readCloudFile(cloud)).measurements.filter((m) => m.status === 'active');
     expect(active.map((m) => `${m.metricType}@${m.recordedAt.slice(0, 10)}`).sort()).toEqual(['ldl@2024-02-21', 'weight@2024-03-12']);
@@ -522,9 +522,9 @@ describe('RoadmapStore — moving a blood test (US-04 AC5)', () => {
 
   it('answers a refused day as invalid, with the refusal', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter());
-    const added = store.addMeasurement('ldl', 3.2, '2024-03-12T00:00:00.000Z');
+    const added = store.addMeasurement('ldl', 3.2, '2024-03-12T00:00:00.000Z', store.shownErase);
     if (added.status !== 'inserted') throw new Error(added.status);
-    const outcome = store.moveBloodTest('2024-03-12', '2024-03-12', [added.row.id], {});
+    const outcome = store.moveBloodTest('2024-03-12', '2024-03-12', [added.row.id], {}, store.shownErase);
     expect(outcome.status).toBe('invalid');
     expect(outcome.status === 'invalid' && outcome.refusal.reason).toBe('same-day');
   });

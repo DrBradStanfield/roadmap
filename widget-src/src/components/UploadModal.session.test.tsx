@@ -8,7 +8,7 @@ import { sha256Blob } from '../lib/archive-payloads';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
 import { getDocumentArchiveMode, saveUpload } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
-import { WritesStoppedError } from '../lib/error-diagnostics';
+import { WRITES_STOPPED_CASES } from '../testing/writes-stopped-cases';
 import { trackProductEvent } from '../lib/server-api';
 import { findReviewValue, notSaved } from '../testing/import-review';
 
@@ -41,6 +41,7 @@ function Harness({ onStart, refresh, rereadThrows }: { onStart?: () => Promise<v
       onComplete();
       if (rereadThrows) throw new Error('synthetic re-read throw');
       if (refresh) return refresh;
+      return undefined;
     }}
   /></>;
 }
@@ -185,9 +186,9 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(reviews()).toEqual([expect.objectContaining({ showAll: 1, changedSure: 1, saved: 0 })]);
   });
   it.each([
-    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
+    ...WRITES_STOPPED_CASES,
     { name: 'any other throw', error: () => new Error('synthetic save failure'), reports: 1 },
-  ])('US-09 AC2c, lead A19: a Save that throws $name reports $reports time(s) and keeps the review for a retry', async ({ error, reports }) => {
+  ])('US-09 AC2c, AC59, lead A19: a Save that throws $name reports $reports time(s) and keeps the review for a retry', async ({ error, reports }) => {
     vi.mocked(saveUpload).mockRejectedValueOnce(error());
     render(<Harness />); await ready();
     fireEvent.click(screen.getByRole('button', { name: /^Save / }));
@@ -197,9 +198,9 @@ describe('US-12 AC4–6 upload session ownership', () => {
     expect(onComplete).not.toHaveBeenCalled();
   });
   it.each([
-    { name: 'a log-off refusal', error: () => new WritesStoppedError(), reports: 0 },
+    ...WRITES_STOPPED_CASES,
     { name: 'any other throw', error: () => new Error('synthetic re-read failure'), reports: 1 },
-  ])('US-09 AC2c, lead A19: a re-read after a finished save that fails with $name reports $reports time(s) and the save stays done', async ({ error, reports }) => {
+  ])('US-09 AC2c, AC59, lead A19: a re-read after a finished save that fails with $name reports $reports time(s) and the save stays done', async ({ error, reports }) => {
     const failedReread = Promise.reject(error());
     failedReread.catch(() => {});
     render(<Harness refresh={failedReread} />); await ready();
@@ -220,11 +221,11 @@ describe('US-12 AC4–6 upload session ownership', () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
     extractFromPdf.mockReturnValue(deferred<never>().promise);
     render(<Harness />);
-    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping my files/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue without keeping the files/ }));
     selectFile();
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
     expect(document.querySelector('input[type=file]')).toBeTruthy();
-    expect(screen.queryByText('Keep your original documents')).toBeNull();
+    expect(screen.queryByText('Keep the original files too?')).toBeNull();
   });
   it('preserves a pending save, prevents discard, and resets after completion closes', async () => {
     const saving = deferred<Awaited<ReturnType<typeof saveUpload>>>();

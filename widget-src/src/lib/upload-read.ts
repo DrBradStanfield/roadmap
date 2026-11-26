@@ -105,6 +105,10 @@ export const leftOutNotice = (n: number): FileNotice => ({
   text: `Not read. One upload takes at most ${MAX_FILES} files. Upload ${n === 1 ? 'it' : 'them'} separately.`,
 });
 
+/** The pick's left-out notice: none once the flow is back to choosing, which holds no pick, so a closed or
+ *  discarded pick's count never outlives it (US-12 AC9, AC32). */
+const leftOutOf = (s: UploadState, held: Held): FileNotice[] => (s.phase !== 'choosing' && held.leftOut > 0 ? [leftOutNotice(held.leftOut)] : []);
+
 /** A file reached the server: the review has something to show. */
 export const hasResults = (s: UploadState) => filesOf(s).some(reached);
 
@@ -114,7 +118,7 @@ export const refusedForKey = (s: UploadState) => s.phase === 'failed' && s.refus
 /** A cancelled run's notices, counted on the pick's basis (US-12 AC10): the picked files too large, and those left out. */
 export function pickNotices(s: UploadState, held: Held): FileNotice[] {
   const large = filesOf(s).filter((f) => f.zip === undefined && f.status.s === 'refused' && f.status.verdict === 'tooLarge');
-  return [...large.map((f): FileNotice => ({ name: f.name, reason: 'tooLarge' })), ...(held.leftOut > 0 ? [leftOutNotice(held.leftOut)] : [])];
+  return [...large.map((f): FileNotice => ({ name: f.name, reason: 'tooLarge' })), ...leftOutOf(s, held)];
 }
 
 /** What the web alone knows of a pick, said beside the list (US-12 AC9, AC13): each file's own words for why it gave no
@@ -123,7 +127,7 @@ export function pickNotices(s: UploadState, held: Held): FileNotice[] {
 export function heldNotices(s: UploadState, held: Held): FileNotice[] {
   if (held.run !== s.run) return [];
   const notes = filesOf(s).flatMap((f) => (f.status.s === 'failed' && held.files.get(f.id)?.note ? [held.files.get(f.id)!.note!] : []));
-  return [...notes, ...(held.leftOut > 0 ? [leftOutNotice(held.leftOut)] : [])];
+  return [...notes, ...leftOutOf(s, held)];
 }
 
 /** What one file gives the review and its notices, in the shapes the review took before. */
@@ -162,7 +166,7 @@ export function readOutcome(s: UploadState, held: Held): { results: FileResult[]
     if (out.result) results.push(out.result);
     notices.push(...out.notices);
   }
-  if (held.leftOut > 0) notices.push(leftOutNotice(held.leftOut));
+  notices.push(...leftOutOf(s, held));
   for (const r of results) {
     if (!r.error && r.values.length + r.additionalValues.length === 0 && !r.refusedValues?.length) notices.push({ name: r.fileName, reason: r.document ? 'documentOnly' : 'noValues' });
   }

@@ -316,7 +316,7 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
       ? 'Annual mammograms are recommended at your age (45–54).'
       : 'Annual or biennial mammograms are recommended at your age (55+).',
   prostateByAge: (age) => age < 50
-    ? 'Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).'
+    ? 'Screening usually starts at 50. The American Cancer Society recommends starting at 45 for Black men and for men whose father, brother or son has had prostate cancer. Discuss with your doctor.'
     : 'PSA testing is an option after an informed discussion with your doctor.',
   breastStart: (age) => ({
     title: 'Start breast cancer screening',
@@ -351,6 +351,19 @@ export function inAges(ages: Ages, age: number, sex: string | undefined, ignoreU
   if (!range) return false;
   const [min, max] = range;
   return age >= min && (ignoreUpper || max === undefined || age <= max);
+}
+
+type BirthYearMonth = { birthYear?: number; birthMonth?: number };
+
+/** The age every screening gate reads (US-23 AC6b, AC6c): the plan's cards and the reminders (cardAges),
+ *  the questions (askAges, groupAges, through their callers) and the upload gate (uploadMinAge). Whole
+ *  years at the UTC month, so one record at one instant gets one answer in every zone. A missing
+ *  birth month is January. The age the plan shows (calculateAge) keeps the local month. With no
+ *  birth year, `given`: a caller that passes the age itself (generateSuggestions with results only). */
+export function screeningAge(born: BirthYearMonth, now: Date): number | undefined;
+export function screeningAge(born: BirthYearMonth, now: Date, given: number): number;
+export function screeningAge({ birthYear, birthMonth }: BirthYearMonth, now: Date, given?: number): number | undefined {
+  return birthYear ? now.getUTCFullYear() - birthYear - (now.getUTCMonth() + 1 < (birthMonth ?? 1) ? 1 : 0) : given;
 }
 
 /** Whether a row's ages, with the row's own sex, take this person. */

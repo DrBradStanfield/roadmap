@@ -5,10 +5,14 @@ import type { ChatHistoryFile } from '@roadmap/health-core/chat-history';
 import { ChatHistoryStore } from './chat-history-store';
 import { LocalStorageAdapter, NAMED_FILE_PREFIX } from './local-storage-adapter';
 import { RoadmapStore } from './roadmap-store';
-import { initRoadmapStore, deleteUserData, flushRoadmapStore, addMeasurement } from '../lib/roadmap-data';
+import { initRoadmapStore, deleteUserData, flushRoadmapStore, addMeasurement, getShownErase } from '../lib/roadmap-data';
 import { getChatHistory, setChatHistoryFactory } from '../lib/chat-history-access';
+import { act, renderHook } from '@testing-library/react';
+import { eraseOutcomeWords } from '@roadmap/health-core/erase-outcome';
+import { useErase } from '../hooks/useErase';
 
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
+vi.mock('../lib/server-api', async (importOriginal) => ({ ...await importOriginal<typeof import('../lib/server-api')>(), trackProductEvent: vi.fn() }));
 
 const CHAT_KEY = NAMED_FILE_PREFIX + 'chat-history.json';
 const OLD_TEXT = 'SYNTHETIC_PRIVATE_CHAT_BEFORE_ERASE';
@@ -45,8 +49,64 @@ describe('US-11 AC2c on the device: a chat file that cannot be opened is still c
     await initRoadmapStore(new LocalStorageAdapter());
     localStorage.setItem(CHAT_KEY, JSON.stringify({ schemaVersion: 999, conversations: [{ id: 'old', title: OLD_TEXT }] }));
 
-    expect(await deleteUserData()).toEqual({ success: true, chatErased: true });
+    // The open failed ('unopened'); the record erase that stands removed the file, so the words say deleted.
+    expect(await deleteUserData()).toEqual({ success: true, chat: 'unopened' });
     expect(localStorage.getItem(CHAT_KEY)).toBeNull();
+    expect(eraseOutcomeWords({ record: 'erased', chat: 'unopened' })).toBe('Your health record and chat history are deleted.');
+  });
+});
+
+describe('US-11 AC13 on the device: an erase the browser could not store is put back, and says what each step did', () => {
+  const DEVICE_KEY = 'health_roadmap_file_v2';
+  /** The device record write is full: the real session puts its copy back (S57, S69). */
+  let full: { mockRestore(): void } | null = null;
+  // Room again before the suite's own flush, so only the erase meets the full store.
+  afterEach(() => { full?.mockRestore(); full = null; });
+  function recordWriteFull(): void {
+    const setItem = Storage.prototype.setItem;
+    full = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === DEVICE_KEY) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+  }
+  async function eraseFromThePage(): Promise<string[]> {
+    const alerts: string[] = [];
+    vi.stubGlobal('confirm', () => true);
+    vi.stubGlobal('alert', (m: string) => { alerts.push(m); });
+    const noop = (): void => {};
+    const { result } = renderHook(() => useErase({ clearDrafts: noop, forget: noop, reread: noop, shows: noop, spend: noop }));
+    await act(async () => { expect(await result.current.eraseAll()).toBe(false); });
+    return alerts;
+  }
+
+  it('a newer-schema chat file: the chat step is never counted erased, the file stays, and the page says neither was deleted', async () => {
+    await initRoadmapStore(new LocalStorageAdapter());
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
+    await flushRoadmapStore();
+    const newer = JSON.stringify({ schemaVersion: 999, conversations: [{ id: 'old', title: OLD_TEXT }] });
+    localStorage.setItem(CHAT_KEY, newer);
+    recordWriteFull();
+
+    expect(await deleteUserData()).toEqual({ success: false, chat: 'unopened' });
+    expect(localStorage.getItem(CHAT_KEY)).toBe(newer);
+
+    expect(await eraseFromThePage()).toEqual([
+      'Your health record was not deleted: the erase could not be saved. Your chat history could not be read, so it was not deleted. Try again.',
+    ]);
+  });
+
+  it('a chat file it could open: its tombstones are saved, and the page says the record was not deleted and the chat history was', async () => {
+    await initRoadmapStore(new LocalStorageAdapter());
+    await exchange((await getChatHistory())!, 'old', OLD_TEXT);
+    await addMeasurement('weight', 80, '2026-09-01', getShownErase());
+    await flushRoadmapStore();
+    recordWriteFull();
+
+    expect(await eraseFromThePage()).toEqual([
+      'Your health record was not deleted: the erase could not be saved. Your chat history was deleted. Try again.',
+    ]);
+    expect(localStorage.getItem(CHAT_KEY) ?? '').not.toContain(OLD_TEXT);
+    expect(JSON.parse(localStorage.getItem(DEVICE_KEY)!).measurements).toHaveLength(1); // the record as it was
   });
 });
 
@@ -58,7 +118,7 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
     const staleTab = await ChatHistoryStore.create(new LocalStorageAdapter());
     expect(staleTab.getMessages('old')[0].content).toBe(OLD_TEXT);
 
-    expect(await deleteUserData()).toEqual({ success: true, chatErased: true });
+    expect(await deleteUserData()).toEqual({ success: true, chat: 'erased' });
     // Full local erasure, NOT retaining identifiers/timestamps as tombstones.
     expect(localStorage.getItem(CHAT_KEY)).toBeNull();
     expect(localStorage.getItem(CHAT_KEY + '_rev')).toBeNull();
@@ -161,7 +221,7 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
       const adapter = () => (mode === 'local' ? new LocalStorageAdapter() : new MemoryAdapter(cloud));
       if (mode === 'cloud') localStorage.setItem('health_roadmap_backend', 'memory'); // a cloud page remembers its backend (US-11 AC6)
       await initRoadmapStore(adapter());
-      await addMeasurement('weight', 70, '2026-01-01');
+      await addMeasurement('weight', 70, '2026-01-01', getShownErase());
       const chat = (await getChatHistory())!;
       await exchange(chat, 'old', OLD_TEXT);
       const DOC_KEY = 'health_roadmap_doc_v2:synthetic-ref';
@@ -212,7 +272,7 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
     it('cloud read unreachable (ERASE_UNREACHABLE)', async () => {
       const adapter = new MemoryAdapter(new MemoryCloud());
       await initRoadmapStore(adapter);
-      await addMeasurement('weight', 70, '2026-01-01');
+      await addMeasurement('weight', 70, '2026-01-01', getShownErase());
       await flushRoadmapStore();
       localStorage.setItem(GENERATION_KEY, 'g0');
       vi.spyOn(adapter, 'read').mockRejectedValueOnce(new Error('synthetic offline'));
@@ -223,7 +283,7 @@ describe('US-11 local erase: a stale chat tab must not restore erased history', 
       it(`${mode}: the erase's flush fails`, async () => {
         const adapter = mode === 'local' ? new LocalStorageAdapter() : new MemoryAdapter(new MemoryCloud());
         await initRoadmapStore(adapter);
-        await addMeasurement('weight', 70, '2026-01-01');
+        await addMeasurement('weight', 70, '2026-01-01', getShownErase());
         await flushRoadmapStore();
         localStorage.setItem(GENERATION_KEY, 'g0');
         localStorage.setItem(CHAT_KEY, '{}');

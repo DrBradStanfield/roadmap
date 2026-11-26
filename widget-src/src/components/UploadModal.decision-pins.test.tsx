@@ -192,7 +192,7 @@ describe('upload decisions: what blocks Save (D2, D6)', () => {
     vi.mocked(getDocumentArchiveMode).mockReturnValue('device-only');
     vi.mocked(labImport).mockResolvedValue(extraction({ values: [value('ldl', 2.8)] }));
     open();
-    fireEvent.click(screen.getByRole('button', { name: 'Continue without keeping my files ›' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue without keeping the files ›' }));
     pick('labs.pdf');
     retype(await findReviewValue('2.8'), '');
     expect(blocked(await saveButton())).toBe(row(rows, 'nothing ticked').web);

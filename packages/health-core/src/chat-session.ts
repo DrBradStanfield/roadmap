@@ -222,6 +222,9 @@ export class ChatSession {
      *  holds no other marker: an erase that began after the question, on any
      *  device (US-11 AC2h). */
     askedMarks?: readonly string[];
+    /** The record's erase identity when the question was asked: a new
+     *  conversation records it, a reply never changes it (US-11 AC11). */
+    askedUnder?: string;
   }): Promise<void> {
     this.refreshAfterDeviceErase();
     if (this.erasedIds.has(opts.conversationId)) return; // erased while the answer was in flight
@@ -250,6 +253,7 @@ export class ChatSession {
         title: opts.isNew ? cutText(opts.userText, 80) : 'Chat', // never half an emoji (US-15 AC26b)
         createdAt: now,
         updatedAt: now,
+        ...(opts.askedUnder ? { under: opts.askedUnder } : {}),
         messages,
       });
     }

@@ -10,10 +10,11 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import type { UploadReview } from '@roadmap/health-core/upload-review';
 import { checkLabImportQuota, labImport } from '../lib/upload-api';
-import { addMeasurement } from '../lib/roadmap-data';
+import { addMeasurement, getShownErase } from '../lib/roadmap-data';
 import { Sentry } from '../lib/sentry';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { adapterSave, eraseHere, parityBundle, readFor, type Probes, type Seed, type Side } from '../testing/upload-save-parity-kit';
+import { seedDocuments } from '../testing/seed-record';
 
 vi.mock('../lib/upload-api', () => ({ checkLabImportQuota: vi.fn(), labImport: vi.fn() }));
 const probes = vi.hoisted(() => ({ tracked: [], failNext: { shared: false } }) as unknown as Omit<Probes, 'sentryCalls'>);
@@ -79,12 +80,12 @@ const CASES: Case[] = [
   },
   {
     name: 'duplicates of saved values', cloud: true, files: [pdf('labA')],
-    record: (store) => { store.addMeasurement('ldl', 2.8, '2025-09-02'); store.addMeasurement('hdl', 1.4, '2025-09-02'); },
+    record: (store) => { store.addMeasurement('ldl', 2.8, '2025-09-02', store.shownErase); store.addMeasurement('hdl', 1.4, '2025-09-02', store.shownErase); },
     holds: (s) => expect(labs(s).filter((r) => r.startsWith('ldl '))).toHaveLength(1),
   },
   {
     name: 'a Replace', cloud: true, files: [pdf('labConflict')],
-    record: (store) => { store.addMeasurement('ldl', 2.8, '2025-09-02'); },
+    record: (store) => { store.addMeasurement('ldl', 2.8, '2025-09-02', store.shownErase); },
     choices: (review) => [{ file: 0, change: { replace: 'v0', correctsId: heldLdl(review) } }],
     holds: (s) => expect(labs(s).some((r) => r.startsWith('ldl') && r.includes(' 3.5 ') && r.includes('corrects ldl'))).toBe(true),
   },
@@ -101,14 +102,14 @@ const CASES: Case[] = [
   { name: 'a letter of a type outside the screening table', cloud: true, person: { age: 55, sex: 'female' }, files: [pdf('letterOther'), pdf('letterC1')], holds: (s) => expect(s.record.screenings).toEqual({ colorectalLastDate: '2025-05-10' }) },
   {
     name: 'another writer\'s edit between plan and commit (another test)', cloud: true, files: [pdf('labA'), pdf('letterA')],
-    midway: async () => { await addMeasurement('weight', 80, '2025-09-02'); },
+    midway: async () => { await addMeasurement('weight', 80, '2025-09-02', getShownErase()); },
     holds: (s) => expect(rows(s.record.measurements).some((m) => m.metricType === 'weight')).toBe(true),
   },
   {
     // U2, ruled 2026-11-22 (US-12 AC6a): the shared Save commits last (health-core upload-save.ts): the other writer's
     // HDL stays, the upload's is skipped and counted, and the report's archive row lists only the rows its commit wrote.
     name: 'another writer\'s edit between plan and commit (the same slot)', cloud: true, files: [pdf('labA'), pdf('letterA')],
-    midway: async () => { await addMeasurement('hdl', 1.6, '2025-09-02'); },
+    midway: async () => { await addMeasurement('hdl', 1.6, '2025-09-02', getShownErase()); },
     holds: (s) => {
       expect(labs(s).filter((r) => r.startsWith('hdl'))).toEqual(['hdl 2025-09-02 1.6 mmol/L active']);
       expect(s.record.documents).toContain(labAArchive(['Ferritin|2025-09-02|90|µg/L|active', 'ldl|2025-09-02|2.8|mmol/L|active']));
@@ -119,7 +120,7 @@ const CASES: Case[] = [
     // The one refusal a commit can produce: another writer's diastolic lands after the review, so the upload's systolic
     // reads the wrong way up beside it.
     name: 'a blood-pressure half from another writer, after the review: the pair reads the wrong way up', cloud: true, files: [pdf('labBP')],
-    beforeValues: async () => { await addMeasurement('diastolic_bp', 130, '2025-09-02'); },
+    beforeValues: async () => { await addMeasurement('diastolic_bp', 130, '2025-09-02', getShownErase()); },
     holds: (s) => expect(events(s).filter((e) => e.startsWith('measurement_refused'))).toEqual(['measurement_refused {"refusal":"out-of-range"} key diastolic_bp', 'measurement_refused {"refusal":"out-of-range"} key systolic_bp']),
   },
   {
@@ -137,7 +138,7 @@ const CASES: Case[] = [
     // cloud too: the shared Save files its original unread under the held row's details and tombstones that row
     // (upload-plan.ts `archiveOnly`). Before, the web read it again and saved the reader's title and date.
     name: 'ruled: a file the record holds without its original is filed unread, under its held details', cloud: true, files: [pdf('letterA')],
-    record: async (store) => { await store.bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Synthetic connector title', documentDate: '2025-01-01', contentMd: 'Synthetic', metadata: {}, sourceFileName: 'letterA.pdf', contentHash: 'hash-read:letterA' }]); },
+    record: async (store) => { await seedDocuments(store, [{ documentType: 'clinic_letter', title: 'Synthetic connector title', documentDate: '2025-01-01', contentMd: 'Synthetic', metadata: {}, sourceFileName: 'letterA.pdf', contentHash: 'hash-read:letterA' }]); },
     holds: (s) => {
       expect(labImport).not.toHaveBeenCalled();
       expect(documents(s).filter((d) => d.deleted).map((d) => d.fileRef)).toEqual(['']);
@@ -148,7 +149,7 @@ const CASES: Case[] = [
   {
     // Ruled: every read letter saves, none unticked (US-13 AC14); its new bytes are a new row.
     name: 'ruled: every letter saves, none unticked', cloud: true, files: [pdf('letterA')],
-    record: async (store) => { await store.bulkSaveDocuments([{ documentType: 'clinic_letter', title: 'Synthetic earlier letter', documentDate: '2025-01-01', contentMd: 'Synthetic', metadata: {}, sourceFileName: 'letterA.pdf', contentHash: 'hash-other-bytes' }]); },
+    record: async (store) => { await seedDocuments(store, [{ documentType: 'clinic_letter', title: 'Synthetic earlier letter', documentDate: '2025-01-01', contentMd: 'Synthetic', metadata: {}, sourceFileName: 'letterA.pdf', contentHash: 'hash-other-bytes' }]); },
     holds: (s) => { expect(s.done).toBe(true); expect(s.record.documents).toContain(letterRow('Synthetic letter A', '2025-08-01')); expect(s.counts).toEqual({ values: 0, documents: 1, skipped: 0, refused: 0 }); },
   },
   // US-12 AC20 (moved from UploadModal.lab-limits.test.tsx): a printed limit saves as a limit; an edit is exact.
@@ -163,7 +164,7 @@ const CASES: Case[] = [
   },
   {
     name: 'US-12 AC20: a held exact 10 and an uploaded "< 10" offer Replace, and Replace writes the limit as its correction', cloud: true, files: [pdf('lpaLimit')],
-    record: (store) => { store.addMeasurement('lpa', 10, '2025-09-02'); },
+    record: (store) => { store.addMeasurement('lpa', 10, '2025-09-02', store.shownErase); },
     choices: (review) => {
       // The held exact value and the printed limit are a conflict: the review holds the row Replace corrects.
       expect(review.held.get('0:v0')).toEqual(expect.any(String));

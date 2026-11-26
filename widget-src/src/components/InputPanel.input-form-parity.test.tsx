@@ -50,7 +50,7 @@ function renderPanel(state: State): HTMLElement {
     screenings: screeningRows(state.screenings), onScreeningChange: vi.fn(),
     supplements: [], onSupplementChange: vi.fn(), onSupplementDelete: vi.fn(),
     scheduleLongitudinalSave: vi.fn(), flushLongitudinalSave: vi.fn(), isSavingLongitudinal: false,
-    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: state.basis, grading: {},
+    hasApiResponse: false, onboarding: { stage: 4 as const, reached: 4 as const, fullForm: true, aboutYouLow: true }, planBasis: { screeningAge: state.basis.age, ...state.basis }, grading: {},
   };
   return render(<InputPanel {...(props as unknown as Parameters<typeof InputPanel>[0])} />).container;
 }
@@ -89,9 +89,11 @@ function expectParity(container: HTMLElement, sections: FormSection[]) {
       if (field.kind !== 'choice') continue;
       const select = card!.querySelector<HTMLSelectElement>(`#${selectId(field.key)}`);
       expect(select, field.key).not.toBeNull();
-      expect([...select!.options].map(o => ({ value: o.value, label: o.textContent, ...(o.disabled ? { disabled: true } : null) })), field.key)
+      // An answer off the list sits under a fixed key on the web, never its own text (US-09 AC7l): it stands for the field's value.
+      const answer = (key: string) => (key === 'recorded-off-list' ? field.value : key);
+      expect([...select!.options].map(o => ({ value: answer(o.value), label: o.textContent, ...(o.disabled ? { disabled: true } : null) })), field.key)
         .toEqual(field.options);
-      expect(select!.value, field.key).toBe(field.value);
+      expect(answer(select!.value), field.key).toBe(field.value);
     }
   }
 }

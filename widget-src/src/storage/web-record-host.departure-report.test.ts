@@ -27,7 +27,7 @@ class StalledCloud extends MemoryAdapter {
 const add = (session: RecordSession, id: string) =>
   session.edit((file) => void file.measurements.push(createMeasurement({
     id, metricType: 'weight', value: 81.5, recordedAt: '2026-10-01', createdAt: '2026-10-01T10:00:00.000Z',
-  })));
+  })), session.shownErase);
 
 beforeEach(() => localStorage.setItem(BACKEND_KEY, 'memory'));
 afterEach(() => { vi.restoreAllMocks(); vi.mocked(Sentry.captureException).mockClear(); localStorage.clear(); });

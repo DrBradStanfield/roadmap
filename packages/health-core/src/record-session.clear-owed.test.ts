@@ -101,7 +101,7 @@ async function otherDevice(cloud: MemoryCloud, id: string) {
 async function cloudAtEpoch(times: number, id = 'cloud-a', device = newDevice(id)) {
   const cloud = new MemoryCloud();
   const other = await otherDevice(cloud, id);
-  other.edit((file) => void file.measurements.push(weight('a', '2026-10-01')));
+  other.edit((file) => void file.measurements.push(weight('a', '2026-10-01')), other.shownErase);
   await other.flush();
   for (let i = 0; i < times; i += 1) {
     later();
@@ -392,7 +392,7 @@ describe('US-11 AC6: a record with no erase kept for it adopts its own erase', (
 
     const account = new MemoryCloud();
     const other = await otherDevice(account, 'cloud-c');
-    other.edit((file) => void file.measurements.push(weight('a', '2026-10-01')));
+    other.edit((file) => void file.measurements.push(weight('a', '2026-10-01')), other.shownErase);
     await other.flush();
     later();
     expect((await other.erase()).success).toBe(true);
@@ -411,7 +411,7 @@ describe('US-11 AC6: a record with no erase kept for it adopts its own erase', (
     const device = newDevice('cloud-a');
     const cloud = new MemoryCloud();
     const other = await otherDevice(cloud, 'cloud-a');
-    other.edit((file) => void file.measurements.push(weight('a', '2026-10-01')));
+    other.edit((file) => void file.measurements.push(weight('a', '2026-10-01')), other.shownErase);
     await other.flush();
     offFileData(device);
     const fake = fakeHost(provider(cloud, 'cloud-a'), device);
@@ -552,7 +552,7 @@ describe('US-11 AC6: a page not owning the stores takes an erase in', () => {
     const local = new MemoryCloud();
     const g = fakeHost(provider(local, 'local'), device);
     const guestTab = await RecordSession.open(g.host);
-    guestTab.edit((file) => void file.measurements.push(weight('a', '2026-10-01')));
+    guestTab.edit((file) => void file.measurements.push(weight('a', '2026-10-01')), guestTab.shownErase);
     await guestTab.flush();
     const kept = device.key;
     expect(kept).toEqual({ lineage: 'local', erase: '[0,null]' });

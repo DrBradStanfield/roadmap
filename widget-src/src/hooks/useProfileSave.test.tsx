@@ -29,18 +29,19 @@ vi.mock('../lib/roadmap-data', () => ({
   },
 }));
 const mirror = vi.hoisted(() => ({ patches: [] as unknown[] }));
-vi.mock('../lib/storage', () => ({ healthWritesAllowed: () => !store.stopped, patchMirror: (p: unknown) => { mirror.patches.push(p); } }));
+vi.mock('../lib/storage', () => ({ healthWritesAllowed: () => !store.stopped }));
+vi.mock('../lib/chat-mirror', () => ({ writeMirror: (p: unknown) => { mirror.patches.push(p); } }));
 
 import { useProfileSave } from './useProfileSave';
 
 function setup(start: Partial<HealthInputs> = {}, units = { pending: (): 'si' | 'conventional' | undefined => undefined, saved: vi.fn() }) {
-  const relay = { saved: vi.fn() };
+  const relay = { settled: vi.fn() };
   const writeRefused = vi.fn();
   const view = renderHook(() => {
     const [inputs, setInputs] = useState<Partial<HealthInputs>>(start);
     const inputsRef = useRef(inputs);
     inputsRef.current = inputs;
-    const save = useProfileSave({ inputs, inputsRef, setInputs, loaded: true, onClean: relay.saved, writeRefused, units });
+    const save = useProfileSave({ inputs, inputsRef, setInputs, loaded: true, onSettled: relay.settled, writeRefused, units });
     return { save, inputs, setInputs };
   });
   return { view, relay, writeRefused, units };
@@ -61,9 +62,9 @@ describe('US-34 AC4: clean releases a held remote change', () => {
     const { view, relay } = setup({ heightCm: 170 });
     act(() => view.result.current.save.markSaved({ heightCm: 170 }));
     expect(view.result.current.save.profileDirty()).toBe(false);
-    await act(async () => { expect(await view.result.current.save.flushProfile()).toBe(true); });
+    await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(true); });
     expect(store.saves).toEqual([]);
-    expect(relay.saved).toHaveBeenCalledTimes(1);
+    expect(relay.settled).toHaveBeenCalledTimes(1);
   });
 
   it('an edit is dirty; its save sends only the profile, against the saved copy, then releases the relay', async () => {
@@ -74,7 +75,7 @@ describe('US-34 AC4: clean releases a held remote change', () => {
     await act(async () => { await view.result.current.save.flushProfile('e1'); });
     expect(store.saves).toEqual([{ current: { heightCm: 172 }, previous: { heightCm: 170 }, erase: 'e1' }]);
     expect(view.result.current.save.profileDirty()).toBe(false);
-    expect(relay.saved).toHaveBeenCalledTimes(1);
+    expect(relay.settled).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -83,10 +84,10 @@ describe('US-34 AC7a: local writes stopped end this tab\'s unit switch', () => {
   it('a switch to US units pending: the flush writes nothing, ends the switch and releases the relay', async () => {
     store.stopped = true;
     const { view, relay, units } = setup({ unitSystem: 'conventional' }, { pending: () => 'conventional', saved: vi.fn() });
-    await act(async () => { expect(await view.result.current.save.flushProfile()).toBe(true); });
+    await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(true); });
     expect(store.saves).toEqual([]);
     expect(units.saved).toHaveBeenCalledWith('conventional');
-    expect(relay.saved).toHaveBeenCalledTimes(1);
+    expect(relay.settled).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -114,17 +115,17 @@ describe('saving: what a save leaves behind', () => {
     act(() => view.result.current.setInputs({ heightCm: 180 }));
     let open!: () => void;
     store.gate = new Promise<void>(r => { open = r; });
-    const pending = view.result.current.save.flushProfile();
+    const pending = view.result.current.save.flushProfile(store.erase);
     act(() => view.result.current.setInputs(p => ({ ...p, heightCm: 181 })));
     await act(async () => { open(); await pending; });
-    expect(relay.saved).not.toHaveBeenCalled();
+    expect(relay.settled).not.toHaveBeenCalled();
     expect(view.result.current.save.profileDirty()).toBe(true);
   });
 
   it('US-15 AC10: the chat copy gets the saved profile', async () => {
     const { view } = setup({});
     act(() => view.result.current.setInputs({ heightCm: 180, sex: 'male' }));
-    await act(async () => { await view.result.current.save.flushProfile(); });
+    await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(mirror.patches).toEqual([{ profile: { heightCm: 180, sex: 'male' } }]);
   });
 
@@ -141,7 +142,7 @@ describe('saving: what a save leaves behind', () => {
     const { view } = setup({ heightCm: 170, sex: 'male' });
     act(() => view.result.current.save.markSaved({ heightCm: 170, sex: 'male' }));
     act(() => view.result.current.setInputs({ sex: 'male' }));
-    await act(async () => { await view.result.current.save.flushProfile(); });
+    await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(view.result.current.save.profileDirty()).toBe(false);
     expect(mirror.patches).toEqual([{ profile: { sex: 'male' } }]);
   });
@@ -156,13 +157,26 @@ describe('saving: what a save leaves behind', () => {
 });
 
 describe('kept: what the store refuses', () => {
-  it('US-02 AC5: an out-of-range value stays unsaved and dirty, and the relay keeps holding', async () => {
+  it('US-02 AC5, US-34 AC8 (H14): an out-of-range value stays unsaved, dirty and in the form; the save still settles, ending a hold', async () => {
     const { view, relay } = setup({});
     act(() => view.result.current.setInputs({ heightCm: 999 }));
     store.next = { ok: true, refused: { heightCm: 999 } };
-    await act(async () => { await view.result.current.save.flushProfile(); });
+    await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(view.result.current.save.profileDirty()).toBe(true);
-    expect(relay.saved).not.toHaveBeenCalled();
+    expect(view.result.current.inputs.heightCm).toBe(999);
+    expect(relay.settled).toHaveBeenCalledTimes(1);
+  });
+
+  it('US-34 AC8: a refused value and an edit made while the save was on its way: the hold waits for that edit\'s save', async () => {
+    const { view, relay } = setup({});
+    act(() => view.result.current.setInputs({ heightCm: 999 }));
+    store.next = { ok: true, refused: { heightCm: 999 } };
+    let open!: () => void;
+    store.gate = new Promise<void>(r => { open = r; });
+    const pending = view.result.current.save.flushProfile(store.erase);
+    act(() => view.result.current.setInputs(p => ({ ...p, heightCm: 998 })));
+    await act(async () => { open(); await pending; });
+    expect(relay.settled).not.toHaveBeenCalled();
   });
 
   it('US-54 AC5b: a refused birth pair goes back to the record\'s and says why until the next birth edit', async () => {
@@ -170,7 +184,7 @@ describe('kept: what the store refuses', () => {
     act(() => view.result.current.save.markSaved({ birthYear: 1980, birthMonth: 3 }));
     act(() => view.result.current.setInputs({ birthYear: 2030, birthMonth: 1 }));
     store.next = { ok: true, birthRefused: { birthYear: 2030, birthMonth: 1 } };
-    await act(async () => { await view.result.current.save.flushProfile(); });
+    await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(view.result.current.inputs).toMatchObject({ birthYear: 1980, birthMonth: 3 });
     expect(view.result.current.save.birthRefused).toEqual(expect.any(String));
     act(() => view.result.current.save.clearBirthRefused());
@@ -181,8 +195,8 @@ describe('kept: what the store refuses', () => {
     const { view, writeRefused, relay } = setup({});
     act(() => view.result.current.setInputs({ sex: 'female' }));
     store.next = { ok: false };
-    await act(async () => { expect(await view.result.current.save.flushProfile()).toBe(false); });
+    await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(false); });
     expect(writeRefused).toHaveBeenCalledTimes(1);
-    expect(relay.saved).not.toHaveBeenCalled();
+    expect(relay.settled).not.toHaveBeenCalled();
   });
 });

@@ -79,3 +79,14 @@ describe('check-symlinks: shared chatbot documents (US-15 AC30)', () => {
     expect(r.err).toContain('docs/writing-style.md is staged as a SYMLINK');
   });
 });
+
+// Lead T-11: CI runs only vitest, so this runs the script on the repo itself. It
+// reads only this repo's git index and its state files, never the claude_business
+// checkout, so CI can check all of it and nothing is skipped.
+describe('check-symlinks: this repo passes (lead T-11)', () => {
+  it('exits 0 on the real index', () => {
+    const r = spawnSync('node', [SCRIPT], { cwd: process.cwd(), encoding: 'utf-8' });
+    expect(r.stderr).toBe('');
+    expect(r.status).toBe(0);
+  });
+});

@@ -60,12 +60,12 @@ const letter = (type: string | null, raw: string | null): UnifiedExtractionResul
 const readFile = (id: string, hash: string, x: UnifiedExtractionResult, document: DocumentFix): UploadFile =>
   ({ id, name: `${id}.pdf`, bytes: 1, hash, pages: { count: 1, truncated: false }, status: { s: 'read', extraction: x, choices: { ...NO_CHOICES, document } } });
 const saving = (platform: 'web' | 'phone', files: UploadFile[]): UploadState => ({ phase: 'saving', platform, run: 1, files, started: NOW, firstRead: NOW, attempt: 1 });
-const offCloud = (): UploadSaveIO<string> => { let n = 0; return { holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `id-${n++}` }; };
+const offCloud = (): UploadSaveIO<string> => { let n = 0; return { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => { throw new Error('no cloud'); }, now: () => NOW, newId: () => `id-${n++}` }; };
 /** A cloud whose write fails for the files named. */
 const cloud = (failing: Set<string>): UploadSaveIO<string> => {
   let n = 0;
   return {
-    holds: () => true, original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf', now: () => NOW, newId: () => `id-${n++}`,
+    stopped: () => false, holds: () => true, original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf', now: () => NOW, newId: () => `id-${n++}`,
     write: async (_ref, _bytes, id) => { if (failing.has(id)) throw new Error('refused'); },
   };
 };

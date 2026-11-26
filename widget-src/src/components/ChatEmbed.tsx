@@ -7,18 +7,17 @@
  */
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
 import { getChatGate } from '../lib/chat-api';
+import { trackProductEvent } from '../lib/server-api';
 import { observeVisibility } from '../lib/observe-visibility';
-import { useChatState, MAX_CHARS, sendsOnEnter, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
+import { useChatState, type ChatContextSource, type ChatEditTarget } from '../hooks/useChatState';
 import { useFollowLatest } from '../hooks/useFollowLatest';
 import { ChatKeyGate } from './ChatKeyGate';
-import { ChatMessageBubble } from './ChatMessageBubble';
-import { SubscriptionChangeCard } from './SubscriptionChangeCard';
-import { ChatPendingReply } from './ChatPendingReply';
-import { ChatLoadLine } from './ChatLoadLine';
+import { ChatMessageList, ChatComposer } from './ChatPanel';
 import { ChatThreadList } from './ChatThreadList';
 import { MUTED_CHAT } from './chat-muted';
 import { ColumnHeader } from './ColumnHeader';
 import { ChatHeaderTitle } from './ChatHeaderTitle';
+import { chatCopy } from './chat-copy';
 
 interface ChatEmbedProps {
   isLoggedIn: boolean;
@@ -33,38 +32,35 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
   // BYOK gate (standalone build only — null on the Shopify widget).
   const [, refreshGate] = useReducer((x: number) => x + 1, 0);
   const gate = getChatGate();
+  const copy = chatCopy();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
-  const { state, actions, refs } = useChatState({
+  const chat = useChatState({
     isLoggedIn, guestInputs,
     onRemoteConversationSelected: closeDrawer,
     onProposeEdit,
   });
-  const { inputRef, messagesContainerRef } = refs;
+  const { state, actions, refs: { messagesContainerRef } } = chat;
 
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Lazy-load conversations: fire only when this panel enters the viewport
   // (loadConversationsIfNeeded is idempotent, so repeat enters are no-ops).
   // Since the embed is placed below the health widget, the widget's API calls
-  // win network priority naturally.
+  // win network priority naturally. A panel shown is counted under its own
+  // name, apart from the pop-up's chat_opened (US-15 AC77; once per tab session).
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     return observeVisibility(root, visible => {
-      if (visible) actions.loadConversationsIfNeeded();
+      if (!visible) return;
+      trackProductEvent('chat_panel_shown');
+      actions.loadConversationsIfNeeded();
     }, { threshold: 0.1 });
   }, [actions.loadConversationsIfNeeded]);
 
   // Follow a new message or any pending-reply change while the reader is at the latest one
-  const { showScrollBtn, onScroll: handleMessagesScroll } = useFollowLatest(messagesContainerRef, state.activeConversationId, state.messages, [state.pending]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (sendsOnEnter(e)) {
-      e.preventDefault();
-      actions.handleSend();
-    }
-  }, [actions.handleSend]);
+  const follow = useFollowLatest(messagesContainerRef, state.activeConversationId, state.messages, [state.pending]);
 
   const handleSelectConversation = useCallback((id: string) => {
     actions.selectConversation(id);
@@ -89,8 +85,8 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
 
   return (
     <div className="chat-embed-root no-print" data-clarity-mask="true" ref={rootRef}>
-      <ColumnHeader title="Ask about your plan" muted={muted} />
-      <div ref={cardRef} className="chat-embed" role="region" aria-label="Health by Dr Brad Chat">
+      <ColumnHeader title={copy.heading} muted={muted} />
+      <div ref={cardRef} className="chat-embed" role="region" aria-label={copy.label}>
 
       {drawerOpen && (
         <div className="chat-embed-drawer-overlay" onClick={() => setDrawerOpen(false)} />
@@ -116,82 +112,21 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit, cardR
             </svg>
             History
           </button>
-          <ChatHeaderTitle subtitle={muted ? MUTED_CHAT.subtitle : "Answers cite your plan & the guidelines above"} />
+          <ChatHeaderTitle title={copy.title} subtitle={muted ? MUTED_CHAT.subtitle : copy.subtitle} />
         </div>
 
         {gate?.needsKey ? (
           <ChatKeyGate gate={gate} onConnected={refreshGate} />
         ) : (
         <>
-        <div
+        <ChatMessageList
+          chat={chat}
           className="chat-messages chat-embed-messages"
-          ref={messagesContainerRef}
-          onScroll={handleMessagesScroll}
-        >
-          {state.messages.length === 0 && !state.replying && state.load === 'none' && !state.wait && (
-            <div className="chat-empty">
-              <p>{muted ? MUTED_CHAT.empty : "Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm."}</p>
-            </div>
-          )}
-          {state.messages.map(msg => (
-            <React.Fragment key={msg.id}>
-              <ChatMessageBubble msg={msg} approach={state.approachById[msg.id]} />
-              {state.cardsById?.[msg.id] && (
-                <SubscriptionChangeCard
-                  entry={state.cardsById[msg.id]}
-                  onConfirm={() => actions.confirmSubscription(msg.id)}
-                  onDismiss={() => actions.dismissSubscription(msg.id)}
-                />
-              )}
-            </React.Fragment>
-          ))}
-          <ChatLoadLine load={state.load} wait={state.wait} onRetry={actions.retryLoad} onNew={handleStartNewChat} />
-          {state.replying && (
-            <ChatPendingReply isLocalSender={state.isLocalSender} pending={state.pending} />
-          )}
-          {state.error && <div className="chat-error" role="alert">{state.error}</div>}
-          {showScrollBtn && (
-            <button
-              className="chat-scroll-btn"
-              onClick={() => { const el = messagesContainerRef.current; if (el) el.scrollTop = el.scrollHeight; }}
-            >↓</button>
-          )}
-        </div>
-
-        <div className="chat-input-bar chat-embed-input-bar">
-          {state.isOffline && <div className="chat-offline">You're offline</div>}
-          <div className="chat-input-shell">
-            <textarea
-              ref={inputRef}
-              className="chat-input"
-              value={state.inputText}
-              onChange={e => actions.handleInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={state.messages.length === 0 ? 'Ask a question' : 'Ask a follow-up…'}
-              disabled={state.isLoading}
-              rows={1}
-            />
-            <button
-              className="chat-send-btn"
-              onClick={actions.handleSend}
-              disabled={state.isLoading || !state.inputText.trim()}
-              aria-label="Send"
-            >↑</button>
-          </div>
-          <div className="chat-input-meta">
-            <span className="chat-doctor-note">Always discuss with your doctor</span>
-            {gate && (
-              <button
-                type="button"
-                className="chat-key-disconnect"
-                onClick={() => { gate.clearKey(); refreshGate(); }}
-              >
-                Disconnect AI key
-              </button>
-            )}
-            <span className="chat-char-count">{state.inputText.length}/{MAX_CHARS}</span>
-          </div>
-        </div>
+          emptyText={muted ? MUTED_CHAT.empty : copy.empty}
+          onNew={handleStartNewChat}
+          follow={follow}
+        />
+        <ChatComposer chat={chat} className="chat-input-bar chat-embed-input-bar" gate={gate} onGateChange={refreshGate} />
         </>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useReducer } from 'react';
+import { useState, useEffect, useId, useRef, useMemo, useReducer } from 'react';
 import { type UnitSystem, fromCanonicalValue, getDisplayLabel, UNIT_DEFS, detectUnitSystem } from '@roadmap/health-core/units';
 import { type ApiMeasurement, METRIC_TO_FIELD, FIELD_METRIC_MAP, METRIC_LABELS } from '@roadmap/health-core/mappings';
 import { medicationAnnotations, type ChartAnnotation } from '@roadmap/health-core/medication-annotations';
@@ -222,14 +222,19 @@ export function TimeSeriesChart({
 
   useEffect(() => showSelectedEvent(labelsRef.current, selectedEventId, chartRef.current), [selectedEventId]);
 
+  // The title can be the person's own test name: shown as text and named from it, never copied into an attribute (US-09 AC7l).
+  const id = useId();
+  const [titleId, chartId, eventsId] = [`${id}title`, `${id}chart`, `${id}events`];
   return (
     <div className="metric-chart-container">
-      {showTitle && <h3>{title}</h3>}
+      {showTitle ? <h3 id={titleId}>{title}</h3> : <span id={titleId} hidden>{title}</span>}
       <div className="metric-chart-canvas-wrap">
-        <canvas ref={canvasRef} {...(!showTitle && { role: 'img', 'aria-label': `${title} chart` })} />
+        <canvas ref={canvasRef} {...(!showTitle && { role: 'img', 'aria-labelledby': `${titleId} ${chartId}` })} />
+        {!showTitle && <span id={chartId} hidden>chart</span>}
       </div>
+      {annotations && annotations.length > 0 && <span id={eventsId} hidden>recorded medication changes</span>}
       {annotations && annotations.length > 0 && (
-        <ol className="metric-chart-events" aria-label={`${title} recorded medication changes`}>
+        <ol className="metric-chart-events" aria-labelledby={`${titleId} ${eventsId}`}>
           {annotations.map(annotation => (
             <li key={annotation.id}>
               <button type="button" aria-pressed={annotation.id === selectedEventId}

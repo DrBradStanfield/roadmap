@@ -13,7 +13,6 @@ import { NO_CHOICES } from '@roadmap/health-core/upload-choices';
 import type { UploadState } from '@roadmap/health-core/upload-flow';
 import { FIX_ERRORS_TEXT, REVIEW_CELL_TEXT, UPLOAD_TEXT } from '@roadmap/health-core/upload-text';
 import { IMPORT_REVIEW_TEXT } from '@roadmap/health-core/import-review';
-import { ENGINE_NAMES } from '../lib/upload-list-names';
 import { openAll } from '../testing/upload-list-kit';
 import { UploadListHost, type ListHost } from '../testing/upload-list-host';
 import { controlAt } from './UploadList';
@@ -144,19 +143,19 @@ describe('what the engine now says (US-13 AC10, AC26; US-14 AC11-13)', () => {
     expect(input('f0:v0').getAttribute('aria-describedby')).toContain(within(row('f0:v0')).getByRole('list').id);
   });
 
-  it('a row whose input takes none draws its number as text and only a tick, named by its label', () => {
+  it('a row whose input takes none draws its number as text and only a tick, named as every row is (US-13 AC28)', () => {
     const host = mount(open([labRead('f0', { values: [core({ metric: 'vitamin_zz', valueSI: 12, displayValue: 12, displayUnit: 'zz/L' })] })]));
     expect(within(row('f0:v0')).queryByRole('textbox')).toBeNull();
     expect(within(row('f0:v0')).getByText(host.see().list.rows[0].shown.text)).toBeTruthy();
-    expect(within(row('f0:v0')).getByRole('checkbox').getAttribute('aria-label')).toBe(host.see().list.rows[0].label);
+    expect(within(row('f0:v0')).getByRole('checkbox', { name: host.see().list.rows[0].name.replace(/, /g, ' , ') })).toBeTruthy();
   });
 
-  it('accessible names stay the labels until Brad\'s yes (one constant)', () => {
-    expect(ENGINE_NAMES).toBe(false);
+  it('names come from the engine\'s words on screen, never an attribute (US-13 AC28: UploadList.names.test.tsx)', () => {
     const host = mount(open([labRead('f0', { reportDate: null, values: [core({ valueSI: 500, displayValue: 500 })] })]));
     const { list } = host.see();
-    expect(input('f0:v0').getAttribute('aria-label')).toBe(list.rows[0].label);
-    expect(controlAt(document, 'f0|test')!.getAttribute('aria-label')).toBe(list.days[0].label);
+    expect(within(row('f0:v0')).getByRole('textbox', { name: `${list.rows[0].label} value from f0.pdf` })).toBe(input('f0:v0'));
+    expect(controlAt(document, 'f0|test')!.getAttribute('aria-label')).toBeNull();
+    expect(screen.getByRole('button', { name: `${list.days[0].label} , f0.pdf` })).toBe(controlAt(document, 'f0|test'));
     expect(within(document.querySelector<HTMLElement>('.upload-list-day')!).getByText(list.days[0].fileName)).toBeTruthy();
     expect(screen.getByText(list.days[0].hint!)).toBeTruthy(); // drawn in the picker, never a day that reads as picked
     expect(document.querySelector<HTMLInputElement>('[data-at="f0|test"] input')!.value).toBe('');

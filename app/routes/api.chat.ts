@@ -11,7 +11,7 @@ import { getAuthenticatedUser, getCustomerId } from '../lib/route-helpers.server
 import { getClientIp } from '../lib/local-first-route.server';
 import { cappedBody } from '../lib/capped-body.server';
 import { takeWebChatTurn } from '../lib/rate-limiter';
-import { ipBucket } from '../lib/app-gate.server';
+import { clientKey } from '../lib/ip-key.server';
 import { authenticate, type AdminApiContext } from '../shopify.server';
 import { createUserClient, type SupabaseClient } from '../lib/supabase-client.server';
 import { logAudit } from '../lib/supabase-identity.server';
@@ -29,8 +29,9 @@ import {
   generateTitle,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
-import { routeQuery, reportRouterFailure, sanitizeForRouter, redactForWidget } from '../lib/chat-router.server';
-import { routerColumns, matchEventText, answerColumns } from '../lib/chat-persist.server';
+import { reportRouterFailure, redactForWidget } from '../lib/chat-router.server';
+import { routerTurn, runRouter } from '../lib/chat-router-stage.server';
+import { matchEventRow, matchEventText, answerColumns } from '../lib/chat-persist.server';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { openArticle, preferMasters } from '../lib/router-view';
 import { reportChatError, validConversationId, readClientHistory, streamTurn, type Turn } from '../lib/chat-turn-io.server';
@@ -249,7 +250,7 @@ function refuseTurn(message: unknown, request: Request, app: boolean): Response 
   }
   // US-15 AC45: a web turn counts against its IP's day and the machine's,
   // whatever session it carries. The app's turn was counted by its gate.
-  if (!app && !takeWebChatTurn(ipBucket(getClientIp(request, 'shopify')))) {
+  if (!app && !takeWebChatTurn(clientKey(request, 'shopify'))) {
     return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
   }
   return null;
@@ -329,9 +330,6 @@ async function chatAction(request: Request, app: boolean) {
     const refused = refuseTurn(message, request, app);
     if (refused) return refused;
 
-    // Sanitize message for router (strips control chars, caps at 2000 chars)
-    const sanitizedCurrent = sanitizeForRouter(message);
-
     // What this turn leaves on our server (chat-retention.ts); every storage branch reads it. The app and
     // the widget send their history in the body (US-15 AC7); the transcript surfaces load theirs here.
     const retention = retentionOf({ app, widget: body.localFirst === true });
@@ -395,10 +393,7 @@ async function chatAction(request: Request, app: boolean) {
     const runTurn = async (write: (line: object) => void): Promise<{ status?: number; reply: object }> => {
       write({ type: 'status', text: 'Reading your question' });
 
-      const firstUserMsg = history.find(m => m.role === 'user')?.content;
-      const recentUserMsgs = history.filter(m => m.role === 'user').slice(-3).map(m => m.content);
-      const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
-      const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
+      const routerInput = routerTurn(message, history);
 
       // Stage 1: classifier + (logged-in) orders fetch dispatch first so their
       // network round-trips overlap the synchronous context assembly below.
@@ -416,7 +411,7 @@ async function chatAction(request: Request, app: boolean) {
       const subscriptionsPromise = subscriptionsOn && !auth.isGuest && auth.customerId
         ? getCachedSubscriptions(request, auth.customerId)
         : Promise.resolve(null);
-      const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
+      const classifierPromise = classifyMessage(routerInput.current, routerInput.first, routerInput.recent, 'CHAT');
       const context = resolveChatContext(body.guestInputs);
       const [orderSummary, classifierResult, subscriptions] = await Promise.all([ordersPromise, classifierPromise, subscriptionsPromise]);
 
@@ -427,7 +422,7 @@ async function chatAction(request: Request, app: boolean) {
       const fireRouter = shouldFireRouter(classifierResult);
       if (fireRouter) write({ type: 'status', text: 'Finding relevant articles' });
       const routerResult = fireRouter
-        ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+        ? await runRouter(routerInput, 'CHAT', (r) => reportRouterFailure(r, 'shopify'))
         : null;
 
       const tAfterContext = Date.now();
@@ -442,8 +437,6 @@ async function chatAction(request: Request, app: boolean) {
       const routed = routerResult
         ? preferMasters(effectiveHandles, index, message, { open: openArticle(index, body.articleHandle) })
         : { handles: [], replaced: [] };
-
-      reportRouterFailure(routerResult);
 
       // Create or validate conversation. A widget conversation exists only in the
       // user's file; the id here is a grouping key for its telemetry rows.
@@ -511,7 +504,7 @@ async function chatAction(request: Request, app: boolean) {
       // replacing a health answer. run_roadmap reads the widget's own record (US-15 AC33).
       const subscriptionTool = subscriptionsOn && !appOrToolPage;
       const completion = await getChatCompletion(systemBlocks, conversationMessages, canApplyEdits, onEvent,
-        subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : undefined);
+        { purpose: 'CHAT', ...(subscriptionTool || canApplyEdits ? { subscriptionTool, guestInputs: body.guestInputs, ...(canApplyProfileEdits ? { profileEdits: true } : {}), ...(appEdits ? { app: true } : {}) } : {}) });
       const tAfterLlm = Date.now();
       // US-15 AC33 usage signal: one counter per run_roadmap round, the numbers of
       // stated values used and rejected and nothing else. Fire-and-forget. It is a
@@ -545,26 +538,22 @@ async function chatAction(request: Request, app: boolean) {
       // row, trimmed to its whitelist in one place (redactForWidget).
       // The row holds question text, which may carry health details: at most its
       // first 500 chars (matchEventText), blanked by the 30-day purge (US-15 AC7/AC26).
-      const matchEvent = {
-        message_id: assistantMessageId,
-        conversation_id: activeConversationId,
-        user_id: auth.userId,
-        message: matchEventText(sanitizedCurrent),
-        router_context: {
-          platform: 'shopify',
-          first: sanitizedFirst ? matchEventText(sanitizedFirst) : null,
-          recent: sanitizedRecent.map(matchEventText),
-          // US-50 AC14 usage signal: index handles only, never user text.
-          ...(routed.replaced.length ? { replaced: routed.replaced } : {}),
-          ...(articles?.reduced.length ? { reduced: articles.reduced } : {}),
-        },
-        matched_handles: effectiveHandles,
-        ...routerColumns(routerResult),
+      // US-50 AC14 usage signal (replaced, reduced): index handles only, never user text.
+      const matchEvent = matchEventRow({
+        messageId: assistantMessageId,
+        conversationId: activeConversationId,
+        userId: auth.userId,
+        question: routerInput.current,
+        platform: 'shopify',
+        context: { first: routerInput.first ? matchEventText(routerInput.first) : null, recent: routerInput.recent.map(matchEventText) },
+        replaced: routed.replaced,
+        reduced: articles?.reduced,
+        routerResult,
         classification: classifierResult.classification,
-        router_skipped: routerSkipped,
-        is_fallback: completion.isFallback,
-        failure_mode: completion.failureMode ?? null,
-      };
+        routerSkipped,
+        isFallback: completion.isFallback,
+        failureMode: completion.failureMode,
+      });
       const logMatchEvent = () => Promise.resolve(auth.client!
         .from('chat_match_events')
         .insert(retention !== 'transcript' ? redactForWidget(matchEvent) : matchEvent)

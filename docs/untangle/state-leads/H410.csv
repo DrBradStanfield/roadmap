@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H410,web sync,"Stopped-write readers read the typed reason 'writes-stopped', not the error class",lead,done,"widget-src/src/lib/error-diagnostics.ts writesStopped: reason writes-stopped and outcome refused; upload-save-store.ts, useErase.ts and upload-shared-save.ts (twice) call it. US-09 AC59; tests widget-src/src/lib/writes-stopped.test.ts and widget-src/src/testing/writes-stopped-cases.ts. (H410)",2139,no

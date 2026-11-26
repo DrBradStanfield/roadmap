@@ -38,7 +38,7 @@ describe('US-11 AC4b: a Turn off in flight during an erase leaves the erased rec
     const { cancelReminders } = await import('./reminders');
     const cloud = new MemoryCloud();
     await data.initRoadmapStore(new MemoryAdapter(cloud));
-    expect(data.setReminderOptIn({ status: 'active', token: 'test-token-good', email: ADDRESS, provider: 'dropbox' })).toBe(true);
+    expect(data.setReminderOptIn({ status: 'active', token: 'test-token-good', email: ADDRESS, provider: 'dropbox' }, data.getShownErase())).toBe(true);
     await data.flushRoadmapStore();
 
     let release!: () => void;
@@ -125,7 +125,7 @@ async function eraseSetUp() {
   const held = await heldCloud(cloud);
   await data.initRoadmapStore(held);
   data.setPreEraseHook(reminders.cancelRemindersForErase); // as standalone/app.tsx registers it
-  expect(data.setReminderOptIn({ status: 'active', token: TOKEN_A, email: ADDRESS, provider: 'google-drive' })).toBe(true);
+  expect(data.setReminderOptIn({ status: 'active', token: TOKEN_A, email: ADDRESS, provider: 'google-drive' }, data.getShownErase())).toBe(true);
   await data.flushRoadmapStore();
 
   const posts: Posted[] = [];
@@ -154,7 +154,7 @@ async function eraseSetUp() {
   /** Another device turns reminders on with its own row, and this page re-reads the cloud. */
   const otherDeviceTurnsOn = async (token = TOKEN_B) => {
     const other = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect(other.setReminderOptIn({ status: 'active', token, email: ADDRESS, provider: 'dropbox' })).toBe(true);
+    expect(other.setReminderOptIn({ status: 'active', token, email: ADDRESS, provider: 'dropbox' }, other.shownErase)).toBe(true);
     await other.flush();
     return page.refreshFromRemote();
   };
@@ -169,7 +169,7 @@ async function eraseSetUp() {
   /** Another device turns reminders on, written straight to the cloud, with no re-read here. */
   const otherDeviceWrites = async () => {
     const other = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect(other.setReminderOptIn({ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' })).toBe(true);
+    expect(other.setReminderOptIn({ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }, other.shownErase)).toBe(true);
     await other.flush();
   };
   const proof = vi.spyOn(GoogleDriveAdapter.prototype, 'getReminderIdToken');
@@ -267,10 +267,10 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     const announcedAt: string[] = [];
     const announcer = () => announcedAt.push(t.data.getEraseIdentity());
     window.addEventListener(REMOTE, announcer);
-    expect(t.data.setLpaUnit('mg/dL')).toBe(true);
+    expect(t.data.setLpaUnit('mg/dL', t.data.getShownErase())).toBe(true);
     const saving = t.data.flushRoadmapStore();
     await until(() => epochs.length === 1);
-    expect(t.data.setLpaUnit('mg/L')).toBe(true); // owes a second pass
+    expect(t.data.setLpaUnit('mg/L', t.data.getShownErase())).toBe(true); // owes a second pass
     t.proof.mockImplementation(async () => {
       await t.otherDeviceWrites();
       releaseFirst();

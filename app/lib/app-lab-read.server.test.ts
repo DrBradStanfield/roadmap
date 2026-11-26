@@ -36,7 +36,8 @@ import * as Sentry from '@sentry/react-router';
 import { ExtractionStopError } from './anthropic.server';
 import { appChallenge, appLabImport, appRegister } from './app-routes.server';
 import { appLabRead } from './app-lab-read.server';
-import { appLimits, ipBucket, type KeyStore, type UseOutcome } from './app-gate.server';
+import { appLimits, type KeyStore, type UseOutcome } from './app-gate.server';
+import { ipBucket } from './ip-key.server';
 import { fakeDevice } from './app-attest.test-helpers';
 import { requestClientData } from './app-attest.server';
 import { machineFiles } from './rate-limiter';
@@ -247,7 +248,7 @@ describe('US-52 AC7e: an accepted read streams NDJSON', () => {
   it('the read is the old route\'s call: one 90 s budget with the 429 retry', async () => {
     await registered();
     await lines(await appLabRead(signed(NEW, body), store, slots));
-    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { timeoutMs: 90_000, retryRateLimit: true, oneDeadline: true, onRetry: expect.any(Function) });
+    expect(mocks.extract).toHaveBeenCalledWith(body.pages, { purpose: 'LABS', timeoutMs: 90_000, retryRateLimit: true, oneDeadline: true, onRetry: expect.any(Function) });
   });
 });
 

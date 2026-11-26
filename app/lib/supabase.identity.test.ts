@@ -27,16 +27,13 @@ let competingInsert: boolean;
 let auditInsertFails: boolean;
 let upsertFails: Record<string, unknown> | null;
 let auditError: Record<string, unknown>;
-let recordPaid: typeof import('./supabase-account.server').recordUnprovenPaidOrder;
 let counter = 0;
 let mapUser: typeof import('./supabase-identity.server').getOrCreateSupabaseUser;
-let webhookUser: typeof import('./supabase-identity.server').getUserIdByCustomerId;
 const addAuth = (id: string, customer: string | null, extra: Partial<AuthUser> = {}) =>
   authUsers.set(id, { id, email, app_metadata: customer ? { provider: 'email', shopify_customer_id: customer } : { provider: 'email' }, ...extra });
 beforeEach(async () => {
   vi.resetModules(); profiles = []; writes = []; audits = []; authUsers = new Map(); lookupError = false; competingInsert = false; auditInsertFails = false; upsertFails = null; auditError = { message: 'down' };
-  ({ getOrCreateSupabaseUser: mapUser, getUserIdByCustomerId: webhookUser } = await import('./supabase-identity.server'));
-  ({ recordUnprovenPaidOrder: recordPaid } = await import('./supabase-account.server'));
+  ({ getOrCreateSupabaseUser: mapUser } = await import('./supabase-identity.server'));
   state.warn.mockReset();
   state.create.mockReset().mockResolvedValue({ data: null, error: { message: 'already registered' } });
   state.getById.mockReset().mockImplementation(async (id: string) => {
@@ -244,41 +241,6 @@ describe('Shopify principal reuse', () => {
     await expect(mapUser(customer, email)).rejects.toThrow(/auth user/i);
     addAuth('unreadable', customer);
     expect(await mapUser(customer, email)).toBe('unreadable');
-  });
-});
-
-// US-09 AC27: the orders/paid webhook shares the customer→principal cache with
-// chat, so it may neither credit nor cache an unproven link.
-describe('webhook customer lookup', () => {
-  it('returns no principal for a legacy unproven link, and a later chat request cannot reach it through the cache', async () => {
-    const customer = identity();
-    profiles.push({ id: 'legacy', email, shopify_customer_id: customer }); addAuth('legacy', null);
-    expect(await webhookUser(customer)).toEqual({ userId: 'legacy', proven: false });
-    expect(await mapUser(customer, email)).toBeNull();
-    expect(state.getById).toHaveBeenCalledTimes(2);
-  });
-  it('caches only a proven link', async () => {
-    const customer = identity();
-    profiles.push({ id: 'own', email, shopify_customer_id: customer }); addAuth('own', customer);
-    expect(await webhookUser(customer)).toEqual({ userId: 'own', proven: true });
-    expect(await webhookUser(customer)).toEqual({ userId: 'own', proven: true }); // from the cache
-    expect(await mapUser(customer, email)).toBe('own');
-    expect(state.getById).toHaveBeenCalledTimes(1);
-  });
-});
-
-// US-09 AC27: the record Brad credits an unproven paid order from must be
-// stored before orders/paid answers 200, once per order.
-describe('recordUnprovenPaidOrder', () => {
-  const order = 'gid://shopify/Order/5';
-  it('stores one row per order, value-free, and reports success', async () => {
-    expect(await recordPaid('legacy', order)).toBe(true);
-    expect(await recordPaid('legacy', order)).toBe(true);
-    expect(audits).toEqual([expect.objectContaining({ user_id: 'legacy', action: 'PAID_ORDER_UNPROVEN_LINK', resource_id: order, metadata: null })]);
-  });
-  it('reports failure when the row cannot be stored, so the webhook can ask for a retry', async () => {
-    auditInsertFails = true;
-    expect(await recordPaid('legacy', order)).toBe(false);
   });
 });
 

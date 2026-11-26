@@ -38,7 +38,7 @@ describe('a Replace whose target leaves the slot while the review is open', () =
     expect(uploadReview(after, moved, NOW).classification.rows).toEqual([]);
     const reTicked = transition(after, { type: 'chose', id: 'f', change: { tick: 'v0', on: true }, now: NOW }).state;
     const saving = transition(reTicked, { type: 'saveStarted' }).state;
-    const out = await uploadSave(saving, moved, NOW, false, { holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW });
+    const out = await uploadSave(saving, moved, NOW, false, { stopped: () => false, holds: () => false, original: () => null, mimeType: () => '', write: async () => {}, now: () => NOW });
     if (!out.ok) throw new Error(out.reason);
     const { file } = out.commit(moved);
     expect(file.labValues.filter((l) => l.metricName === 'ldl' && l.status === 'active').map((l) => [l.recordedAt.slice(0, 10), l.value, l.correctsId ?? null]).sort())

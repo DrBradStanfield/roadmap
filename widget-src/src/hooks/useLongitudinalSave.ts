@@ -14,12 +14,12 @@ import type { UnitSystem } from '@roadmap/health-core/units';
 import { activeRowIndex, routeTasksToSaves, slotOf, type CorrectFn, type Refused, type SaveTask } from '../lib/matrix-save';
 import { addMeasurement, correctValue, getBackendKind, getShownErase, loadAllHistorySync } from '../lib/roadmap-data';
 import { healthWritesAllowed } from '../lib/storage';
-import { trackABConversion, trackProductEvent } from '../lib/server-api';
+import { trackProductEvent } from '../lib/server-api';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 
 /** A correction the store answered; a success is counted (name only). */
-export const countedCorrection = async (id: string, newValue: number, erase?: string) => {
+export const countedCorrection = async (id: string, newValue: number, erase: string) => {
   const status = await correctValue(id, newValue, erase);
   if (status === 'ok') trackProductEvent('correction_made');
   return status;
@@ -30,7 +30,7 @@ export const countedCorrection = async (id: string, newValue: number, erase?: st
  *  corrected by `onCorrect`. The store is synchronous, so every write is staged
  *  before this returns; only the answers wait. The single-topic widgets save here too (US-74 AC4),
  *  `counted` false: they count an added measure once the store has kept it (review C8). */
-export function saveTasksToStore(tasks: SaveTask[], erase: string | undefined, onCorrect: CorrectFn, counted = true): Promise<Refused> {
+export function saveTasksToStore(tasks: SaveTask[], erase: string, onCorrect: CorrectFn, counted = true): Promise<Refused> {
   return routeTasksToSaves(
     tasks,
     loadAllHistorySync(),
@@ -49,19 +49,15 @@ interface LongitudinalSaveDeps {
   unitOverrides: Record<string, UnitSystem>;
   unitSystem: UnitSystem;
   reread: () => Promise<unknown>;
-  flushPendingProfileSave: (erase?: string) => Promise<boolean>;
+  flushPendingProfileSave: (erase: string) => Promise<boolean>;
   /** The unit each first-time weight or waist was typed in (US-03 AC3). */
   typedIn: MutableRefObject<Partial<Record<keyof HealthInputs, { value: unknown; unit: UnitSystem }>>>;
-  /** The record held no measurement as the page loaded: read once (US-01 AC7). */
-  firstSave: boolean;
 }
 
 export function useLongitudinalSave({
   inputs, setInputs, history, unitOverrides, unitSystem, reread,
-  flushPendingProfileSave, typedIn, firstSave,
+  flushPendingProfileSave, typedIn,
 }: LongitudinalSaveDeps) {
-  // The measurement-save conversion is sent once per page load (US-01 AC7).
-  const isFirstSaveRef = useRef(firstSave);
   // How many saves are running: "Saving…" holds until the last one ends (US-03 AC9).
   // A departure's save runs beside a queued one, so a single flag ended early.
   const [savesRunning, setSavesRunning] = useState(0);
@@ -148,12 +144,6 @@ export function useLongitudinalSave({
           });
           // A saved PSA puts its date box back to today, so it never reads "Replaces" the value just saved.
           if (toSave.some(t => t.values.psa !== undefined && !refused.has(slotOf(t.date, 'psa')))) setPsaDate(null);
-        }
-
-        // Track A/B conversion on the first measurement save.
-        if (refused.size === 0) {
-          if (isFirstSaveRef.current) trackABConversion();
-          isFirstSaveRef.current = false;
         }
         return refused;
       } finally {

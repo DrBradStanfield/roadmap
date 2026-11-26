@@ -91,7 +91,7 @@ But if you're still wary of TMAO, there's a simpler question. Does the form of c
 
 ## Does the Form Matter?
 
-Choline comes in several forms. Phosphatidylcholine, the form in food, is only 14% choline by weight, which is why the women in the new trial needed ten large capsules a day. Supplements often use choline salts like choline bitartrate, which pack more choline into a much smaller tablet. And two forms are sold for the brain: citicoline, also called CDP-choline, and alpha-GPC.
+Choline comes in several forms. Phosphatidylcholine, the form in food, is only 14% choline by weight, which is why the women in the new trial needed ten large capsules a day. Supplements often use choline salts like [choline bitartrate](/blogs/articles/choline-benefits-best-forms-dosing-and-side-effects), which pack more choline into a much smaller tablet. And two forms are sold for the brain: citicoline, also called CDP-choline, and alpha-GPC.
 
 - Choline by weight, calculated from molecular weight: phosphatidylcholine about 14%, choline bitartrate about 41%, choline chloride about 75%, citicoline (CDP-choline) about 21%, alpha-GPC about 40%.
 

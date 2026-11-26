@@ -15,7 +15,7 @@ import { UPLOAD_TEXT } from './upload-text';
 import { documentDateLine, saveLabel } from './upload-view';
 
 /**
- * `save`: the Save button's words, "Saving..." while it saves, else the view's label (`uploadView().save.label`).
+ * `save`: the Save button's words, the view's label (`uploadView().save.label`): "Saving..." while it saves.
  * `close`: "Close" when nothing could be saved, as the web's old review said it (ReviewTable.tsx `nothingToSave`: no value
  * offered to save, ticked or cleared, and nothing the plan writes, letters and originals included), else "Cancel", as it
  * says while files are still read (UploadModal.tsx); while saving the same, as the old review's close button showed it then,
@@ -41,7 +41,7 @@ export function uploadListPage(s: UploadState, record: RoadmapFile, now: string,
   const plan = uploadSavePlan(s, record, now, review, cloudConnected, person);
   const offered = review.classification.values.some((v) => isOfferedRef(v.ref) && (v.group === 'sure' || v.group === 'unsure' || v.group === 'waiting'));
   return {
-    save: s.phase === 'saving' ? UPLOAD_TEXT.saving : saveLabel(plan),
+    save: saveLabel(s, plan),
     close: s.phase === 'done' ? UPLOAD_TEXT.done : inFlight(s) || offered || !planIsEmpty(plan) ? UPLOAD_TEXT.cancel : UPLOAD_TEXT.close,
     letters: plan.documents.map(({ fileId, fields, screening: box }) => ({
       fileId, text: fields.contentMd, preview: letterPreview(fields.contentMd),
