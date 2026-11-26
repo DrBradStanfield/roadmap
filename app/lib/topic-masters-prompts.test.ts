@@ -254,6 +254,6 @@ describe('Potassium Fiber Drink on the doctor surfaces (US-45 AC4)', () => {
   it('a YouTube reply naming the drink carries the exact ownership sentence, outside the sentence and word limits', () => {
     // First person on YouTube (US-15 AC79, Brad 2026-11-27); the doctor posture keeps the third person.
     expect(doctor).toContain('say that Brad owns the company that sells it and profits from its sale');
-    expect(youtube).toContain(`- **Potassium Fiber Drink ownership:** when a reply names or discusses the drink, it must include this exact sentence: "I own the company that sells it and profit from its sale." This sentence is exempt from the do-not-copy rule above and does not count toward the sentence or word limits.`);
+    expect(youtube).toContain(`- **Potassium Fiber Drink ownership:** only when the comment names the drink, a reply may discuss it, and then it must include this exact sentence: "I own the company that sells it and profit from its sale." This sentence is exempt from the do-not-copy rule above and does not count toward the sentence or word limits.`);
   });
 });
