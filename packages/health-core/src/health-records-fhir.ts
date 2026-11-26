@@ -49,10 +49,12 @@ export const quantity = z.object({
  */
 const meta = z.object({ versionId: z.string().max(64).optional(), lastUpdated: z.string().max(64).optional() });
 /** A date that is there but cannot be read is kept as '' (AC18): present, so the date chosen
- *  before it is still the one judged, and unreadable, so the result is undated, never re-dated. */
-const date = z.string().max(64).catch('').optional();
+ *  before it is still the one judged, and unreadable, so the result is undated, never re-dated.
+ *  JSON null is absent, not malformed: the next date is used. */
+const absentIfNull = <T extends z.ZodType>(schema: T) => z.preprocess((v) => v ?? undefined, schema.optional());
+const date = absentIfNull(z.string().max(64).catch(''));
 // effective[x] as a period: its start is the draw (the collection began then).
-const period = z.object({ start: z.string().max(64).optional() }).catch({ start: '' }).optional();
+const period = absentIfNull(z.object({ start: date }).catch({ start: '' }));
 
 const observation = z.object({
   resourceType: z.literal('Observation'),

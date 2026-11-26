@@ -70,6 +70,45 @@ describe('US-72 AC18: a result with a bad date is skipped and counted, never dat
     expect(run([rec(ldl('a', { ...glucose, effectiveDateTime: '2026-02-30' }))]).counts).toEqual({ ...NONE, notRead: 1 });
   });
 
+  it('R1: JSON null is absent, not malformed: the next date is used, top-level, contained and on the report', () => {
+    for (const nulls of [{ effectiveDateTime: null }, { effectivePeriod: null }, { effectivePeriod: { start: null } }, { effectivePeriod: { end: '2026-10-21T09:00:00Z' } }]) {
+      const top = run([rec(ldl('a', nulls))]);
+      expect(top.counts, JSON.stringify(nulls)).toEqual({ ...NONE, added: 1 });
+      expect(top.file.labValues[0].recordedAt).toBe('2026-10-22T09:00:00.000Z');
+      const inside = run([panel([ldl('r1', nulls)])]);
+      expect(inside.counts, JSON.stringify(nulls)).toEqual({ ...NONE, added: 1 });
+      expect(inside.file.labValues[0].recordedAt).toBe('2026-10-21T08:00:00.000Z');
+    }
+    // A null release beside a good draw is absent, so it is no bad date.
+    expect(run([rec(ldl('a', { issued: null, effectiveDateTime: '2026-10-20' }))]).counts).toEqual({ ...NONE, added: 1 });
+    // The report's null draw: its release dates the result, as on main.
+    const reportNull = run([panel([ldl('r1', { issued: undefined })], { effectiveDateTime: null, effectivePeriod: null })]);
+    expect(reportNull.counts).toEqual({ ...NONE, added: 1 });
+    expect(reportNull.file.labValues[0].recordedAt).toBe('2026-10-22T09:00:00.000Z');
+  });
+
+  it('R7: an empty-string date is present and unusable: a contained result with effectiveDateTime "" is undated, not on the report\'s day', () => {
+    const { file, counts } = run([panel([ldl('r1', { effectiveDateTime: '' })])]);
+    expect(counts).toEqual({ ...NONE, notRead: 1, undated: 1 });
+    expect(file.labValues).toEqual([]);
+  });
+
+  it('R2: a new version whose date is unusable keeps its result\'s day and corrects it; with no earlier version it is undated', () => {
+    const v1 = rec(ldl('a', { effectiveDateTime: '2026-10-20' }));
+    const v2 = rec(ldl('a', { meta: { versionId: '2' }, status: 'corrected', valueQuantity: { value: 3.4, unit: 'mmol/L' }, effectivePeriod: 'junk' }));
+    const first = run([v1]).file;
+    const { file, counts } = importHealthRecords(first, [v2], { now: NOW });
+    expect(counts).toEqual({ ...NONE, corrected: 1 });
+    expect(file.labValues.map((l) => [l.status, l.value, l.recordedAt])).toEqual([
+      ['entered-in-error', 3.1, '2026-10-20T00:00:00.000Z'], ['active', 3.4, '2026-10-20T00:00:00.000Z']]);
+    const alone = run([v2]);
+    expect(alone.counts).toEqual({ ...NONE, notRead: 1, undated: 1 });
+    expect(alone.file.labValues).toEqual([]);
+    // A withdrawal never needed a date: a junk-dated one still withdraws.
+    const withdrawn = importHealthRecords(first, [rec(ldl('a', { meta: { versionId: '2' }, status: 'entered-in-error', effectivePeriod: 'junk' }))], { now: NOW });
+    expect(withdrawn.counts).toEqual({ ...NONE, withdrawn: 1 });
+  });
+
   it('H35 3 (ruling 2): a top-level Observation with a malformed meta still lands on its own draw', () => {
     for (const meta of ['junk', { lastUpdated: LONG }, { versionId: 7 }]) {
       const { file, counts } = run([rec(ldl('a', { meta, effectiveDateTime: '2026-10-20' }))]);

@@ -217,12 +217,13 @@ interface Reading {
 const slotAt = (reading: Reading, recordedAt: string) => `${labRowSlot({ metricName: reading.metric, core: reading.core })}@${dayOf(recordedAt)}`;
 
 /** The row a result would write, `'undated'` when it has no day it can land on (AC3, AC18),
- *  or null when the app cannot read it otherwise (AC2, AC4). */
-function readingOf(obs: Observation, now: string): Reading | 'undated' | null {
+ *  or null when the app cannot read it otherwise (AC2, AC4). `held`: the day its result already
+ *  holds, which a new version keeps when its own date is unusable (AC18, R2). */
+function readingOf(obs: Observation, now: string, held?: string): Reading | 'undated' | null {
   const q = obs.valueQuantity;
   const unit = unitOf(q);
   const metric = unit ? metricOf(obs, unit) : null;
-  const recordedAt = drawnAt(obs.effectiveDateTime ?? obs.effectivePeriod?.start ?? obs.issued, now);
+  const recordedAt = drawnAt(obs.effectiveDateTime ?? obs.effectivePeriod?.start ?? obs.issued, now) ?? held;
   if (!metric || typeof q?.value !== 'number' || !unit) return null;
   if (!recordedAt) return 'undated';
   // US-12 AC20: a result printed as a limit keeps its comparator; `value` is the bound. FHIR's `ad` is not read.
@@ -351,7 +352,7 @@ export function importHealthRecords(
     }
     if (!LANDS.has(obs.status)) { notRead(); continue; }
 
-    const reading = readingOf(obs, now);
+    const reading = readingOf(obs, now, current === undefined ? undefined : rows[current].recordedAt);
     if (reading === 'undated') { notRead(true); continue; }
     if (!reading) { notRead(); continue; }
 

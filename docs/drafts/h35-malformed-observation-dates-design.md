@@ -87,6 +87,10 @@ Not ruled. Both options stand for the owner.
    ignored, so a good draw beside a junk period still lands. Built by reading a malformed date as `''`.
 7. Q2: the date is judged after the test code, number and unit, so an untracked test with a bad date is not
    undated.
+8. JSON `null` is absent, not malformed (a period with `start: null` or only an `end` too): the next field is
+   used, as before. An empty string is present and unusable.
+9. A new version of a result already in the record keeps that result's day when its own date is unusable (AC3's
+   `issued`-only rule, extended); only a result with no earlier version is skipped as undated.
 
 Open question: skip a malformed result silently (option A; the HealthKit anchor moves on, so it does not come back
 unless the lab amends it), or keep today's fall-back to the issued date (option B)? A third path is to hold A until
