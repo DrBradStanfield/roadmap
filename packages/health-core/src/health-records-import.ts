@@ -50,10 +50,11 @@ import { dayOf, latestDayOnEarth } from './merge';
 import { coreStored, createCoreRow, isActive, isBloodTestKey, labRowSlot } from './blood-tests';
 import { measurementValueFault, newId, sameValue, slotOfRow, stampUpdatedAt, toStoredLab } from './record-edits';
 import { createLabValue, type FileLabValue, type RoadmapFile } from './roadmap-file';
-import { recordResults, type Observation, type quantity } from './health-records-fhir';
+import { recordResults, type Observation, type quantity, type Result } from './health-records-fhir';
 
 export interface ClinicalRecordInput { sourceId: string; resourceType: string; fhirVersion: string; json: string }
-export interface HealthRecordsCounts { added: number; corrected: number; withdrawn: number; alreadyInRecord: number; notRead: number }
+/** `undated` (AC18): of `notRead`, those whose date was malformed, unreal, later than now or absent; left out at 0. */
+export interface HealthRecordsCounts { added: number; corrected: number; withdrawn: number; alreadyInRecord: number; notRead: number; undated?: number }
 
 /**
  * LOINC code → a core blood test (`CORE_BLOOD_UNITS`) or a lab catalogue key. Many
@@ -215,13 +216,15 @@ interface Reading {
 /** A reading's slot on a day: `core:<key>` or `lab:<key>`, as `slotOfRow` spells a row's. */
 const slotAt = (reading: Reading, recordedAt: string) => `${labRowSlot({ metricName: reading.metric, core: reading.core })}@${dayOf(recordedAt)}`;
 
-/** The row a result would write, or null when the app cannot read it (AC2, AC4). */
-function readingOf(obs: Observation, now: string): Reading | null {
+/** The row a result would write, `'undated'` when it has no day it can land on (AC3, AC18),
+ *  or null when the app cannot read it otherwise (AC2, AC4). */
+function readingOf(obs: Observation, now: string): Reading | 'undated' | null {
   const q = obs.valueQuantity;
   const unit = unitOf(q);
   const metric = unit ? metricOf(obs, unit) : null;
   const recordedAt = drawnAt(obs.effectiveDateTime ?? obs.effectivePeriod?.start ?? obs.issued, now);
-  if (!metric || typeof q?.value !== 'number' || !unit || !recordedAt) return null;
+  if (!recordedAt) return 'undated';
+  if (!metric || typeof q?.value !== 'number' || !unit) return null;
   // US-12 AC20: a result printed as a limit keeps its comparator; `value` is the bound. FHIR's `ad` is not read.
   if (q.comparator !== undefined && !isComparator(q.comparator)) return null;
   // A bound in another unit than the result's is not read with the result's factor.
@@ -294,9 +297,15 @@ export function importHealthRecords(
     if (isActive(row)) taken.set(slotOfRow(row), at);
   });
   let changed = false;
+  /** Not read (AC4); a bad date is counted as undated too (AC18), never its value. */
+  const notRead = (undated = false) => {
+    counts.notRead++;
+    if (undated) counts.undated = (counts.undated ?? 0) + 1;
+  };
 
-  for (const { identity, obs } of parsedInOrder(records)) {
-    if (!obs) { counts.notRead++; continue; }
+  for (const result of parsedInOrder(records)) {
+    if (!result.obs) { notRead(result.undated); continue; }
+    const { identity, obs } = result;
     const version = versionOf(obs);
     const externalId = `${identity}#${version}`;
     const withdrawal = obs.status === 'entered-in-error';
@@ -335,16 +344,17 @@ export function importHealthRecords(
 
     // AC7: the lab withdrew it. The active row goes; a marker carries the withdrawal's version.
     if (withdrawal) {
-      if (current === undefined) { counts.notRead++; continue; }
+      if (current === undefined) { notRead(); continue; }
       if (active !== undefined) withdraw(active);
       else counts.alreadyInRecord++;
       mark();
       continue;
     }
-    if (!LANDS.has(obs.status)) { counts.notRead++; continue; }
+    if (!LANDS.has(obs.status)) { notRead(); continue; }
 
     const reading = readingOf(obs, now);
-    if (!reading) { counts.notRead++; continue; }
+    if (reading === 'undated') { notRead(true); continue; }
+    if (!reading) { notRead(); continue; }
 
     let slot = slotAt(reading, reading.recordedAt);
     // AC3: `issued` is this version's release, so a version dated by it alone keeps the
@@ -354,7 +364,7 @@ export function importHealthRecords(
       && slotAt(reading, established.recordedAt) === slotOfRow(established)) slot = slotOfRow(established);
     // A version that moves the result to another test or day is not read: a correction keeps
     // its slot (agent-access rule 2). Judged against the result's row, active or not (AC6).
-    if (established && slotOfRow(established) !== slot) { counts.notRead++; continue; }
+    if (established && slotOfRow(established) !== slot) { notRead(); continue; }
     // AC8: the lab withdrew the result last (its marker carries an entered-in-error version):
     // the lab's newer version reinstates it, the same value included (Brad 2026-11-02).
     const labWithdrew = active === undefined && established !== undefined && isMarkerId(String(established.externalId))
@@ -417,7 +427,7 @@ function correctsRow(rows: readonly Row[], row: Row, ids: ReadonlySet<string>): 
  * of one result in one batch are taken oldest first by `meta.lastUpdated` when
  * both carry it, so the newer one ends up active (`reportResults` for a report).
  */
-function parsedInOrder(records: ClinicalRecordInput[]): Array<{ identity: string; obs: Observation } | { identity: null; obs: null }> {
+function parsedInOrder(records: ClinicalRecordInput[]): Result[] {
   const parsed = records.flatMap(recordResults);
   const groups = new Map<string, number[]>();
   parsed.forEach(({ identity }, i) => {

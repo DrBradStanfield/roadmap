@@ -969,7 +969,16 @@ Apple offers Health Records in the US, UK and Canada; records are FHIR, read-onl
   `healthRecords` edit). `sourceId` is the sample's source bundle id (`com.apple.public.health.clinical.<UUID>`,
   one per institution account; seen on the simulator 2026-11-02): Apple says a FHIR id is
   unique only per type and source. The institution's name stays out of the record. The engine (health-core) reads the JSON and decides what lands, with its counts
-  (`added`, `corrected`, `withdrawn`, `alreadyInRecord`, `notRead`).
+  (`added`, `corrected`, `withdrawn`, `alreadyInRecord`, `notRead`, and the optional `undated`).
+- **A bad date skips the result and says so (US-72 AC18, H35, Brad's rulings 2026-11-27):** a
+  malformed `effectivePeriod` no longer reads as absent (it fell back to `issued` or the report's
+  day); with every other bad, unreal, future or missing date it is skipped and counted in
+  `notRead` and `undated`. `meta` stays lenient. Why: a wrong day in the record is worse than a
+  missing result, and the person should learn one was skipped. Settings' footer says "Some
+  results could not be read." while the run state carries it (`Run.idle`/`.running`'s `undated`,
+  set only by the pass's `labResults` event through `Run.transition`, never a flag beside it).
+  Memory only, by ruling: a restart or an erase disconnect drops it, and a pass that reads no new
+  results keeps it. No rules-version bump and no schema change.
 - **The import is the source of truth (Brad 2026-11-02, US-72 AC3, AC6, AC8, AC9):** the
   day is `effectiveDateTime`, else `effectivePeriod.start`, else `issued`. A result whose
   day holds a typed, uploaded, hand-corrected or Apple Health row with another value, unit

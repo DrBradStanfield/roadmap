@@ -23,6 +23,8 @@ final class AppleHealthRunTests: XCTestCase {
         ("disconnect connected", .disconnect(wasConnected: true)),
         ("disconnect not connected", .disconnect(wasConnected: false)),
         ("connectFailed", .connectFailed("sheet failed")),
+        ("labResults undated", .labResults(undated: true)),
+        ("labResults clean", .labResults(undated: false)),
     ]
 
     private static let table: [(Run, [Row])] = [
@@ -39,6 +41,9 @@ final class AppleHealthRunTests: XCTestCase {
             ("disconnect connected", .unavailable, nil),
             ("disconnect not connected", .unavailable, nil),
             ("connectFailed", .unavailable, nil),
+            // A pass that is not running reports nothing.
+            ("labResults undated", .unavailable, nil),
+            ("labResults clean", .unavailable, nil),
         ]),
         (.disconnected, [
             // Connect, then its refresh: the first pass.
@@ -53,6 +58,9 @@ final class AppleHealthRunTests: XCTestCase {
             ("disconnect connected", .disconnected, nil),
             ("disconnect not connected", .disconnected, nil),
             ("connectFailed", .idle(.failed("sheet failed")), nil),
+            // A pass that is not running reports nothing.
+            ("labResults undated", .disconnected, nil),
+            ("labResults clean", .disconnected, nil),
         ]),
         (.idle(.notYet), [
             ("trigger connected", .running(queued: false), .pass),
@@ -66,6 +74,9 @@ final class AppleHealthRunTests: XCTestCase {
             ("disconnect connected", .disconnected, nil),
             ("disconnect not connected", .idle(.notYet), nil),
             ("connectFailed", .idle(.failed("sheet failed")), nil),
+            // A pass that is not running reports nothing.
+            ("labResults undated", .idle(.notYet), nil),
+            ("labResults clean", .idle(.notYet), nil),
         ]),
         (.idle(.upToDate(earlier)), [
             ("trigger connected", .running(queued: false), .pass),
@@ -79,6 +90,9 @@ final class AppleHealthRunTests: XCTestCase {
             ("disconnect connected", .disconnected, nil),
             ("disconnect not connected", .idle(.upToDate(earlier)), nil),
             ("connectFailed", .idle(.failed("sheet failed")), nil),
+            // A pass that is not running reports nothing.
+            ("labResults undated", .idle(.upToDate(earlier)), nil),
+            ("labResults clean", .idle(.upToDate(earlier)), nil),
         ]),
         (.running(queued: false), [
             // However many ask during a pass, one more runs after it; each waits for it.
@@ -95,6 +109,9 @@ final class AppleHealthRunTests: XCTestCase {
             ("disconnect not connected", .running(queued: false), nil),
             // The running pass owns what Settings shows (D2 (a)).
             ("connectFailed", .running(queued: false), nil),
+            // AC18: a pass that read lab results sets or clears it.
+            ("labResults undated", .running(queued: false, undated: true), nil),
+            ("labResults clean", .running(queued: false), nil),
         ]),
         (.running(queued: true), [
             ("trigger connected", .running(queued: true), .wait),
@@ -111,6 +128,9 @@ final class AppleHealthRunTests: XCTestCase {
             ("disconnect connected", .stopping, nil),
             ("disconnect not connected", .running(queued: true), nil),
             ("connectFailed", .running(queued: true), nil),
+            // AC18: a pass that read lab results sets or clears it.
+            ("labResults undated", .running(queued: true, undated: true), nil),
+            ("labResults clean", .running(queued: true), nil),
         ]),
         (.stopping, [
             // A genuine reconnect during the drain: its pass runs once the old one ends.
@@ -128,6 +148,43 @@ final class AppleHealthRunTests: XCTestCase {
             ("disconnect not connected", .stopping, nil),
             // A failed reconnect during the drain: the pass still runs, so the claim stays (review R1).
             ("connectFailed", .stopping, nil),
+            // A pass that is not running reports nothing.
+            ("labResults undated", .stopping, nil),
+            ("labResults clean", .stopping, nil),
+        ]),
+        // US-72 AC18: a lab result skipped for a bad date, carried until a reading pass reports none.
+        (.idle(.upToDate(earlier), undated: true), [
+            ("trigger connected", .running(queued: false, undated: true), .pass),
+            // Disconnected: the sentence goes with the connection.
+            ("trigger not connected", .disconnected, nil),
+            ("passEnded up to date", .idle(.upToDate(earlier), undated: true), nil),
+            ("passEnded not allowed", .idle(.upToDate(earlier), undated: true), nil),
+            ("passEnded moved", .idle(.upToDate(earlier), undated: true), nil),
+            ("passEnded locked", .idle(.upToDate(earlier), undated: true), nil),
+            ("passEnded failed", .idle(.upToDate(earlier), undated: true), nil),
+            ("gateClosed", .idle(.upToDate(earlier), undated: true), nil),
+            ("disconnect connected", .disconnected, nil),
+            ("disconnect not connected", .idle(.upToDate(earlier), undated: true), nil),
+            ("connectFailed", .idle(.failed("sheet failed"), undated: true), nil),
+            ("labResults undated", .idle(.upToDate(earlier), undated: true), nil),
+            ("labResults clean", .idle(.upToDate(earlier), undated: true), nil),
+        ]),
+        (.running(queued: false, undated: true), [
+            ("trigger connected", .running(queued: true, undated: true), .wait),
+            ("trigger not connected", .running(queued: true, undated: true), .wait),
+            // A pass that read no lab results keeps it, however it ended.
+            ("passEnded up to date", .idle(.upToDate(day), undated: true), .release),
+            ("passEnded not allowed", .idle(.notAllowed, undated: true), .release),
+            ("passEnded moved", .running(queued: false, undated: true), .pass),
+            ("passEnded locked", .idle(.waitingForUnlock, undated: true), .release),
+            ("passEnded failed", .idle(.failed("refused"), undated: true), .release),
+            ("gateClosed", .disconnected, .release),
+            ("disconnect connected", .stopping, nil),
+            ("disconnect not connected", .running(queued: false, undated: true), nil),
+            ("connectFailed", .running(queued: false, undated: true), nil),
+            ("labResults undated", .running(queued: false, undated: true), nil),
+            // Cleared only by a pass that read lab results and skipped none.
+            ("labResults clean", .running(queued: false), nil),
         ]),
     ]
 
@@ -142,7 +199,7 @@ final class AppleHealthRunTests: XCTestCase {
                 rows += 1
             }
         }
-        XCTAssertEqual(rows, 77)
+        XCTAssertEqual(rows, 117)
     }
 
     /// Settings reads the seven statuses it always read (`AppleHealthSection`).
@@ -161,5 +218,24 @@ final class AppleHealthRunTests: XCTestCase {
             (.idle(.failed("refused")), .failed("refused")),
         ]
         for (run, status) in shown { XCTAssertEqual(run.status, status, "\(run)") }
+    }
+
+    /// US-72 AC18: "Some results could not be read." is set by a pass whose lab results had a bad
+    /// date, kept by a pass that read none, and cleared by a pass that read some and skipped none.
+    func testTheUndatedSentenceIsSetKeptAndCleared_US72_AC18() {
+        func pass(from run: Run, labs: Bool?) -> Run {
+            var next = Run.transition(run, .trigger(connected: true)).0
+            if let labs { next = Run.transition(next, .labResults(undated: labs)).0 }
+            return Run.transition(next, .passEnded(.done(.upToDate(Self.day)))).0
+        }
+        let set = pass(from: .idle(.notYet), labs: true)
+        XCTAssertEqual(set, .idle(.upToDate(Self.day), undated: true))
+        XCTAssertTrue(set.undated)
+        XCTAssertEqual(set.status, .upToDate(Self.day), "the status line is unchanged")
+        XCTAssertTrue(pass(from: set, labs: nil).undated, "a pass that read no lab results keeps it")
+        XCTAssertTrue(Run.transition(set, .trigger(connected: true)).0.undated, "shown while the next pass runs")
+        XCTAssertFalse(pass(from: set, labs: false).undated, "a clean reading pass clears it")
+        XCTAssertFalse(Run.transition(set, .disconnect(wasConnected: true)).0.undated, "an erase disconnect drops it")
+        XCTAssertEqual(AppleHealthSection.undated, "Some results could not be read.")
     }
 }

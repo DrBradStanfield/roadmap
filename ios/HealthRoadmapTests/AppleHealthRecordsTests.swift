@@ -48,11 +48,12 @@ final class AppleHealthRecordsTests: XCTestCase {
     }
 
     /// An R4 HbA1c result as a provider sends it (LOINC 4548-4, NGSP %), drawn 2026-10-01.
-    private static func hba1c(id: String = "obs-1", version: String = "1", status: String = "final", value: Double = 5.6) -> HealthRecord {
+    private static func hba1c(id: String = "obs-1", version: String = "1", status: String = "final", value: Double = 5.6,
+                              drawn: String = "2026-10-01T09:00:00Z") -> HealthRecord {
         let json = """
         {"resourceType":"Observation","id":"\(id)","meta":{"versionId":"\(version)"},"status":"\(status)",\
         "code":{"coding":[{"system":"http://loinc.org","code":"4548-4","display":"Hemoglobin A1c"}]},\
-        "effectiveDateTime":"2026-10-01T09:00:00Z",\
+        "effectiveDateTime":"\(drawn)",\
         "valueQuantity":{"value":\(value),"unit":"%","system":"http://unitsofmeasure.org","code":"%"}}
         """
         return HealthRecord(sourceId: "com.apple.health.clinical.test|Test Hospital", resourceType: "Observation", fhirVersion: "4.0.1", json: json)
@@ -378,9 +379,12 @@ final class AppleHealthRecordsTests: XCTestCase {
     func testTheEnginesCountsDecode_US72_AC13() throws {
         let json = #"{"ok":true,"record":"{}","healthRecords":{"added":1,"corrected":0,"withdrawn":2,"alreadyInRecord":3,"notRead":4}}"#
         let outcome = try JSONDecoder().decode(EditOutcome.self, from: Data(json.utf8))
-        XCTAssertEqual(outcome.healthRecords, HealthRecordCounts(added: 1, corrected: 0, withdrawn: 2, alreadyInRecord: 3, notRead: 4))
+        // An engine before AC18 sends no `undated`: it still decodes.
+        XCTAssertEqual(outcome.healthRecords, HealthRecordCounts(added: 1, corrected: 0, withdrawn: 2, alreadyInRecord: 3, notRead: 4, undated: nil))
         XCTAssertTrue(outcome.healthRecords?.landed == true)
-        XCTAssertFalse(HealthRecordCounts(added: 0, corrected: 0, withdrawn: 1, alreadyInRecord: 5, notRead: 2).landed, "a withdrawal lands no row")
+        XCTAssertFalse(HealthRecordCounts(added: 0, corrected: 0, withdrawn: 1, alreadyInRecord: 5, notRead: 2, undated: nil).landed, "a withdrawal lands no row")
+        let undated = #"{"ok":true,"healthRecords":{"added":0,"corrected":0,"withdrawn":0,"alreadyInRecord":0,"notRead":2,"undated":1}}"#
+        XCTAssertEqual(try JSONDecoder().decode(EditOutcome.self, from: Data(undated.utf8)).healthRecords?.undated, 1, "AC18")
         XCTAssertNil(try JSONDecoder().decode(EditOutcome.self, from: Data(#"{"ok":true,"record":"{}"}"#.utf8)).healthRecords)
     }
 
@@ -497,6 +501,28 @@ final class AppleHealthRecordsTests: XCTestCase {
         XCTAssertEqual(result, .saved())
         XCTAssertEqual(try rows(store).count, 1)
         XCTAssertEqual(try rows(store, source: "manual").count, 1, "the typed weight")
+    }
+
+    /// AC18 through the engine: a result whose date is unreal lands nothing, and Settings says
+    /// "Some results could not be read." A pass with no new results keeps it; a pass whose
+    /// results all had a readable date clears it. The status line stays "Up to date".
+    func testAResultWithABadDateIsSkippedAndSaidUntilACleanPass_US72_AC18() async throws {
+        let health = FakeHealthStore()
+        health.supportsHealthRecords = true
+        health.pendingRecords = [Self.hba1c(drawn: "2026-02-30")]
+        let (store, sync, _) = try parts(health)
+        await sync.connect()
+        XCTAssertTrue(try rows(store).isEmpty, "never dated by a fall-back")
+        XCTAssertTrue(sync.run.undated)
+        guard case .upToDate = sync.status else { return XCTFail("status \(sync.status)") }
+
+        await sync.refresh()
+        XCTAssertTrue(sync.run.undated, "a pass that read no new results keeps it")
+
+        health.pendingRecords = [Self.hba1c(id: "obs-2")]
+        await sync.refresh()
+        XCTAssertEqual(try rows(store).count, 1)
+        XCTAssertFalse(sync.run.undated, "a pass that read results, none undated, clears it")
     }
 
     /// Lab results alone count as access: the section never says Health isn't connected.

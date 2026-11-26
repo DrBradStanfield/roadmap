@@ -68,6 +68,21 @@ Each cites US-72 AC3, H35.
 
 Not ruled. Both options stand for the owner.
 
+## Owner rulings (2026-11-27): option A for dates, with a line (US-72 AC18)
+
+1. Every malformed date skips the result: the malformed `effectivePeriod` (its `.catch(undefined)` dropped)
+   and the cases already skipped because `drawnAt` returns null (a malformed `effectiveDateTime`, `issued` or
+   period start, an unreal or future day). All count as `undated`.
+2. `meta` stays lenient everywhere. A malformed `meta` never skips a result (so test 3 above now pins that it
+   lands). Out of scope.
+3. A new optional count `undated` in `HealthRecordCounts`, also counted in `notRead` as before. The engine
+   tells a bad date from other reasons without logging any value.
+4. The words: "Some results could not be read." in Settings › Apple Health's footer, drawn from the sync's run
+   state. In memory only: set when a pass reports `undated` above 0, kept until a later pass that reads lab
+   results reports 0, or the app restarts. No change to `HealthSyncMemory.swift` or `DataEraser*`, no rules
+   version bump, no record schema change.
+5. Not clinical: no three-file sync. No health value, date or test name in logs, telemetry or analytics.
+
 Open question: skip a malformed result silently (option A; the HealthKit anchor moves on, so it does not come back
 unless the lab amends it), or keep today's fall-back to the issued date (option B)? A third path is to hold A until
 a "some results could not be read" line is approved for the iPhone's Apple Health section.

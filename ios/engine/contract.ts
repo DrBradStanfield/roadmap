@@ -139,8 +139,9 @@ export const EDIT = z.discriminatedUnion('kind', [
 
 // --- Answers the app decodes (typed; every other door's answer is still opaque) -------------
 
-/** What a Health Records batch did (US-72), counts only. */
-const healthRecordCounts = z.object({ added: z.int(), corrected: z.int(), withdrawn: z.int(), alreadyInRecord: z.int(), notRead: z.int() })
+/** What a Health Records batch did (US-72), counts only. `undated` (AC18): of `notRead`, those
+ *  with a bad date; optional, so an engine before it still decodes. */
+const healthRecordCounts = z.object({ added: z.int(), corrected: z.int(), withdrawn: z.int(), alreadyInRecord: z.int(), notRead: z.int(), undated: z.int().optional() })
   .meta({ id: 'HealthRecordCounts' });
 
 /** applyEditJson's and cloudEdit's answer: the new record, or why it refused. `reason`: the engine's

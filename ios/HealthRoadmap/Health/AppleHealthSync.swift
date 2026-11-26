@@ -384,8 +384,10 @@ final class AppleHealthSync {
         let batch = try await client.labResults(after: anchor)
         try still(pass)
         if anchor == nil, batch.records.isEmpty { return }
-        if !batch.records.isEmpty, try await save(.healthRecords(batch.records), on: pass)?.landed == true {
-            analytics?.event(.healthRecordsImported)
+        if !batch.records.isEmpty, let counts = try await save(.healthRecords(batch.records), on: pass) {
+            if counts.landed { analytics?.event(.healthRecordsImported) }
+            // AC18: this pass read lab results, so it says whether one had a bad date (counts only).
+            send(.labResults(undated: (counts.undated ?? 0) > 0))
         }
         try still(pass)
         memory.labResultsAnchor = batch.anchor
