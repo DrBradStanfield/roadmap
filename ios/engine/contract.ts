@@ -383,6 +383,12 @@ export const DOORS = {
     args: [['text', text]],
     returns: "US-73 AC8: the core and catalogue blood tests a typed name finds, best first, as JSON [{name, key, kind (\"core\" or \"catalogue\"), units (the stored unit first)}] (health-core labSearch); [] for blank text. An engine before it has no such door: the app reads that as no search (optionalCall answers nil), never a crash.",
   },
+  bpSysAdvance: {
+    kind: 'sync',
+    optionalDoor: true,
+    args: [['systolic', text], ['diastolic', text]],
+    returns: "US-02 AC6, AC12: one bare word, never JSON (health-core bpSysAdvance): \"advance\" (move the focus to the diastolic at once), \"defer\" (move it after the pause, if the systolic still has it) or \"stay\", for the systolic and diastolic as typed; \"stay\" whenever the diastolic holds text. An engine before it has no such door: the app reads that as no move (optionalCall answers nil), as before, never a crash.",
+  },
   documentOriginal: {
     kind: 'promise',
     optionalDoor: true,

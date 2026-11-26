@@ -10,6 +10,7 @@ import { planSections, topicSections, type PlanSection, type TopicLayout } from 
 import { statTiles, type StatTile } from '../../packages/health-core/src/stat-tiles';
 import { cmToFeetInches, formatDisplayValue, fromCanonicalValue, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
 import { labSearch } from '../../packages/health-core/src/lab-extraction';
+import { bpSysAdvance as sysAdvance } from '../../packages/health-core/src/bp-advance';
 import { uploadFileName } from '../../packages/health-core/src/upload-flow';
 import { deviceWrites } from '../../packages/health-core/src/device-export';
 import { usProductSections, type UsPlanSection } from '../../packages/health-core/src/us-products';
@@ -214,6 +215,14 @@ export function historyJson(recordJson: string, metric: string, nowIso: string, 
 export function labSearchJson(text: string): string {
   checkArgs('labSearchJson', arguments);
   return JSON.stringify(labSearch(text));
+}
+
+/** Whether the typed systolic moves the focus to the diastolic, as one bare word (health-core
+ *  bpSysAdvance, US-02 AC6, AC12): "advance" at once, "defer" after the pause, or "stay". The
+ *  blood pressure sheet asks it for each systolic typed. An optional door, like labSearchJson. */
+export function bpSysAdvance(systolic: string, diastolic: string): string {
+  checkArgs('bpSysAdvance', arguments);
+  return sysAdvance(systolic, diastolic);
 }
 
 /** The upload's verdicts for one pick on the phone, as JSON (health-core upload-rules, US-52 AC7):

@@ -135,3 +135,7 @@ which waits for Brad's look.
 - **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR 2188, held).
   H127's other web checks (transport silence, refused Drive grant, busy write, corrupt device copy) need a typed
   field that does not exist yet: a design first. The Drive grant check sits in files held PR 2099 edits.
+- **R30** iPhone half built (US-02 AC12, lead H73; draft PR, held): the rule moved to health-core `bp-advance.ts`,
+  the sheet asks it through the optional door `bpSysAdvance` and holds its move as one `SystolicAdvance` state.
+  Swift tests written, not run. Web half left: `ValuePage.tsx` and `useBpPair.ts` still check the diastolic
+  themselves and could pass it to `bpSysAdvance` instead; `ValuePage.tsx` waits on held PR 2146.

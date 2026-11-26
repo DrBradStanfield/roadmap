@@ -5,7 +5,8 @@ import SwiftUI
 /// A day that already holds one asks first; replacing it corrects the half that
 /// changed, the old row kept as entered in error. A replace names the rows the
 /// user saw, so one another device moved meanwhile is refused (Codex R1). The web twin is the BP cell of
-/// StartingInfoVitals.tsx, which commits the pair together.
+/// StartingInfoVitals.tsx, which commits the pair together. A typed systolic moves the focus to
+/// the diastolic by health-core's rule, as the web's boxes do (`SystolicAdvance`, US-02 AC12).
 struct BloodPressureSheet: View {
     let store: RecordStore
     /// Correcting a day's reading: the day is fixed and Save replaces it.
@@ -23,6 +24,8 @@ struct BloodPressureSheet: View {
     /// The save (US-25 AC21e): held while it lands and while the day's rows are read; asking
     /// holds the day's active rows the "replace it?" prompt is about.
     @State private var state: SheetSave.State<[String]> = .editing(message: nil)
+    /// The systolic's move to the diastolic (US-02 AC6, AC12).
+    @State private var advance: SystolicAdvance = .idle
     @FocusState private var focus: Field?
 
     var body: some View {
@@ -61,6 +64,8 @@ struct BloodPressureSheet: View {
                 Text("The old value stays in your record, marked as entered in error.")
             }
             .onAppear { focus = .systolic }
+            .onChange(of: systolic) { step(.typed(systolic: systolic, diastolic: diastolic)) }
+            .task(id: advance) { await run(advance) }
         }
         .interactiveDismissDisabled(state.busy)
         .pinsRecord()
@@ -85,6 +90,26 @@ struct BloodPressureSheet: View {
     private var pair: (systolic: Double, diastolic: Double)? {
         guard let s = TypedNumber.read(systolic), let d = TypedNumber.read(diastolic) else { return nil }
         return (s, d)
+    }
+
+    private func step(_ event: SystolicAdvance.Event) {
+        let next = SystolicAdvance.transition(advance, event)
+        advance = next.state
+        if next.moves { focus = .diastolic }
+    }
+
+    /// What the advance state asks for: the engine's word, or the pause. A newer state cancels it;
+    /// a cancelled sleep returns at once, so the check keeps a retyped "65" from ending its new pause early.
+    private func run(_ state: SystolicAdvance) async {
+        switch state {
+        case .idle: return
+        case .asking(let s, let d):
+            let word = try? await store.engine.bpSysAdvance(systolic: s, diastolic: d)
+            if !Task.isCancelled { step(.judged(systolic: s, diastolic: d, word: word)) }
+        case .pausing(let s):
+            try? await Task.sleep(for: SystolicAdvance.pause)
+            if !Task.isCancelled { step(.pauseEnded(systolic: s, focused: focus == .systolic)) }
+        }
     }
 
     /// A save closes the sheet.
