@@ -4048,11 +4048,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
             <div class="mh-row-suggestion suggestion-attention">
               <div class="mh-row-suggestion-line">
                 <span class="mh-row-suggestion-text">
-                <span id=":r2a8:about" hidden="">
+                <span id=":id0:about" hidden="">
                   "About:"
-                <span id=":r2a8:title" hidden="">
+                <span id=":id0:title" hidden="">
                   "screening-breast-due"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r2a8:" aria-labelledby=":r2a8:about :r2a8:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id0:" aria-labelledby=":id0:about :id0:title">
                   <span aria-hidden="true">
                     "i"
         <div id="mh-card-5" tabindex="-1" class="mh-card">
@@ -4550,31 +4550,31 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
           <div data-key="statin">
             <div class="mh-row-suggestion suggestion-attention">
               <div class="mh-row-suggestion-line">
-                <span id=":r27a:title" class="mh-row-suggestion-text">
+                <span id=":id0:title" class="mh-row-suggestion-text">
                   "med-statin"
-                <span id=":r27a:about" hidden="">
+                <span id=":id0:about" hidden="">
                   "About:"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r27a:" aria-labelledby=":r27a:about :r27a:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id0:" aria-labelledby=":id0:about :id0:title">
                   <span aria-hidden="true">
                     "i"
             <div class="mh-row-suggestion suggestion-info">
               <div class="mh-row-suggestion-line">
-                <span id=":r27b:title" class="mh-row-suggestion-text">
+                <span id=":id1:title" class="mh-row-suggestion-text">
                   "med-statin-dose"
-                <span id=":r27b:about" hidden="">
+                <span id=":id1:about" hidden="">
                   "About:"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r27b:" aria-labelledby=":r27b:about :r27b:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id1:" aria-labelledby=":id1:about :id1:title">
                   <span aria-hidden="true">
                     "i"
           <div data-key="ezetimibe">
           <div data-key="pcsk9i">
             <div class="mh-row-suggestion suggestion-urgent">
               <div class="mh-row-suggestion-line">
-                <span id=":r27c:title" class="mh-row-suggestion-text">
+                <span id=":id2:title" class="mh-row-suggestion-text">
                   "med-pcsk9i"
-                <span id=":r27c:about" hidden="">
+                <span id=":id2:about" hidden="">
                   "About:"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r27c:" aria-labelledby=":r27c:about :r27c:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id2:" aria-labelledby=":id2:about :id2:title">
                   <span aria-hidden="true">
                     "i"
       <section class="mh-topic" data-topic="screening" aria-labelledby="mh-topic-screening">
@@ -4601,11 +4601,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
             <div class="mh-row-suggestion suggestion-info">
               <div class="mh-row-suggestion-line">
                 <span class="mh-row-suggestion-text">
-                <span id=":r27d:about" hidden="">
+                <span id=":id3:about" hidden="">
                   "About:"
-                <span id=":r27d:title" hidden="">
+                <span id=":id3:title" hidden="">
                   "screening-colorectal-due"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r27d:" aria-labelledby=":r27d:about :r27d:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id3:" aria-labelledby=":id3:about :id3:title">
                   <span aria-hidden="true">
                     "i"
           <div data-group="breast" data-note="true">
@@ -5022,11 +5022,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
             <div class="mh-row-suggestion suggestion-attention">
               <div class="mh-row-suggestion-line">
                 <span class="mh-row-suggestion-text">
-                <span id=":r283:about" hidden="">
+                <span id=":id0:about" hidden="">
                   "About:"
-                <span id=":r283:title" hidden="">
+                <span id=":id0:title" hidden="">
                   "screening-breast-due"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r283:" aria-labelledby=":r283:about :r283:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id0:" aria-labelledby=":id0:about :id0:title">
                   <span aria-hidden="true">
                     "i"
         <div id="mh-card-5" tabindex="-1" class="mh-card">
@@ -5307,11 +5307,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
           <div data-key="glp1">
             <div class="mh-row-suggestion suggestion-attention">
               <div class="mh-row-suggestion-line">
-                <span id=":r268:title" class="mh-row-suggestion-text">
+                <span id=":id0:title" class="mh-row-suggestion-text">
                   "weight-glp1"
-                <span id=":r268:about" hidden="">
+                <span id=":id0:about" hidden="">
                   "About:"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r268:" aria-labelledby=":r268:about :r268:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id0:" aria-labelledby=":id0:about :id0:title">
                   <span aria-hidden="true">
                     "i"
           <div data-key="metformin">
@@ -6348,11 +6348,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
             <div class="mh-row-suggestion suggestion-attention">
               <div class="mh-row-suggestion-line">
                 <span class="mh-row-suggestion-text">
-                <span id=":r2cr:about" hidden="">
+                <span id=":id0:about" hidden="">
                   "About:"
-                <span id=":r2cr:title" hidden="">
+                <span id=":id0:title" hidden="">
                   "screening-breast-due"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r2cr:" aria-labelledby=":r2cr:about :r2cr:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id0:" aria-labelledby=":id0:about :id0:title">
                   <span aria-hidden="true">
                     "i"
         <div data-q="bone-density">
@@ -6647,11 +6647,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
           <div data-key="glp1">
             <div class="mh-row-suggestion suggestion-info">
               <div class="mh-row-suggestion-line">
-                <span id=":r28g:title" class="mh-row-suggestion-text">
+                <span id=":id0:title" class="mh-row-suggestion-text">
                   "weight-glp1"
-                <span id=":r28g:about" hidden="">
+                <span id=":id0:about" hidden="">
                   "About:"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r28g:" aria-labelledby=":r28g:about :r28g:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id0:" aria-labelledby=":id0:about :id0:title">
                   <span aria-hidden="true">
                     "i"
           <div data-key="glp1_dose">
@@ -8012,11 +8012,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2ai" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid0" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#5856D6" stop-opacity="0.125">
                       <stop offset="1" stop-color="#5856D6" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,7.5 L54.0,10.5 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2ai)">
+                    <path d="M2.0,7.5 L54.0,10.5 L54.0,18 L2.0,18 Z" fill="url(#md-fillid0)">
                     <path d="M2.0,7.5 L54.0,10.5" fill="none" stroke="#5856D6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="10.48936170212766" r="2" fill="#5856D6">
                 <span class="md-row-reading">
@@ -8041,11 +8041,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2aj" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid1" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#AF52DE" stop-opacity="0.125">
                       <stop offset="1" stop-color="#AF52DE" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,7.3 L54.0,10.7 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2aj)">
+                    <path d="M2.0,7.3 L54.0,10.7 L54.0,18 L2.0,18 Z" fill="url(#md-fillid1)">
                     <path d="M2.0,7.3 L54.0,10.7" fill="none" stroke="#AF52DE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="10.707317073170735" r="2" fill="#AF52DE">
                 <span class="md-row-reading">
@@ -8071,11 +8071,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2ak" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid2" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#D07A00" stop-opacity="0.125">
                       <stop offset="1" stop-color="#D07A00" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2ak)">
+                    <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid2)">
                     <path d="M2.0,5.4 L54.0,12.6" fill="none" stroke="#D07A00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="12.589743589743584" r="2" fill="#D07A00">
                 <span class="md-row-reading">
@@ -8101,11 +8101,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
           <div data-key="glp1">
             <div class="mh-row-suggestion suggestion-attention">
               <div class="mh-row-suggestion-line">
-                <span id=":r2al:title" class="mh-row-suggestion-text">
+                <span id=":id3:title" class="mh-row-suggestion-text">
                   "weight-glp1"
-                <span id=":r2al:about" hidden="">
+                <span id=":id3:about" hidden="">
                   "About:"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r2al:" aria-labelledby=":r2al:about :r2al:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id3:" aria-labelledby=":id3:about :id3:title">
                   <span aria-hidden="true">
                     "i"
           <div data-key="metformin">
@@ -8146,11 +8146,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2am" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid4" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#FF3B30" stop-opacity="0.125">
                       <stop offset="1" stop-color="#FF3B30" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,5.8 L54.0,12.2 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2am)">
+                    <path d="M2.0,5.8 L54.0,12.2 L54.0,18 L2.0,18 Z" fill="url(#md-fillid4)">
                     <path d="M2.0,5.8 L54.0,12.2" fill="none" stroke="#FF3B30" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="12.181818181818183" r="2" fill="#FF3B30">
                 <span class="md-row-reading">
@@ -8176,11 +8176,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2an" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid5" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#A2845E" stop-opacity="0.125">
                       <stop offset="1" stop-color="#A2845E" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2an)">
+                    <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid5)">
                     <path d="M2.0,7.4 L54.0,10.6" fill="none" stroke="#A2845E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="10.59090909090909" r="2" fill="#A2845E">
                 <span class="md-row-reading">
@@ -8241,11 +8241,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2ap" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid6" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#2E9ED2" stop-opacity="0.125">
                       <stop offset="1" stop-color="#2E9ED2" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2ap)">
+                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid6)">
                     <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#2E9ED2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="16" r="2" fill="#2E9ED2">
                 <span class="md-row-reading">
@@ -8271,11 +8271,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2aq" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid7" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#007AFF" stop-opacity="0.125">
                       <stop offset="1" stop-color="#007AFF" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2aq)">
+                    <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillid7)">
                     <path d="M2.0,2.2 L54.0,15.8" fill="none" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="15.774193548387082" r="2" fill="#007AFF">
                 <span class="md-row-reading">
@@ -8301,11 +8301,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2ar" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid8" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#2A9BB0" stop-opacity="0.125">
                       <stop offset="1" stop-color="#2A9BB0" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2ar)">
+                    <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillid8)">
                     <path d="M2.0,3.6 L54.0,14.4" fill="none" stroke="#2A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="14.384615384615394" r="2" fill="#2A9BB0">
                 <span class="md-row-reading">
@@ -8331,11 +8331,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2as" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid9" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#2CA84B" stop-opacity="0.125">
                       <stop offset="1" stop-color="#2CA84B" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2as)">
+                    <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid9)">
                     <path d="M2.0,14.4 L54.0,3.6" fill="none" stroke="#2CA84B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="3.615384615384606" r="2" fill="#2CA84B">
                 <span class="md-row-reading">
@@ -8378,11 +8378,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2au" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid10" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#B28F00" stop-opacity="0.125">
                       <stop offset="1" stop-color="#B28F00" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2au)">
+                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid10)">
                     <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#B28F00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="16" r="2" fill="#B28F00">
                 <span class="md-row-reading">
@@ -8407,11 +8407,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2av" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid11" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#B2598C" stop-opacity="0.125">
                       <stop offset="1" stop-color="#B2598C" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2av)">
+                    <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillid11)">
                     <path d="M2.0,6.7 L54.0,11.3" fill="none" stroke="#B2598C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="11.333333333333334" r="2" fill="#B2598C">
                 <span class="md-row-reading">
@@ -8496,11 +8496,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2b0" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid12" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#D07A00" stop-opacity="0.125">
                         <stop offset="1" stop-color="#D07A00" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2b0)">
+                      <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid12)">
                       <path d="M2.0,5.4 L54.0,12.6" fill="none" stroke="#D07A00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="12.589743589743584" r="2" fill="#D07A00">
                   <span class="md-row-reading">
@@ -8526,11 +8526,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2b1" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid13" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#A2845E" stop-opacity="0.125">
                         <stop offset="1" stop-color="#A2845E" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2b1)">
+                      <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid13)">
                       <path d="M2.0,7.4 L54.0,10.6" fill="none" stroke="#A2845E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="10.59090909090909" r="2" fill="#A2845E">
                   <span class="md-row-reading">
@@ -8574,11 +8574,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2b3" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid14" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#2E9ED2" stop-opacity="0.125">
                         <stop offset="1" stop-color="#2E9ED2" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2b3)">
+                      <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid14)">
                       <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#2E9ED2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="16" r="2" fill="#2E9ED2">
                   <span class="md-row-reading">
@@ -8604,11 +8604,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2b4" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid15" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#007AFF" stop-opacity="0.125">
                         <stop offset="1" stop-color="#007AFF" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2b4)">
+                      <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillid15)">
                       <path d="M2.0,2.2 L54.0,15.8" fill="none" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="15.774193548387082" r="2" fill="#007AFF">
                   <span class="md-row-reading">
@@ -8634,11 +8634,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2b5" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid16" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#2A9BB0" stop-opacity="0.125">
                         <stop offset="1" stop-color="#2A9BB0" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2b5)">
+                      <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillid16)">
                       <path d="M2.0,3.6 L54.0,14.4" fill="none" stroke="#2A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="14.384615384615394" r="2" fill="#2A9BB0">
                   <span class="md-row-reading">
@@ -8664,11 +8664,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2b6" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid17" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#2CA84B" stop-opacity="0.125">
                         <stop offset="1" stop-color="#2CA84B" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2b6)">
+                      <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid17)">
                       <path d="M2.0,14.4 L54.0,3.6" fill="none" stroke="#2CA84B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="3.615384615384606" r="2" fill="#2CA84B">
                   <span class="md-row-reading">
@@ -8694,11 +8694,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2b7" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid18" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#B28F00" stop-opacity="0.125">
                         <stop offset="1" stop-color="#B28F00" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2b7)">
+                      <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid18)">
                       <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#B28F00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="16" r="2" fill="#B28F00">
                   <span class="md-row-reading">
@@ -8723,11 +8723,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2b8" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid19" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#B2598C" stop-opacity="0.125">
                         <stop offset="1" stop-color="#B2598C" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2b8)">
+                      <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillid19)">
                       <path d="M2.0,6.7 L54.0,11.3" fill="none" stroke="#B2598C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="11.333333333333334" r="2" fill="#B2598C">
                   <span class="md-row-reading">
@@ -8895,11 +8895,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2ba" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid0" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#5856D6" stop-opacity="0.125">
                       <stop offset="1" stop-color="#5856D6" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,7.5 L54.0,10.5 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2ba)">
+                    <path d="M2.0,7.5 L54.0,10.5 L54.0,18 L2.0,18 Z" fill="url(#md-fillid0)">
                     <path d="M2.0,7.5 L54.0,10.5" fill="none" stroke="#5856D6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="10.48936170212766" r="2" fill="#5856D6">
                 <span class="md-row-reading">
@@ -8924,11 +8924,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2bb" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid1" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#AF52DE" stop-opacity="0.125">
                       <stop offset="1" stop-color="#AF52DE" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,7.3 L54.0,10.7 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bb)">
+                    <path d="M2.0,7.3 L54.0,10.7 L54.0,18 L2.0,18 Z" fill="url(#md-fillid1)">
                     <path d="M2.0,7.3 L54.0,10.7" fill="none" stroke="#AF52DE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="10.707317073170735" r="2" fill="#AF52DE">
                 <span class="md-row-reading">
@@ -8954,11 +8954,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2bc" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid2" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#D07A00" stop-opacity="0.125">
                       <stop offset="1" stop-color="#D07A00" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bc)">
+                    <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid2)">
                     <path d="M2.0,5.4 L54.0,12.6" fill="none" stroke="#D07A00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="12.589743589743584" r="2" fill="#D07A00">
                 <span class="md-row-reading">
@@ -8984,11 +8984,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
           <div data-key="glp1">
             <div class="mh-row-suggestion suggestion-attention">
               <div class="mh-row-suggestion-line">
-                <span id=":r2bd:title" class="mh-row-suggestion-text">
+                <span id=":id3:title" class="mh-row-suggestion-text">
                   "weight-glp1"
-                <span id=":r2bd:about" hidden="">
+                <span id=":id3:about" hidden="">
                   "About:"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r2bd:" aria-labelledby=":r2bd:about :r2bd:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id3:" aria-labelledby=":id3:about :id3:title">
                   <span aria-hidden="true">
                     "i"
           <div data-key="metformin">
@@ -9029,11 +9029,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2be" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid4" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#FF3B30" stop-opacity="0.125">
                       <stop offset="1" stop-color="#FF3B30" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,5.8 L54.0,12.2 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2be)">
+                    <path d="M2.0,5.8 L54.0,12.2 L54.0,18 L2.0,18 Z" fill="url(#md-fillid4)">
                     <path d="M2.0,5.8 L54.0,12.2" fill="none" stroke="#FF3B30" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="12.181818181818183" r="2" fill="#FF3B30">
                 <span class="md-row-reading">
@@ -9059,11 +9059,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2bf" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid5" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#A2845E" stop-opacity="0.125">
                       <stop offset="1" stop-color="#A2845E" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bf)">
+                    <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid5)">
                     <path d="M2.0,7.4 L54.0,10.6" fill="none" stroke="#A2845E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="10.59090909090909" r="2" fill="#A2845E">
                 <span class="md-row-reading">
@@ -9124,11 +9124,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2bh" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid6" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#2E9ED2" stop-opacity="0.125">
                       <stop offset="1" stop-color="#2E9ED2" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bh)">
+                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid6)">
                     <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#2E9ED2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="16" r="2" fill="#2E9ED2">
                 <span class="md-row-reading">
@@ -9154,11 +9154,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2bi" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid7" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#007AFF" stop-opacity="0.125">
                       <stop offset="1" stop-color="#007AFF" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bi)">
+                    <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillid7)">
                     <path d="M2.0,2.2 L54.0,15.8" fill="none" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="15.774193548387082" r="2" fill="#007AFF">
                 <span class="md-row-reading">
@@ -9184,11 +9184,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2bj" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid8" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#2A9BB0" stop-opacity="0.125">
                       <stop offset="1" stop-color="#2A9BB0" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bj)">
+                    <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillid8)">
                     <path d="M2.0,3.6 L54.0,14.4" fill="none" stroke="#2A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="14.384615384615394" r="2" fill="#2A9BB0">
                 <span class="md-row-reading">
@@ -9214,11 +9214,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2bk" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid9" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#2CA84B" stop-opacity="0.125">
                       <stop offset="1" stop-color="#2CA84B" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bk)">
+                    <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid9)">
                     <path d="M2.0,14.4 L54.0,3.6" fill="none" stroke="#2CA84B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="3.615384615384606" r="2" fill="#2CA84B">
                 <span class="md-row-reading">
@@ -9261,11 +9261,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2bm" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid10" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#B28F00" stop-opacity="0.125">
                       <stop offset="1" stop-color="#B28F00" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bm)">
+                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid10)">
                     <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#B28F00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="16" r="2" fill="#B28F00">
                 <span class="md-row-reading">
@@ -9290,11 +9290,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2bn" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid11" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#B2598C" stop-opacity="0.125">
                       <stop offset="1" stop-color="#B2598C" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bn)">
+                    <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillid11)">
                     <path d="M2.0,6.7 L54.0,11.3" fill="none" stroke="#B2598C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="11.333333333333334" r="2" fill="#B2598C">
                 <span class="md-row-reading">
@@ -9379,11 +9379,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2bo" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid12" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#D07A00" stop-opacity="0.125">
                         <stop offset="1" stop-color="#D07A00" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bo)">
+                      <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid12)">
                       <path d="M2.0,5.4 L54.0,12.6" fill="none" stroke="#D07A00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="12.589743589743584" r="2" fill="#D07A00">
                   <span class="md-row-reading">
@@ -9409,11 +9409,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2bp" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid13" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#A2845E" stop-opacity="0.125">
                         <stop offset="1" stop-color="#A2845E" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bp)">
+                      <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid13)">
                       <path d="M2.0,7.4 L54.0,10.6" fill="none" stroke="#A2845E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="10.59090909090909" r="2" fill="#A2845E">
                   <span class="md-row-reading">
@@ -9457,11 +9457,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2br" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid14" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#2E9ED2" stop-opacity="0.125">
                         <stop offset="1" stop-color="#2E9ED2" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2br)">
+                      <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid14)">
                       <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#2E9ED2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="16" r="2" fill="#2E9ED2">
                   <span class="md-row-reading">
@@ -9487,11 +9487,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2bs" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid15" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#007AFF" stop-opacity="0.125">
                         <stop offset="1" stop-color="#007AFF" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bs)">
+                      <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillid15)">
                       <path d="M2.0,2.2 L54.0,15.8" fill="none" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="15.774193548387082" r="2" fill="#007AFF">
                   <span class="md-row-reading">
@@ -9517,11 +9517,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2bt" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid16" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#2A9BB0" stop-opacity="0.125">
                         <stop offset="1" stop-color="#2A9BB0" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bt)">
+                      <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillid16)">
                       <path d="M2.0,3.6 L54.0,14.4" fill="none" stroke="#2A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="14.384615384615394" r="2" fill="#2A9BB0">
                   <span class="md-row-reading">
@@ -9547,11 +9547,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2bu" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid17" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#2CA84B" stop-opacity="0.125">
                         <stop offset="1" stop-color="#2CA84B" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bu)">
+                      <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid17)">
                       <path d="M2.0,14.4 L54.0,3.6" fill="none" stroke="#2CA84B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="3.615384615384606" r="2" fill="#2CA84B">
                   <span class="md-row-reading">
@@ -9577,11 +9577,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2bv" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid18" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#B28F00" stop-opacity="0.125">
                         <stop offset="1" stop-color="#B28F00" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2bv)">
+                      <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid18)">
                       <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#B28F00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="16" r="2" fill="#B28F00">
                   <span class="md-row-reading">
@@ -9606,11 +9606,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                         "Jan 2026"
                   <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                     <defs>
-                      <lineargradient id="md-fillr2c0" x1="0" y1="0" x2="0" y2="1">
+                      <lineargradient id="md-fillid19" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0" stop-color="#B2598C" stop-opacity="0.125">
                         <stop offset="1" stop-color="#B2598C" stop-opacity="0">
                     <g transform="translate(0,0)">
-                      <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2c0)">
+                      <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillid19)">
                       <path d="M2.0,6.7 L54.0,11.3" fill="none" stroke="#B2598C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="54" cy="11.333333333333334" r="2" fill="#B2598C">
                   <span class="md-row-reading">
@@ -9752,11 +9752,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2c2" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid0" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#5856D6" stop-opacity="0.125">
                       <stop offset="1" stop-color="#5856D6" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,7.5 L54.0,10.5 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2c2)">
+                    <path d="M2.0,7.5 L54.0,10.5 L54.0,18 L2.0,18 Z" fill="url(#md-fillid0)">
                     <path d="M2.0,7.5 L54.0,10.5" fill="none" stroke="#5856D6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="10.48936170212766" r="2" fill="#5856D6">
                 <span class="md-row-reading">
@@ -9782,11 +9782,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2c3" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid1" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#D07A00" stop-opacity="0.125">
                       <stop offset="1" stop-color="#D07A00" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2c3)">
+                    <path d="M2.0,5.4 L54.0,12.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid1)">
                     <path d="M2.0,5.4 L54.0,12.6" fill="none" stroke="#D07A00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="12.589743589743584" r="2" fill="#D07A00">
                 <span class="md-row-reading">
@@ -9842,11 +9842,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2c4" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid2" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#FF3B30" stop-opacity="0.125">
                       <stop offset="1" stop-color="#FF3B30" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,5.8 L54.0,12.2 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2c4)">
+                    <path d="M2.0,5.8 L54.0,12.2 L54.0,18 L2.0,18 Z" fill="url(#md-fillid2)">
                     <path d="M2.0,5.8 L54.0,12.2" fill="none" stroke="#FF3B30" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="12.181818181818183" r="2" fill="#FF3B30">
                 <span class="md-row-reading">
@@ -9872,11 +9872,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2c5" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid3" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#A2845E" stop-opacity="0.125">
                       <stop offset="1" stop-color="#A2845E" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2c5)">
+                    <path d="M2.0,7.4 L54.0,10.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid3)">
                     <path d="M2.0,7.4 L54.0,10.6" fill="none" stroke="#A2845E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="10.59090909090909" r="2" fill="#A2845E">
                 <span class="md-row-reading">
@@ -9931,11 +9931,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2c7" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid4" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#2E9ED2" stop-opacity="0.125">
                       <stop offset="1" stop-color="#2E9ED2" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2c7)">
+                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid4)">
                     <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#2E9ED2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="16" r="2" fill="#2E9ED2">
                 <span class="md-row-reading">
@@ -9961,11 +9961,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2c8" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid5" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#007AFF" stop-opacity="0.125">
                       <stop offset="1" stop-color="#007AFF" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2c8)">
+                    <path d="M2.0,2.2 L54.0,15.8 L54.0,18 L2.0,18 Z" fill="url(#md-fillid5)">
                     <path d="M2.0,2.2 L54.0,15.8" fill="none" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="15.774193548387082" r="2" fill="#007AFF">
                 <span class="md-row-reading">
@@ -9991,11 +9991,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2c9" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid6" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#2A9BB0" stop-opacity="0.125">
                       <stop offset="1" stop-color="#2A9BB0" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2c9)">
+                    <path d="M2.0,3.6 L54.0,14.4 L54.0,18 L2.0,18 Z" fill="url(#md-fillid6)">
                     <path d="M2.0,3.6 L54.0,14.4" fill="none" stroke="#2A9BB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="14.384615384615394" r="2" fill="#2A9BB0">
                 <span class="md-row-reading">
@@ -10021,11 +10021,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2ca" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid7" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#2CA84B" stop-opacity="0.125">
                       <stop offset="1" stop-color="#2CA84B" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2ca)">
+                    <path d="M2.0,14.4 L54.0,3.6 L54.0,18 L2.0,18 Z" fill="url(#md-fillid7)">
                     <path d="M2.0,14.4 L54.0,3.6" fill="none" stroke="#2CA84B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="3.615384615384606" r="2" fill="#2CA84B">
                 <span class="md-row-reading">
@@ -10068,11 +10068,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2cc" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid8" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#B28F00" stop-opacity="0.125">
                       <stop offset="1" stop-color="#B28F00" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2cc)">
+                    <path d="M2.0,2.0 L54.0,16.0 L54.0,18 L2.0,18 Z" fill="url(#md-fillid8)">
                     <path d="M2.0,2.0 L54.0,16.0" fill="none" stroke="#B28F00" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="16" r="2" fill="#B28F00">
                 <span class="md-row-reading">
@@ -10097,11 +10097,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
                       "Jan 2026"
                 <svg class="md-row-trend" width="56" height="18" aria-hidden="true" focusable="false">
                   <defs>
-                    <lineargradient id="md-fillr2cd" x1="0" y1="0" x2="0" y2="1">
+                    <lineargradient id="md-fillid9" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0" stop-color="#B2598C" stop-opacity="0.125">
                       <stop offset="1" stop-color="#B2598C" stop-opacity="0">
                   <g transform="translate(0,0)">
-                    <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillr2cd)">
+                    <path d="M2.0,6.7 L54.0,11.3 L54.0,18 L2.0,18 Z" fill="url(#md-fillid9)">
                     <path d="M2.0,6.7 L54.0,11.3" fill="none" stroke="#B2598C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="54" cy="11.333333333333334" r="2" fill="#B2598C">
                 <span class="md-row-reading">
@@ -10154,11 +10154,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
             <div class="mh-row-suggestion suggestion-attention">
               <div class="mh-row-suggestion-line">
                 <span class="mh-row-suggestion-text">
-                <span id=":r2ce:about" hidden="">
+                <span id=":id10:about" hidden="">
                   "About:"
-                <span id=":r2ce:title" hidden="">
+                <span id=":id10:title" hidden="">
                   "screening-breast-due"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r2ce:" aria-labelledby=":r2ce:about :r2ce:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id10:" aria-labelledby=":id10:about :id10:title">
                   <span aria-hidden="true">
                     "i"
         <div id="mh-card-5" tabindex="-1" class="mh-card">
@@ -10556,11 +10556,11 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
             <div class="mh-row-suggestion suggestion-attention">
               <div class="mh-row-suggestion-line">
                 <span class="mh-row-suggestion-text">
-                <span id=":r2e4:about" hidden="">
+                <span id=":id0:about" hidden="">
                   "About:"
-                <span id=":r2e4:title" hidden="">
+                <span id=":id0:title" hidden="">
                   "screening-breast-due"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r2e4:" aria-labelledby=":r2e4:about :r2e4:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id0:" aria-labelledby=":id0:about :id0:title">
                   <span aria-hidden="true">
                     "i"
         <div id="mh-card-11" tabindex="-1" class="mh-card">
@@ -10881,21 +10881,21 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
           <div data-key="glp1">
             <div class="mh-row-suggestion suggestion-info">
               <div class="mh-row-suggestion-line">
-                <span id=":r297:title" class="mh-row-suggestion-text">
+                <span id=":id0:title" class="mh-row-suggestion-text">
                   "weight-glp1"
-                <span id=":r297:about" hidden="">
+                <span id=":id0:about" hidden="">
                   "About:"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r297:" aria-labelledby=":r297:about :r297:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id0:" aria-labelledby=":id0:about :id0:title">
                   <span aria-hidden="true">
                     "i"
           <div data-key="sglt2i">
             <div class="mh-row-suggestion suggestion-info">
               <div class="mh-row-suggestion-line">
-                <span id=":r298:title" class="mh-row-suggestion-text">
+                <span id=":id1:title" class="mh-row-suggestion-text">
                   "weight-med-sglt2i"
-                <span id=":r298:about" hidden="">
+                <span id=":id1:about" hidden="">
                   "About:"
-                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":r298:" aria-labelledby=":r298:about :r298:title">
+                <button type="button" class="mh-info-btn" aria-expanded="false" aria-controls=":id1:" aria-labelledby=":id1:about :id1:title">
                   <span aria-hidden="true">
                     "i"
       <section class="mh-topic" data-topic="sleep" aria-labelledby="mh-topic-sleep">

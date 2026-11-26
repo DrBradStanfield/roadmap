@@ -56,7 +56,10 @@ function outcomes() {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  // Reset, not clear: Vitest 4's clearAllMocks keeps a mock's implementation, so a describe's
+  // content-named sha256Blob gave every later file of the same bytes one hash, and a pick of two
+  // such files read as one.
+  vi.resetAllMocks();
   build.shopify = true;
   vi.mocked(checkLabImportQuota).mockResolvedValue({ allowed: true, remaining: 60 });
   vi.mocked(labImport).mockResolvedValue(withValues);

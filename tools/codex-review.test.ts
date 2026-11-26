@@ -4,7 +4,7 @@
  * Spec: US-40 (docs/user-stories.md). Each block names its AC and the Codex
  * finding that wrote it (docs/reviews/2026-09-19-codex-reviewer-wiring.md).
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, symlinkSync, existsSync, chmodSync, lstatSync, statSync, realpathSync, truncateSync, linkSync, renameSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -65,7 +65,9 @@ function runWrapper(bin: string, extra: string[] = [], cwd = repo) {
   return spawnSync('node', [WRAPPER, '--codex', bin, ...extra], { cwd, encoding: 'utf8', env: childEnv({ CANARY_SECRET: 'canary-value' }) });
 }
 
-beforeAll(() => {
+// Each test gets its own fixture repo, with a.txt changed since its commit: a test that changed
+// the shared one left the next test reviewing its edits, in whatever order they ran.
+beforeEach(() => {
   repo = mkdtempSync(join(tmpdir(), 'cr-repo-'));
   marker = join(mkdtempSync(join(tmpdir(), 'cr-marker-')), 'marker.txt');
   writeFileSync(marker, 'untouched');
@@ -78,6 +80,7 @@ beforeAll(() => {
   // CR1: a tracked symlink with the wrapper's own artifact name, pointing outside the repo.
   symlinkSync(marker, join(repo, 'REVIEW_PATCH.diff'));
   sh(repo, 'git add -A && git commit -q -m base');
+  writeFileSync(join(repo, 'a.txt'), 'two\n');
   fakeDir = mkdtempSync(join(tmpdir(), 'unused-'));
   outJson = join(fakeDir, 'out.json');
   scratchFile = join(fakeDir, 'scratch-record.json');

@@ -163,6 +163,12 @@ beforeEach(async () => {
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
   Object.assign(chat, { target: null, context: null });
+  // React's development build writes window.event back after each handler it calls, and Vitest's
+  // jsdom globals keep any value written to them: the last click stayed window.event for every
+  // later test, so a later mount ran at click priority and flushed its effects with no gap.
+  // Read it from jsdom again, as a browser does: an event only while it is dispatched.
+  const dom = (globalThis as unknown as { jsdom: { window: Window } }).jsdom.window;
+  Object.defineProperty(window, 'event', { configurable: true, get: () => dom.event, set() {} });
   vi.mocked(Sentry.captureException).mockClear();
   viewport.mobile = false;
   viewport.listeners.clear();
@@ -236,8 +242,6 @@ async function eraseFromAnotherDevice(profile: Partial<RoadmapFile['profile']> =
   await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
 }
 
-// First in the file: after other tests here, React's first commit flushed its effects in the
-// same task (no gap) in trials, and `inGap` would fail these.
 describe('US-34 AC4: a change announced before the page has shown its first read', () => {
   // Survey R2 (2026-11-10, PR 1155 review R1): the page reads the record as it first renders
   // and shows that read in its first passive effects. A change announced between the commit
