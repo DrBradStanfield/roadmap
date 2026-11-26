@@ -48,8 +48,11 @@ export const quantity = z.object({
  * dropped too, never the result.
  */
 const meta = z.object({ versionId: z.string().max(64).optional(), lastUpdated: z.string().max(64).optional() });
+/** A date that is there but cannot be read is kept as '' (AC18): present, so the date chosen
+ *  before it is still the one judged, and unreadable, so the result is undated, never re-dated. */
+const date = z.string().max(64).catch('').optional();
 // effective[x] as a period: its start is the draw (the collection began then).
-const period = z.object({ start: z.string().max(64).optional() });
+const period = z.object({ start: z.string().max(64).optional() }).catch({ start: '' }).optional();
 
 const observation = z.object({
   resourceType: z.literal('Observation'),
@@ -58,22 +61,13 @@ const observation = z.object({
   status: z.string().max(32),
   code: z.object({ coding: z.array(z.object({ system: z.string().optional(), code: z.string().optional() })).optional() }),
   valueQuantity: quantity.optional(),
-  effectiveDateTime: z.string().max(64).optional(),
-  // Strict, no `.catch`: a malformed period would date the result by `issued` or its report's day (AC18).
-  effectivePeriod: period.optional(),
+  effectiveDateTime: date,
+  effectivePeriod: period,
   // The release, close to the draw: Apple's sample DSTU2 results carry only this (AC3).
-  issued: z.string().max(64).optional(),
+  issued: date,
   referenceRange: z.array(z.object({ low: quantity.optional(), high: quantity.optional() })).optional().catch(undefined),
 });
 export type Observation = z.infer<typeof observation>;
-
-/** One result read, or not read: `undated` when its date alone kept it out (AC18). */
-export type Result = { identity: string; obs: Observation } | { identity: null; obs: null; undated: boolean };
-/** The fields that date a result: a record refused for these alone is undated (AC18). */
-const DATES = new Set(['effectiveDateTime', 'effectivePeriod', 'issued']);
-function unread(error?: z.ZodError): Result {
-  return { identity: null, obs: null, undated: !!error?.issues.every((i) => DATES.has(String(i.path[0]))) };
-}
 
 /**
  * A DiagnosticReport, DSTU2 or R4, read only for the results it carries inside: each
@@ -84,13 +78,13 @@ function unread(error?: z.ZodError): Result {
 const report = z.object({
   resourceType: z.literal('DiagnosticReport'),
   id: z.string().regex(FHIR_ID),
-  // Strict, no `.catch`: a result takes these from its report, so a malformed one dropped
-  // would date it by the report's release or lose its version. The whole report is not read.
+  // Strict, no `.catch`: a result takes its version from its report, so a malformed one dropped
+  // would lose it. The whole report is not read. A bad date is kept as '' (`date`, AC18).
   meta: meta.optional(),
   status: z.string().max(32),
-  effectiveDateTime: z.string().max(64).optional(),
-  effectivePeriod: period.optional(),
-  issued: z.string().max(64).optional(),
+  effectiveDateTime: date,
+  effectivePeriod: period,
+  issued: date,
   contained: z.array(z.unknown()).max(10_000).optional().catch(undefined),
   result: z.array(z.object({ reference: z.string().max(200).optional() }).catch({})).max(10_000).optional().catch(undefined),
 });
@@ -120,7 +114,7 @@ function asReported(obs: Observation, rep: Report): Observation {
 /** A result with no draw of its own (AC3) takes the report's draw, and the report's
  *  release when it has none of its own either; a result with its own draw keeps its day. */
 function reportDay(obs: Observation, rep: Report): Partial<Observation> {
-  if (obs.effectiveDateTime ?? obs.effectivePeriod?.start) return {};
+  if ((obs.effectiveDateTime ?? obs.effectivePeriod?.start) !== undefined) return {};
   return { effectiveDateTime: rep.effectiveDateTime, effectivePeriod: rep.effectivePeriod, issued: obs.issued ?? rep.issued };
 }
 
@@ -140,25 +134,26 @@ function containedById(contained: readonly unknown[]): Map<string, unknown> {
  * contained result's identity is the source, `DiagnosticReport`, the report's id and
  * its own id: a contained id is unique only inside its report.
  */
-function reportResults(sourceId: string, json: unknown): Result[] {
+function reportResults(sourceId: string, json: unknown): Array<{ identity: string; obs: Observation } | { identity: null; obs: null }> {
+  const unread = { identity: null, obs: null } as const;
   const rep = report.safeParse(json);
-  if (!rep.success) return [unread(rep.error)];
-  if (!rep.data.result?.length) return [unread()];
+  if (!rep.success || !rep.data.result?.length) return [unread];
   const inside = containedById(rep.data.contained ?? []);
   return rep.data.result.map(({ reference }) => {
     const obs = reference?.startsWith('#') ? observation.safeParse(inside.get(reference.slice(1))) : undefined;
-    if (!obs?.success) return unread(obs?.error);
+    if (!obs?.success) return unread;
     return { identity: `${sourceId}|DiagnosticReport|${rep.data.id}|${obs.data.id}`, obs: asReported(obs.data, rep.data) };
   });
 }
 
 /** One record's results: an Observation is one, a DiagnosticReport its contained ones
  *  (`reportResults`); a record this cannot read is one null. */
-export function recordResults(raw: ClinicalRecordInput): Result[] {
+export function recordResults(raw: ClinicalRecordInput): Array<{ identity: string; obs: Observation } | { identity: null; obs: null }> {
+  const unread = { identity: null, obs: null } as const;
   const record = input.safeParse(raw);
-  if (!record.success) return [unread()];
+  if (!record.success) return [unread];
   let json: unknown;
-  try { json = JSON.parse(record.data.json); } catch { return [unread()]; }
+  try { json = JSON.parse(record.data.json); } catch { return [unread]; }
   const { sourceId, resourceType } = record.data;
   if (resourceType === 'DiagnosticReport') return reportResults(sourceId, json);
   return [observationResult(sourceId, json)];
@@ -166,11 +161,11 @@ export function recordResults(raw: ClinicalRecordInput): Result[] {
 
 /** A top-level Observation. One Apple took out of a panel (`FROM_PANEL`) is read under its
  *  result id and keeps AC15's identity for that result, so it is one result however it arrives. */
-function observationResult(sourceId: string, json: unknown): Result {
+function observationResult(sourceId: string, json: unknown): { identity: string; obs: Observation } | { identity: null; obs: null } {
   const id = (json as { id?: unknown } | null)?.id;
   const split = typeof id === 'string' ? FROM_PANEL.exec(id) : null;
   const obs = observation.safeParse(split ? { ...(json as object), id: split[2] } : json);
-  if (!obs.success) return unread(obs.error);
+  if (!obs.success) return { identity: null, obs: null };
   const identity = split ? `${sourceId}|DiagnosticReport|${split[1]}|${split[2]}` : `${sourceId}|Observation|${obs.data.id}`;
   return { identity, obs: obs.data };
 }

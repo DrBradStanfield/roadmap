@@ -82,6 +82,11 @@ Not ruled. Both options stand for the owner.
    results reports 0, or the app restarts. No change to `HealthSyncMemory.swift` or `DataEraser*`, no rules
    version bump, no record schema change.
 5. Not clinical: no three-file sync. No health value, date or test name in logs, telemetry or analytics.
+6. Q1: the one date judged is the first present of `effectiveDateTime`, `effectivePeriod.start`, `issued`; a
+   malformed period counts as present. A bad one is undated, never a fall-through; fields not chosen are
+   ignored, so a good draw beside a junk period still lands. Built by reading a malformed date as `''`.
+7. Q2: the date is judged after the test code, number and unit, so an untracked test with a bad date is not
+   undated.
 
 Open question: skip a malformed result silently (option A; the HealthKit anchor moves on, so it does not come back
 unless the lab amends it), or keep today's fall-back to the issued date (option B)? A third path is to hold A until

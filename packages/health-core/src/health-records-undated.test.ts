@@ -49,6 +49,27 @@ describe('US-72 AC18: a result with a bad date is skipped and counted, never dat
     expect(file.labValues.map((l) => [l.metricName, l.recordedAt])).toEqual([['hdl', '2026-10-21T08:00:00.000Z']]);
   });
 
+  it('Q1: a good effectiveDateTime is the date judged; a junk period or release beside it is ignored and the result lands', () => {
+    for (const junk of [{ effectivePeriod: '2026-10-21' }, { effectivePeriod: { start: LONG } }, { issued: 20261022 }]) {
+      const { file, counts } = run([rec(ldl('a', { effectiveDateTime: '2026-10-20', ...junk }))]);
+      expect(counts, JSON.stringify(junk)).toEqual({ ...NONE, added: 1 });
+      expect(file.labValues[0].recordedAt).toBe('2026-10-20T00:00:00.000Z');
+    }
+  });
+
+  it('Q1: the same for a contained result: its own good draw lands, a junk period beside it ignored', () => {
+    for (const effectivePeriod of ['2026-10-21', { start: LONG }]) {
+      const { file, counts } = run([panel([ldl('r1', { effectiveDateTime: '2026-10-19', effectivePeriod })])]);
+      expect(counts, JSON.stringify(effectivePeriod)).toEqual({ ...NONE, added: 1 });
+      expect(file.labValues[0].recordedAt).toBe('2026-10-19T00:00:00.000Z');
+    }
+  });
+
+  it('Q2: a bad-dated result for a test the app never reads is not read, but not undated', () => {
+    const glucose = { code: { coding: [{ system: 'http://loinc.org', code: '2345-7' }] } };
+    expect(run([rec(ldl('a', { ...glucose, effectiveDateTime: '2026-02-30' }))]).counts).toEqual({ ...NONE, notRead: 1 });
+  });
+
   it('H35 3 (ruling 2): a top-level Observation with a malformed meta still lands on its own draw', () => {
     for (const meta of ['junk', { lastUpdated: LONG }, { versionId: 7 }]) {
       const { file, counts } = run([rec(ldl('a', { meta, effectiveDateTime: '2026-10-20' }))]);

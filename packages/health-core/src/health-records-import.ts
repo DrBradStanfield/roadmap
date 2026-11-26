@@ -50,7 +50,7 @@ import { dayOf, latestDayOnEarth } from './merge';
 import { coreStored, createCoreRow, isActive, isBloodTestKey, labRowSlot } from './blood-tests';
 import { measurementValueFault, newId, sameValue, slotOfRow, stampUpdatedAt, toStoredLab } from './record-edits';
 import { createLabValue, type FileLabValue, type RoadmapFile } from './roadmap-file';
-import { recordResults, type Observation, type quantity, type Result } from './health-records-fhir';
+import { recordResults, type Observation, type quantity } from './health-records-fhir';
 
 export interface ClinicalRecordInput { sourceId: string; resourceType: string; fhirVersion: string; json: string }
 /** `undated` (AC18): of `notRead`, those whose date was malformed, unreal, later than now or absent; left out at 0. */
@@ -223,8 +223,8 @@ function readingOf(obs: Observation, now: string): Reading | 'undated' | null {
   const unit = unitOf(q);
   const metric = unit ? metricOf(obs, unit) : null;
   const recordedAt = drawnAt(obs.effectiveDateTime ?? obs.effectivePeriod?.start ?? obs.issued, now);
-  if (!recordedAt) return 'undated';
   if (!metric || typeof q?.value !== 'number' || !unit) return null;
+  if (!recordedAt) return 'undated';
   // US-12 AC20: a result printed as a limit keeps its comparator; `value` is the bound. FHIR's `ad` is not read.
   if (q.comparator !== undefined && !isComparator(q.comparator)) return null;
   // A bound in another unit than the result's is not read with the result's factor.
@@ -303,9 +303,8 @@ export function importHealthRecords(
     if (undated) counts.undated = (counts.undated ?? 0) + 1;
   };
 
-  for (const result of parsedInOrder(records)) {
-    if (!result.obs) { notRead(result.undated); continue; }
-    const { identity, obs } = result;
+  for (const { identity, obs } of parsedInOrder(records)) {
+    if (!obs) { notRead(); continue; }
     const version = versionOf(obs);
     const externalId = `${identity}#${version}`;
     const withdrawal = obs.status === 'entered-in-error';
@@ -427,7 +426,7 @@ function correctsRow(rows: readonly Row[], row: Row, ids: ReadonlySet<string>): 
  * of one result in one batch are taken oldest first by `meta.lastUpdated` when
  * both carry it, so the newer one ends up active (`reportResults` for a report).
  */
-function parsedInOrder(records: ClinicalRecordInput[]): Result[] {
+function parsedInOrder(records: ClinicalRecordInput[]): Array<{ identity: string; obs: Observation } | { identity: null; obs: null }> {
   const parsed = records.flatMap(recordResults);
   const groups = new Map<string, number[]>();
   parsed.forEach(({ identity }, i) => {
