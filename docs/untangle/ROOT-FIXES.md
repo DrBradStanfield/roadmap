@@ -133,6 +133,23 @@ which waits for Brad's look.
 
 ## Status, 27 Nov 2026
 
-- **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR 2188, held).
+- **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR 2188, merged).
   H127's other web checks (transport silence, refused Drive grant, busy write, corrupt device copy) need a typed
   field that does not exist yet: a design first. The Drive grant check sits in files held PR 2099 edits.
+  Ruled as recorded in the H127 lead row.
+- **R23** closed, superseded by the shared upload engine. The two old rules are deleted (`review-matrix.ts`
+  in PR 1972, `LabReportSave.swift` in PR 1913). One engine rule sets the default ticks (`upload-review.ts`),
+  and the phone saves an upload in one call. Leads U10 and U12 done; U12 keeps one open line, a test gap.
+- **R17** owner rulings (both as changed later that day). Lead M12, not started, built after PR 2099 lands:
+  one shared route table, a plain data file in the repo, is the single source. The cloud adapters read
+  their routes from it; at build time it is generated into a constant compiled into the iPhone app (later
+  the Android app the same way), so no platform hand-writes a list. The native app, not the over-the-air
+  engine, enforces it; a new route takes effect only with a new app build. A table change is security class
+  (adversary + Codex), and a test fails when an adapter uses a route outside the table. After Brad's word
+  that the clients share as much as possible: one open rule in health-core for both clients (the
+  extension decides; with no extension, the stored type decides; only the existing passive viewable types),
+  built as its own PR with an adversary and Codex review (lead M13, in progress).
+- **R24** finished: PR 2184 merged. Its follow-up, lead T38: the classifier half merged (PR 2187); the YouTube
+  half is no longer held, since PR 2183 merged; next, `app/lib/youtube-context.ts` joins `ChatDocsState`.
+- **R4** PR 2 merged (PR 2182).
+- **R14** merged as PR 2181 (lead H35).
