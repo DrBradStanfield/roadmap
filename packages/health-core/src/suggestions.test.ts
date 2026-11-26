@@ -1305,8 +1305,8 @@ describe('generateSuggestions', () => {
 
     // US-07 AC5: the sentence reads true at exactly the target.
     it.each([
-      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
-      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
+      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
+      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
     ])('med-statin at exactly the target, $name, shows and reads true (US-07 AC5)', ({ values, text }) => {
       const { inputs, results } = createTestData(values);
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description).toBe(text);
@@ -1368,7 +1368,7 @@ describe('generateSuggestions', () => {
     it('med-statin at exactly the non-HDL target of 1.6 shows (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 1.6 });
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description)
-        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
+        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
     });
 
     it.each([
@@ -2295,7 +2295,7 @@ describe('generateSuggestions', () => {
       expect(glp1 !== undefined).toBe(row.on);
       if (row.on) {
         const and = row.reasons.length > 0 ? ` and ${joinWithAnd(row.reasons)}` : '';
-        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
+        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, consider discussing tirzepatide or semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
       }
     });
 
@@ -2318,7 +2318,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('Weight medication card wording (US-06 AC6)', () => {
-    const TAIL = ', consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
+    const TAIL = ', consider discussing tirzepatide or semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
     const cases: { name: string; bmi: number; whr?: number; inputs: Partial<HealthInputs>; text: string }[] = [
       { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
       { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
@@ -3532,7 +3532,7 @@ describe('US-06 AC8: the dose cards', () => {
       category: 'medication',
       priority: 'attention',
       title: 'Add your GLP-1 dose',
-      description: "Your GLP-1 dose isn't recorded. A higher dose or a switch to Tirzepatide may help, and which one to discuss with your doctor depends on your current dose. Add it to see which.",
+      description: "Your GLP-1 dose isn't recorded. A higher dose or a switch to tirzepatide may help, and which one to discuss with your doctor depends on your current dose. Add it to see which.",
       reason: 'GLP-1 medications are started at a low dose and stepped up gradually; clinical trials used this dose escalation to improve tolerability. Which option to discuss with your doctor next depends on the dose you take now.',
       guidelines: [],
     });
@@ -3565,7 +3565,7 @@ describe('US-06 AC8: the dose cards', () => {
     const HIGHEST = 'A higher dose may help, or you may already take the highest.';
     for (const drug of ['tirzepatide', 'semaglutide_injection', 'semaglutide_oral', 'dulaglutide']) {
       const text = card(weight, { glp1: { drug, dose: null } }, 'weight-med-glp1-dose')!.description;
-      expect(text, drug).toContain(drug === 'tirzepatide' ? HIGHEST : 'A higher dose or a switch to Tirzepatide may help,');
+      expect(text, drug).toContain(drug === 'tirzepatide' ? HIGHEST : 'A higher dose or a switch to tirzepatide may help,');
     }
     for (const drug of ['rosuvastatin', 'atorvastatin', 'pitavastatin', 'pravastatin', 'simvastatin']) {
       const text = card(lipid, { statin: { drug, dose: null }, ezetimibe: 'yes' }, 'med-statin-dose')!.description;
@@ -3678,11 +3678,11 @@ describe('US-06 AC10: gradedDose and the dose helpers', () => {
 // US-06 AC10: a dose graded up to the highest may sit just below it, so the
 // switch card says "at or near" (atorvastatin 70 mg grades as 80 mg).
 describe('US-06 AC10: the statin switch card', () => {
-  it('atorvastatin 70 mg: "at or near the maximum dose of Atorvastatin"', () => {
+  it('atorvastatin 70 mg: "at or near the maximum dose of atorvastatin"', () => {
     const switchCard = calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, weightKg: 70, ldlC: 3.0 }, 'si',
       { statin: { drug: 'atorvastatin', dose: 70 }, ezetimibe: 'yes', bempedoicAcid: 'not_tolerated' }).suggestions
       .find((s) => s.id === 'med-statin-switch');
-    expect(switchCard?.description).toContain("You're at or near the maximum dose of Atorvastatin. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.");
+    expect(switchCard?.description).toContain("You're at or near the maximum dose of atorvastatin. Discuss switching to a more potent statin (e.g. rosuvastatin) with your doctor.");
   });
 });
 

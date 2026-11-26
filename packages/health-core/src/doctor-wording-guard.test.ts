@@ -56,6 +56,7 @@ const MEDS: MedicationInputs[] = [
   {},
   { statin: { drug: 'none', dose: null }, glp1: { drug: 'none', dose: null } },
   { statin: { drug: 'atorvastatin', dose: null }, ezetimibe: 'yes', glp1: { drug: 'semaglutide_injection', dose: null } },
+  { statin: { drug: 'atorvastatin', dose: 10 }, ezetimibe: 'not_yet' },
   { statin: { drug: 'atorvastatin', dose: 10 }, ezetimibe: 'yes', glp1: { drug: 'semaglutide_injection', dose: 0.25 } },
   { statin: { drug: 'simvastatin', dose: 40 }, ezetimibe: 'yes', glp1: { drug: 'dulaglutide', dose: 4.5 } },
   { statin: { drug: 'rosuvastatin', dose: 40 }, ezetimibe: 'yes', glp1: { drug: 'tirzepatide', dose: 15 }, glp1Escalation: 'not_tolerated' },
@@ -122,9 +123,10 @@ function shownText(): Shown {
   return out;
 }
 
-describe('US-07 AC17: doctor-discussion wording guard', () => {
-  const shown = shownText();
+/** One sweep, read by both guards below. */
+const shown = shownText();
 
+describe('US-07 AC17: doctor-discussion wording guard', () => {
   it('walks the medicine cards, the overlay and the Lp(a) checklist (the guard is not vacuous)', () => {
     expect(shown.titles).toContain('Consider discussing a statin with your doctor');
     expect(shown.text).toContain(MEDICATION_TEXT.glp1Hint);
@@ -187,5 +189,34 @@ describe('US-07 AC17: doctor-discussion wording guard', () => {
 
   it('no tile shows a condition word', () => {
     expect(shown.tileWords.filter((w) => BANNED_TILE_WORDS.includes(w))).toEqual([]);
+  });
+});
+
+// US-07 AC19 (Brad 2026-11-27): inside a sentence a medicine's generic name reads as a word, in lower
+// case, and no sentence carries the "(listed first)" note. Titles, form labels and checklist items
+// ("Statin: Atorvastatin 20mg") keep their capital: the scan reads card text and reasons, not titles.
+const GENERIC_NAMES = 'Tirzepatide|Semaglutide|Dulaglutide|Liraglutide|Atorvastatin|Rosuvastatin|Simvastatin|Pravastatin|Pitavastatin|Ezetimibe|Empagliflozin|Dapagliflozin|Canagliflozin|Metformin|Evolocumab|Alirocumab|Inclisiran';
+/** A capitalised generic name after a lower-case word, a comma, a bracket or "e.g.": mid-sentence. */
+const MID_SENTENCE_CAPITAL = new RegExp(`(?:[a-z,(]|e\\.g\\.) (?:${GENERIC_NAMES})\\b`);
+
+describe('US-07 AC19: medicine names inside a sentence', () => {
+  const titles = new Set(shown.medicineTitles);
+  const body = shown.medicineText.filter((t) => !titles.has(t));
+
+  it('walks the sentences that name a medicine (the scan is not vacuous)', () => {
+    const all = body.join('\n');
+    for (const phrase of [
+      'consider discussing tirzepatide or semaglutide with your doctor, alongside diet, exercise and sleep.',
+      'A higher dose or a switch to tirzepatide may help',
+      'SGLT2 inhibitors like empagliflozin or dapagliflozin provide',
+      'Discuss starting a statin (e.g. rosuvastatin 5mg) with your doctor.',
+      'Discuss adding ezetimibe 10mg with your doctor.',
+      "You're at or near the maximum dose of simvastatin. Discuss switching to a more potent statin (e.g. rosuvastatin) with your doctor.",
+    ]) expect(all).toContain(phrase);
+  });
+
+  it('no card text or reason carries "(listed first)" or a capitalised generic name mid-sentence', () => {
+    expect(shown.text.filter((t) => t.includes('(listed first)'))).toEqual([]);
+    expect(body.filter((t) => MID_SENTENCE_CAPITAL.test(t))).toEqual([]);
   });
 });
