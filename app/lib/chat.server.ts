@@ -15,7 +15,7 @@ import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutErr
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, REFUSAL_RESPONSES, modelParams, refusalLine, type RefusalCategory } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
 import { PROPOSE_SUBSCRIPTION_CHANGE_TOOL, parseSubscriptionProposal, type SubscriptionProposal } from './subscription-gateway.server';
-// Every chat doc is one load state, read at the first chat turn (US-15 AC65, AC72, AC79).
+// Every chat doc is one load state, read at the first chat turn (US-15 AC65, AC72, AC80).
 import { requireChatDocs } from './chat-system-prompt.server';
 
 // ---------------------------------------------------------------------------

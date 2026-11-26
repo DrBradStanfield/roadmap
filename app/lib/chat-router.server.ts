@@ -29,7 +29,7 @@ import { cutText } from '../../packages/health-core/src/chat-history';
 export const ROUTER_VERSION = 5;
 
 // The router's prompt, index block and allow-list come from the chat docs
-// (chat-system-prompt.server.ts, US-15 AC79), built there from the router's
+// (chat-system-prompt.server.ts, US-15 AC80), built there from the router's
 // view, not the full index (US-50 AC3). loadBlogIndex() stays whole. On
 // 'missing' (an entry that skipped its AC65 guard) routeQuery returns the
 // error and makes no call.

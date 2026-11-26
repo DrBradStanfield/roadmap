@@ -31,7 +31,7 @@ import { routeQuery } from './chat-router.server';
 describe('US-15 AC65: getChatCompletion backstop', () => {
   it.each([['plain', undefined], ['streamed', () => {}]])('%s: US-15 AC74 throws naming the missing docs, no model call', async (_case, onEvent) => {
     const error = new Error('Chat docs missing (health_roadmap_algorithm.md, app/lib/chat-posture-brand.md); no model call');
-    // US-15 AC79: the prompt builders throw the same words: no blocks or posture without the docs.
+    // US-15 AC80: the prompt builders throw the same words: no blocks or posture without the docs.
     expect(() => buildSystemBlocks('{}', { savedChat: '' })).toThrow(error);
     expect(() => surfacePosture('brand')).toThrow(error);
     const blocks = [{ type: 'text' as const, text: 'blocks built elsewhere' }];
@@ -42,7 +42,7 @@ describe('US-15 AC65: getChatCompletion backstop', () => {
   });
 });
 
-describe('US-15 AC79: the router backstop', () => {
+describe('US-15 AC80: the router backstop', () => {
   it('routeQuery returns the missing docs as its error, with no router call', async () => {
     const r = await routeQuery('hello', undefined, undefined, 'CHAT');
     expect(r).toMatchObject({ handles: [], rawJson: null, error: 'Chat docs missing (health_roadmap_algorithm.md, app/lib/chat-posture-brand.md); no model call' });

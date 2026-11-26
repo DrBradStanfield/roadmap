@@ -1,5 +1,5 @@
 /**
- * US-15 AC65, AC72, AC79: every chat doc is one load state. The required docs
+ * US-15 AC65, AC72, AC80: every chat doc is one load state. The required docs
  * (system prompt, algorithm, products, both postures) make it 'missing' when any
  * is absent, unreadable or blank: it names the files and carries no text. The
  * optional ones (writing style, answer bank, router prompt, blog index) make it
@@ -56,7 +56,7 @@ afterEach(() => {
   vi.resetModules();
 });
 
-describe('US-15 AC79: transition table', () => {
+describe('US-15 AC80: transition table', () => {
   it('unread + read, all present: loaded, the docs assembled as the prompt builders read them', async () => {
     const { transition } = await import('./chat-system-prompt.server');
     const next = transition({ kind: 'unread' }, read());
@@ -137,7 +137,7 @@ function tempRoot(skip: string[] = [], over: Record<string, string> = {}): strin
   return root;
 }
 
-describe('US-15 AC79: createChatDocs(root)', () => {
+describe('US-15 AC80: createChatDocs(root)', () => {
   async function sentry() {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -216,7 +216,7 @@ describe('US-15 AC79: createChatDocs(root)', () => {
   });
 });
 
-describe('US-15 AC79: no chat doc is read at import', () => {
+describe('US-15 AC80: no chat doc is read at import', () => {
   it('importing the docs, chat and router modules reads no doc; the first chatDocs() call reads them', async () => {
     reads.length = 0;
     const docsRead = () => reads.filter((f) => [...REQUIRED, ...OPTIONAL, INDEX].some((d) => f.endsWith(d)));
@@ -229,7 +229,7 @@ describe('US-15 AC79: no chat doc is read at import', () => {
   });
 });
 
-describe('US-15 AC79: this checkout, as the router and the answer see it', () => {
+describe('US-15 AC80: this checkout, as the router and the answer see it', () => {
   const doc = (file: string) => (fs.readFileSync(path.join(process.cwd(), file), 'utf-8') as string);
 
   it('the router call carries the prompt file with the view count, then the view index block', async () => {
