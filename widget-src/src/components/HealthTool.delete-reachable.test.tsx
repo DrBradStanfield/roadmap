@@ -21,7 +21,7 @@ import { ChatHistoryStore } from '../storage/chat-history-store';
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
@@ -33,21 +33,22 @@ vi.mock('./UploadModal', () => ({ UploadModal: () => null }));
 vi.mock('../../standalone/google-config', () => ({ googleDriveConfig: () => ({}) }));
 vi.mock('../../standalone/reminders', () => ({ remindersSupported: () => false }));
 vi.mock('../../standalone/reminders-control', () => ({ RemindersControl: () => null }));
-// The first read's last write, the chat mirror, throws once when asked: the read fails before
-// the page shows anything (as failMirror does in HealthTool.record-read-pins.test.tsx).
-const failMirror = vi.hoisted(() => ({ next: false, threw: false }));
-vi.mock('../lib/storage', async original => {
-  const real = await original<typeof import('../lib/storage')>();
+// The first read's result cannot be taken once when asked: the read fails before the page shows
+// anything. (A chat mirror write never throws since US-34 AC11, so it is not the failure here.)
+const failRead = vi.hoisted(() => ({ next: false, threw: false }));
+vi.mock('../lib/roadmap-data', async original => {
+  const real = await original<typeof import('../lib/roadmap-data')>();
   return {
     ...real,
-    saveToLocalStorage: (...args: Parameters<typeof real.saveToLocalStorage>) => {
-      if (failMirror.next) { Object.assign(failMirror, { next: false, threw: true }); throw new Error('Synthetic test: mirror failed'); }
-      return real.saveToLocalStorage(...args);
+    hasSavedRecord: (...args: Parameters<typeof real.hasSavedRecord>) => {
+      if (failRead.next) { Object.assign(failRead, { next: false, threw: true }); throw new Error('Synthetic test: first read failed'); }
+      return real.hasSavedRecord(...args);
     },
   };
 });
 
 import { HealthTool } from './HealthTool';
+import { Sentry } from '../lib/sentry';
 import { StorageBar, SyncControl } from '../../standalone/sync-control';
 
 useHealthToolLifecycle();
@@ -57,10 +58,12 @@ const loaded = (root: HTMLElement) => waitFor(() => expect(root.querySelector('.
 
 it('US-11 (H114): a first read that fails before it shows anything still offers Delete all my data', async () => {
   await initRoadmapStore(new LocalStorageAdapter());
-  failMirror.next = true;
+  failRead.next = true;
   const view = render(<HealthTool/>);
-  await waitFor(() => expect(failMirror.threw).toBe(true));
+  await waitFor(() => expect(failRead.threw).toBe(true));
   await settle(20);
+  // The failed-read state was reached: the read's failure was reported as a load failure (useRecordApply firstReadFailed).
+  expect(vi.mocked(Sentry.captureException)).toHaveBeenCalledWith(expect.objectContaining({ message: 'Synthetic test: first read failed' }), expect.anything());
   openSettings(view.container);
   expect(deleteButton(view.container)).not.toBeNull();
 });

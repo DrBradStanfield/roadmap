@@ -270,7 +270,7 @@ final class UploadRunnerTests: XCTestCase {
         try await until("two in flight") { server.count == 2 }
         record.withLock { $0 = #"{"schemaVersion": 999, "measurements": []}"# }
         gate.open()
-        try await until("refused") { runner.model.state == .refused(UploadDoors.Refusal(reason: "record-too-new", message: "A newer version of Health Roadmap wrote this record. Update the app to open it.")) }
+        try await until("refused") { runner.model.state == .refused(UploadDoors.Refusal(reason: "record-too-new", message: "A newer version of this app wrote this record. Update the app to open it.")) }
         try await until("nothing in flight") { await stages(runner).values.allSatisfy { ["stopped", "read"].contains($0) } }
         try await Task.sleep(for: .milliseconds(200))
         guard case .refused = runner.model.state else { return XCTFail("a later view drew over the refusal: \(runner.model.state)") }

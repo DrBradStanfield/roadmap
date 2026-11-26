@@ -18,6 +18,10 @@ export default defineConfig({
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
     '__SENTRY_RELEASE__': JSON.stringify(release),
+    // A theme-extension block, so it runs only on the Shopify storefronts: a
+    // Shopify surface (US-15 AC2a). In this bundle the flag turns on only
+    // trackProductEvent, for chat_thinking_opened and chat_panel_shown (US-15 AC77). Pinned by vite-configs.test.ts.
+    'import.meta.env.VITE_SHOPIFY_SURFACE': JSON.stringify('true'),
   },
   build: {
     lib: {

@@ -50,11 +50,11 @@ describe('US-12 AC1a: a lab read retries an Anthropic 429 once inside its deadli
     vi.useRealTimers();
   });
 
-  function run(replies: Array<() => Promise<Response> | Response>, opts: Parameters<typeof extractOrClassify>[1]) {
+  function run(replies: Array<() => Promise<Response> | Response>, opts: Omit<Parameters<typeof extractOrClassify>[1], 'purpose'>) {
     const fetchMock = vi.fn();
     for (const r of replies) fetchMock.mockImplementationOnce(r);
     global.fetch = fetchMock as unknown as typeof fetch;
-    return { fetchMock, result: extractOrClassify(pages, opts) };
+    return { fetchMock, result: extractOrClassify(pages, { purpose: 'LABS', ...opts }) };
   }
 
   it.each([
@@ -110,7 +110,7 @@ describe('US-12 AC1a: a lab read retries an Anthropic 429 once inside its deadli
   it("chat's path still never retries a 429", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(rateLimited('0')).mockResolvedValueOnce(ok());
     global.fetch = fetchMock as unknown as typeof fetch;
-    await expect(callAnthropicWithUsage({ model: 'x' })).rejects.toThrow(/status 429/);
+    await expect(callAnthropicWithUsage({ model: 'x' }, 'CHAT')).rejects.toThrow(/status 429/);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

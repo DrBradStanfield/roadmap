@@ -19,7 +19,7 @@ import type { ApiMeasurement } from '@roadmap/health-core/mappings';
 import type { Comparator } from '@roadmap/health-core/lab-limits';
 import { bloodTestKeyOf, coreStored } from '@roadmap/health-core/blood-tests';
 import { UnitChip } from './UnitChip';
-import { SAVE_ERRORS, saveErrorText } from './BloodTestTimeline';
+import { SAVE_ERRORS, saveErrorText } from './MatrixSavedCells';
 import { addLabValue, getEraseIdentity, getShownErase } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import type { CorrectFn } from '../lib/matrix-save';

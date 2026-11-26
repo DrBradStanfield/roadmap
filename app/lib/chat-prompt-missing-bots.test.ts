@@ -13,7 +13,7 @@ const state = vi.hoisted(() => {
     YOUTUBE_BOT_CLIENT_SECRET: 'synthetic-secret', YOUTUBE_BOT_REFRESH_TOKEN: 'synthetic-refresh', YOUTUBE_BOT_FORCE_START: 'true',
   });
   return {
-    prompt: { kind: 'missing' } as { kind: 'loaded'; text: string } | { kind: 'missing' },
+    prompt: { kind: 'missing', files: ['docs/products.md'] } as { kind: 'loaded'; text: string } | { kind: 'missing'; files: string[] },
     clients: 0,
     logins: 0,
   };
@@ -39,16 +39,17 @@ import { startDiscordBot, stopDiscordBot } from './discord-bot.server';
 import { startYouTubeBot, stopYouTubeBot } from './youtube-bot.server';
 
 let log: ReturnType<typeof vi.spyOn>;
+let warn: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   vi.useFakeTimers();
   log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 afterEach(() => {
   stopDiscordBot();
   stopYouTubeBot();
-  state.prompt = { kind: 'missing' };
+  state.prompt = { kind: 'missing', files: ['docs/products.md'] };
   state.clients = 0;
   state.logins = 0;
   vi.useRealTimers();
@@ -65,6 +66,11 @@ describe('US-15 AC65: the bots do not start without the chat system prompt', () 
     expect(state.logins).toBe(0);
     expect(youtubeStarted()).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
+    // US-15 AC74: the console line names the missing docs (file names only), not always the prompt.
+    expect(warn.mock.calls.map(([line]) => line)).toEqual([
+      'Discord bot: chat docs missing (docs/products.md) — bot disabled',
+      'YouTube bot: chat docs missing (docs/products.md) — bot disabled',
+    ]);
   });
 
   it('control: loaded, the same setup starts both bots', () => {

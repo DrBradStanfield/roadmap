@@ -31,8 +31,8 @@ final class AppStoreVideo: XCTestCase {
         pause(1.0)
 
         // The report, from Photos: the newest picture is the fictional report the script added.
-        let add = app.buttons["Add medical records"].firstMatch
-        XCTAssertTrue(add.waitForExistence(timeout: 5), "Add medical records")
+        let add = app.buttons["Upload labs"].firstMatch
+        XCTAssertTrue(add.waitForExistence(timeout: 5), "Upload labs")
         mark("add")
         add.tap()
         let photos = app.buttons["labSource.photos"]

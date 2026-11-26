@@ -17,7 +17,7 @@ vi.mock('./supabase-client.server', async (actual) => {
 import { resetClaimsState } from './single-use-claims.test-helpers';
 import { claimProposal, resetMcpMemory } from './mcp-grants.server';
 import { typeKey } from './mcp-seal.server';
-import { issueProposal, openProposal, openStep, signStep, STEP_WINDOWS, stepKey } from './mcp-step.server';
+import { clockFrom, earlyRefusal, issueProposal, openProposal, openStep, PERMANENT_WRITE_PAUSE_SECONDS, signStep, STEP_WINDOWS, stepKey } from './mcp-step.server';
 
 const KEY_A = Buffer.alloc(32, 1).toString('base64');
 const KEY_B = Buffer.alloc(32, 2).toString('base64');
@@ -26,6 +26,7 @@ const SUBJECT = 'subject-hash';
 const CONN = 'connection-hash';
 const NOW = Date.parse('2026-10-07T01:07:40.000Z');
 const { nbfSeconds, ttlSeconds } = STEP_WINDOWS.proposal;
+const ttlImport = STEP_WINDOWS.import.ttlSeconds;
 /** After the pause, inside the window. */
 const LATER = NOW + (nbfSeconds + 1) * 1000;
 
@@ -110,19 +111,72 @@ describe('US-36 AC9 — the window: early before 10 s, expired after 15 min, a t
     expect(open(issueProposal(SUBJECT, CONN, AUDIENCE, NOW + 30_000).receipt, { now: NOW })).toBe('early');
   });
 
-  it('one table: an import has no pause, an hour of life, and the same skew rule (US-35 AC7)', () => {
-    expect(STEP_WINDOWS.import).toEqual({ nbfSeconds: 0, ttlSeconds: 60 * 60, macHex: 32 });
+  it('one table: an import has the permanent-write pause, an hour of life, and the same skew rule (US-35 AC7, AC19)', () => {
+    expect(STEP_WINDOWS.import).toEqual({ nbfSeconds: PERMANENT_WRITE_PAUSE_SECONDS, ttlSeconds: 60 * 60, macHex: 32 });
+    expect(STEP_WINDOWS.proposal.nbfSeconds).toBe(PERMANENT_WRITE_PAUSE_SECONDS);
+    expect(PERMANENT_WRITE_PAUSE_SECONDS).toBe(10);
     const fields = ['payload-id', 'payload-hash'];
     /** An import step signed at `issuedMs`, opened at `nowMs`. */
     const importAt = (issuedMs: number, nowMs: number) => {
       const { mac, issued } = signStep('import', fields, CONN, AUDIENCE, issuedMs);
-      return openStep('import', fields, CONN, mac, issued, AUDIENCE, nowMs).status;
+      return openStep('import', fields, CONN, mac, issued, AUDIENCE, nowMs);
     };
-    expect(importAt(NOW, NOW)).toBe('ok');
-    expect(importAt(NOW + 30_000, NOW)).toBe('ok');
-    expect(importAt(NOW + 61_000, NOW)).toBe('invalid');
-    expect(importAt(NOW, NOW + 3600_000)).toBe('ok');
-    expect(importAt(NOW, NOW + 3601_000)).toBe('expired');
+    const notBefore = new Date(NOW + 10_000).toISOString();
+    expect(importAt(NOW, NOW)).toEqual({ status: 'early', notBefore });
+    expect(importAt(NOW, NOW + 9_999)).toEqual({ status: 'early', notBefore });
+    expect(importAt(NOW, NOW + 10_000)).toEqual({ status: 'ok', notBefore });
+    expect(importAt(NOW + 30_000, NOW).status).toBe('early');
+    expect(importAt(NOW + 61_000, NOW).status).toBe('invalid');
+    expect(importAt(NOW, NOW + 3600_000).status).toBe('ok');
+    expect(importAt(NOW, NOW + 3601_000).status).toBe('expired');
+  });
+
+  it('clockFrom reads the request time moved on by the real time since, so a step is signed when it is handed back (US-35 AC19)', () => {
+    vi.useFakeTimers({ toFake: ['Date', 'performance'] });
+    try {
+      const clock = clockFrom(new Date(NOW).toISOString());
+      expect(clock()).toBe(NOW);
+      vi.advanceTimersByTime(15_000);
+      expect(clock()).toBe(NOW + 15_000);
+      // The elapsed part is monotonic: a wall clock set back does not move it.
+      vi.setSystemTime(Date.parse('2001-01-01T00:00:00.000Z'));
+      expect(clock()).toBe(NOW + 15_000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('an issue time is rounded up to the second, so a step signed at x.001 or x.999 waits at least the full pause (US-35 AC19)', () => {
+    const fields = ['payload-id', 'payload-hash'];
+    for (const ms of [1, 999]) {
+      const signedAt = NOW + ms;
+      const { mac, issued } = signStep('import', fields, CONN, AUDIENCE, signedAt);
+      expect(issued).toBe(NOW / 1000 + 1);
+      const status = (nowMs: number) => openStep('import', fields, CONN, mac, issued, AUDIENCE, nowMs).status;
+      expect(status(signedAt + 9_999), `import +${ms}`).toBe('early');
+      expect(status(NOW + 10_999), `import +${ms}`).toBe('early');
+      expect(status(NOW + 11_000), `import +${ms}`).toBe('ok');
+      // The hour is not shortened: it runs from the rounded-up second.
+      expect(status(NOW + 1_000 + ttlImport * 1000), `import +${ms}`).toBe('ok');
+
+      const { receipt, notBefore } = issueProposal(SUBJECT, CONN, AUDIENCE, signedAt);
+      expect(notBefore).toBe(new Date(NOW + 11_000).toISOString());
+      expect(open(receipt, { now: signedAt + 9_999 }), `proposal +${ms}`).toBe('early');
+      expect(open(receipt, { now: NOW + 10_999 }), `proposal +${ms}`).toBe('early');
+      expect(open(receipt, { now: NOW + 11_000 }), `proposal +${ms}`).toBe('ok');
+      expect(open(receipt, { now: NOW + 1_000 + ttlSeconds * 1000 }), `proposal +${ms}`).toBe('ok');
+    }
+  });
+
+  it('a step opened early is refused in the one sentence every permanent write uses, with the whole seconds left rounded up (US-35 AC19, US-36 AC14)', () => {
+    const at = '2026-10-07T01:07:50.000Z';
+    const before = (ms: number) => Date.parse(at) - ms;
+    expect(earlyRefusal(at, before(2_500))).toBe(
+      'That confirm receipt is not valid yet: it can be used in 3 seconds (from 2026-10-07T01:07:50.000Z), after the user has answered. Do not retry before then; end your turn. Nothing was written.',
+    );
+    expect(earlyRefusal(at, before(10_000))).toContain('it can be used in 10 seconds (from ');
+    expect(earlyRefusal(at, before(1_000))).toContain('it can be used in 1 second (from ');
+    expect(earlyRefusal(at, before(1))).toContain('it can be used in 1 second (from ');
   });
 });
 

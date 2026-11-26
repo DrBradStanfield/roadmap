@@ -1217,7 +1217,7 @@ due") is visible to anyone holding the phone: the wording is a decision for the 
 - **The annual check-in slides**, as on the web: it is a year from the last time the app
   computed it, so a user who opens the app once a year never gets it. A user enrolled in
   the web's emails who also turns on phone reminders is reminded twice; no dedupe.
-- **Lock-screen words: generic.** Title "Health Roadmap", body "A check-up is due. Open
+- **Lock-screen words: generic.** Title "Dr Brad", body "A check-up is due. Open
   the app to see which." The procedure's name is shown only inside the app. Revisit if
   Brad prefers the name ("Colonoscopy due") on the lock screen. The in-app list names a
   follow-up after an abnormal result as its plan card does ("Follow-up to organize:
@@ -1579,10 +1579,10 @@ health tool (`data-clarity-mask` on `HealthTool.tsx`'s root). The app matches th
   "My plan" went with the merged tab), "Chat", "Apple Health metric".
 - `AnalyticsMaskingTests` (US-25 AC19) fails if the window is not masked first, if any code
   unmasks, if a text input lacks its mask, or if any file but Analytics.swift calls Clarity.
-- **Custom events, exactly twenty-one fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-72 AC13; "Tile explainer opened" dropped and "Jump pill tapped" and "Blood test added" added 2026-11-05 for US-73, Brad; "Lab save all" and "Lab save one" added 2026-11-11 for US-52 AC8b, Fable on Brad's hand-over):**
+- **Custom events, exactly twenty-nine fixed words (Brad 2026-10-25, US-57's usage signal; "Guide seen" and "Guide opened" added 2026-10-26 for US-58; "Alcohol answered" for US-60; "Chat edit proposed" and "Chat edit saved" for US-67; "Health Records asked" and "Health Records imported" 2026-11-02 for US-72 AC13; "Tile explainer opened" dropped and "Jump pill tapped" and "Blood test added" added 2026-11-05 for US-73, Brad; "Lab save all" and "Lab save one" added 2026-11-11 for US-52 AC8b, Fable on Brad's hand-over; the three "Lab review" words for US-13 AC13 and two "Lab upload" words for US-12 AC30; "Upload labs weight", "Upload labs cholesterol" and "Upload labs blood tests" added 2026-11-23 for US-73 AC14, Brad):**
   `Analytics.event` sends `ClaritySDK.sendCustomEvent` with a word from one enum,
   `Analytics.Event`: "Tour started", "Tour tip closed 1/2/3", "Tour skipped 1/2/3",
-  "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported", "Jump pill tapped" (any of My health's jump pills, never which), "Blood test added" (a save from the Add blood test sheet, never which test or value), "Lab save all" (the upload page's one Save, for two or more files, once a pick), "Lab save one" (the same for one file; neither carries a count or a name).
+  "Cloud prompt shown", "Cloud prompt back up", "Cloud prompt not now", "Guide seen", "Guide opened", "Alcohol answered", "Chat edit proposed", "Chat edit saved", "Health Records asked", "Health Records imported", "Jump pill tapped" (any of My health's jump pills, never which), "Blood test added" (a save from the Add blood test sheet, never which test or value), "Lab save all" (the upload page's one Save, for two or more files, once a pick), "Lab save one" (the same for one file; neither carries a count or a name), "Upload labs weight", "Upload labs cholesterol", "Upload labs blood tests" (a heading's "Upload labs", naming the heading, never a value).
   Never a value, a tile's name, a test's name, a count or any other text; nothing before Clarity starts.
   An event fired before Clarity starts (a launch finish's "Tour started", S44) is held, the newest 20, and sent
   just after the start's screen name; never under the tests, without an id or after a refused start.
@@ -2163,6 +2163,17 @@ goes, and `DocumentPage.sweep` clears leftovers when a page opens. Only the web'
 (`DocumentPage.previewName`, mirroring `file-kinds.ts` `VIEWABLE_TYPES`, US-14 AC3). The engine
 completes legacy rows with the web's defaults and Swift decodes the list row by row (review R1). No delete on the phone yet: the engine has no
 document delete door, and the web's delete is its store's own tombstone (Brad's call).
+
+### D17 · Home screen name: "Dr Brad" (Brad, 2026-11-23, US-25 AC29)
+
+The name under the icon (`INFOPLIST_KEY_CFBundleDisplayName`, Debug and Release) is "Dr Brad". About
+11 to 12 characters fit under an icon, so "Health Roadmap" showed as "Health Roadma...", and Apple
+wants it a recognisable short form of the App Store name, "Health Roadmap by Dr Brad". The store name, bundle
+id, target, scheme and CFBundleName stay. Directions and the notification title use the same name
+(Brad 2026-11-23, option a). The four permission prompts (camera, Health read, Health write, health
+records) open "This app …" instead (Brad 2026-11-23); the rest of each sentence is unchanged. The too-new-record message says "A newer version of this
+app" (Brad 2026-11-23). Pinned by
+`ios/engine/home-screen-name.test.ts`.
 
 ## Phases
 

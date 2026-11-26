@@ -8,8 +8,17 @@ extension MyDataView {
     /// sizes a one-word title shrinks to one line and any controls go under it, so no word
     /// breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26).
     /// Tour tip 3 (US-57 AC7) rides on Blood tests' heading; its action is the lab upload.
-    private func heading(_ topic: HealthTopic, @ViewBuilder controls: () -> some View = { EmptyView() }) -> some View {
-        TopicHeading(topic.title, anchor: topic.anchor, tip: topic == .bloodTests && bloodTestsTipReady ? { addingLabs = true } : nil, controls: controls)
+    /// "Upload labs" sits on the topics `uploadLabsEvent` names (US-73 AC14) and opens the lab upload.
+    private func heading(_ topic: HealthTopic) -> some View {
+        TopicHeading(topic.title, anchor: topic.anchor, tip: topic == .bloodTests && bloodTestsTipReady ? { addingLabs = true } : nil) {
+            if let event = topic.uploadLabsEvent {
+                Button("Upload labs") {
+                    analytics?.event(event)
+                    addingLabs = true
+                }
+                .accessibilityHint("Upload a lab report or clinic letter")
+            }
+        }
     }
 
     /// One topic as every section draws it: its heading, its urgent cards over its rows (Brad
@@ -17,10 +26,9 @@ extension MyDataView {
     /// (with `footer` under them), then anything after (a section's medicines).
     @ViewBuilder
     func topicSection(_ topic: HealthTopic, _ page: HealthPage, footer: String? = nil,
-                              @ViewBuilder controls: () -> some View = { EmptyView() },
                               @ViewBuilder rows: () -> some View = { EmptyView() },
                               @ViewBuilder after: () -> some View = { EmptyView() }) -> some View {
-        heading(topic, controls: controls)
+        heading(topic)
         cardSection(page[topic].urgent, page: page)
         rows()
         cardSection(page[topic].cards, page: page, footer: footer)

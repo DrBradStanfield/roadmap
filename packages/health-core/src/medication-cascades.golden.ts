@@ -35,6 +35,12 @@
  * 'no' and the PCSK9 inhibitor answered, from the ezetimibe card to the
  * bempedoic acid card (80) or to none where bempedoic acid is answered (60).
  *
+ * US-06 AC22 (Brad, 2026-11-23) added "No" to the GLP-1, SGLT2 inhibitor and
+ * metformin pickers: not taking it, move on to the next step. Both sets gained
+ * a 'no' for each. The record was generated from the commit before the change,
+ * which already moved on from any answer but "haven't tried yet", and today's
+ * plan matches it: only the new 'no' rows were added, and no card changed.
+ *
  * Each cascade has an `explicit` set, stored row by row in
  * medication-cascades.golden.json, and a `full` cross product, stored as one
  * SHA-256 over its rows (about 81,000 combinations, too many to keep).
@@ -88,7 +94,7 @@ const STATIN_DOSES: Record<string, number[]> = {
   rosuvastatin: [5, 10, 20, 40],
   simvastatin: [10, 20, 40],
 };
-const METFORMIN = ['none', 'ir_500', 'ir_1000', 'ir_1500', 'ir_2000', 'xr_500', 'xr_1000', 'xr_1500', 'xr_2000', 'not_tolerated'];
+const METFORMIN = ['none', 'ir_500', 'ir_1000', 'ir_1500', 'ir_2000', 'xr_500', 'xr_1000', 'xr_1500', 'xr_2000', 'no', 'not_tolerated'];
 const BEMPEDOIC = ['not_yet', 'bempedoic_acid', 'bempedoic_acid_ezetimibe', 'none', 'not_tolerated'];
 
 const CASCADES: Record<'weight' | 'lipid', Cascade> = {
@@ -96,20 +102,20 @@ const CASCADES: Record<'weight' | 'lipid', Cascade> = {
     inputs: { heightCm: 178, sex: 'male', birthYear: 1980, weightKg: 101.4 }, // BMI 32, no lipid; an adult (US-07 AC6)
     prefix: 'weight-med-',
     explicit: {
-      glp1: [undefined, { drug: '' }, { drug: 'none', dose: null }, { drug: 'not_tolerated', dose: null }, { drug: 'other', dose: null },
+      glp1: [undefined, { drug: '' }, { drug: 'none', dose: null }, { drug: 'no', dose: null }, { drug: 'not_tolerated', dose: null }, { drug: 'other', dose: null },
         ...drug('tirzepatide', [null, undefined, 2.5, 15]), ...drug('semaglutide_injection', [1, 2.4]), ...drug('liraglutide', [null, 1.8])],
       glp1Escalation: answers('not_yet', 'not_tolerated', 'yes'),
-      sglt2i: [undefined, { drug: 'none', dose: null }, ...drug('empagliflozin', [10, null])],
-      metformin: [undefined, 'none', 'xr_1000'],
+      sglt2i: [undefined, { drug: 'none', dose: null }, { drug: 'no', dose: null }, ...drug('empagliflozin', [10, null])],
+      metformin: [undefined, 'none', 'no', 'xr_1000'],
     },
     full: {
-      glp1: [undefined, { drug: '' }, { drug: 'none', dose: null }, { drug: 'not_tolerated', dose: null }, { drug: 'other', dose: null },
+      glp1: [undefined, { drug: '' }, { drug: 'none', dose: null }, { drug: 'no', dose: null }, { drug: 'not_tolerated', dose: null }, { drug: 'other', dose: null },
         // No absent-dose rows: the old plan read a GLP-1 row with no dose field
         // unlike one with a null dose (a switch card, not the next step). Today
         // both are "no dose recorded"; medication-cascades.test.ts pins that.
         ...Object.entries(GLP1_DOSES).flatMap(([name, doses]) => allDoses(name, doses, false)), ...drug('liraglutide', [null, 1.8])],
       glp1Escalation: answers('not_yet', 'not_tolerated', 'yes'),
-      sglt2i: [undefined, { drug: '' }, { drug: 'none', dose: null }, { drug: 'not_tolerated', dose: null },
+      sglt2i: [undefined, { drug: '' }, { drug: 'none', dose: null }, { drug: 'no', dose: null }, { drug: 'not_tolerated', dose: null },
         ...drug('empagliflozin', [10, 25, null, undefined]), ...drug('dapagliflozin', [5]), ...drug('canagliflozin', [300])],
       metformin: answers(...METFORMIN),
     },

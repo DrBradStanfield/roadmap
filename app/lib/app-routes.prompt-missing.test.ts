@@ -45,7 +45,8 @@ vi.mock('./app-attest.server', async (original) => {
 });
 
 import { appChallenge, appChat, appRegister } from './app-routes.server';
-import { appLimits, ipBucket, type KeyStore, type UseOutcome } from './app-gate.server';
+import { appLimits, type KeyStore, type UseOutcome } from './app-gate.server';
+import { ipBucket } from './ip-key.server';
 import { fakeDevice } from './app-attest.test-helpers';
 import { requestClientData } from './app-attest.server';
 import { machineFiles } from './rate-limiter';

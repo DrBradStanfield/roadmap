@@ -34,7 +34,7 @@ const typeDrafts = () => {
 const add = (session: RecordSession, id: string) =>
   session.edit((file) => void file.measurements.push(createMeasurement({
     id, metricType: 'weight', value: 80, recordedAt: '2026-11-12', createdAt: '2026-11-12T10:00:00.000Z',
-  })));
+  })), session.shownErase);
 /** Past the re-read's throttle. */
 const later = () => vi.setSystemTime(Date.now() + 60_000);
 

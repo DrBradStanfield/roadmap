@@ -14,7 +14,7 @@ import { ROADMAP_FILE_NAME, type WriteResult } from '@roadmap/health-core/adapte
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import {
   addMeasurement, flushRoadmapStore, initRoadmapStore, loadAllHistory, loadLatestMeasurements, saveChangedMeasurements, saveMedication, saveScreening,
-  saveSupplement,
+  saveSupplement, getShownErase,
 } from '../lib/roadmap-data';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import { isSyncPending } from '../storage';
@@ -26,7 +26,7 @@ import { seedGuest, useHealthToolLifecycle } from '../testing/health-tool-harnes
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async importOriginal => ({
   ...(await importOriginal<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', () => ({ listConversations: () => Promise.resolve(null), getChatGate: () => null }));
 vi.mock('./ChatEmbed', () => ({ ChatEmbed: () => null }));
@@ -41,8 +41,8 @@ useHealthToolLifecycle();
 async function page(selector: string) {
   await seedGuest({ sex: 'female', heightCm: 178, birthYear: 1960, birthMonth: 1 }, [['weight', 101.4]],
     [['glp1', 'semaglutide_injection', 1]]);
-  await saveSupplement('custom_test_supplement', 'Test supplement', 25, 'mg');
-  await saveScreening('dexa_screening', 'not_yet_started');
+  await saveSupplement('custom_test_supplement', 'Test supplement', 25, 'mg', undefined, undefined, getShownErase());
+  await saveScreening('dexa_screening', 'not_yet_started', getShownErase());
   await flushRoadmapStore();
   const view = render(<HealthTool />);
   await waitFor(() => expect(view.container.querySelector(selector)).not.toBeNull());
@@ -108,7 +108,7 @@ describe('US-06 AC13: a list change made just before the tab goes away is saved'
   // only one the handler ran reaches the record.
   it.each(Object.keys(leave))('%s: a first-time weight the user left is saved, not left waiting', async event => {
     await initRoadmapStore(new LocalStorageAdapter());
-    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    await saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {}, getShownErase());
     await flushRoadmapStore();
     const view = render(<HealthTool />);
     await waitFor(() => expect(view.container.querySelector('#weightKg')).not.toBeNull());
@@ -197,9 +197,9 @@ describe('US-06 AC13: a cloud page keeps a change its stalled save had not lande
   /** The same GLP-1 user, saved in a cloud; the page then runs on a cloud whose saves hang. */
   async function cloudPage(cloud: MemoryCloud, stalled: () => Parameters<typeof initRoadmapStore>[0] = () => new StalledCloud(cloud)) {
     await initRoadmapStore(new MemoryAdapter(cloud));
-    await saveChangedMeasurements({ sex: 'female', heightCm: 178, birthYear: 1960, birthMonth: 1 }, {});
-    await addMeasurement('weight', 101.4, '2026-09-01');
-    await saveMedication('glp1', 'semaglutide_injection', 1, 'mg');
+    await saveChangedMeasurements({ sex: 'female', heightCm: 178, birthYear: 1960, birthMonth: 1 }, {}, getShownErase());
+    await addMeasurement('weight', 101.4, '2026-09-01', getShownErase());
+    await saveMedication('glp1', 'semaglutide_injection', 1, 'mg', getShownErase());
     await flushRoadmapStore();
     const page = stalled();
     localStorage.setItem(BACKEND_KEY, page.id); // the page's cloud, as connect.ts remembers it

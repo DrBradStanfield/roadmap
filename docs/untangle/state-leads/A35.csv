@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+A35,shared sync,Access sentence after an earlier read in the same tool call,behaviour,not started,"Raised in PR 2149 review (US-10 AC20). A hosted MCP tool call loads the record, then saves; if the save's own read is refused, describeStorageFailure and accessRefusedText (app/lib/mcp.server.ts) say 'Nothing was read and nothing was written', though the load earlier in that call read it. SyncManager marks only a failure of its write (afterRead). The wording waits for the owner.",2149,yes

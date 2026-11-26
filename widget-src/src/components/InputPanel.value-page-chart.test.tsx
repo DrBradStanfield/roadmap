@@ -29,7 +29,7 @@ vi.mock('chartjs-adapter-date-fns', () => ({}));
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackABConversion: vi.fn(), trackProductEvent: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), media: q, addEventListener() {}, removeEventListener() {} }));
 

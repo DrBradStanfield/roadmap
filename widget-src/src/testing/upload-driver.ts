@@ -43,5 +43,5 @@ export function drive(upload: HealthUploadAPI, files: File[]): Driven {
     return { id: `f${i}`, name: f.name, bytes: f.size, kind: isZip(f) ? 'zip' : 'file' };
   });
   port.send({ type: 'picked', files: picked, needsConsent: false, now: new Date().toISOString() });
-  return { state: () => s, held, states, send: port.send, outcome: (cloud = true) => readOutcome(s, held, cloud) };
+  return { state: () => s, held, states, send: port.send, outcome: () => readOutcome(s, held) };
 }
