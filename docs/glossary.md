@@ -6,7 +6,8 @@ retires, and the distinctions that stay on purpose. Use it when you write copy, 
 
 **Status.** Each entry is **Agreed** (the word to use from now on) or **Proposed, pending Brad**. A pending entry
 covers a choice only Brad can make (his name, clinical wording, house spelling, the product's name). Until he decides,
-leave existing text as it is and do not move it either way.
+leave existing text as it is and do not move it either way. All 30 entries are agreed: Brad answered the last eight
+(G1, G4, G11, G12, G17, G26, G27, G28) on 2026-11-26, and each of those records his answer.
 
 **Lines that change only with Brad's yes.** Some text is fixed on purpose even where an entry retires its word:
 clinical text (the three-file sync in CLAUDE.md), wording Brad approved or froze, strings a test pins, and the
@@ -34,9 +35,11 @@ re-seeded at today's count; review baseline diffs). Each rule names its entry, a
 checks that the word is in that entry's Retired list here. Add a rule only for a word that is wrong nearly everywhere
 it is scanned; it does not read comments, identifiers or tests.
 
-## G1. The product's name (Proposed, pending Brad)
-- **Use:** Health by Dr Brad. **Means:** the whole product: the website, the iPhone app and the connector people add
-  to their AI assistant.
+## G1. The product's name (Agreed)
+- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
+- **Use:** Health by Dr Brad, in everything people read; "Health Roadmap" only where iOS shows the app's name; the
+  cloud folders keep "Health Plan by Dr Brad". **Means:** the whole product: the website, the iPhone app and the
+  connector people add to their AI assistant.
 - **Retired:** "Health Roadmap" (in prose people read, except where Apple shows the iPhone app's name); "health
   roadmap" in lower case ("Your health roadmap"); "Roadmap" as a name; "Health Plan by Dr Brad" (except the cloud
   folder names); "Brad's roadmap" (the guideline pages in `docs/guideline/`; Brad's lines); "Health Plan" as the
@@ -91,7 +94,8 @@ it is scanned; it does not read comments, identifiers or tests.
 - **Stored names:** record keys `eraseEpoch`, `erasedRows`, `erasedAt`; browser keys `health_roadmap_cleared_erase`,
   `health_roadmap_local_erase_generation`; engine doors `cloudErase`, `cloudEraseHeld`, `erasePhoneJson`.
 
-## G4. A blood test and its result (Proposed, pending Brad)
+## G4. A blood test and its result (Agreed)
+- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Use:** blood test (the test) and result (its number). **Means:** a test done on a blood sample; its result is the
   number the lab reported for it on one day.
 - **Retired, in copy:** "lab value"; "lab test"; "lab result" (except inside the G2 and G15 labels); "labs" as a noun;
@@ -100,7 +104,7 @@ it is scanned; it does not read comments, identifiers or tests.
 - **Keep:**
   - The catalogue holds three urine tests (Urine ACR, Urine creatinine, Urine PCR,
     `packages/health-core/src/lab-catalog.ts`). That is why the code says "lab", and why "blood test" is not strictly
-    true for those rows. The urine question is Brad's.
+    true for those rows. Option A accepts them as a known misfit.
   - The cloud folder "Lab results/" (`document-path.ts`). Renaming it moves where files go.
   - Title case "Blood Test Results" becomes sentence case "Blood tests". That is casing, not a new word.
 - **Code word:** "lab" stays: "lab value" for one saved result, "lab test" for a kind of test, matching the stored
@@ -205,7 +209,8 @@ it is scanned; it does not read comments, identifiers or tests.
 - **Stored names:** record key `unitSystem` with values `si` and `conventional`; browser key
   `health_roadmap_unit_system`.
 
-## G11. The plan and its parts (Proposed, pending Brad)
+## G11. The plan and its parts (Agreed)
+- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Use:** plan (the whole); suggestion (one item); recommendation only for what a guideline or Dr Brad recommends.
   **Means:** the plan is everything the product tells a person to do next; a suggestion is one item in it; a card is
   how one suggestion is drawn.
@@ -222,7 +227,8 @@ it is scanned; it does not read comments, identifiers or tests.
 - **Stored names:** record keys `suggestions` and `recommendationSnapshots` (the second uses "recommendation" for
   product suggestions; it stays as a stored name); MCP `get_plan` and `summarise_my_plan`.
 
-## G12. How the doctor is named (Proposed, pending Brad)
+## G12. How the doctor is named (Agreed)
+- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Use:** Dr Brad (no full stop); Dr Brad Stanfield for a formal first mention. **Means:** how the product names the
   doctor behind it.
 - **Retired:** "Dr. Brad"; "Dr. Brad Stanfield" (for example the chat system prompt); "Dr Stanfield" and "Dr.
@@ -306,18 +312,19 @@ it is scanned; it does not read comments, identifiers or tests.
   `/api/app/v1/lab-import`, `/api/app/v1/lab-read` (shipped iPhone builds call them); MCP `import_documents` and
   `import_my_lab_files`; the iPhone consent id `consent.labUpload.v1`; events `upload_*`.
 
-## G17. The person's basic facts (Proposed, pending Brad)
+## G17. The person's basic facts (Agreed)
+- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
 - **Use:** About you. **Means:** the section that holds the facts the plan needs first: sex, birth year, height and
   the like.
 - **Retired:** "starting info" and "starting information" (the web heading during first fill); "your details" and
   "personal details" (optional: prompts could name the section, "Fill in About you").
 - **Keep:**
-  - The web switch is deliberate. The heading reads "Starting info" while the section sits at the top during
-    onboarding, and "About you" once it moves into Settings (`aboutYouLow`; US-62 AC12, AC28 and AC31). Changing it
-    touches Brad's onboarding design.
+  - Brad chose "About you" at both stages. Today the web heading reads "Starting info" while the section sits at
+    the top during onboarding, and "About you" once it moves into Settings (`aboutYouLow`; US-62 AC12, AC28 and AC31).
+    Those criteria describe the switch, so the PR that changes the onboarding heading updates them too.
   - "Profile" stays in code and agent text. The Supabase `profiles` table and Klaviyo profiles are shop and email
     accounts, never the record.
-- **Code word:** "profile" stays for the record's section. If Brad picks "About you" for both stages,
+- **Code word:** "profile" stays for the record's section. With "About you" at both stages,
   `StartingInfoVitals` becomes `AboutYouVitals`; `AboutYou`, `aboutYouLow` and `openAboutYou` already match.
 - **Stored names:** record key `profile` and type `RoadmapProfile`; MCP `update_profile`; chat tool
   `propose_profile_edit`; event `chat_profile_edit`.
@@ -429,10 +436,11 @@ it is scanned; it does not read comments, identifiers or tests.
 - **Code word:** already matches (`HealthKitClient` wraps the framework; `AppleHealthSync`, `AppleHealthSection`).
 - **Stored names:** record sources `apple_health` and `health_records`.
 
-## G26. Medicines (Proposed, pending Brad)
-- **Use (proposed):** medicine in sentences; Medications in form titles; drug only for drug names and classes in
-  clinical text. **Means:** a prescribed medicine the person takes.
-- **Retired:** "meds" in copy; "medication" in sentences, if Brad picks this.
+## G26. Medicines (Agreed)
+- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
+- **Use:** medicine in sentences; Medications in form titles; drug only for drug names and classes in clinical
+  text. **Means:** a prescribed medicine the person takes.
+- **Retired:** "meds" in copy; "medication" in sentences.
 - **Keep:**
   - Brad's approved education line says "medicines": "Talk to your doctor before you change anything about your health
     or medicines." (`ios/HealthRoadmap/App/EducationNote.swift`, US-25 AC10b).
@@ -444,10 +452,12 @@ it is scanned; it does not read comments, identifiers or tests.
 - **Stored names:** record keys `medications`, `medicationHistory`, `medicationKey`, `drugName`; chat tool
   `propose_medication_edit`; event `medication_history_viewed`.
 
-## G27. Names of individual tests (Proposed, pending Brad)
-- **Use (proposed):** one display name per test, taken from the code labels, with the full name beside it on first
-  mention in prose. **Means:** how each test is spelled, for example ApoB, Lp(a), HbA1c, LDL cholesterol.
-- **Retired, if Brad picks this:** "apoB", "APOB" and "apo B" in prose; "A1c" on its own in prose.
+## G27. Names of individual tests (Agreed)
+- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
+- **Use:** one display name per test (ApoB, Lp(a), HbA1c), taken from the code labels, with the full name beside
+  it on first mention in prose. Renames go through the clinical three-file sync (CLAUDE.md), all three files in one
+  PR. **Means:** how each test is spelled, for example ApoB, Lp(a), HbA1c, LDL cholesterol.
+- **Retired:** "apoB", "APOB" and "apo B" in prose; "A1c" on its own in prose.
 - **Keep:**
   - The full name beside the short one on first mention is house style (`docs/writing-style.md`), for example
     "Lipoprotein(a), a cholesterol-carrying particle like LDL...".
@@ -458,14 +468,15 @@ it is scanned; it does not read comments, identifiers or tests.
 - **Stored names:** metric types `apob`, `lpa`, `hba1c`, `ldl`; browser key `health_roadmap_lpa_check_kept`; events
   `lpa_unit_selected` and `lpa_check_answered`.
 
-## G28. House spelling (Proposed, pending Brad)
-- **Use (proposed):** US spelling in everything people read. **Means:** whether prose uses US spelling (personalized,
+## G28. House spelling (Agreed)
+- **Answer:** Brad, 2026-11-26: go with your recommendations; option A.
+- **Use:** US spelling in everything people read. **Means:** whether prose uses US spelling (personalized,
   catalog) or NZ/UK spelling (personalised, catalogue).
-- **Retired, in copy, if Brad picks this:** "personalised"; "organised"; "catalogue" (the connector's text keeps it
-  until its pins are re-taken).
+- **Retired, in copy:** "personalised"; "organised"; "catalogue" (the connector's text keeps it until its pins are
+  re-taken).
 - **Keep:**
-  - No spelling rule is written in CLAUDE.md or `docs/writing-style.md` today. Brad is in New Zealand and the stores
-    serve the US. Copy on the website already leans US ("personalized").
+  - This entry is the house spelling rule; CLAUDE.md and `docs/writing-style.md` do not state one. Brad is in New
+    Zealand and the stores serve the US. Copy on the website already leans US ("personalized").
 - **Code word:** code follows the house spelling. With US spelling: `mcp-tool-catalogue.ts` to `mcp-tool-catalog.ts`,
   `OFF_CATALOGUE_NOTE` to `OFF_CATALOG_NOTE`, `isLooseCatalogueName` to `isLooseCatalogName`. `lab-catalog.ts` and
   `LAB_CATALOG` already use it.
