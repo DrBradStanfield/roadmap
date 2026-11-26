@@ -1,7 +1,8 @@
 /**
  * The chat docs: one load state per process (US-15 AC65, AC72, AC80). Nothing
- * is read at import. The first chatDocs() call reads every file once and sends
- * one 'read' event; `transition` is the only way the state changes.
+ * is read at import. The first chatDocs() call (app/entry.server.tsx, at server
+ * start) reads every file once and sends one 'read' event; `transition` is the
+ * only way the state changes.
  *
  * - 'missing': a required file (CHAT_DOC_FILES) is absent, unreadable or blank.
  *   It names the files and carries no text, so no caller can build a prompt
