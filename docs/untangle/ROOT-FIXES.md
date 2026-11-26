@@ -132,6 +132,6 @@ which waits for Brad's look.
 
 ## Status, 27 Nov 2026
 
-- **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR PENDING, held).
+- **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR 2188, held).
   H127's other web checks (transport silence, refused Drive grant, busy write, corrupt device copy) need a typed
   field that does not exist yet: a design first. The Drive grant check sits in files held PR 2099 edits.
