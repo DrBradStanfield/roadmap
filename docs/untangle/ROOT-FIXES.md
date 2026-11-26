@@ -132,6 +132,18 @@ which waits for Brad's look.
 
 ## Status, 27 Nov 2026
 
-- **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR 2188, held).
+- **R6** web, lead H127: the picker's switch stop reads the typed log-off reason (US-09 AC64, PR 2188, merged).
   H127's other web checks (transport silence, refused Drive grant, busy write, corrupt device copy) need a typed
   field that does not exist yet: a design first. The Drive grant check sits in files held PR 2099 edits.
+  Ruled as recorded in the H127 lead row.
+- **R23** closed, superseded by the shared upload engine. The two old rules are deleted (`review-matrix.ts`
+  in PR 1972, `LabReportSave.swift` in PR 1913). One engine rule sets the default ticks (`upload-review.ts`),
+  and the phone saves an upload in one call. Leads U10 and U12 done; U12 keeps one open line, a test gap.
+- **R17** owner rulings: the phone's hand-written allow-list stays the authority, with a CI test against drift
+  from the adapters' routes, built after PR 2099 lands (lead M12). One shared table of viewable types in
+  health-core; each client's open rule stays until a change to it gets its own adversary and Codex review
+  (lead M13). Both leads not started.
+- **R24** finished: PR 2184 merged. Its follow-up, lead T38: the classifier half merged (PR 2187); the YouTube
+  half is not built. PR 2183, which it waited on, has merged.
+- **R4** PR 2 merged (PR 2182).
+- **R14** merged as PR 2181 (lead H35).
