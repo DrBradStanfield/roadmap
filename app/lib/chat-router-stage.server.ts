@@ -33,8 +33,9 @@ export async function runRouter(
   turn: RouterTurn,
   purpose: ChatPurpose,
   report: (result: RouterResult) => void,
+  model?: string,
 ): Promise<RouterResult> {
-  const result = await routeQuery(turn.current, turn.first, turn.recent, purpose);
+  const result = await routeQuery(turn.current, turn.first, turn.recent, purpose, model);
   report(result);
   return result;
 }
