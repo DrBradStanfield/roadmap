@@ -96,7 +96,7 @@ describe('US-09 AC6c: connect diagnostics are closed-list tags and fixed text', 
   it('names the error class and the HTTP status class from closed lists only', () => {
     expect(ERROR_CLASS_TAGS).toEqual(['StorageError', 'ConflictError', 'SchemaTooNewError', 'RecordShapeError', 'other']);
     expect(HTTP_STATUS_TAGS).toEqual(['401', '403', '404', '409', '429', '4xx', '5xx', 'none']);
-    const status = (code?: number) => new StorageError(privateText, undefined, undefined, code);
+    const status = (code?: number) => new StorageError(privateText, undefined, undefined, code, undefined, 'no-answer');
     const cases: Array<[unknown, string, string]> = [
       [status(401), 'StorageError', '401'], [status(403), 'StorageError', '403'],
       [status(404), 'StorageError', '404'], [status(409), 'StorageError', '409'],
@@ -117,7 +117,7 @@ describe('US-09 AC6c: connect diagnostics are closed-list tags and fixed text', 
   it('tags a refused lift with its class and status, and the envelope keeps both', async () => {
     await seedDevice();
     class Refusing extends MemoryAdapter {
-      async read(): Promise<never> { throw new StorageError(privateText, undefined, undefined, 403); }
+      async read(): Promise<never> { throw new StorageError(privateText, undefined, undefined, 403, undefined, 'refused'); }
     }
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     await liftLocalInto(new Refusing(), 'google-drive');
@@ -138,7 +138,7 @@ describe('US-09 AC6c: connect diagnostics are closed-list tags and fixed text', 
 
   it('an OAuth-return failure goes out as a fixed message under the strict envelope', () => {
     const warn = warnSpy();
-    reportConnectFailure(new StorageError(`Dropbox token exchange failed (400): ${privateText}`), 'dropbox');
+    reportConnectFailure(new StorageError(`Dropbox token exchange failed (400): ${privateText}`, undefined, undefined, undefined, undefined, 'refused'), 'dropbox');
     const { error, tags } = lastCapture();
     expect(error.message).toBe('Cloud connect failed');
     expect('cause' in error).toBe(false);

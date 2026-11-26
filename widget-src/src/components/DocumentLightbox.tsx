@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer } from 'react';
 import { createPortal } from 'react-dom';
-import { deleteDocument, readDocumentFile } from '../lib/roadmap-data';
+import { deleteDocument, getShownErase, readDocumentFile } from '../lib/roadmap-data';
 import { DOCUMENT_TYPE_LABELS } from '@roadmap/health-core/document-path';
 import { formatDocumentDate } from '../lib/document-format';
 import { viewableType } from '../lib/file-kinds';
@@ -80,7 +80,7 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
   const handleDelete = async () => {
     sendDelete('press');
     if (deleteStep !== 'confirming') return;
-    const success = await deleteDocument(doc.id).catch(() => false);
+    const success = await deleteDocument(doc.id, getShownErase()).catch(() => false); // the erase shown at the press (US-16 AC2a)
     if (success) {
       onDeleted?.(doc.id);
       onClose();

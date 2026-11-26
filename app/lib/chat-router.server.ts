@@ -12,7 +12,7 @@ import * as Sentry from '@sentry/react-router';
 import fs from 'fs';
 import path from 'path';
 import * as z from '../../packages/health-core/src/zod';
-import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
+import { callAnthropicWithUsage, type AnthropicUsage, type ChatPurpose } from './anthropic.server';
 import { loadBlogIndex } from './blog-index.server';
 import { routerView, routerIndexBlock } from './router-view';
 import { parseRouterReply } from './router-reply';
@@ -204,8 +204,10 @@ export function sanitizeRawHandles(handles: unknown, valid?: ReadonlySet<string>
 
 export async function routeQuery(
   currentMessage: string,
-  firstMessage?: string,
-  recentUserMessages?: string[],
+  firstMessage: string | undefined,
+  recentUserMessages: string[] | undefined,
+  purpose: ChatPurpose,
+  model: string = ROUTER_MODEL, // YouTube passes YOUTUBE_MODEL (US-15 AC78)
 ): Promise<RouterResult> {
   const t0 = Date.now();
 
@@ -229,7 +231,7 @@ export async function routeQuery(
   const routerPrompt = getRouterPrompt();
 
   const body = {
-    ...modelParams(ROUTER_MODEL, 200),
+    ...modelParams(model, 200),
     system: [
       {
         type: 'text',
@@ -256,7 +258,7 @@ export async function routeQuery(
   let usage = EMPTY_USAGE;
 
   try {
-    const result = await callAnthropicWithUsage(body, ROUTER_TIMEOUT_MS);
+    const result = await callAnthropicWithUsage(body, purpose, ROUTER_TIMEOUT_MS);
     rawJson = result.content;
     usage = result.usage;
 
@@ -295,12 +297,16 @@ export async function routeQuery(
 }
 
 
-/** Web-route telemetry excludes the raw parsing error kept in the result. */
-export function reportRouterFailure(result: RouterResult | null): void {
+/**
+ * One router failure, reported per turn (web, Discord), passed to runRouter
+ * (chat-router-stage.server.ts). YouTube counts its failures per tick instead
+ * (reportTickFallbacks). Telemetry excludes the raw parsing error kept in the result.
+ */
+export function reportRouterFailure(result: RouterResult | null, platform: 'shopify' | 'discord'): void {
   if (!result?.error) return;
   Sentry.captureMessage('Router: request or output failure', {
     level: 'warning',
-    tags: { feature: 'chat', subsystem: 'router' },
+    tags: { feature: 'chat', subsystem: 'router', platform },
     extra: { latencyMs: result.latencyMs, cacheHit: result.cacheHit },
   });
 }

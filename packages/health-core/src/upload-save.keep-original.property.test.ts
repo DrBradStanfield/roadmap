@@ -94,7 +94,7 @@ async function run(c: Case, record: RoadmapFile, opts: { reviewed: boolean; mean
   const stored: string[] = [];
   let n = 0;
   const io: UploadSaveIO<string> = {
-    holds: (id) => !c.notHeld.includes(id), original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf',
+    stopped: () => false, holds: (id) => !c.notHeld.includes(id), original: (id) => `bytes of ${id}`, mimeType: () => 'application/pdf',
     write: async (ref, _b, id) => { if (c.refused.includes(id)) throw new Error('refused'); stored.push(ref); },
     now: () => NOW, newId: () => `doc-${n++}`,
   };

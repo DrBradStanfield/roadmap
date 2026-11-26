@@ -11,6 +11,7 @@ import type { UnitSystem } from '@roadmap/health-core/units';
 import { trackProductEvent } from '../lib/server-api';
 import { recordDays, recordMeasured, resultsFor, saveMeasured, seenAfterFailure, seenNow, seenWith, type Seen } from './body-measures';
 import { INPUT_OF, readBoxes, settle, type Boxes, type Field } from './boxes';
+import { useTreeErase } from './FollowErase';
 
 type Days = ReturnType<typeof recordDays>;
 
@@ -24,6 +25,8 @@ export function useWidgetSave(args: {
   setDays: Dispatch<SetStateAction<Days>>;
 }): (fields: readonly Field[]) => Promise<boolean> {
   const { now, setBoxes, setDays } = args;
+  // The erase this tree was mounted under: every save it asks, queued or not, writes under it or not at all (US-75 AC8).
+  const erase = useTreeErase();
   // What the person has seen of the record: all a save may replace (review A4, R5).
   const seen = useRef<Seen | null>(null);
   seen.current ??= seenNow();
@@ -54,7 +57,7 @@ export function useWidgetSave(args: {
       const own = new Set([...chosen].filter((f) => (ownAfter.current[f] ?? 0) > number));
       const base: Seen = { ...seenWith(baseline, own), pending: seen.current!.pending };
       // A save that throws ends as one the store could not keep.
-      const outcome = await saveMeasured(values, chosen, base, unit).catch(() => ({ kind: 'failed' as const, staged: { saved: [], inserted: [] } }));
+      const outcome = await saveMeasured(values, chosen, base, unit, erase).catch(() => ({ kind: 'failed' as const, staged: { saved: [], inserted: [] } }));
       if (outcome.kind === 'failed') {
         // The drafts stay for the next save; only the person's own entries count as seen (A3, A4).
         seen.current = seenAfterFailure(seen.current!, values, chosen, outcome.staged);
@@ -86,7 +89,8 @@ export function useWidgetSave(args: {
         pageView.savedCounted = true;
         trackProductEvent('waist_widget_saved');
       }
-      return unsaved.current.size === 0;
+      // A refused entry is not kept (one typed under an older erase among them): the next step stays (US-74 AC4).
+      return refused.size === 0 && unsaved.current.size === 0;
     };
     const next = queue.current.then(run);
     queue.current = next.catch(() => undefined);

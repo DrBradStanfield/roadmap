@@ -22,10 +22,24 @@ import {
 } from '../../packages/health-core/src/models';
 import {
   ANTHROPIC_TIMEOUT_MS, fetchAnthropicRaw, readJson, toErrorType, toResult, toUsage,
-  type AnthropicContentBlock, type AnthropicResult, type ReadControl,
+  type AnthropicContentBlock, type AnthropicResult, type ReadControl, type TokenUsage,
 } from './anthropic-fetch.server';
 // The HTTP layer moved to anthropic-fetch.server.ts; its public names keep this import path.
 export { isNetworkOrTimeoutError, type AnthropicUsage, type AnthropicResult } from './anthropic-fetch.server';
+
+/**
+ * What a model call is for. Each has its own optional key, ANTHROPIC_API_KEY_<PURPOSE>, so the
+ * Console shows spend by feature; an unset, empty or whitespace-only one falls back to ANTHROPIC_API_KEY (US-76).
+ */
+export type AnthropicPurpose = 'CHAT' | 'YOUTUBE' | 'DISCORD' | 'PURGE' | 'LABS' | 'CONNECTOR';
+/** The chat pipeline's purposes: the surface whose turn it is (classifier, router and answer alike). */
+export type ChatPurpose = Extract<AnthropicPurpose, 'CHAT' | 'YOUTUBE' | 'DISCORD'>;
+
+export function anthropicKey(purpose: AnthropicPurpose): string {
+  const apiKey = process.env[`ANTHROPIC_API_KEY_${purpose}`]?.trim() || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
+  return apiKey;
+}
 
 // The pure extraction pieces (prompt, schema parsing, unit resolution) live in
 // health-core/lab-extraction.ts — shared with the standalone BYOK upload path
@@ -116,10 +130,9 @@ function readExtraction(result: AnthropicResult, mode: DocumentPromptMode): Unif
  */
 export async function extractOrClassify(
   pages: PageContent[],
-  opts: { timeoutMs?: number; httpAttempts?: number; oneDeadline?: true; retryRateLimit?: true; documentMode?: DocumentPromptMode; onRetry?: () => void } = {},
+  opts: { purpose: AnthropicPurpose; timeoutMs?: number; httpAttempts?: number; oneDeadline?: true; retryRateLimit?: true; documentMode?: DocumentPromptMode; onRetry?: () => void },
 ): Promise<UnifiedExtractionResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
+  const apiKey = anthropicKey(opts.purpose);
 
   const documentMode = opts.documentMode ?? 'full';
   const body = {
@@ -154,6 +167,26 @@ export interface AnthropicStreamEvent { type: 'thinking' | 'text'; text: string 
 /** Longest silence between chunks once a stream has begun. */
 const STREAM_IDLE_TIMEOUT_MS = 30_000;
 
+/** One delta's fields that readEventStream reads. The last member is a missing delta (the `?? {}` below). */
+type StreamDelta =
+  | { type: 'text_delta'; text: string } | { type: 'thinking_delta'; thinking: string }
+  | { type: 'signature_delta'; signature: string } | { type: 'input_json_delta'; partial_json: string }
+  | { type?: undefined };
+
+/**
+ * The fields readEventStream reads from one SSE event, by `type`. It describes
+ * what the code reads; nothing checks it: each `data:` line goes in as parsed.
+ * Other event and delta types fall through and are ignored.
+ */
+type StreamEvent =
+  | { type: 'message_start'; message?: { usage?: TokenUsage } }
+  | { type: 'content_block_start'; index: number; content_block: AnthropicContentBlock }
+  | { type: 'content_block_delta'; index: number; delta?: StreamDelta }
+  | { type: 'content_block_stop'; index: number }
+  | { type: 'message_delta'; usage?: TokenUsage; delta?: { stop_reason?: string | null; stop_details?: { category?: unknown } } }
+  | { type: 'message_stop' | 'ping' }
+  | { type: 'error'; error?: { type?: unknown } };
+
 /**
  * Read the SSE body into the same result the JSON read returns: text,
  * thinking and tool_use blocks (tool input parsed at its block's end), usage
@@ -167,25 +200,26 @@ const STREAM_IDLE_TIMEOUT_MS = 30_000;
 async function readEventStream(
   response: Response, onEvent: (event: AnthropicStreamEvent) => void, control: ReadControl,
 ): Promise<AnthropicResult> {
-  const blocks: Array<AnthropicContentBlock & Record<string, any>> = [];
+  const blocks: AnthropicContentBlock[] = [];
   const toolJson = new Map<number, string>();
-  let rawUsage: Record<string, number> = {};
+  let rawUsage: TokenUsage = {};
   let stopReason: string | undefined;
   let category: unknown;
   let stopped = false;
 
-  const handle = (event: any) => {
+  const handle = (event: StreamEvent) => {
     switch (event.type) {
       case 'message_start':
         rawUsage = { ...event.message?.usage };
         break;
       case 'content_block_start':
         blocks[event.index] = { ...event.content_block };
+        // `content_block` is typed required for the spread; the reply is not validated, so `?.` stays.
         if (event.content_block?.type === 'tool_use') toolJson.set(event.index, '');
         break;
       case 'content_block_delta': {
         const block = blocks[event.index];
-        const delta = event.delta ?? {};
+        const delta: StreamDelta = event.delta ?? {};
         if (!block) break;
         if (delta.type === 'text_delta') {
           block.text = (block.text ?? '') + delta.text;
@@ -263,20 +297,16 @@ async function readEventStream(
 /** Text + usage + raw content blocks wrapper — for chat (prompt caching
  *  metrics + tool_use parsing). `maxAttempts: 1` turns the retry off (US-15 AC44's scrub). */
 export async function callAnthropicWithUsage(
-  body: Record<string, unknown>, timeoutMs = ANTHROPIC_TIMEOUT_MS, maxAttempts?: number,
+  body: Record<string, unknown>, purpose: AnthropicPurpose, timeoutMs = ANTHROPIC_TIMEOUT_MS, maxAttempts?: number,
 ): Promise<AnthropicResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-  return fetchAnthropicRaw(apiKey, body, timeoutMs, maxAttempts);
+  return fetchAnthropicRaw(anthropicKey(purpose), body, timeoutMs, maxAttempts);
 }
 
 /** callAnthropicWithUsage, streamed: deltas go to `onEvent`, the result is the same shape. */
 export async function streamAnthropicWithUsage(
-  body: Record<string, unknown>, onEvent: (event: AnthropicStreamEvent) => void, timeoutMs = ANTHROPIC_TIMEOUT_MS,
+  body: Record<string, unknown>, onEvent: (event: AnthropicStreamEvent) => void, purpose: ChatPurpose, timeoutMs = ANTHROPIC_TIMEOUT_MS,
 ): Promise<AnthropicResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-  return fetchAnthropicRaw(apiKey, { ...body, stream: true }, timeoutMs, undefined,
+  return fetchAnthropicRaw(anthropicKey(purpose), { ...body, stream: true }, timeoutMs, undefined,
     (response, control) => readEventStream(response, onEvent, control));
 }
 

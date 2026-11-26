@@ -169,7 +169,7 @@ final class ReminderScheduler {
     /// the phone, so it says only that a check-up is due; which one is inside the app (D7).
     static func request(for notification: PhoneReminders.Notification) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
-        content.title = "Health Roadmap"
+        content.title = "Dr Brad"
         content.body = "A check-up is due. Open the app to see which."
         content.sound = .default
         let parts = notification.fireDay.split(separator: "-").compactMap { Int($0) }

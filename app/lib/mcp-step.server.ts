@@ -14,14 +14,37 @@ import { RECEIPT_LIFETIME_SECONDS } from '../../packages/health-core/src/mcp-too
 export type StepKind = 'import' | 'proposal';
 
 /**
- * One table: issue and verify both read it. An import has no pause. `macHex`
- * is the MAC's length in lowercase hex: 128 bits in an import's pending file,
- * 80 in a proposal receipt.
+ * The pause before any permanent write: a correction, a profile change, a
+ * feedback issue, or an import commit, which can replace a held value (US-35
+ * AC19). One number, so the two kinds cannot drift apart.
+ */
+export const PERMANENT_WRITE_PAUSE_SECONDS = 10;
+
+/**
+ * One table: issue and verify both read it. `macHex` is the MAC's length in
+ * lowercase hex: 128 bits in an import's pending file, 80 in a proposal receipt.
  */
 export const STEP_WINDOWS: Record<StepKind, { nbfSeconds: number; ttlSeconds: number; macHex: number }> = {
-  import: { nbfSeconds: 0, ttlSeconds: RECEIPT_LIFETIME_SECONDS, macHex: 32 },
-  proposal: { nbfSeconds: 10, ttlSeconds: 15 * 60, macHex: 20 },
+  import: { nbfSeconds: PERMANENT_WRITE_PAUSE_SECONDS, ttlSeconds: RECEIPT_LIFETIME_SECONDS, macHex: 32 },
+  proposal: { nbfSeconds: PERMANENT_WRITE_PAUSE_SECONDS, ttlSeconds: 15 * 60, macHex: 20 },
 };
+
+/**
+ * The clock a step is signed by: the request's `now`, moved on by the real
+ * time since this was made (monotonic, `performance.now`), so an issue time
+ * is the moment the receipt is handed back, however long the call's work
+ * took (US-35 AC19).
+ */
+export function clockFrom(now: string): () => number {
+  const startedMs = performance.now();
+  return () => Date.parse(now) + performance.now() - startedMs;
+}
+
+/** The one refusal for a step used inside its pause, whichever kind: the whole seconds left at `nowMs`, rounded up (US-36 AC14). */
+export function earlyRefusal(notBefore: string, nowMs: number): string {
+  const left = Math.max(1, Math.ceil((Date.parse(notBefore) - nowMs) / 1000));
+  return `That confirm receipt is not valid yet: it can be used in ${left} second${left === 1 ? '' : 's'} (from ${notBefore}), after the user has answered. Do not retry before then; end your turn. Nothing was written.`;
+}
 
 /** Each kind's MAC exactly as it must arrive, built once from `macHex`. */
 const MAC_SHAPE = Object.fromEntries(
@@ -58,11 +81,17 @@ function stepMac(key: Buffer, kind: StepKind, issued: number, fields: readonly s
 /** When a step issued at `issued` (epoch seconds) may first be used. */
 const notBeforeOf = (kind: StepKind, issued: number): string => new Date((issued + STEP_WINDOWS[kind].nbfSeconds) * 1000).toISOString();
 
+/**
+ * A step's issue time: whole epoch seconds, rounded UP, so the pause counted
+ * from it never starts before the true signing time (US-35 AC19).
+ */
+const issuedAt = (nowMs: number): number => Math.ceil(nowMs / 1000);
+
 /** Sign at `nowMs` with the newest key. The issue time is in every MAC, so a window only ever reads a time we signed. */
 export function signStep(kind: StepKind, fields: readonly string[], conn: string, audience: SealAudience, nowMs: number): { mac: string; issued: number } {
   const keys = sealKeys();
   if (keys.length === 0) throw new Error('MCP_SEAL_KEYS is not configured');
-  const issued = Math.floor(nowMs / 1000);
+  const issued = issuedAt(nowMs);
   return { mac: stepMac(keys[0], kind, issued, fields, conn, audience), issued };
 }
 
@@ -74,8 +103,8 @@ export type OpenedStep = { status: 'invalid' } | { status: 'ok' | 'early' | 'exp
  * length of lowercase hex, and it is compared as those characters, with
  * `timingSafeEqual`: nothing is decoded. Every configured key is tried; a key
  * since removed opens nothing. An issue time more than a minute in the future
- * is not a time we issued; inside that minute it is clock skew, which a
- * proposal's pause covers and an import ignores.
+ * is not a time we issued; inside that minute it is clock skew, which the
+ * pause covers: such a step is early.
  */
 export function openStep(kind: StepKind, fields: readonly string[], conn: string, mac: string, issued: number, audience: SealAudience, nowMs: number): OpenedStep {
   if (!MAC_SHAPE[kind].test(mac)) return { status: 'invalid' };
@@ -89,7 +118,7 @@ export function openStep(kind: StepKind, fields: readonly string[], conn: string
   if (issued * 1000 > nowMs + STEP_SKEW_SECONDS * 1000) return { status: 'invalid' };
   const notBefore = notBeforeOf(kind, issued);
   if (nowMs > (issued + ttlSeconds) * 1000) return { status: 'expired', notBefore };
-  if (nbfSeconds > 0 && nowMs < (issued + nbfSeconds) * 1000) return { status: 'early', notBefore };
+  if (nowMs < (issued + nbfSeconds) * 1000) return { status: 'early', notBefore };
   return { status: 'ok', notBefore };
 }
 
@@ -100,7 +129,7 @@ export function openStep(kind: StepKind, fields: readonly string[], conn: string
  * `m` 80 bits of MAC over `i` and `j` as written, the call and the connection.
  */
 export function issueProposal(subject: string, conn: string, audience: SealAudience, nowMs: number): { receipt: string; notBefore: string } {
-  const i = Math.floor(nowMs / 1000).toString(16).padStart(8, '0');
+  const i = issuedAt(nowMs).toString(16).padStart(8, '0');
   const j = crypto.randomBytes(2).toString('hex');
   const { mac, issued } = signStep('proposal', [i + j, subject], conn, audience, nowMs);
   return { receipt: `${i}-${j}-${mac.slice(0, 4)}-${mac.slice(4, 8)}-${mac.slice(8)}`, notBefore: notBeforeOf('proposal', issued) };

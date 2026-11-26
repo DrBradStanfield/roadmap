@@ -4,13 +4,13 @@ import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
-import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements } from '../lib/roadmap-data';
+import { addMeasurement, flushRoadmapStore, initRoadmapStore, saveChangedMeasurements, getShownErase } from '../lib/roadmap-data';
 
 // Only off-device boundaries are mocked; the form, autosave and store are real.
 vi.mock('../lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
 vi.mock('../lib/server-api', async original => ({
   ...(await original<typeof import('../lib/server-api')>()),
-  trackProductEvent: vi.fn(), trackABImpression: vi.fn(), trackABConversion: vi.fn(),
+  trackProductEvent: vi.fn(),
 }));
 vi.mock('../lib/chat-api', async original => ({
   ...(await original<typeof import('../lib/chat-api')>()),
@@ -35,8 +35,8 @@ beforeEach(async () => {
   Element.prototype.scrollIntoView ??= () => {};
   trackLiveRefresh();
   await initRoadmapStore(new LocalStorageAdapter());
-  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si' }, {});
-  await addMeasurement('weight', 80, '2026-10-01'); // the onboarding done: the birth date shows (US-62 AC13)
+  await saveChangedMeasurements({ sex: 'male', heightCm: 178, birthYear: 1980, birthMonth: 5, unitSystem: 'si' }, {}, getShownErase());
+  await addMeasurement('weight', 80, '2026-10-01', getShownErase()); // the onboarding done: the birth date shows (US-62 AC13)
   await flushRoadmapStore();
 });
 afterEach(async () => {

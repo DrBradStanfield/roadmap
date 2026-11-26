@@ -12,17 +12,22 @@
  */
 import * as z from './zod';
 import { COMPARATORS } from './lab-limits';
+import { LAB_CATALOG } from './lab-catalog';
 import type { AdditionalLabValue, DocumentResult, ExtractedValue, RefusedLabValue, UnifiedExtractionResult } from './lab-extraction';
 import { LPA_UNITS, UNIT_SYSTEMS } from './units';
 import type { ChoiceChange, FileChoices } from './upload-choices';
 import { NOT_SAVED_REASONS } from './import-review';
+import { isLabUnitWord, LAB_UNIT_BLANK, MEASUREMENT_REFUSAL_REASONS } from './product-events';
+import { METRIC_TYPES } from './validation';
 import { GATE_WORDS_MAX, NETWORK_FAILURES, UPLOAD_FAILURES, type UploadFailure } from './upload-failure';
+import { UPLOAD_READERS } from './upload-rules';
 import type { UploadEffect, UploadEvent, UploadState } from './upload-flow';
 
 const text = z.string();
 export const maybeText = z.string().nullable();
 const count = z.number().int().nonnegative();
 export const platform = z.enum(['web', 'phone']);
+const reader = z.enum(UPLOAD_READERS).optional();
 const comparator = z.enum(COMPARATORS).optional();
 const day = { recordedAt: text.optional(), printedMonth: text.optional() };
 const confidence = z.enum(['high', 'medium', 'low']);
@@ -62,9 +67,11 @@ const strict = z.strictObject;
 /** A core value's unit as typed (cell-unit.ts `CellUnit`), null for a lab. */
 const cellUnit = z.enum([...UNIT_SYSTEMS, ...LPA_UNITS]).nullable();
 const documentFix = strict({ title: text.optional(), kind: text.optional(), date: maybeText.optional() });
+/** The web's letter also takes the screening box's tick (upload-screening.ts); the phone's never does. */
+const webDocumentFix = documentFix.extend({ screening: z.boolean().optional() });
 const choices = strict({
   ticks: z.record(z.string(), z.boolean()), testDay: maybeText, previousDay: maybeText,
-  replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: documentFix,
+  replace: z.record(z.string(), z.string()), edits: z.record(z.string(), z.number()), document: webDocumentFix,
   columnDays: z.record(z.string(), z.string()).optional(), typed: z.record(z.string(), strict({ text: z.string(), unit: cellUnit })).optional(),
   editUnits: z.record(z.string(), cellUnit.unwrap()).optional(),
 });
@@ -95,19 +102,26 @@ const file = strict({
   id: text, name: text, zip: text.optional(), bytes: z.number(), hash: maybeText, original: z.literal(false).optional(),
   pages: strict({ count, truncated: z.boolean() }).nullable(), status,
 });
-const pick = { platform, run: count, files: z.array(file), started: text, firstRead: maybeText };
+const pick = { platform, reader, run: count, files: z.array(file), started: text, firstRead: maybeText };
 const notSavedReason = z.enum(NOT_SAVED_REASONS);
 const reviewed = z.array(strict({ file: text, ref: text, lab: z.boolean() })).optional();
+/** Every key a lab refusal can name (record-edits.ts bulkAppendValues): a catalogue entry's, or a core blood test's. */
+export const REFUSED_CODE_KEYS: ReadonlySet<string> = new Set<string>([...LAB_CATALOG.map((e) => e.key), ...METRIC_TYPES]);
 const outcome = strict({
-  values: count, documents: count, archived: count, unstored: count.optional(), skippedValues: count.optional(), skippedLabValues: count.optional(),
+  values: count, documents: count, archived: count, unstored: count.optional(), skippedValues: count.optional(), skippedLabValues: count.optional(), screenings: count.optional(),
   refused: z.array(z.union([strict({ label: text, reason: notSavedReason }), strict({ line: text })])).optional(),
+  // Closed words only (US-12 AC6): a key the writer cannot emit or a unit that is no unit word is refused, so no value rides in one.
+  refusedCodes: z.array(z.union([
+    strict({ kind: z.literal('measurement'), reason: z.enum(MEASUREMENT_REFUSAL_REASONS), metricType: z.enum(METRIC_TYPES).optional() }),
+    strict({ kind: z.literal('lab'), key: text.refine((k) => REFUSED_CODE_KEYS.has(k)), reason: z.enum(['unit', 'value']), unit: text.refine((u) => u === LAB_UNIT_BLANK || isLabUnitWord(u)).optional() }),
+  ])).optional(),
 });
 
 export const UPLOAD_STATE = z.discriminatedUnion('phase', [
-  strict({ phase: z.literal('choosing'), platform, run: count }),
+  strict({ phase: z.literal('choosing'), platform, reader, run: count }),
   strict({ phase: z.literal('consent'), ...pick }),
   strict({ phase: z.literal('open'), ...pick }),
-  strict({ phase: z.literal('saving'), ...pick, attempt: count, reviewed }),
+  strict({ phase: z.literal('saving'), ...pick, attempt: count, reviewed, erase: text.optional() }),
   strict({ phase: z.literal('saveFailed'), ...pick, attempt: count, message: text }),
   strict({ phase: z.literal('done'), ...pick, outcome }),
   strict({ phase: z.literal('failed'), ...pick, refused: runRefusal.nullable() }),
@@ -124,8 +138,8 @@ const phoneChanges = [
 ] as const;
 /** The changes the iPhone's page makes: its door takes no other (ios/engine/upload-doors.ts, US-13 AC24). */
 export const PHONE_CHANGE = z.union(phoneChanges);
-/** Every change: the web's review adds a dated previous column's day, and text typed into a row. */
-const change = z.union([...phoneChanges, strict({ columnDay: text, day: maybeText }), strict({ typed: text, text: z.string(), unit: cellUnit })]);
+/** Every change: the web's review adds a dated previous column's day, text typed into a row, and a letter's screening tick. */
+const change = z.union([...phoneChanges, strict({ columnDay: text, day: maybeText }), strict({ typed: text, text: z.string(), unit: cellUnit }), strict({ document: webDocumentFix })]);
 const failure = z.enum(UPLOAD_FAILURES);
 
 /** Each event by its type, for a caller that sends some of them in a shape of its own (the doors' wire). */
@@ -145,7 +159,7 @@ export const UPLOAD_EVENTS = {
   stop: strict({ type: z.literal('stop') }),
   chose: strict({ type: z.literal('chose'), id: text, change, now: text }),
   replacesLost: strict({ type: z.literal('replacesLost'), lost: z.array(strict({ id: text, ref: text })) }),
-  saveStarted: strict({ type: z.literal('saveStarted'), reviewed }),
+  saveStarted: strict({ type: z.literal('saveStarted'), reviewed, erase: text.optional() }),
   saved: strict({ type: z.literal('saved'), run: count, attempt: count, outcome }),
   saveFailed: strict({ type: z.literal('saveFailed'), run: count, attempt: count, message: text }),
   close: strict({ type: z.literal('close') }),

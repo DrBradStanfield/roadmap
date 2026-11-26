@@ -66,7 +66,7 @@ const CHOLESTEROL_FACTOR = 38.67; // LDL, HDL, total cholesterol
 const TRIGLYCERIDES_FACTOR = 88.57;
 
 const APOB_FACTOR = 100; // g/L ↔ mg/dL
-const CREATININE_FACTOR = 88.4; // µmol/L ↔ mg/dL
+export const CREATININE_FACTOR = 88.4; // µmol/L ↔ mg/dL; calculateEGFR reads it too
 /**
  * Lp(a) mass → molar: 2.5 nmol/L per mg/dL. US labs print mg/dL (Quest and
  * LabCorp also print nmol/L); NZ/AU/UK labs print mg/L, a scaled alias below

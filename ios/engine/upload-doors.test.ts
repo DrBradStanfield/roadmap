@@ -371,6 +371,7 @@ describe('upload view cost (shared upload PR 12)', () => {
     const start = performance.now();
     for (let i = 0; i < runs; i++) expect(JSON.parse(uploadViewJson(state, RECORD_TEXT, NOW, true, DEV)).summary).toMatch(/^200 files/);
     const ms = (performance.now() - start) / runs;
+    // A "not catastrophic" bound, not a speed claim: about 25 ms a call on 2026-11-26 (lead TA-3).
     expect(ms).toBeLessThan(1500);
   });
 });
