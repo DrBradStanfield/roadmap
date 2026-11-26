@@ -12,7 +12,7 @@ import {
   type DocumentSpec,
   type SyncedFile,
 } from './sync-manager';
-import { LostUpdateError, StorageError } from './adapter';
+import { answerOutcome, LostUpdateError, StorageError } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ROADMAP_DOC } from './roadmap-doc';
 
@@ -100,7 +100,7 @@ describe('describeStorageFailure: the words each failure gets (US-10 AC4a, US-32
   // `if (error.hint?.includes('landed'))`: only a refusal after a write went
   // out gets the "may have landed" wording.
   it('a plain 401 (no write went out) says reconnect, never "may have landed"', () => {
-    const told = describeStorageFailure(new StorageError('denied', undefined, undefined, 401), 'Dropbox');
+    const told = describeStorageFailure(new StorageError('denied', undefined, undefined, 401, undefined, 'refused'), 'Dropbox');
     expect(told.hint).toContain('Reconnect');
     expect(told.hint).not.toContain('may have landed');
   });
@@ -108,7 +108,7 @@ describe('describeStorageFailure: the words each failure gets (US-10 AC4a, US-32
   // `error.status === 401 || error.status === 403`: exactly those two are a
   // rejected token. The existing test checks 401, 403 and 503 only.
   it.each([400, 402])('a %i is not a rejected token: no reconnect advice', (status) => {
-    const told = describeStorageFailure(new StorageError(`failed (${status})`, undefined, undefined, status), 'Dropbox');
+    const told = describeStorageFailure(new StorageError(`failed (${status})`, undefined, undefined, status, undefined, answerOutcome(status)), 'Dropbox');
     expect(told.hint).not.toContain('Reconnect');
   });
 });

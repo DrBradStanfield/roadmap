@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H404,web blood pressure,"The blood-pressure widget reads its erase when the save is asked, not when the reading is typed",lead,done,"widget-src/src/widgets/FollowErase.tsx: each widget remounts its tree when a re-read moves the store's erase, and every save of the tree writes under the erase it was mounted under (useTreeErase): BloodPressure.tsx to savePair, useWidgetSave.ts to saveMeasured. Tests: FollowErase.test.tsx, BloodPressure.test.tsx US-75 AC8, standalone/widgets.test.tsx.",2127,no

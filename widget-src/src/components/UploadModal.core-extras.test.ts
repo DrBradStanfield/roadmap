@@ -1,15 +1,11 @@
 // US-66 AC6, Brad D5: an upload's extra value named like a core test, other
-// than creatinine, is offered as that core value. On a held day the review
-// shows the conflict (US-13 AC3); a unit the test does not take is listed as
-// not saved, with why (US-12 AC19); creatinine stays an extra row (US-12 AC11).
+// than creatinine, is offered as that core value in the run's counts (FileResult);
+// a unit the test does not take is listed as not saved, with why (US-12 AC19);
+// creatinine stays an extra row (US-12 AC11). On a held day the shared review
+// shows the conflict (health-core bulk-row-target.ts, upload-view.conflict-kept.test.ts).
 import { describe, expect, it } from 'vitest';
-import type { ApiMeasurement } from '@roadmap/health-core/mappings';
-import { buildMatrixModel } from '../lib/review-matrix';
 import { offerCoreExtras, type FileResult } from '../lib/upload-pipeline';
 import { parseUnifiedResult, toUnifiedResult } from '@roadmap/health-core/lab-extraction';
-
-const DATE = { day: '01', month: '06', year: '2024' };
-const DAY = '2024-06-01T00:00:00.000Z';
 
 const extras = (...additionalValues: FileResult['additionalValues']): FileResult =>
   ({ fileName: 'labs.pdf', reportDate: '2024-06-01', values: [], additionalValues });
@@ -44,23 +40,6 @@ describe('offerCoreExtras (US-66 AC6, D5)', () => {
   it('keeps its own day on the core value', () => {
     const offered = offerCoreExtras(extras({ name: 'ApoB', value: 0.9, unit: 'g/L', recordedAt: '2024-01-10' }));
     expect(offered.values[0]).toMatchObject({ metric: 'apob', recordedAt: '2024-01-10' });
-  });
-});
-
-describe('an offered value on a held day is a conflict (US-66 AC6, US-13 AC3)', () => {
-  const held: ApiMeasurement[] = [{ id: 'held-ldl', metricType: 'ldl', value: 4.5, recordedAt: DAY, createdAt: DAY }];
-  const build = (result: FileResult) => buildMatrixModel([{ ...result, ...offerCoreExtras(result) }], { 0: DATE }, held, [], 'si');
-
-  it('shows the record value against the report value in the LDL row, never as an extra row', () => {
-    const { cells, additionalRows, coreRows } = build(extras({ name: 'LDL Cholesterol', value: 3.2, unit: 'mmol/L' }));
-    expect(additionalRows).toEqual([]);
-    expect(coreRows.map(r => r.metric)).toEqual(['ldl']);
-    expect(cells.get('ldl|2024-06-01')).toMatchObject({ state: 'editable', kind: 'core', valueSI: 3.2, existing: { id: 'held-ldl' } });
-  });
-
-  it('an equal value is already recorded, not a conflict', () => {
-    const { cells } = build(extras({ name: 'LDL Cholesterol', value: 4.5, unit: 'mmol/L' }));
-    expect(cells.get('ldl|2024-06-01')).toMatchObject({ state: 'context', id: 'held-ldl' });
   });
 });
 

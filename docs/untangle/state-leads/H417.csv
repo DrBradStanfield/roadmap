@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H417,hosted mcp,An import commit refused as too early gets its own reason in the usage counter,lead,not started,Filed 2026-11-26 from the day's reviews: Follows PR 2126 (US-35 AC19). Build: a named reason for that refusal in the hosted MCP usage count. (H417),,no

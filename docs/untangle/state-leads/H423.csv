@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H423,web widgets,"On a page with two widget blocks, one page-level erase follow moves both together",lead,not started,Filed 2026-11-26 from the day's reviews: After PR 2127 each block follows a newer erase on its own. Build: one follow for the page. (H423),,no

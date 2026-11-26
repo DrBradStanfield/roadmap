@@ -1194,14 +1194,10 @@ exports[`test-chatbot-matching report and request shapes (synthetic fixtures) > 
   "wrongCwd": {
     "calls": [],
     "err": "YouTube bot: chat-youtube-prompt.md not found — bot will not start
-CHAT PROMPT MISSING: app/lib/chat-system-prompt.md is missing or empty; chat is off
-health_roadmap_algorithm.md not found — chat will have limited context
-docs/products.md not found — chat will not have product knowledge
+CHAT DOCS MISSING: app/lib/chat-system-prompt.md, health_roadmap_algorithm.md, docs/products.md, app/lib/chat-posture-doctor.md, app/lib/chat-posture-brand.md missing or empty; chat is off
 CHAT KNOWLEDGE MISSING: docs/writing-style.md not found — the chatbot answers without it
 CHAT KNOWLEDGE MISSING: docs/chatbot/answer-bank.md not found — the chatbot answers without it
 docs/blog/index.json not found at <DIR>/docs/blog/index.json — features depending on blog data will be empty
-Chat: chat-posture-doctor.md not found — surface posture missing
-Chat: chat-posture-brand.md not found — surface posture missing
 Run from the repo root (<ROOT>): the article loader reads from the working directory.
 ",
     "out": "",

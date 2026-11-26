@@ -16,7 +16,7 @@
  */
 import type { ScreeningInputs } from './types';
 import { getPostFollowupDueDate, getScreeningNextDueDate, isSex, SCREENING_FOLLOWUP_INFO } from './types';
-import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningScheduleLabels, type ScreeningId, type ScreeningRule } from './screening-rules';
+import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningAge, screeningScheduleLabels, type ScreeningId, type ScreeningRule } from './screening-rules';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -28,8 +28,9 @@ import {
   BLOOD_TEST_STALE_MONTHS,
   LIPID_METRICS,
   MEDICATION_REVIEW_STALE_MONTHS,
+  countsForMedicationReview,
   getCategoryGroup,
-  isActiveMedication,
+  isDeclinedMedicine,
 } from './reminders';
 import { knownMinorOf } from './calculations';
 import { dayOf, localDay } from './merge';
@@ -239,19 +240,24 @@ function bloodTestSchedule(measurementDates: MeasurementDates, items: ReminderSc
   }
 }
 
-function medicationSchedule(medications: MedicationRecord[], items: ReminderScheduleItem[]): void {
-  const active = medications.filter(isActiveMedication);
-  if (active.length === 0) return;
-  // Review is due 12 months after the oldest usable active review day.
-  // Unknown dates contribute no candidate; never infer or persist a review.
-  const oldest = active.map((m) => typeof m.updatedAt === 'string' ? dayOf(m.updatedAt) : '')
-    .filter(isCalendarDay).sort()[0];
-  if (!oldest) return;
+/** One review, the earliest candidate: a drug taken is due 12 months after its
+ *  day (it may be overdue); a decline on the first anniversary of its day not
+ *  before `today`, so it is never in the past (US-23 AC17). Unknown dates
+ *  contribute no candidate; never infer or persist a review. */
+function medicationSchedule(medications: MedicationRecord[], items: ReminderScheduleItem[], today: string): void {
+  const dues = medications.filter(countsForMedicationReview).flatMap((m) => {
+    const day = typeof m.updatedAt === 'string' ? dayOf(m.updatedAt) : '';
+    if (!isCalendarDay(day)) return [];
+    let years = 1;
+    while (isDeclinedMedicine(m) && addMonths(day, MEDICATION_REVIEW_STALE_MONTHS * years) < today) years++;
+    return [addMonths(day, MEDICATION_REVIEW_STALE_MONTHS * years)];
+  }).sort();
+  if (!dues[0]) return;
   items.push({
     category: 'medication_review',
     group: 'medication_review',
     label: 'Medication review',
-    dueAt: addMonths(oldest, MEDICATION_REVIEW_STALE_MONTHS),
+    dueAt: dues[0],
   });
 }
 
@@ -269,11 +275,13 @@ export function computeNextDueDates(
   screenings: ScreeningInputs | undefined,
   measurementDates: MeasurementDates,
   medications: MedicationRecord[],
+  /** The schedule's UTC day (YYYY-MM-DD); a decline's review is never before it. */
+  today = '',
 ): ReminderScheduleItem[] {
   const items: ReminderScheduleItem[] = [];
   screeningSchedule(profile, screenings, items);
   bloodTestSchedule(measurementDates, items);
-  medicationSchedule(medications, items);
+  medicationSchedule(medications, items, today);
   return items;
 }
 
@@ -315,12 +323,10 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
 
 /** The age and sex the reminder gates read; none without a birth year. */
 function ageSexOf(file: RoadmapFile, now: Date): { age: number; sex: 'male' | 'female' | undefined } | null {
-  const { birthYear, birthMonth } = file.profile;
-  if (!birthYear) return null; // no age → no eligibility rules can run
+  const age = screeningAge(file.profile, now);
+  if (age === undefined) return null; // no age → no eligibility rules can run
   // No sex (or one that is not male or female) drops only the sexed screenings (US-07 AC8).
   const sex = isSex(file.profile.sex) ? file.profile.sex : undefined;
-  let age = now.getUTCFullYear() - birthYear;
-  if (birthMonth && now.getUTCMonth() + 1 < birthMonth) age -= 1;
   return { age, sex };
 }
 
@@ -352,7 +358,7 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
   // The screenings the plan reads (US-06/US-15 AC11): a date that is not a
   // real calendar date, or a "last done" date after this month, is dropped.
   // The PSA reminder dates from the newest saved PSA, as the plan's card does (US-06 AC14).
-  return computeNextDueDates({ sex, age }, fileScreenings(file, now), measurementDates, medications);
+  return computeNextDueDates({ sex, age }, fileScreenings(file, now), measurementDates, medications, dayOf(now.toISOString()));
 }
 
 function fileScreenings(file: RoadmapFile, now: Date): ScreeningInputs {

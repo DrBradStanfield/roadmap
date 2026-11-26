@@ -87,7 +87,7 @@ flowchart TB
     S3["/api/reminders-v2<br/>dumb scheduler"]
     S4["/api/google-token<br/>stateless exchange"]
     S5["/api/measurements<br/>Klaviyo capture only"]
-    S6["/api/ab · /api/feedback<br/>events · feedback"]
+    S6["/api/events · /api/feedback<br/>events · feedback"]
     S7["Crons (reminder-v2 · trending · youtube-bot) · Discord bot (WS) · Admin app (Polaris)"]
   end
   %% External

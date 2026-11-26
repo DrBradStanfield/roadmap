@@ -36,7 +36,7 @@ function writeProfileToCloud(cloud: MemoryCloud, heightCm: number): void {
 /** A store over a cloud that already holds a record, with the throttle clear. */
 async function connected(cloud: MemoryCloud): Promise<RoadmapStore> {
   const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-  store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+  store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {}, store.shownErase);
   await store.flush();
   vi.setSystemTime(Date.now() + 10_000);
   return store;
@@ -96,7 +96,7 @@ describe('US-34 AC1 — a remote change reaches the open page', () => {
 
     // A local edit schedules a debounced save: the working copy is AHEAD of
     // the cloud, and merging a read taken before it would fight that write.
-    store.saveChangedMeasurements({ heightCm: 181 }, { heightCm: 178 });
+    store.saveChangedMeasurements({ heightCm: 181 }, { heightCm: 178 }, store.shownErase);
     writeProfileToCloud(cloud, 165);
 
     expect(await store.refreshFromRemote()).toBe(false);
@@ -141,7 +141,7 @@ describe('US-34 AC1 — a remote change reaches the open page', () => {
       }
     }
     const store = await RoadmapStore.create(new SlowAdapter(cloud) as StorageAdapter);
-    store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {}, store.shownErase);
     await store.flush();
     vi.setSystemTime(Date.now() + 10_000);
 
@@ -151,7 +151,7 @@ describe('US-34 AC1 — a remote change reaches the open page', () => {
       open = resolve;
     });
     const refreshing = store.refreshFromRemote();
-    store.saveChangedMeasurements({ heightCm: 181 }, { heightCm: 178 });
+    store.saveChangedMeasurements({ heightCm: 181 }, { heightCm: 178 }, store.shownErase);
     await store.flush();
     open();
 
@@ -163,7 +163,7 @@ describe('US-34 AC1 — a remote change reaches the open page', () => {
     localStorage.clear();
     const store = await RoadmapStore.create(new LocalStorageAdapter());
     const otherTab = await RoadmapStore.create(new LocalStorageAdapter());
-    otherTab.addMeasurement('weight', 83, '2026-09-25T00:00:00.000Z');
+    otherTab.addMeasurement('weight', 83, '2026-09-25T00:00:00.000Z', otherTab.shownErase);
     await otherTab.flush();
 
     expect(await store.refreshFromRemote()).toBe(true);
@@ -194,7 +194,7 @@ describe('US-34 AC1 — the provider’s own change signal replaces the timer', 
   async function watched(cloud: MemoryCloud): Promise<[RoadmapStore, WatchedAdapter]> {
     const adapter = new WatchedAdapter(cloud);
     const store = await RoadmapStore.create(adapter as StorageAdapter);
-    store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {}, store.shownErase);
     await store.flush();
     vi.setSystemTime(Date.now() + 10_000);
     return [store, adapter];
@@ -296,7 +296,7 @@ describe('US-34 AC1 — a change the save itself folded in is still announced', 
     window.addEventListener(REMOTE_CHANGED_EVENT, heard);
 
     writeProfileToCloud(cloud, 165);
-    store.saveChangedMeasurements({ weightKg: 80 }, {});
+    store.saveChangedMeasurements({ weightKg: 80 }, {}, store.shownErase);
     await store.flush();
 
     expect(heard).toHaveBeenCalledTimes(1);
@@ -309,7 +309,7 @@ describe('US-34 AC1 — a change the save itself folded in is still announced', 
     const heard = vi.fn();
     window.addEventListener(REMOTE_CHANGED_EVENT, heard);
 
-    store.saveChangedMeasurements({ weightKg: 80 }, {});
+    store.saveChangedMeasurements({ weightKg: 80 }, {}, store.shownErase);
     await store.flush();
 
     expect(heard).not.toHaveBeenCalled();
@@ -336,14 +336,14 @@ describe('US-34 AC3 — only a change someone made is announced', () => {
     const heard = vi.fn();
     window.addEventListener(REMOTE_CHANGED_EVENT, heard);
 
-    store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {});
+    store.saveChangedMeasurements({ sex: 'male', heightCm: 178 }, {}, store.shownErase);
     await store.flush();
     const ids = ['ffffffff-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002'] as const;
     const uuid = vi.spyOn(crypto, 'randomUUID');
     uuid.mockReturnValueOnce(ids[0]).mockReturnValueOnce(ids[1]);
-    store.addMeasurement('weight', 82, '2026-09-20');
+    store.addMeasurement('weight', 82, '2026-09-20', store.shownErase);
     await store.flush();
-    store.addMeasurement('ldl', 3.2, '2026-09-20'); // its id sorts before the weight's
+    store.addMeasurement('ldl', 3.2, '2026-09-20', store.shownErase); // its id sorts before the weight's
     await store.flush();
     uuid.mockRestore();
 
@@ -360,7 +360,7 @@ describe('US-34 AC3 — only a change someone made is announced', () => {
     // empty cloud is stamped later than the page's.
     vi.setSystemTime(Date.now() + 5_000);
 
-    store.saveChangedMeasurements({ sex: 'female', heightCm: 165 }, {});
+    store.saveChangedMeasurements({ sex: 'female', heightCm: 165 }, {}, store.shownErase);
     await store.flush();
 
     expect(heard).not.toHaveBeenCalled();
@@ -374,11 +374,11 @@ describe('US-34 AC3 — only a change someone made is announced', () => {
     window.addEventListener(REMOTE_CHANGED_EVENT, heard);
 
     const other = await RoadmapStore.create(new MemoryAdapter(cloud));
-    other.addMeasurement('ldl', 2.9, '2026-09-10');
+    other.addMeasurement('ldl', 2.9, '2026-09-10', other.shownErase);
     await other.flush();
-    store.addMeasurement('weight', 80, '2026-09-11');
+    store.addMeasurement('weight', 80, '2026-09-11', store.shownErase);
     await store.flush();
-    store.addMeasurement('waist', 90, '2026-09-11');
+    store.addMeasurement('waist', 90, '2026-09-11', store.shownErase);
     await store.flush();
 
     expect(heard).toHaveBeenCalledTimes(1);
@@ -416,7 +416,7 @@ describe('US-34 AC3 — only a change someone made is announced', () => {
 
     bumpProfileClock(cloud);
     await store.refreshFromRemote();
-    store.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 });
+    store.saveChangedMeasurements({ heightCm: 180 }, { heightCm: 178 }, store.shownErase);
     await store.flush();
 
     expect(cloudFile(cloud).profile.heightCm).toBe(180);

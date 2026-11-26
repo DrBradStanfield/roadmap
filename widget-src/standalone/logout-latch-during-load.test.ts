@@ -119,7 +119,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
     const store = await opening;
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
 
-    store.addMeasurement('weight', 81, '2026-01-01');
+    store.addMeasurement('weight', 81, '2026-01-01', store.shownErase);
     cloud.fail = true;
     await expect(store.flush()).rejects.toThrow();
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
@@ -143,7 +143,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
       core: await import('@roadmap/health-core/adapter'), // its own StorageError class
     };
     const cloud = new SlowFirstReadCloud();
-    cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503);
+    cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503, undefined, 'no-answer');
     let store!: Awaited<ReturnType<typeof other.storage.RoadmapStore.create>>;
     const starting = other.connect.startOnBackend({ adapter: cloud, backend: 'dropbox' }, async (adapter) => {
       store = await other.storage.RoadmapStore.create(adapter);
@@ -159,7 +159,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
     };
     localStorage.setItem('health_roadmap_backend', 'dropbox');
     const theirs = await fresh.storage.RoadmapStore.create(new fresh.local.LocalStorageAdapter());
-    theirs.addMeasurement('weight', 70, '2026-01-01');
+    theirs.addMeasurement('weight', 70, '2026-01-01', theirs.shownErase);
     await theirs.flush();
     const theirMirror = localStorage.getItem(FILE_KEY);
     expect(theirMirror).not.toBeNull();
@@ -169,7 +169,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
     expect(started.backend).toBe('local'); // fell back to the device copy
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
 
-    store.addMeasurement('weight', 81, '2026-01-02');
+    store.addMeasurement('weight', 81, '2026-01-02', store.shownErase);
     await store.flush().catch(() => {});
     expect(localStorage.getItem(FILE_KEY)).toBe(theirMirror);
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
@@ -184,7 +184,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
       core: await import('@roadmap/health-core/adapter'),
     };
     const cloud = new SlowFirstReadCloud();
-    cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503);
+    cloud.firstReadError = new other.core.StorageError('synthetic unreachable cloud', undefined, undefined, 503, undefined, 'no-answer');
     let store!: Awaited<ReturnType<typeof other.storage.RoadmapStore.create>>;
     const starting = other.connect.startOnBackend({ adapter: cloud, backend: 'google-drive' }, async (adapter) => {
       store = await other.storage.RoadmapStore.create(adapter);
@@ -192,7 +192,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
     cloud.firstRead.resolve();
     expect((await starting).backend).toBe('local');
     expect(other.local.roadmapLocalWritesStopped()).toBe(false);
-    store.addMeasurement('weight', 81, '2026-01-01');
+    store.addMeasurement('weight', 81, '2026-01-01', store.shownErase);
     await store.flush();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull(); // its only copy is kept
   });
@@ -208,7 +208,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
       connect: await import('./connect'),
     };
     const guest = await other.storage.RoadmapStore.create(new other.local.LocalStorageAdapter());
-    guest.addMeasurement('weight', 80, '2026-01-01');
+    guest.addMeasurement('weight', 80, '2026-01-01', guest.shownErase);
     await guest.flush(); // a guest record, so the lift has something to send up
 
     const cloud = new SlowFirstReadCloud();
@@ -221,7 +221,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
     const store = await other.storage.RoadmapStore.create(cloud);
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
 
-    store.addMeasurement('weight', 81, '2026-01-02');
+    store.addMeasurement('weight', 81, '2026-01-02', store.shownErase);
     cloud.fail = true;
     await expect(store.flush()).rejects.toThrow();
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
@@ -280,7 +280,7 @@ describe('US-09 AC2h: a log-off before any cloud host exists (standalone main())
     expect(started).toBe(backend);
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
 
-    store.addMeasurement('weight', 81, '2026-01-01');
+    store.addMeasurement('weight', 81, '2026-01-01', store.shownErase);
     cloud.fail = true;
     await expect(store.flush()).rejects.toThrow();
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
@@ -302,7 +302,7 @@ describe('US-09 AC2h: a log-off before any cloud host exists (standalone main())
 
     const { store } = await running;
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
-    store.addMeasurement('weight', 81, '2026-01-01');
+    store.addMeasurement('weight', 81, '2026-01-01', store.shownErase);
     cloud.fail = true;
     await expect(store.flush()).rejects.toThrow();
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
@@ -322,7 +322,7 @@ describe('US-09 AC2h: a log-off before any cloud host exists (standalone main())
     const { backend: started, store } = await running;
     expect(started).toBe('local');
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
-    store.addMeasurement('weight', 81, '2026-01-01');
+    store.addMeasurement('weight', 81, '2026-01-01', store.shownErase);
     await store.flush().catch(() => {});
     expect(localStorage.getItem(FILE_KEY)).toBeNull();
   });
@@ -333,7 +333,7 @@ describe('US-09 AC2h: a log-off before any cloud host exists (standalone main())
       { resolved: { adapter: new other.local.LocalStorageAdapter(), backend: 'local' } }));
     expect(started).toBe('local');
     expect(other.local.roadmapLocalWritesStopped()).toBe(false);
-    store.addMeasurement('weight', 81, '2026-01-01');
+    store.addMeasurement('weight', 81, '2026-01-01', store.shownErase);
     await store.flush();
     expect(localStorage.getItem(FILE_KEY)).not.toBeNull();
   });

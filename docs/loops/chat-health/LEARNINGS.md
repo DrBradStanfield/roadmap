@@ -72,7 +72,7 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   14, three replies); SPAM label from 10-29T22:01Z (AC41). Check commit times
   before reading a label count: W44's book-promo trio came 10 h before it. From
   11-02 a company speaking as itself is SPAM too. W45: empties tripled (19 → 55) when
-  the per-video cap rose 10 → 30 at an unchanged 24% YouTube empty rate: read the rate.
+  the per-video cap rose 10 → 30 at an unchanged 24% YouTube empty rate: read the rate. Dedupe YouTube turns on `followUpCommentId || commentId`: `commentId` is the thread's (W47: 22 false repeats).
 - **2026-08-10 [retrieval]** Term presence in the visible summary is necessary
   but NOT sufficient: before any summary edit, check what the router picked
   INSTEAD. On the Haiku router, steals (a theme neighbour beating the named

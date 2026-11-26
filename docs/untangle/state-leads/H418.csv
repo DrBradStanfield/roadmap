@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H418,server,The YouTube bot's channel handle cache gets a bound,lead,not started,"Filed 2026-11-26 from the day's reviews: app/lib/youtube-bot-api.server.ts handleCache is a process-lifetime Map filled by the cron. Build: a bound, as the other server maps have (boundedMap in app/lib/rate-limiter.ts). (H418)",,no
