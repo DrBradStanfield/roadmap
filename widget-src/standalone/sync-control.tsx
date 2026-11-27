@@ -15,7 +15,7 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, savePopupGrant, SYNC_PENDING_EVENT } from '../src/storage';
 import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
-import { driveRecordMissing, driveSignInNow } from '../src/storage/drive-reconnect-check';
+import { deviceCopyReadable, driveRecordMissing, driveSignInNow } from '../src/storage/drive-reconnect-check';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, exitChoice, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
@@ -28,7 +28,7 @@ import { remindersSupported } from './reminders';
 import { openBackendPicker, openSignin, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
 import { healthWritesAllowed, onHealthWritesChange, ownLogOffHasBegun, safeGetItem, safeSetItem } from '../src/lib/storage';
 import { useIsMobile } from '../src/lib/useIsMobile';
-import { LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
+import { FULL, LOCAL_SAVE_EVENT, localSaveRefused } from '../src/storage/local-storage-adapter';
 
 /** US-09 AC19: the picker was opened once in this browser (a side key, never the record). */
 const STORAGE_CTA_SEEN_KEY = 'hr_storage_cta_seen';
@@ -191,18 +191,23 @@ function useReconnect(lost?: LostSignIn) {
       // US-09 AC65: the stored sign-in this reconnect began under. If it changes during the popup or the
       // record file lookup, the answer is set aside: nothing is kept and the page reloads onto what is stored.
       const signIn = driveSignInNow();
-      const token = await new GoogleDriveAdapter(googleDriveConfig(), gen).acquireViaPopup()
-        .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
-      if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
       const unchanged = () => driveSignInNow().key === signIn.key;
-      const missing = !!signIn.fileId && unchanged() && await driveRecordMissing(token.accessToken, signIn.fileId);
+      const token = await new GoogleDriveAdapter(googleDriveConfig(), gen).acquireViaPopup()
+        .catch((error: unknown) => {
+          if (isCurrentRun(run) && !unchanged()) return null; // a refused answer is set aside too
+          if (isCurrentRun(run)) connectRefusal(error);
+          throw error;
+        });
+      if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
+      const missing = !!token && !!signIn.fileId && unchanged() && await driveRecordMissing(token.accessToken, signIn.fileId);
       if (!isCurrentRun(run)) return;
       const current = unchanged();
       if (current && missing) {
         await copySessionToDevice('google-drive'); // this browser keeps the page's record; nothing is sent
+        if (!deviceCopyReadable()) throw new Error(FULL); // the way on named must find the record here
         throw new Error(CANNOT_OPEN_RECORD);
       }
-      if (current && rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
+      if (token && current && rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
         markSyncPending();
         await flushBeforeExit();

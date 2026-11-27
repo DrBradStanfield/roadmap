@@ -33,6 +33,7 @@ vi.mock('./connect', async (importOriginal) => ({ ...(await importOriginal<typeo
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import { saveRecordInto } from '@roadmap/health-core/record-session';
 import { createEmptyFile, createMeasurement } from '@roadmap/health-core/roadmap-file';
+import { trackProductEvent } from '../src/lib/server-api';
 import { SyncControl } from './sync-control';
 import { dispatch, getSwitchFlow, resetSwitchFlow } from './switch-flow';
 import { bootSignIn, resetSignIn } from '../src/storage/sign-in-state';
@@ -95,6 +96,7 @@ beforeEach(() => {
   gisAnswer = null;
   popupsOpened = 0;
   lift.mockClear();
+  vi.mocked(trackProductEvent).mockClear();
   toDevice.copy.mockReset().mockImplementation(() => saveRecordInto(new LocalStorageAdapter(), page.live, { deviceId: 'd', now: NOW }));
   toDevice.flush.mockReset().mockImplementation(async () => { localStorage.setItem(DEVICE_FILE, JSON.stringify(page.live)); });
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -134,13 +136,13 @@ const reconnectButton = () => document.querySelector<HTMLButtonElement>('button.
 const error = () => document.querySelector('.hr-sync-error')?.textContent ?? null;
 
 /** Opens the popup; `chooserOpen` runs while the Google account chooser is still open. */
-async function reconnect(chooserOpen?: () => void): Promise<void> {
+async function reconnect(chooserOpen?: () => void, scope = DRIVE_SCOPE): Promise<void> {
   resetSignIn();
   bootSignIn({ kind: 'signedOut', provider: 'google-drive' });
   render(<SyncControl backend="local" hasData />);
   fireEvent.click(reconnectButton());
   chooserOpen?.();
-  await act(async () => { gisAnswer!({ access_token: POPUP_TOKEN, expires_in: 3600, scope: DRIVE_SCOPE }); });
+  await act(async () => { gisAnswer!({ access_token: POPUP_TOKEN, expires_in: 3600, scope }); });
   await settle();
 }
 
@@ -277,6 +279,25 @@ describe('US-09 AC65: an answer is kept only for the stored sign-in the reconnec
     await reconnect(() => { localStorage.setItem(DRIVE_TOKENS, other.tokens); });
     expect(lookups).toEqual([]);
     expectSetAside(['google-drive', other.tokens, config]);
+  });
+
+  it('the grant replaced while the account chooser is open, then a popup answer without the Drive scope: no error, no refusal event, one reload', async () => {
+    seed();
+    const config = localStorage.getItem(DRIVE_CONFIG);
+    await reconnect(() => { localStorage.setItem(DRIVE_TOKENS, other.tokens); }, 'openid email');
+    expect(lookups).toEqual([]);
+    expect(vi.mocked(trackProductEvent)).not.toHaveBeenCalledWith('cloud_connect_refused', expect.anything());
+    expectSetAside(['google-drive', other.tokens, config]);
+  });
+
+  it('control: a popup answer without the Drive scope over an unchanged sign-in still says why and counts the refusal', async () => {
+    seed();
+    const before = storedState();
+    await reconnect(undefined, 'openid email');
+    expect(storedState()).toEqual(before);
+    expect(vi.mocked(trackProductEvent)).toHaveBeenCalledWith('cloud_connect_refused', { provider: 'google-drive' });
+    expect(error()).toContain('Google Drive box');
+    expect(reload).not.toHaveBeenCalled();
   });
 
   async function heldReconnect(): Promise<void> {
