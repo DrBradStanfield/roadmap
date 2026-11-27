@@ -484,7 +484,7 @@ describe('US-41 AC7 — url is the file\'s own link, never the index\'s (adversa
     expect((callKnowledgeTool('get_article', { handle: article.handle }).structured as { url: string }).url).toBe(own);
   });
 
-  it('an article\'s date is the day it was published, as YYYY-MM-DD', () => {
+  it('an article\'s date is the UTC date of its publishedAt, as YYYY-MM-DD', () => {
     const article = loadBlogIndex().find((e) => (e.type ?? 'article') === 'article' && isServed(e) && e.publishedAt)!;
     const { date } = callKnowledgeTool('get_article', { handle: article.handle }).structured as { date: string | null };
     expect(date).toBe(article.publishedAt.slice(0, 10));

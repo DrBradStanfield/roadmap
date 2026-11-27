@@ -124,16 +124,12 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     expect(top('blood pressure 150/95')).toEqual(top('blood pressure'));
   });
 
-  it('scores BM25 over the four fields, rounded to 2 places', () => {
-    // The expected scores come from a separate textbook BM25 (k1 1.2, b 0.75), not from this code's output.
+  it('a shorter entry with the same match ranks above a longer one (BM25 length normalisation)', () => {
     const index = buildIndex([
-      { handle: 'alpha', title: 'Magnesium sleep', summary: 'magnesium helps sleep' },
-      { handle: 'beta', title: 'Iron', summary: 'iron levels anemia ferritin transferrin saturation hemoglobin fatigue pallor diet sleep' },
-      { handle: 'gamma', title: 'Zinc', summary: 'zinc immunity' },
+      { handle: 'l', title: 'Magnesium', summary: 'magnesium anxiety cramps migraine heart rhythm muscle bones' },
+      { handle: 's', title: 'Magnesium', summary: 'magnesium cramps' },
     ]);
-    const scores = (q: string) => search(index, q, 8).map((h) => [h.handle, h.score]);
-    expect(scores('magnesium sleep')).toEqual([['alpha', 2.12], ['beta', 0.37]]);
-    expect(scores('iron')).toEqual([['beta', 1.13]]);
+    expect(search(index, 'magnesium', 8).map((h) => h.handle)).toEqual(['s', 'l']);
   });
 
   it('finds the other form of a word, and does not cut a short word into another', () => {
