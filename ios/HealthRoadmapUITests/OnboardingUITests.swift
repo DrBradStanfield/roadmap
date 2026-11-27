@@ -14,7 +14,10 @@ final class OnboardingUITests: XCTestCase {
     private func launch(textSize: String? = nil, tips: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing"] + (tips ? ["--show-tips"] : [])
-        if let textSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize] }
+        // `TEST_RUNNER_UI_TEXT_SIZE=<category> xcodebuild test ...` runs a whole test at that size.
+        if let textSize = textSize ?? ProcessInfo.processInfo.environment["UI_TEXT_SIZE"] {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
+        }
         app.launch()
         return app
     }
@@ -145,6 +148,8 @@ final class OnboardingUITests: XCTestCase {
         }
         if let failure = declineInSheet(sheet) { XCTFail(failure) }
         app.activate()
+        // The app slides back in from the switcher: the next tap (Female) waits until it is still (PR 2207).
+        XCTAssertTrue(atRest(app.buttons["onboarding.female"], in: app), "the sex step comes to rest on screen")
     }
 
     /// Taps Don't Allow in Apple's Health sheet, then the OK Apple shows after it, if it shows.
@@ -370,6 +375,80 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts[Self.tourLines[2]].waitForExistence(timeout: 3), "no tip 3")
     }
 
+    /// A tap on the status bar while tip 2 is up goes to the status bar, not the tip: iOS may
+    /// scroll the list to its top under it. The tip stays until a tap outside it, below the
+    /// bar, closes it; tip 3 still brings Blood tests into view and shows there (AC2, 2026-11-27).
+    @MainActor
+    func testATapOnTheStatusBarStillLeadsToTipThree_US57() throws {
+        let app = launch(tips: true)
+        try answerUpToWeight(app)
+        answerWeight(app)
+        let foundation = app.staticTexts[Self.tourLines[1]]
+        XCTAssertTrue(app.staticTexts[Self.tourLines[0]].waitForExistence(timeout: 10))
+        tapNext(app)
+        XCTAssertTrue(foundation.waitForExistence(timeout: 10), "tip 2 follows tip 1")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.01)).tap()
+        XCTAssertTrue(foundation.exists, "the status bar's tap is the status bar's: tip 2 stays")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
+        XCTAssertTrue(foundation.waitForNonExistence(timeout: 5), "a tap outside, below the bar, closes tip 2")
+        XCTAssertTrue(app.staticTexts[Self.tourLines[2]].waitForExistence(timeout: 10), "tip 3 shows")
+        XCTAssertTrue(bloodTestsHeadingOnScreen(app), "at the Blood tests heading, on screen")
+        XCTAssertTrue(app.tabBars.buttons["My health"].isSelected)
+    }
+
+    /// The person scrolls the list away as tip 2 closes: tip 3 still brings Blood tests back
+    /// into view once the list stops, and shows there (AC2).
+    @MainActor
+    func testScrollingAwayWhileTipThreeIsDueStillShowsIt_US57() throws {
+        let app = launch(tips: true)
+        try answerUpToWeight(app)
+        answerWeight(app)
+        XCTAssertTrue(app.staticTexts[Self.tourLines[0]].waitForExistence(timeout: 10))
+        tapNext(app)
+        XCTAssertTrue(app.staticTexts[Self.tourLines[1]].waitForExistence(timeout: 10), "tip 2 follows tip 1")
+        tapNext(app)
+        app.swipeDown(velocity: .fast)
+        XCTAssertTrue(app.staticTexts[Self.tourLines[2]].waitForExistence(timeout: 10), "tip 3 shows")
+        XCTAssertTrue(bloodTestsHeadingOnScreen(app), "at the Blood tests heading, on screen")
+    }
+
+    /// "Skip tour" on tip 2 ends the tour: tip 3 never shows, with its heading on screen (AC3).
+    @MainActor
+    func testSkipOnTipTwoEndsTheTour_US57() throws {
+        let app = launch(tips: true)
+        try answerUpToWeight(app)
+        answerWeight(app)
+        XCTAssertTrue(app.staticTexts[Self.tourLines[0]].waitForExistence(timeout: 10))
+        tapNext(app)
+        let foundation = app.staticTexts[Self.tourLines[1]]
+        XCTAssertTrue(foundation.waitForExistence(timeout: 10))
+        app.buttons["Skip tour"].tap()
+        XCTAssertTrue(foundation.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"].firstMatch, in: app), "the Blood tests header is on screen")
+        XCTAssertFalse(app.staticTexts[Self.tourLines[2]].waitForExistence(timeout: 3), "no tip 3")
+    }
+
+    /// "Skip tour" on tip 3 ends the tour and opens nothing; it never shows again (AC3).
+    @MainActor
+    func testSkipOnTipThreeEndsTheTour_US57() throws {
+        let app = launch(tips: true)
+        try answerUpToWeight(app)
+        answerWeight(app)
+        XCTAssertTrue(app.staticTexts[Self.tourLines[0]].waitForExistence(timeout: 10))
+        tapNext(app)
+        XCTAssertTrue(app.staticTexts[Self.tourLines[1]].waitForExistence(timeout: 10))
+        tapNext(app)
+        let bloodTests = app.staticTexts[Self.tourLines[2]]
+        XCTAssertTrue(bloodTests.waitForExistence(timeout: 10), "tip 3 shows")
+        app.buttons["Skip tour"].tap()
+        XCTAssertTrue(bloodTests.waitForNonExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Add medical records"].waitForExistence(timeout: 2), "Skip opens nothing")
+        app.tabBars.buttons["Chat"].tap()
+        app.tabBars.buttons["My health"].tap()
+        XCTAssertTrue(scrollTo(app.staticTexts["Blood tests"].firstMatch, in: app))
+        XCTAssertFalse(bloodTests.waitForExistence(timeout: 3), "tip 3 never shows again")
+    }
+
     /// At the largest accessibility text size a tip scrolls rather than clips, and its
     /// Skip tour, counter and Next stay reachable (AC11, review R3).
     @MainActor
@@ -464,6 +543,16 @@ final class OnboardingUITests: XCTestCase {
         _ = element.waitForExistence(timeout: 5)
         for _ in 0..<10 where !(element.exists && element.isHittable) { app.swipeUp() }
         return element.exists && element.isHittable
+    }
+
+    /// Blood tests' heading is on screen, clear of the status bar and the tab bar; the jump pill
+    /// of the same name may be anywhere. Read by frame, as a popover makes the list behind it unhittable.
+    @MainActor
+    private func bloodTestsHeadingOnScreen(_ app: XCUIApplication) -> Bool {
+        let screen = app.windows.firstMatch.frame
+        return app.staticTexts.matching(NSPredicate(format: "label == %@", "Blood tests")).allElementsBoundByIndex.contains {
+            $0.frame.minY >= screen.minY + 44 && $0.frame.maxY <= screen.maxY - 80
+        }
     }
 
     /// Waits until `element` can be tapped and has stopped moving inside the app's window: the
