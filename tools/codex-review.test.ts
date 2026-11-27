@@ -40,7 +40,7 @@ const FEATURES_0163 = resolve(__dirname, 'fixtures', 'codex-features-0.163.txt')
  * unknown name with exit 1, as the real CLI does); for `exec`, records argv, env and stdin, emits configured JSONL,
  * writes the -o file and exits as told.
  */
-function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop'; version?: string; versionExit?: number }) {
+function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop'; version?: string; versionExit?: number; login?: 'chatgpt' | 'api' | 'none' }) {
   const dir = mkdtempSync(join(tmpdir(), 'fake-codex-'));
   writeFileSync(join(dir, 'config.json'), JSON.stringify({ exit: 0, events: [], stderr: '', features: FEATURES_0171, extraEnabled: [], version: VERIFIED_CACHED, versionExit: 0, ...config }));
   const bin = join(dir, 'codex');
@@ -55,6 +55,11 @@ if (all.includes('--version')) {
   if (fs.existsSync(path.join(dir, 'slow'))) { fs.rmSync(path.join(dir, 'slow')); fs.writeFileSync(path.join(dir, 'reached'), ''); require('child_process').execSync('sleep 2'); }
   if (cfg.versionExit) process.exit(cfg.versionExit);
   console.log(fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n') ? cfg.version + '-v2' : cfg.version); process.exit(0);
+}
+if (all.at(-2) === 'login' && all.at(-1) === 'status') {
+  if (cfg.login === 'api') { console.log('Logged in using an API key - test-***'); process.exit(0); }
+  if (cfg.login === 'none') { console.log('Not logged in'); process.exit(1); }
+  console.log('Logged in using ChatGPT'); process.exit(0);
 }
 if (all.at(-2) === 'features' && all.at(-1) === 'list') {
   if (cfg.failFeatures) { process.stderr.write(cfg.failFeatures.stderr); process.exit(cfg.failFeatures.code); }
@@ -237,7 +242,7 @@ function archiveShim(snippet: string, cmd = 'archive') {
   return shimDir;
 }
 const swapIn = (bin: string, mode = '755') => `cp "${bin}" "${bin}.n"; echo '// v2' >> "${bin}.n"; chmod ${mode} "${bin}.n"; mv "${bin}.n" "${bin}"`;
-const callKinds = (f: { read: (n: string) => string }) => f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l).args).map((a: string[]) => (a.includes('--version') ? 'version' : a.at(-1) === 'list' ? 'features' : 'exec'));
+const callKinds = (f: { read: (n: string) => string }) => f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l).args).map((a: string[]) => (a.includes('--version') ? 'version' : a.at(-1) === 'list' ? 'features' : a.at(-1) === 'status' ? 'login' : 'exec'));
 
 /** The --disable list per real binary (US-40 AC19, 2026-11-27): AC3's eight, then every sub-agent, agent-messaging, browser and automation feature that binary lists, then the ones a review has no use for. */
 const ALWAYS_OFF = ['apps', 'image_generation', 'browser_use', 'computer_use', 'plugins', 'memories', 'skill_search', 'multi_agent'];
@@ -2634,7 +2639,7 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     const f = fake({ output: CLEAN });
     expect(runWrapper(f.bin).status).toBe(0);
     const calls = f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l));
-    expect(calls).toHaveLength(4);
+    expect(calls).toHaveLength(5); // version, two feature listings, login status, exec
     for (const c of calls) expect(c.args.join(' ')).not.toContain('forced_login_method');
   });
   it('Codex R1 on PR 2222: argv is parsed once, so a flag-shaped --message value never hides the real --out after it', () => {
@@ -2681,7 +2686,7 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     const once = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson, '--live'], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(swapIn(f.bin))}:${process.env.PATH}` }) }); // --live: the v2 build is unverified, so cached search would turn off
     expect(once.status).toBe(0);
     expect(once.stderr).toContain('codex binary changed after its probe; probing it again');
-    expect(callKinds(f)).toEqual(['version', 'features', 'features', 'version', 'features', 'features', 'exec']);
+    expect(callKinds(f)).toEqual(['version', 'features', 'features', 'login', 'version', 'features', 'features', 'exec']);
     expect(once.stderr).toContain(`(${VERIFIED_CACHED}-v2), author`);
     expect(once.stderr).not.toContain(`(${VERIFIED_CACHED}), author`);
     expect(JSON.parse(readFileSync(outJson, 'utf8')).codex_version).toBe(`${VERIFIED_CACHED}-v2`);
@@ -2699,7 +2704,7 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
       expect(r.status).toBe(3);
       expect(r.stdout).toContain('E_CODEX_CHANGED');
       expect(r.stdout).toContain('neither group nor others can write');
-      expect(callKinds(f)).toEqual(['version', 'features', 'features']);
+      expect(callKinds(f)).toEqual(['version', 'features', 'features', 'login']);
     }
   });
   it('Codex R6 on PR 2222c: a cancel during the final re-probe stops the run (130) before the review starts', async () => {
@@ -2765,11 +2770,55 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
       expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     }
   });
+  it('Codex R1 on PR 2222f: the search mode is chosen from the version before the feature listings, which use the launch settings', () => {
+    for (const [version, mode] of [[VERIFIED_CACHED, 'cached'], ['codex-cli 0.171.0-alpha.13.2', 'disabled']]) {
+      writeFileSync(join(repo, 'a.txt'), `mode ${mode}\n`);
+      const f = fake({ output: CLEAN, version });
+      expect(runWrapper(f.bin).status).toBe(0);
+      const calls = f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l).args as string[]);
+      const lists = calls.filter((a) => a.at(-1) === 'list');
+      expect(lists).toHaveLength(2);
+      for (const a of [...lists, calls.at(-1)!]) expect(a.filter((x) => /^web_search=/.test(x))).toEqual([`web_search="${mode}"`]);
+    }
+    writeFileSync(join(repo, 'a.txt'), 'mode on a failed check\n');
+    const g = fake({ output: CLEAN, version: 'codex-cli 0.171.0-alpha.13.2', extraEnabled: ['shiny_new_tool'] });
+    expect(runWrapper(g.bin).status).toBe(3);
+    expect(JSON.parse(readFileSync(outJson, 'utf8')).web_access).toBe('disabled');
+  });
+  it('Codex R2 on PR 2222f: a stored login that is not ChatGPT stops the run before exec, with no credential text', () => {
+    for (const login of ['api', 'none'] as const) {
+      writeFileSync(join(repo, 'a.txt'), `login ${login}\n`);
+      const f = fake({ output: CLEAN, login });
+      const r = runWrapper(f.bin); // childEnv: no API-key variable at all
+      expect([login, r.status]).toEqual([login, 3]);
+      expect(r.stdout).toContain('E_LOGIN_NOT_CHATGPT');
+      expect(r.stdout + r.stderr + readFileSync(outJson, 'utf8')).not.toContain('test-***');
+      expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+    }
+  });
+  it('Codex R3 on PR 2222f: with search disabled, any web_search event ends the review incomplete (E_TOOL_BOUNDARY), never counted as a cached search', () => {
+    const started = JSON.stringify({ type: 'item.started', item: { id: 'ws1', type: 'web_search', query: 'QUERY-MARKER-6601' } });
+    const completed = JSON.stringify({ type: 'item.completed', item: { id: 'ws2', type: 'web_search', query: 'QUERY-MARKER-6601', action: { type: 'open_page', url: 'https://example.com/PATH-MARKER-6602' } } });
+    for (const events of [[started], [completed]]) {
+      writeFileSync(join(repo, 'a.txt'), `disabled search ${events[0].length}\n`);
+      const f = fake({ output: CLEAN, version: 'codex-cli 0.171.0-alpha.13.2', events });
+      const r = runWrapper(f.bin);
+      expect(r.status).toBe(3);
+      expect(r.stdout).toContain('E_TOOL_BOUNDARY');
+      expect(r.stdout).toContain('search was disabled');
+      expect(r.stdout).not.toContain('cached index');
+      for (const text of [r.stdout, r.stderr, readFileSync(outJson, 'utf8')]) expect(text).not.toMatch(/QUERY-MARKER-6601|PATH-MARKER-6602/);
+    }
+  });
+  it('Codex R4 on PR 2222f: the executable check returns false, never throws, for a path that is gone', async () => {
+    const { isExecutableFile } = await import('./codex-review-bin.mjs');
+    expect(isExecutableFile(join(tmpdir(), 'no-such-codex'))).toBe(false);
+  });
   it('Codex R1 on PR 2222e: a file replaced during the initial hash stops the probe before any codex call', async () => {
-    const { probeCodex, launchEnv, configArgs } = await import('./codex-review-bin.mjs');
+    const { probeCodex, launchEnv } = await import('./codex-review-bin.mjs');
     const f = fake({ output: CLEAN });
     const bin = realpathSync(f.bin);
-    const p = probeCodex(bin, launchEnv(process.env), configArgs('cached'), { afterRead: () => { writeFileSync(`${bin}.n`, readFileSync(bin, 'utf8') + '// x\n'); chmodSync(`${bin}.n`, 0o755); renameSync(`${bin}.n`, bin); } });
+    const p = probeCodex(bin, launchEnv(process.env), false, { afterRead: () => { writeFileSync(`${bin}.n`, readFileSync(bin, 'utf8') + '// x\n'); chmodSync(`${bin}.n`, 0o755); renameSync(`${bin}.n`, bin); } });
     expect(p.stop).toMatch(/^E_CODEX_CHANGED/);
     expect(existsSync(join(f.dir, 'calls.jsonl'))).toBe(false);
   });
@@ -2805,7 +2854,7 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(r.status).toBe(3);
     expect(r.stdout).toContain('E_CODEX_CHANGED');
     expect(r.stdout).toContain('test policy');
-    expect(callKinds(f)).toEqual(['version', 'features', 'features']);
+    expect(callKinds(f)).toEqual(['version', 'features', 'features', 'login']);
   });
   it('Codex R7 on PR 2222: a wrong scratch record stops the run before any codex call, the version probe included', () => {
     writeFileSync(join(repo, 'a.txt'), 'wrong record\n');
@@ -2825,11 +2874,12 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     const r = spawnSync('node', [WRAPPER, '--codex', rel, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv() });
     expect(r.status).toBe(0);
     const calls = f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l));
-    expect(calls.map((c) => c.args.at(-1) === '-' ? 'exec' : c.args.slice(-2).join(' ') === 'features list' ? 'features' : c.args.includes('--version') ? '--version' : '?')).toEqual(['--version', 'features', 'features', 'exec']);
+    expect(calls.map((c) => c.args.at(-1) === '-' ? 'exec' : c.args.slice(-2).join(' ') === 'features list' ? 'features' : c.args.includes('--version') ? '--version' : c.args.at(-1) === 'status' ? 'login' : '?')).toEqual(['--version', 'features', 'features', 'login', 'exec']);
     expect(new Set(calls.map((c) => c.bin)).size).toBe(1); // a relative path would also fail the review spawn, whose cwd is the snapshot
     expect([f.bin, realpathSync(f.bin)]).toContain(calls[0].bin);
     for (const c of calls.slice(0, 3)) expect(c.codexHome).toMatch(/cr-codex-home-/);
-    expect(calls[3].codexHome).toBeNull();
+    expect(calls[3].codexHome).toBeNull(); // login status reads the CODEX_HOME the review will use
+    expect(calls[4].codexHome).toBeNull();
     expect(JSON.parse(readFileSync(outJson, 'utf8')).codex_bin).toBe(realpathSync(f.bin)); // resolved against the cwd, which node reports real
   });
   it('CLAUDE.md, the skill and the story name the same two models and --deep', () => {

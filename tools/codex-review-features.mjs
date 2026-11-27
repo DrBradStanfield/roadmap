@@ -25,8 +25,8 @@ const TUI = "interactive TUI or desktop app only; codex exec has no UI";
  * above (0.163.0's enabled set is a subset). "Judged" is a reading of the name and stage, not a probe of what it does.
  */
 export const INERT = {
-  api_key_cyber_access_programs: "API-key accounts only; the run is forced to the ChatGPT login",
-  api_key_model_discovery: "API-key accounts only; the run is forced to the ChatGPT login",
+  api_key_cyber_access_programs: "API-key accounts only; the run stops before exec unless `login status` reports a ChatGPT login (checkLogin)",
+  api_key_model_discovery: "API-key accounts only; the run stops before exec unless `login status` reports a ChatGPT login (checkLogin)",
   auth_elicitation: "login prompts; exec has no user to prompt",
   bedrock_setup_wizard: TUI,
   cli_daybreak: "CLI presentation layer",

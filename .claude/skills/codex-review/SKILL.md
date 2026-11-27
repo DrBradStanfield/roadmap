@@ -28,7 +28,7 @@ The wrapper launches the ChatGPT app's own CLI when it is installed (the
 Homebrew `codex` 0.163 refuses both 6.2 models on a ChatGPT login) and prints
 the binary and its version on the pre-flight line; `--codex <bin>` or
 `CODEX_BIN` overrides it. It forces no login method (forcing one can sign a
-stored login of the other kind out); API-key variables never reach it.
+stored login of the other kind out); API-key variables never reach it, and it stops (`E_LOGIN_NOT_CHATGPT`) unless `login status` reports a ChatGPT login.
 
 **Web search on the newer CLI.** Cached-only search is verified only on
 codex-cli 0.159.0-alpha.12.1, so on the app's CLI the wrapper turns hosted

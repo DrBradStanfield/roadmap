@@ -74,7 +74,7 @@
 //     data in reach) and with `--loop` (autonomous authorship). The prompt
 //     adds a rule: no repository text, file contents, record values or
 //     credential-like text in a URL, a query string or a search query. The
-//     report and the printed status say `web_access: "live" | "cached"`.
+//     report and the printed status say `web_access: "live" | "cached" | "disabled"`.
 //     Residual risk, accepted by Brad 2026-10-14 after it was stated in full:
 //     ANY text the reviewer reads can steer it: the change, and under --live
 //     every page it opens (an issue comment on this public repo, a search
@@ -239,7 +239,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { fileURLToPath } from "node:url";
 import { externalSources, headBlob, LINK_POLICY, materialiseLinks } from "./codex-review-links.mjs";
 import { claimOut, stopReason, writeOut } from "./codex-review-out.mjs";
-import { chooseCodex, configArgs, launchArgs, launchEnv, probeCodex, recheckCodex, searchMode } from "./codex-review-bin.mjs";
+import { checkLogin, chooseCodex, launchArgs, launchEnv, probeCodex, recheckCodex } from "./codex-review-bin.mjs";
 import { parseArgv, readers } from "./codex-review-args.mjs";
 import { eventMetadata, exitOneOutcome, searchDomains } from "./codex-review-events.mjs";
 import { includeHash, includeWalk, isHealthRecord, isInstructionName, readRegular } from "./codex-review-include.mjs";
@@ -1004,10 +1004,10 @@ if (RECORD) {
 }
 // --- 1c. What the binary can do (AC19), before the snapshot; the yield first, so a queued signal stops the run before any codex call.
 await new Promise(setImmediate);
-const env = launchEnv(process.env); let CONFIG_ARGS = configArgs(WEB_ACCESS); // the CR2 allow-list; the -c settings
-probe = probeCodex(CODEX, env, CONFIG_ARGS);
+const env = launchEnv(process.env); // the CR2 allow-list
+WEB_ACCESS = (probe = probeCodex(CODEX, env, has("--live"))).mode ?? WEB_ACCESS; // the search mode follows the version (Codex R1, PR 2222f)
 if (probe.stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); // E_FEATURES_UNREADABLE, E_UNKNOWN_FEATURES, E_CODEX_*: fail closed
-CONFIG_ARGS = configArgs(WEB_ACCESS = searchMode(has("--live"), probe.version)); // Codex R3 (PR 2222e): cached search only where it was shown
+{ const stop = checkLogin(CODEX, env); if (stop) finish(incomplete(`${stop}; the reviewer was not started`), "0.0"); } // Codex R2 (PR 2222f): a ChatGPT login only, read, never changed
 
 // --- 2. Immutable snapshot: source in work/src, artifacts beside it (CR1) ---
 // Prune earlier runs' leftovers first: each work dir holds a ~2 GB snapshot, and a kept (incomplete) run or a
@@ -1281,7 +1281,7 @@ const RECORD_ARGS = RECORD
       "-c", 'mcp_servers.health.enabled_tools=["read_record","get_plan"]',
     ]
   : [];
-const codexArgs = () => launchArgs({ disable: probe.disable, configArgs: CONFIG_ARGS, model: MODEL, recordArgs: RECORD_ARGS, src, schemaPath, outPath });
+const codexArgs = () => launchArgs({ disable: probe.disable, configArgs: probe.configArgs, model: MODEL, recordArgs: RECORD_ARGS, src, schemaPath, outPath });
 // Last check before anything leaves this machine (US-40 AC11): no credential
 // file anywhere in the work dir, and none named in the patch. Fail closed.
 guard("final credential check", () => {
@@ -1334,8 +1334,8 @@ valueChecked = true;
 if (secretValues.skipped.length) console.error(`codex-review: ${secretValues.skipped.length} unchanged base binary file(s) over ${SKIP_BINARY_OVER >> 20} MB not searched for credential values: ${secretValues.skipped.join(", ")}`);
 // All above is synchronous, so a signal during it is only queued: each yield runs its handler (exit 130) before the next codex call.
 await new Promise(setImmediate);
-if ((probe = recheckCodex(CODEX, probe, env, CONFIG_ARGS, (m) => console.error(`codex-review: ${m}`), { reprobe: !TEST_LINK_POLICY && !TEST_INCLUDE_POLICY })).stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); // Codex R5
-if (searchMode(has("--live"), probe.version) !== WEB_ACCESS) finish(incomplete(`E_CODEX_CHANGED: the replacement codex binary (${probe.version}) would change the search mode from ${WEB_ACCESS}; the reviewer was not started`), "0.0");
+if ((probe = recheckCodex(CODEX, probe, env, has("--live"), (m) => console.error(`codex-review: ${m}`), { reprobe: !TEST_LINK_POLICY && !TEST_INCLUDE_POLICY })).stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); // Codex R5
+if (probe.mode !== WEB_ACCESS) finish(incomplete(`E_CODEX_CHANGED: the replacement codex binary (${probe.version}) would change the search mode from ${WEB_ACCESS}; the reviewer was not started`), "0.0");
 console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, codex ${JSON.stringify(CODEX)} (${probe.version}), author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : WEB_ACCESS === "disabled" ? `, web search disabled (cached-only search is not verified on ${probe.version}; --live turns on live pages)` : ""}, timeout ${TIMEOUT_MS / 60000} min`);
 await new Promise(setImmediate); // Codex R6: a cancel during that check runs its handler before the prompt is sent
 const started = Date.now();
@@ -1413,7 +1413,7 @@ const recordAccess = !RECORD ? "not_requested"
 if (foreignCalls.length) {
   const names = [...new Set(foreignCalls.map((ev) => `${ev.item.server}.${ev.item.tool}`))].join(", ");
   review = incomplete(`E_TOOL_BOUNDARY: the reviewer called a tool outside the allow-list (${names}); detected after the fact, so a write may already have happened`);
-}
+} else if (WEB_ACCESS === "disabled" && (webSearches || startedSearchIds.length)) review = incomplete(`E_TOOL_BOUNDARY: web search events reached the stream although search was disabled for this build (${webSearches} completed, ${startedSearchIds.length} started)`); // Codex R3, PR 2222f
 
 let drift = null;
 if (SUBJECT_MODE) {
@@ -1454,7 +1454,7 @@ function finish(review, elapsedMin, extra = {}) {
   writeOut(report); // a failed write says so and exits 1; the exit handler still cleans up
   const blocking = report.findings.filter((f) => f.blocks_merge);
   console.log(`## Codex review (${MODEL}) — ${label}, snapshot ${snapshotId}, ${elapsedMin} min`);
-  console.log(`**Status:** ${report.status}${drift ? `  \n**Drift:** ${drift}` : ""}${RECORD ? `  \n**Record access:** ${recordAccess}` : ""}  \n**Web access:** ${WEB_ACCESS}${webSearches ? `  \n**Web searches:** ${webSearches} (hosted, ${WEB_ACCESS === "live" ? "live web" : "cached index"}${webSearchesWithoutProvenance ? `; ${webSearchesWithoutProvenance} without source domains` : ""})` : ""}${unexpectedHosts.length ? `  \n**⚠ Unexpected sites opened:** ${unexpectedHosts.join(", ")}` : ""}${unresolvedOpens ? `  \n**⚠ Opens with no traceable site:** ${unresolvedOpens}` : ""}`);
+  console.log(`**Status:** ${report.status}${drift ? `  \n**Drift:** ${drift}` : ""}${RECORD ? `  \n**Record access:** ${recordAccess}` : ""}  \n**Web access:** ${WEB_ACCESS}${webSearches ? `  \n**Web searches:** ${webSearches} (hosted, ${WEB_ACCESS === "live" ? "live web" : WEB_ACCESS === "cached" ? "cached index" : "search was disabled"}${webSearchesWithoutProvenance ? `; ${webSearchesWithoutProvenance} without source domains` : ""})` : ""}${unexpectedHosts.length ? `  \n**⚠ Unexpected sites opened:** ${unexpectedHosts.join(", ")}` : ""}${unresolvedOpens ? `  \n**⚠ Opens with no traceable site:** ${unresolvedOpens}` : ""}`);
   if (unexpectedHosts.length) console.error(`codex-review: NOTE (--live, advisory): the reviewer opened pages outside the expected sites: ${unexpectedHosts.join(", ")}. Usually a cited journal or agency; a URL it wrote could also have carried out anything it can read on this disk. Look before relying on the verdict.`);
   if (unresolvedOpens) console.error(`codex-review: NOTE (--live, advisory): ${unresolvedOpens} web action(s) could not be traced to a site (no plain hostname in their own URL, or never completed). Look before relying on the verdict.`);
   console.log(`\n${report.summary}\n`);

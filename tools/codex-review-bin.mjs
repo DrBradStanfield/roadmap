@@ -5,17 +5,19 @@ import { createHash, randomUUID } from "node:crypto";
 import { accessSync, closeSync, constants, fstatSync, mkdtempSync, openSync, readdirSync, readSync, realpathSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, isAbsolute, join, resolve } from "node:path";
-import { disableArgs, parseFeatures, unjudged, VERSION_LINE } from "./codex-review-features.mjs";
-export { configArgs, launchEnv, searchMode } from "./codex-review-features.mjs";
+import { configArgs, disableArgs, parseFeatures, searchMode, unjudged, VERSION_LINE } from "./codex-review-features.mjs";
+export { launchEnv } from "./codex-review-features.mjs";
 
 /** The CLI bundled with the ChatGPT desktop app: on 2026-11-27 it ran gpt-6.2-astra on a ChatGPT login, the Homebrew 0.163 refused it. */
 export const CHATGPT_APP_CODEX = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex";
 
 /** An executable regular file that only its owner can write: a group- or world-writable binary could be swapped. */
-export const isExecutableFile = (p) => isExec(p) && (statSync(p).mode & 0o022) === 0;
+export const isExecutableFile = (p) => { try { accessSync(p, constants.X_OK); const s = statSync(p); return s.isFile() && (s.mode & 0o022) === 0; } catch { return false; } }; // one stat, one handler (Codex R4, PR 2222f)
 const isExec = (p) => { try { accessSync(p, constants.X_OK); return statSync(p).isFile(); } catch { return false; } };
 const onPath = (name, path, ok) => (path ?? "").split(delimiter).filter(isAbsolute).map((d) => join(d, name)).find(ok) ?? null;
 const byVersion = (a, b) => { const x = a.split("."), y = b.split("."); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = Number(x[i] ?? 0) - Number(y[i] ?? 0); if (d) return d; } return 0; };
+/** A failed CLI call in a few words: its exit code or timeout, never its output. */
+const failed = (e) => (e.code === "ETIMEDOUT" || e.signal ? "timed out" : typeof e.status === "number" ? `exited ${e.status}` : "could not start");
 const real = (p) => { try { return realpathSync(p); } catch { return null; } };
 
 /** Canonical path of the binary to run: the ChatGPT app's CLI; else `codex` on PATH; else the newest VS Code extension copy (versions compared as numbers); else null. */
@@ -72,36 +74,37 @@ export function binaryId(p, { afterRead } = {}) {
 /**
  * Pre-flight probe, no model call: `--version`, then `features list` twice under an empty CODEX_HOME (as
  * --ignore-user-config reads no user config; `features list` cannot take that flag): once to learn which features the
- * binary lists, once with the run's own --disable arguments. Every call carries the run's -c settings. Returns
- * { version, disable, id } (`id` taken before the first call, so recheckCodex also sees a change during the probe), plus
+ * binary lists, once with the run's own --disable arguments. The search mode is chosen from the version first (Codex R1,
+ * PR 2222f), so both listings carry the exact -c settings the review launches with. Returns { version, mode, configArgs,
+ * disable, id } (`id` taken before the first call, so recheckCodex also sees a change during the probe), plus
  * `stop` (E_CODEX_CHANGED, E_CODEX_VERSION, E_FEATURES_UNREADABLE or E_UNKNOWN_FEATURES) when the run must not start. A
  * failure names its stage and exit code only: the CLI's own output never reaches the report (Codex R3).
  */
-export function probeCodex(bin, env, configArgs, hooks = {}) {
+export function probeCodex(bin, env, live, hooks = {}) {
   const home = mkdtempSync(join(tmpdir(), "cr-codex-home-"));
-  const run = (a) => execFileSync(bin, [...configArgs, ...a], { encoding: "utf8", env: { ...env, CODEX_HOME: home }, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 4 << 20 });
-  const failed = (e) => (e.code === "ETIMEDOUT" || e.signal ? "timed out" : typeof e.status === "number" ? `exited ${e.status}` : "could not start");
+  const run = (a) => execFileSync(bin, a, { encoding: "utf8", env: { ...env, CODEX_HOME: home }, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 4 << 20 });
   const id = binaryId(bin, hooks); // `hooks.afterRead`: the tests' moment inside the hash
   if (!id || id.startsWith("changed:")) { rmSync(home, { recursive: true, force: true }); return { version: "version unknown", stop: `E_CODEX_CHANGED: the codex binary could not be read, changed while it was hashed, or ${REFUSED}` }; }
   try {
     let version;
     try { version = run(["--version"]).trim().split("\n")[0]; } catch (e) { return { version: "version unknown", stop: `E_CODEX_VERSION: \`--version\` ${failed(e)}` }; }
     if (!VERSION_LINE.test(version)) return { version: "version unknown", stop: "E_CODEX_VERSION: `--version` printed an unrecognised line" }; // Codex R9: the CLI text never reaches the report
+    const mode = searchMode(live, version), cfg = configArgs(mode);
     const list = (stage, extra) => {
       let text;
-      try { text = run([...extra, "features", "list"]); } catch (e) { return { stop: `\`features list\` (${stage}) ${failed(e)}` }; }
+      try { text = run([...extra, ...cfg, "features", "list"]); } catch (e) { return { stop: `\`features list\` (${stage}) ${failed(e)}` }; }
       const parsed = parseFeatures(text);
       return parsed.error ? { stop: `\`features list\` (${stage}) ${parsed.error}` } : parsed;
     };
     const first = list("discovery", []);
-    if (first.stop) return { version, stop: `E_FEATURES_UNREADABLE: ${first.stop}` };
+    if (first.stop) return { version, mode, stop: `E_FEATURES_UNREADABLE: ${first.stop}` };
     const disable = disableArgs(first.features.map((f) => f.name));
     const after = list("check", disable);
-    if (after.stop) return { version, stop: `E_FEATURES_UNREADABLE: ${after.stop}` };
+    if (after.stop) return { version, mode, stop: `E_FEATURES_UNREADABLE: ${after.stop}` };
     const names = (l) => l.features.map((f) => f.name).sort().join();
-    if (names(after) !== names(first)) return { version, stop: "E_FEATURES_UNREADABLE: `features list` (check) the two listings name different features" };
+    if (names(after) !== names(first)) return { version, mode, stop: "E_FEATURES_UNREADABLE: `features list` (check) the two listings name different features" };
     const unknown = unjudged(after.features, version);
-    return { version, disable, id, ...(unknown.length && { stop: `E_UNKNOWN_FEATURES: codex enables feature(s) no one has judged (${unknown.join(", ")}); judge or disable each in tools/codex-review-features.mjs` }) };
+    return { version, mode, configArgs: cfg, disable, id, ...(unknown.length && { stop: `E_UNKNOWN_FEATURES: codex enables feature(s) no one has judged (${unknown.join(", ")}); judge or disable each in tools/codex-review-features.mjs` }) };
   } finally { rmSync(home, { recursive: true, force: true }); }
 }
 
@@ -109,13 +112,26 @@ export function probeCodex(bin, env, configArgs, hooks = {}) {
  * Just before the review launches (Codex R5): the same file as probed, or one fresh probe of the new one; a second change
  * stops the run. With `reprobe: false` (a test policy shaped the snapshot; Codex R3, PR 2222d) any change stops it.
  */
-export function recheckCodex(bin, probe, env, configArgs, say, { reprobe = true } = {}) {
+export function recheckCodex(bin, probe, env, live, say, { reprobe = true } = {}) {
   if (!isExecutableFile(bin)) return { ...probe, stop: `E_CODEX_CHANGED: the codex binary changed after its probe and ${REFUSED}` }; // Codex R1: before any re-probe
   if (binaryId(bin) === probe.id) return probe;
   if (!reprobe) return { ...probe, stop: "E_CODEX_CHANGED: the codex binary changed after its probe, and a test policy shaped this snapshot, so it is not probed again" };
   say("codex binary changed after its probe; probing it again");
-  const again = probeCodex(bin, env, configArgs);
+  const again = probeCodex(bin, env, live);
   return again.stop || binaryId(bin) === again.id ? again : { ...again, stop: "E_CODEX_CHANGED: the codex binary changed again after a second probe" };
+}
+
+/**
+ * The stored login the review will use, read with `login status` under the run's own environment and CODEX_HOME (Codex R2,
+ * PR 2222f): null when its first line is exactly "Logged in using ChatGPT" and it exits 0, else a stop reason naming only
+ * the exit code. The CLI's text (which can carry a masked key) never reaches the report.
+ */
+export function checkLogin(bin, env) {
+  try {
+    const out = execFileSync(bin, ["login", "status"], { encoding: "utf8", env, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 1 << 20 });
+    if (out.trim().split("\n")[0] === "Logged in using ChatGPT") return null;
+    return "E_LOGIN_NOT_CHATGPT: `login status` (exit 0) does not report a ChatGPT login";
+  } catch (e) { return `E_LOGIN_NOT_CHATGPT: \`login status\` ${failed(e)}`; }
 }
 
 /** The review's argument list, as the wrapper launches it (AC3, AC14, AC19). */
