@@ -136,7 +136,7 @@ export default function Index() {
                 </s-stack>
                 {reminders.byProvider.length > 0 ? (
                   <s-stack gap="small-100">
-                    <s-text color="subdued">By cloud provider</s-text>
+                    <s-text color="subdued">By cloud storage service</s-text>
                     {reminders.byProvider.map((p) => (
                       <s-stack key={p.provider} direction="inline" justifyContent="space-between">
                         <s-text>{p.provider}</s-text>

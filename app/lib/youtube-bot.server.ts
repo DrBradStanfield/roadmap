@@ -35,7 +35,6 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
-import { YOUTUBE_PROMPT_TEMPLATE } from './youtube-context';
 import {
   POLL_INTERVAL_MS,
   DAILY_REPLY_CAP,
@@ -124,16 +123,13 @@ export function startYouTubeBot(): void {
     return;
   }
 
-  if (!YOUTUBE_PROMPT_TEMPLATE) {
-    console.warn('YouTube bot: chat-youtube-prompt.md missing — bot disabled');
-    return;
-  }
-
   const docs = chatDocs();
   if (docs.kind === 'missing') {
     console.warn(`YouTube bot: chat docs missing (${docs.files.join(', ')}) — bot disabled`);
     return;
   }
+  // No prompt template: the docs load already reported the file (US-15 AC82).
+  if (!docs.docs.youtubePrompt) return;
 
   // Block auto-start during local `npm run dev` so dev reloads don't spawn
   // posting loops. Developers can force-start with YOUTUBE_BOT_FORCE_START=true.
