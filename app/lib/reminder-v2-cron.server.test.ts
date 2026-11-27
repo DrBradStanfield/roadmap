@@ -369,7 +369,7 @@ describe('reminder v2 cron tick — US-28 AC3: a failed pass leaves the day open
   });
 });
 
-// US-23 AC6b: "today" is the UTC day what is due is measured against, so an
+// US-23 AC6b: "today" is the day what is due is measured against, so an
 // item due today goes in today's pass, not tomorrow's.
 describe('reminder v2 cron — US-23 AC6b: an item is due on its own due date', () => {
   const optin: ReminderV2Optin = {
