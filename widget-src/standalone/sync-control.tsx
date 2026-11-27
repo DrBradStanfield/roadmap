@@ -14,7 +14,9 @@
  */
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, savePopupGrant, SYNC_PENDING_EVENT } from '../src/storage';
-import { currentRetryDue, currentSaveStatus } from '../src/lib/roadmap-data';
+import { currentRetryDue, currentSaveStatus, recordFileSync } from '../src/lib/roadmap-data';
+import { driveReconnectCheck } from '../src/storage/drive-reconnect-check';
+import { didNotConnect } from './switch-stop';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, exitChoice, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
@@ -188,6 +190,10 @@ function useReconnect(lost?: LostSignIn) {
       const token = await new GoogleDriveAdapter(googleDriveConfig(), gen).acquireViaPopup()
         .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
       if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
+      // Kept only when it reaches the record this browser was syncing (US-09 AC65): nothing is saved or sent otherwise.
+      const check = await driveReconnectCheck(token.accessToken, recordFileSync());
+      if (check === 'notVisible') throw new Error(didNotConnect(PROVIDERS['google-drive'].label));
+      if (!isCurrentRun(run)) return;
       if (rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
         markSyncPending();
