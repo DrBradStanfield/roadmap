@@ -1277,7 +1277,7 @@ describe('test-chatbot-matching count flags (US-15 AC24c)', () => {
 
   it.each([
     ['--concurrency', 'x'], ['--concurrency', '--verbose'], ['--concurrency', '0'], ['--concurrency', '1.5'],
-    ['--runs', 'x'], ['--runs', '0'], ['--answer-check-runs', 'x'], ['--answer-check-runs', '0'],
+    ['--runs', 'x'], ['--runs', '0'], ['--runs', '-1'], ['--answer-check-runs', 'x'], ['--answer-check-runs', '0'],
   ])('%s %s exits 1 naming the flag, with no API call', async (flag, value) => {
     const r = await run([flag, value]);
     expect(r.status, r.out).toBe(1);
