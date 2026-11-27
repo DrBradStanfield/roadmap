@@ -362,6 +362,7 @@ export class RecordSession {
     // merge, and a clear that throws never leaves the pre-erase copy nor
     // hides the erase from the page (US-11 AC7).
     this.current = merged;
+    this.host.adopted?.();
     this.settleClear();
     // Nor a full pre-erase copy of the record on this device (US-06 AC13).
     if (erasedElsewhere && this.host.tier === 'cloud' && !unsaved(this.mode)) this.releaseErasedCopy(this.host.mirror);
@@ -437,9 +438,9 @@ export class RecordSession {
         // can ask for a save: that save starts its own pass, never joins this one.
         if (next === null && owns()) this.running = null;
         if (next === null) this.saveLanded(); // the final pass landed: before adopt() or a listener can throw
-        // Fold remote changes back in without dropping edits made during the
-        // await; merge is the source of truth for combining the two.
-        remoteFolded = laterChange(remoteFolded, this.adopt(mergeFiles(this.current, result.file, this.ctx())));
+        // Fold remote changes back in without dropping edits made during the await, from the check's
+        // read when it ran (it holds what another writer added after the write, US-11 AC15).
+        remoteFolded = laterChange(remoteFolded, this.adopt(mergeFiles(this.current, result.verified ?? result.file, this.ctx())));
         pass = next;
       }
       announce(this.host, remoteFolded);

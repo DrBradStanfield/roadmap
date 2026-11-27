@@ -10,11 +10,12 @@
  * still holds it active (`toCancel`): a merge during the upload can bring in
  * an opt-in that survives the erase (another device erased to the same epoch,
  * then turned reminders on). The
- * listener on hr:remote-changed is attached while the state is `watching`,
+ * listener on hr:record-adopted (every merge taken in, announced or not,
+ * US-11 AC15) is attached while the state is `watching`,
  * and only then: the transition says when.
  */
 import { eraseRunsHere, getEraseIdentity, getReminderOptIn } from '../src/lib/roadmap-data';
-import { REMOTE_CHANGED_EVENT } from '../src/storage/roadmap-store';
+import { RECORD_ADOPTED_EVENT } from '../src/storage/roadmap-store';
 import { rowsOf } from '@roadmap/health-core/reminder-rows';
 import type { FileReminderOptIn, ReminderTokenRow } from '@roadmap/health-core/roadmap-file';
 
@@ -49,8 +50,8 @@ function moved(from: EraseCancel, state: EraseCancel): EraseCancelStep {
 
 /** Each active row's token, once, after those already kept. */
 function kept(state: Extract<EraseCancel, { kind: 'watching' }>, rows: ReminderTokenRow[]): EraseCancel {
-  const fresh = rows.filter((row, i) => row.status === 'active'
-    && !state.cancels.some((c) => c.token === row.token) && rows.findIndex((r) => r.token === row.token) === i);
+  const active = rows.filter((row) => row.status === 'active');
+  const fresh = active.filter((row, i) => !state.cancels.some((c) => c.token === row.token) && active.findIndex((r) => r.token === row.token) === i);
   return fresh.length === 0 ? state : { ...state, cancels: [...state.cancels, ...fresh.map(({ token }) => ({ token, idToken: null }))] };
 }
 
@@ -92,8 +93,8 @@ export function stepEraseCancel(event: EraseCancelEvent): void {
   const { state, effects } = eraseCancelTransition(eraseCancel, event);
   eraseCancel = state;
   for (const effect of effects) {
-    if (effect.type === 'listen') window.addEventListener(REMOTE_CHANGED_EVENT, watchErase);
-    else window.removeEventListener(REMOTE_CHANGED_EVENT, watchErase);
+    if (effect.type === 'listen') window.addEventListener(RECORD_ADOPTED_EVENT, watchErase);
+    else window.removeEventListener(RECORD_ADOPTED_EVENT, watchErase);
   }
 }
 

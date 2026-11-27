@@ -66,6 +66,9 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
   const refusal = s.cloudUnreachable ? ERASE_UNREACHABLE : host.ownsOffFileData?.() === false ? ERASE_STALE_TAB
     : s.saveMode === 'erasing' ? ERASE_BUSY : null;
   if (refusal) return { success: false, error: refusal };
+  // This copy's opt-in as the erase begins, before any await: a merge taken in
+  // while the erase reads can replace it (US-11 AC15).
+  const ownOptIn = s.current.reminderOptIn;
   // On this device, the revision of the bytes read: an unreadable record is
   // replaced only at it, so another tab's repair is never written over (AC9).
   const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
@@ -101,7 +104,6 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
     // copy, so that row is the one cancelled (US-11 AC4). Never anything less: an erase this copy
     // missed may hold no opt-in at all, and this copy's own active row must still be cancelled and
     // turned off. No save is scheduled; the erase replaces this copy.
-    const ownOptIn = s.current.reminderOptIn;
     let optIn: RoadmapFile['reminderOptIn'];
     try {
       optIn = [stored, device].reduce<RoadmapFile>(

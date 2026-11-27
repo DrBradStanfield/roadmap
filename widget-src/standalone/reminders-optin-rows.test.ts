@@ -148,6 +148,61 @@ describe('US-11 AC15: an erase cancels every active row of every copy it reads',
     expect(t.cancels()).toEqual([B]);
   });
 
+  it('a token cancelled in the working copy and active in the device copy is cancelled exactly once (review E1)', async () => {
+    const t = await setUp(row(A, 'cancelled', 2));
+    const device = createEmptyFile({ deviceId: 'dev_tab', now: T(1) });
+    device.reminderOptIn = row(A, 'active', 1);
+    localStorage.setItem('health_roadmap_file_v2', JSON.stringify(device));
+    expect((await t.data.deleteUserData()).success).toBe(true);
+    expect(t.cancels()).toEqual([A]);
+  });
+
+  it('a merge taken in while the erase first reads, which drops this copy\'s active token, still leaves it cancelled (review E2)', async () => {
+    const t = await setUp(row(A, 'active', 1));
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    let held = false;
+    const read = MemoryAdapter.prototype.read;
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockImplementationOnce(async function (this: MemoryAdapter, ...args) {
+      held = true;
+      await gate;
+      return read.apply(this, args);
+    });
+    const erasing = t.data.deleteUserData();
+    await vi.waitFor(() => expect(held).toBe(true));
+    // Another device erased meanwhile; this page takes it in while the erase's read is held.
+    t.cloudWrites(row('', 'cancelled', 5, { email: '' }), (f) => { f.meta.eraseEpoch = 1; f.meta.erasedAt = T(5); f.schemaVersion = 2; f.erasedRows = { fromEpoch: 1, ids: [] }; });
+    expect(await t.page().refreshFromRemote()).toBe(true);
+    expect(rowsOf(t.data.getReminderOptIn())).toEqual([]);
+    release();
+    expect((await erasing).success).toBe(true);
+    expect(t.cancels()).toEqual([A]);
+  });
+
+  it('a token another device re-enrols between the erase write and its check read gets no cancel (review E3)', async () => {
+    const t = await setUp(row(A, 'active', 1));
+    const write = MemoryAdapter.prototype.write;
+    let erasedWritten = false;
+    vi.spyOn(MemoryAdapter.prototype, 'write').mockImplementation(async function (this: MemoryAdapter, ...args) {
+      const out = await write.apply(this, args);
+      if ((args[1] as RoadmapFile).meta.eraseEpoch === 1) erasedWritten = true;
+      return out;
+    });
+    const read = MemoryAdapter.prototype.read;
+    vi.spyOn(MemoryAdapter.prototype, 'read').mockImplementation(async function (this: MemoryAdapter, ...args) {
+      if (erasedWritten) {
+        erasedWritten = false;
+        // Another device, at the new epoch, turns token A on again before this page reads back its write.
+        const now = JSON.parse(t.cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+        t.cloudWrites(nest(row(A, 'active', 1, { updatedAt: '2026-12-01T00:00:00.000Z', lamport: 9 }), now.reminderOptIn as ReminderTokenRow));
+      }
+      return read.apply(this, args);
+    });
+    expect((await t.data.deleteUserData()).success).toBe(true);
+    expect(statusOf(t.data.getReminderOptIn())).toEqual({ [A]: 'active' });
+    expect(t.cancels()).toEqual([]);
+  });
+
   it('a nested active token present only in the cloud copy is cancelled', async () => {
     const t = await setUp(row(A, 'cancelled', 2));
     t.cloudWrites(nest(row(A, 'cancelled', 2), row(C, 'active', 1)));
@@ -170,21 +225,34 @@ describe('US-11 AC15: an erase cancels every active row of every copy it reads',
     expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: A, idToken: 'test-proof-good' }, { op: 'cancel', token: C }]);
   });
 
-  it('a token re-enrolled at the new epoch, matching one this erase queued, survives beneath the marker and is not cancelled', async () => {
-    const t = await setUp(row(B, 'active', 1, { provider: 'google-drive' }));
-    t.proof.mockImplementation(async () => {
-      // Another device erases to the same epoch, then turns token B on again.
-      const { RoadmapStore } = await import('../src/storage/roadmap-store');
-      const other = await RoadmapStore.create(new MemoryAdapter(t.cloud));
-      expect((await other.deleteAllData()).success).toBe(true);
-      expect(other.setReminderRows([{ status: 'active', token: B, email: `${B}@example.test`, provider: 'dropbox' }], other.eraseIdentity)).toBe(true);
-      await other.flush();
-      return null;
-    });
-    expect((await t.data.deleteUserData()).success).toBe(true);
-    const standing = t.data.getReminderOptIn();
-    expect(standing?.token).toBe(''); // the marker is the stored object
-    expect(statusOf(standing)).toEqual({ [B]: 'active' });
-    expect(t.cancels()).toEqual([]);
+  // The clock is pinned, so which of the two is newer never rests on a millisecond (review T2).
+  it.each([
+    ['beneath the marker (our erase is newer)', 1_000, ''],
+    ['above the marker (the re-enrolment is newer)', 9_000, B],
+  ] as const)('a token re-enrolled at the new epoch, matching one this erase queued, survives %s and is not cancelled', async (_case, otherAt, top) => {
+    const base = Date.parse('2026-11-27T12:00:00.000Z');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(base);
+    try {
+      const t = await setUp(row(B, 'active', 1, { provider: 'google-drive' }));
+      t.proof.mockImplementation(async () => {
+        // Another device, its clock at `otherAt`, erases to the same epoch, then turns token B on again.
+        vi.setSystemTime(base + otherAt);
+        const { RoadmapStore } = await import('../src/storage/roadmap-store');
+        const other = await RoadmapStore.create(new MemoryAdapter(t.cloud));
+        expect((await other.deleteAllData()).success).toBe(true);
+        expect(other.setReminderRows([{ status: 'active', token: B, email: `${B}@example.test`, provider: 'dropbox' }], other.eraseIdentity)).toBe(true);
+        await other.flush();
+        vi.setSystemTime(base + 5_000); // this erase builds its marker now
+        return null;
+      });
+      expect((await t.data.deleteUserData()).success).toBe(true);
+      const standing = t.data.getReminderOptIn();
+      expect(standing?.token).toBe(top);
+      expect(statusOf(standing)).toEqual({ [B]: 'active' });
+      expect(t.cancels()).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

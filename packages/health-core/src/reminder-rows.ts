@@ -64,12 +64,14 @@ export function shownOptIn(file: Pick<RoadmapFile, 'reminderOptIn'>): ReminderTo
 export const addressKey = (email: string): string => email.trim().toLowerCase();
 
 /** Every address an active row names, each once however it is cased or
- *  padded: the shown row's first, then the rest in order (US-17 AC19). */
+ *  padded: the shown row's first, then the rest in order (US-17 AC19). A row
+ *  with no address string names none, and still counts as on elsewhere. */
 export function activeAddresses(file: Pick<RoadmapFile, 'reminderOptIn'>): string[] {
   const shown = shownOptIn(file);
   const active = rowsOf(file.reminderOptIn).filter((row) => row.status === 'active' && row.token !== shown?.token);
   const seen = new Set<string>();
   return [...(shown?.status === 'active' ? [shown] : []), ...active].flatMap(({ email }) => {
+    if (typeof email !== 'string' || email.trim() === '') return [];
     const key = addressKey(email);
     if (seen.has(key)) return [];
     seen.add(key);

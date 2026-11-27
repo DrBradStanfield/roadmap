@@ -139,3 +139,16 @@ describe('US-17 AC19: an old and a new device on one record settle', () => {
     expect(old.file.reminderOptIn?.token).toBe('token-a');
   });
 });
+
+describe('US-17 AC19 (review C1): an active row with no address string', () => {
+  it('reads as active, names no address and never throws in the visible-content comparison', async () => {
+    const { activeAddresses, rowsOf, shownOptIn } = await import('./reminder-rows');
+    const { visibleContentOf } = await import('./record-session-content');
+    const file = createEmptyFile({ deviceId: 'seed', now: NOW });
+    file.reminderOptIn = { ...row('token-a', 'active', '2026-10-21T11:00:00.000Z'), email: null as unknown as string };
+    expect(shownOptIn(file)?.status).toBe('active');
+    expect(rowsOf(file.reminderOptIn).map((r) => r.token)).toEqual(['token-a']);
+    expect(activeAddresses(file)).toEqual([]);
+    expect(() => visibleContentOf(file)).not.toThrow();
+  });
+});

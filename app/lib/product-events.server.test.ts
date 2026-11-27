@@ -134,6 +134,14 @@ describe('parseProductEvent', () => {
     ).toBeNull();
   });
 
+  it('takes reminder_cancel_many with a provider and a count and nothing else (US-17 AC19)', () => {
+    expect(parseProductEvent({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { provider: 'dropbox', count: 3 } }))
+      .toEqual({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { provider: 'dropbox', count: 3 } });
+    expect(parseProductEvent({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { count: 2 } }))
+      .toEqual({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { count: 2 } });
+    expect(parseProductEvent({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { provider: 'dropbox', count: 3, key: 'ldl' } })).toBeNull();
+  });
+
   it('takes cloud_connect_cancelled with a provider and nothing else (US-09 AC22)', () => {
     expect(
       parseProductEvent({ eventName: 'cloud_connect_cancelled', visitorId: VISITOR, metadata: { provider: 'google-drive' } }),

@@ -100,6 +100,17 @@ describe('US-17 AC19: the control shows every active address the record holds', 
     expect(view.container.textContent).toContain('✓ Email health reminders on → a@example.test, b@example.test and c@example.test');
   });
 
+  it('an active row with no address string still shows on, naming the addresses it can (review C1)', () => {
+    recordOptIn = { ...row('test-token-a', 'a@example.test', 'active', 2), email: null as unknown as string, tokens: [row('test-token-b', 'b@example.test', 'active', 1)] };
+    const view = render(<RemindersControl backend="dropbox" />);
+    expect(view.container.textContent).toContain('✓ Email health reminders on → b@example.test');
+    cleanup();
+    recordOptIn = { ...row('test-token-a', 'a@example.test', 'active', 2), email: null as unknown as string };
+    const alone = render(<RemindersControl backend="dropbox" />);
+    expect(alone.container.textContent).toContain('✓ Email health reminders onTurn off');
+    expect(alone.getByRole('button', { name: 'Turn off' })).toBeTruthy();
+  });
+
   it('a stored cancelled row over a nested active one shows on, with the active address', () => {
     recordOptIn = { ...row('test-token-a', 'a@example.test', 'cancelled', 2), tokens: [row('test-token-b', 'b@example.test', 'active', 1)] };
     const view = render(<RemindersControl backend="dropbox" />);

@@ -373,9 +373,11 @@ export async function cancelRemindersForErase(): Promise<(read?: FileReminderOpt
     stepEraseCancel({ type: 'read', rows: read.flatMap(rowsOf) });
     const held = eraseCancelState();
     stepEraseCancel({ type: 'committed' });
-    const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(toCancel(held, getReminderOptIn()).map(
-      ({ token, idToken }) => postCancel(token, idToken, true).then((res) => (res.ok ? null : String(res.status)), () => 'unsent'),
-    ));
+    // One at a time, within the route's per-address limit as far as it goes (US-11 AC15).
+    const failed: (string | null)[] = held.kind === 'unprepared' ? ['unprepared'] : [];
+    for (const { token, idToken } of held.kind === 'unprepared' ? [] : toCancel(held, getReminderOptIn())) {
+      failed.push(await postCancel(token, idToken, true).then((res) => (res.ok ? null : String(res.status)), () => 'unsent'));
+    }
     for (const status of failed) {
       if (status) Sentry.captureException(new Error(`Reminder row delete failed (${status}).`), { tags: { area: 'reminders', op: 'erase-cancel' } });
     }

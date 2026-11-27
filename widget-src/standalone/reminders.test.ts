@@ -105,9 +105,9 @@ function stubBrowser(): void {
     removeEventListener: vi.fn(windowEvents.removeEventListener.bind(windowEvents)),
   });
 }
-/** A re-read merged something new in (the store's hr:remote-changed). */
+/** A re-read merged something in (the store's hr:record-adopted, US-11 AC15). */
 function remoteChanged(): void {
-  windowEvents.dispatchEvent(new Event('hr:remote-changed'));
+  windowEvents.dispatchEvent(new Event('hr:record-adopted'));
 }
 
 function mockFetchOk(body: unknown = { token: 'new-cap-token', email: 'user@example.com' }): FetchMock {
@@ -1033,6 +1033,8 @@ describe('US-11 AC4c — the EraseCancel transition', () => {
     ['the first read keeps an active token', watching(), { type: 'read', rows: [on('test-token-a')] }, watching(A), []],
     ['the first read of no opt-in keeps nothing', watching(), { type: 'read', rows: [] }, watching(), []],
     // US-11 AC15: every active row the erase read, each once, a cancelled one never.
+    // US-11 AC15 (review E1): a cancelled copy of a token read first never hides its active copy from another copy.
+    ['a cancelled copy of a token read before its active copy still keeps the token, once', watching(), { type: 'read', rows: [on('test-token-a', 'cancelled'), on('test-token-a'), on('test-token-a')] }, watching(A), []],
     ['a read of several rows keeps each active token once', watching(A), { type: 'read', rows: [on('test-token-b'), on('test-token-c', 'cancelled'), on('test-token-b'), on('test-token-a')] }, watching(A, B), []],
     ['a token merged in while the erase runs is kept', watching(A), running(on('test-token-b')), watching(A, B), []],
     ['the same token seen again is kept once', watching(A), running(on('test-token-a')), watching(A), []],
@@ -1073,10 +1075,10 @@ describe('US-11 AC4c — the EraseCancel transition', () => {
   });
 });
 
-// US-11 AC4c (lead S59b): the prepare's listener on hr:remote-changed is
+// US-11 AC4c (lead S59b): the prepare's listener on hr:record-adopted is
 // attached while the teardown watches, and goes as it stops.
 describe('US-11 AC4c — the erase watcher follows the state', () => {
-  const remote = (calls: unknown[][]) => calls.filter(([type]) => type === 'hr:remote-changed').length;
+  const remote = (calls: unknown[][]) => calls.filter(([type]) => type === 'hr:record-adopted').length;
   const added = () => remote(vi.mocked(window.addEventListener).mock.calls);
   const removed = () => remote(vi.mocked(window.removeEventListener).mock.calls);
 

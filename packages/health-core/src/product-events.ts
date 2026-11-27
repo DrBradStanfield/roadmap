@@ -34,6 +34,9 @@ export const PRODUCT_EVENT_NAMES = [
   // of optins means the default-on call was wrong.
   'reminder_optin',
   'reminder_optout',
+  // US-17 AC19: a Turn off that posted a cancel for more than one token, landed
+  // or not. Metadata: the provider (closed list) and how many cancels, nothing else.
+  'reminder_cancel_many',
   // Fired by the reminder cron on each successful send (server-originated,
   // nil-UUID sentinel; metadata = provider + due-item count only) — sends
   // were invisible until the first real one (2026-08-28) surfaced the gap.

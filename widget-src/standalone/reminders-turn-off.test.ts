@@ -118,8 +118,7 @@ describe('US-17 AC19: Turn off cancels every token, in one edit', () => {
     expect(rowsOf(file.reminderOptIn).map((r) => r.email)).toEqual(['token-a@example.test', 'token-b@example.test', 'token-c@example.test']);
     expect(shownOptIn(file)?.status).toBe('cancelled');
     expect(edits).toBe(1);
-    expect(trackProductEvent).toHaveBeenCalledTimes(1);
-    expect(trackProductEvent).toHaveBeenCalledWith('reminder_optout', { provider: 'dropbox' });
+    expect(trackProductEvent.mock.calls).toEqual([['reminder_cancel_many', { provider: 'dropbox', count: 3 }], ['reminder_optout', { provider: 'dropbox' }]]);
   });
 
   it('partial failure: the landed rows are written, the failed one stays on, the Turn off says why', async () => {
@@ -128,7 +127,8 @@ describe('US-17 AC19: Turn off cancels every token, in one edit', () => {
     await expect(cancelReminders()).rejects.toThrow('Could not turn reminders off (500). Please retry.');
     expect(statusOf()).toEqual({ 'token-a': 'cancelled', 'token-b': 'active' });
     expect(shownOptIn(file)?.token).toBe('token-b');
-    expect(trackProductEvent).toHaveBeenCalledTimes(1);
+    // A partial failure counts both: the reach of the Turn off, and the opt-out it wrote.
+    expect(trackProductEvent.mock.calls).toEqual([['reminder_cancel_many', { provider: 'dropbox', count: 2 }], ['reminder_optout', { provider: 'dropbox' }]]);
   });
 
   it('a cancel that never leaves fails with its own words; the rest still land', async () => {
@@ -182,6 +182,18 @@ describe('US-17 AC19: Turn off cancels every token, in one edit', () => {
     file.reminderOptIn = row('token-a', 'active', 2, { provider: 'google-drive' });
     await cancelReminders({ keepalive: true, count: false });
     expect(posts).toEqual([{ op: 'cancel', token: 'token-a' }]);
+  });
+
+  it('one token posts no reach event; the age gate counts neither', async () => {
+    file.reminderOptIn = row('token-a', 'active', 1);
+    server();
+    await cancelReminders();
+    expect(trackProductEvent.mock.calls.map(([name]) => name)).toEqual(['reminder_optout']);
+    trackProductEvent.mockReset();
+    file = createEmptyFile({ deviceId: 'dev_turn_off', now: '2026-11-01T00:00:00.000Z' });
+    file.reminderOptIn = optIn(row('token-a', 'active', 2), row('token-b', 'active', 1));
+    await cancelReminders({ count: false });
+    expect(trackProductEvent).not.toHaveBeenCalled();
   });
 
   it('the event names a provider only from the closed list', async () => {

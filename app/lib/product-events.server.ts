@@ -189,6 +189,7 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   chat_question_archived: ['eligible', 'kept', 'skipped'],
   chat_profile_edit: ['field', 'choice'],
   cloud_connect_cancelled: ['provider'],
+  reminder_cancel_many: ['provider', 'count'], // US-17 AC19: counts only, never a token or address
   blood_test_moved: [], // US-04 AC5: the name alone
   chat_panel_shown: [], // US-15 AC77: the name alone
   alcohol_question_answered: [], // US-60: the name alone, never the answer

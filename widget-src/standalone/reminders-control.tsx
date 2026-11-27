@@ -51,9 +51,10 @@ export function RemindersControl({ backend }: { backend: Backend }) {
   }, []);
 
   if (!remindersSupported(backend)) return null;
-  // Every active address the record holds, the shown one first (US-17 AC19).
-  const addresses = activeAddresses({ reminderOptIn: getReminderOptIn() });
-  const active = addresses.length > 0;
+  // On when any row is; every active address the record holds, the shown one first (US-17 AC19).
+  const optIn = { reminderOptIn: getReminderOptIn() };
+  const active = shownOptIn(optIn)?.status === 'active';
+  const addresses = activeAddresses(optIn);
 
   const busy = isBusy(step);
   const view = shown(step);
@@ -90,7 +91,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
     <div className="hr-reminders">
       {active ? (
         <>
-          <span className="hr-sync-status">✓ Email health reminders on → {joinWithAnd(addresses)}</span>
+          <span className="hr-sync-status">✓ Email health reminders on{addresses.length > 0 ? ` → ${joinWithAnd(addresses)}` : ''}</span>
           <button className="hr-sync-link" disabled={busy} onClick={() => void turnOff()}>
             {step.phase === 'turningOn' ? 'Setting up…' : busy ? 'Turning off…' : 'Turn off'}
           </button>

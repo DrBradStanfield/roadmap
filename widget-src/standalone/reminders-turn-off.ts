@@ -73,6 +73,12 @@ export function unchangedSince(read: ReminderTokenRow, optIn: FileReminderOptIn 
     && now.updatedAt === read.updatedAt && now.lamport === read.lamport;
 }
 
+/** The provider, only from the closed list: the stored object's own is not
+ *  validated where it enters, so it is checked before any event names it. */
+function closedProvider(provider: string): Provider | undefined {
+  return (REMINDER_PROVIDERS as readonly string[]).includes(provider) ? (provider as Provider) : undefined;
+}
+
 /** Why a Turn off asked under `erase` is refused, as ChatEdits' replyStanding
  *  says it: at that erase, this tab's erase is running (US-11 AC4b);
  *  otherwise the record moved to another (US-16 AC2a). */
@@ -104,11 +110,18 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
   // A write that would be refused is refused before any POST, so no row is
   // cancelled under a switch that stays on (US-11 AC4b, lead S59b).
   if (!stillShown(erase)) throw new Error(refusedWhy(erase));
-  const answers = await Promise.all(read.map(({ token, provider }) => postCancel(token, proofs.get(provider) ?? null, keepalive).then(
-    (res) => (res.ok ? null : `Could not turn reminders off (${res.status}). Please retry.`),
-    (error: unknown) => (error instanceof Error ? error.message : String(error)),
-  ).then((failure) => ({ type: 'answered' as const, token, failure }))));
-  state = answers.reduce(turnOffTransition, state as TurnOff);
+  // One at a time, active rows first: the route takes about 20 requests a
+  // minute from one address, so the rows that matter land first, and a
+  // refused one stays on for the next Turn off (US-17 AC19).
+  for (const { token, provider } of read) {
+    const failure = await postCancel(token, proofs.get(provider) ?? null, keepalive).then(
+      (res) => (res.ok ? null : `Could not turn reminders off (${res.status}). Please retry.`),
+      (error: unknown) => (error instanceof Error ? error.message : String(error)),
+    );
+    state = turnOffTransition(state, { type: 'answered', token, failure });
+  }
+  // How often a Turn off reaches more than one token, landed or not: counts only (US-17 AC19).
+  if (count && read.length > 1) trackProductEvent('reminder_cancel_many', { provider: closedProvider(read[0].provider), count: read.length });
   if (state.kind === 'writing') {
     const landed = state.landed;
     // Only rows nobody changed while the cancels were out: a later decision
@@ -126,10 +139,7 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
   // LANE: the provider tag lets the typed and cloud ratios be judged apart.
   // Once per Turn off that wrote a row active at the read; the provider only
   // from the closed list.
-  if (count && state.counts) {
-    // The stored object's own provider is not validated where it enters, so checked here.
-    const provider = (REMINDER_PROVIDERS as readonly string[]).includes(state.counts) ? state.counts : undefined;
-    trackProductEvent('reminder_optout', provider ? { provider } : undefined);
-  }
+  const provider = state.counts && closedProvider(state.counts);
+  if (count && state.counts) trackProductEvent('reminder_optout', provider ? { provider } : undefined);
   if (state.error) throw new Error(state.error);
 }

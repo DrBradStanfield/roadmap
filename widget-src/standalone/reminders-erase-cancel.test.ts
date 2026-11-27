@@ -82,6 +82,7 @@ const TOKEN_A = 'test-token-good';
 const TOKEN_B = 'test-token-b';
 const PROOF = 'test-proof-good';
 const REMOTE = 'hr:remote-changed';
+const ADOPTED = 'hr:record-adopted'; // the teardown's listener (US-11 AC15)
 
 type Posted = { op: string; token?: string; idToken?: string };
 
@@ -138,16 +139,16 @@ async function eraseSetUp() {
     return new Response('{}', { status: body.token && refuse.has(body.token) ? 500 : 200 });
   }));
 
-  // The page's hr:remote-changed listeners, as added and removed.
+  // The teardown's hr:record-adopted listeners, as added and removed.
   const listening = new Set<unknown>();
   const add = window.addEventListener.bind(window);
   const remove = window.removeEventListener.bind(window);
   vi.spyOn(window, 'addEventListener').mockImplementation(((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => {
-    if (type === REMOTE) listening.add(fn);
+    if (type === ADOPTED) listening.add(fn);
     add(type, fn, opts);
   }) as typeof window.addEventListener);
   vi.spyOn(window, 'removeEventListener').mockImplementation(((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | EventListenerOptions) => {
-    if (type === REMOTE) listening.delete(fn);
+    if (type === ADOPTED) listening.delete(fn);
     remove(type, fn, opts);
   }) as typeof window.removeEventListener);
 
@@ -162,7 +163,7 @@ async function eraseSetUp() {
     const other = await RoadmapStore.create(adapter);
     const dispatch = window.dispatchEvent.bind(window);
     const sink = vi.spyOn(window, 'dispatchEvent').mockImplementation((event: Event) =>
-      event.type === REMOTE ? (otherAnnounced.push((event as CustomEvent).detail), true) : dispatch(event));
+      event.type === REMOTE ? (otherAnnounced.push((event as CustomEvent).detail), true) : event.type === ADOPTED ? true : dispatch(event));
     try { return await act(other); } finally { sink.mockRestore(); }
   };
   /** Another device turns reminders on with its own row, and this page re-reads the cloud. */
