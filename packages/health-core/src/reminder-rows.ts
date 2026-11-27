@@ -44,6 +44,16 @@ export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileRem
   return tokens.length > 0 ? { ...stored, tokens } : stored;
 }
 
+/** True when a re-read lost an opt-in row this save wrote: the stored object,
+ *  or a row of `rowsOf`, has no row for its token as new in `theirs`. */
+export function optInBehind(ours: FileReminderOptIn | undefined, theirs: FileReminderOptIn | undefined): boolean {
+  const held = theirs ? [ownRow(theirs), ...rowsOf(theirs)] : [];
+  return (ours ? [ownRow(ours), ...rowsOf(ours)] : []).some((row) => {
+    const match = held.filter((r) => r.token === row.token);
+    return match.length === 0 || match.every((r) => stampIsNewer(row, r));
+  });
+}
+
 /** What the reminders control shows: the newest active row, or else the
  *  stored object (which covers the erase marker). */
 export function shownOptIn(file: Pick<RoadmapFile, 'reminderOptIn'>): ReminderTokenRow | undefined {
