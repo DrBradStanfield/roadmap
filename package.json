@@ -23,6 +23,7 @@
     "test": "npm run check:symlinks && npm run test:core && npm run test:server",
     "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
     "typecheck:engine": "tsc --noEmit -p tsconfig.engine.json",
+    "typecheck:all": "tsc --noEmit -p widget-src/tsconfig.json && tsc --noEmit -p packages/health-core/tsconfig.json && npm run typecheck:server && npm run typecheck:engine",
     "test:all": "node scripts/test-all-locked.mjs",
     "test:core": "npm run test --workspace=@roadmap/health-core",
     "test:server": "vitest run app/lib",
