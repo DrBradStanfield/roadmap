@@ -43,6 +43,6 @@ describe('US-19 AC2a: no hidden website field', () => {
       body: { email: 'reader@example.test', message: 'Synthetic message' },
     }]);
     expect(Object.keys(posts[0].body)).not.toContain('website');
-    expect(utils.getByText('Thank you for your feedback!')).toBeTruthy();
+    expect(utils.getByText('Thank you for your feedback!', { selector: '.feedback-success' })).toBeTruthy();
   });
 });
