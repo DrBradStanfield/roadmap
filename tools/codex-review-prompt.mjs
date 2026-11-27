@@ -1,5 +1,5 @@
 // The prompts tools/codex-review.mjs sends on stdin: the review prompt (moved here verbatim, 2026-11-27) and the
-// --brief answer prompt (US-40 AC19). Pure: every value comes in through `c`, built once by the wrapper after the
+// --brief answer prompt (US-40 AC20). Pure: every value comes in through `c`, built once by the wrapper after the
 // snapshot and its checks, so both modes describe the same snapshot with the same safety wording. The rules that guard
 // what leaves the machine (web search, URLs, what is data and what is an instruction) are written once, below, and
 // shared; only the task and the output contract differ between the modes.
@@ -7,6 +7,7 @@ import { join } from "node:path";
 
 /** The web search rules. `about` is what the model checks sources for; `where` is where it says a source was not found. */
 function webRules(c, about, where) {
+  if (c.WEB_ACCESS === "disabled") return `You have no web search tool in this run, and your shell has no network. A cited source you cannot check offline is "not checked", not wrong; say which in ${where}.`;
   return c.WEB_ACCESS === "live" ? `You have a web search tool. It can open live pages to check facts, and your
 shell has no network. Use it to check that a source ${about.cites} exists
 and says what ${about.claims} claims, or what current public documentation says
@@ -126,7 +127,7 @@ Return ONLY the JSON object the schema asks for. Number findings R1, R2, ...`;
 }
 
 /**
- * The --brief prompt (US-40 AC19, Brad 2026-11-27): the brief is a set of questions to ANSWER, never a document to
+ * The --brief prompt (US-40 AC20, Brad 2026-11-27): the brief is a set of questions to ANSWER, never a document to
  * critique (twice that day a business brief sent with --subject came back as a review of its wording). The snapshot,
  * the context, the safety wording and the web rules are the review's; the task and the output contract are not.
  */

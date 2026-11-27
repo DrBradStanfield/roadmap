@@ -42,7 +42,7 @@ function validate(r) {
 function pick(r) {
   return { status: r.status, target: r.target, summary: r.summary, findings: r.findings.map((f) => Object.fromEntries(FINDING_KEYS.map((k) => [k, f[k]]))) };
 }
-// --brief (US-40 AC19): an answer, not findings. The same rules: declared fields only, diagnostics name positions, never text.
+// --brief (US-40 AC20): an answer, not findings. The same rules: declared fields only, diagnostics name positions, never text.
 const BRIEF_KEYS = ["status", "target", "summary", "answer"];
 const briefSchema = {
   type: "object", additionalProperties: false, required: BRIEF_KEYS,

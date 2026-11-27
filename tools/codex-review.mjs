@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-// Local adversarial reviewer on a different model (Codex, gpt-6.1-sol by
-// default). Contract: docs/review-format.md. Advisory only: it never edits,
-// commits, merges, or gates anything.
+// Local adversarial reviewer on a different model (Codex, gpt-6.2-sol by default, gpt-6.2-astra under --deep: US-40 AC19).
+// Contract: docs/review-format.md. Advisory only: it never edits, commits, merges, or gates anything.
 //
 // Isolation, as far as this CLI allows (Codex review CR1–CR6, 2026-09-19,
 // docs/reviews/2026-09-19-codex-reviewer-wiring.md):
@@ -25,7 +24,7 @@
 //     still lets the model READ the whole disk and run code; that is this
 //     CLI's floor. Shell commands have NO network (a probe's `curl` to doi.org
 //     failed, exit 6, could not resolve host);
-//   * web search is `web_search="cached"` by default (US-40 AC14, Brad 2026-10-03: the
+//   * web search is `web_search="cached"` on a verified build, else "disabled" (US-40 AC14, AC19; 2026-10-03: the
 //     reviewer could not check a study citation offline). It is OpenAI's
 //     HOSTED Responses `web_search` tool, sent with `external_web_access:
 //     false`: it runs on OpenAI's side, reads only OpenAI's search index and
@@ -75,7 +74,7 @@
 //     data in reach) and with `--loop` (autonomous authorship). The prompt
 //     adds a rule: no repository text, file contents, record values or
 //     credential-like text in a URL, a query string or a search query. The
-//     report and the printed status say `web_access: "live" | "cached"`.
+//     report and the printed status say `web_access: "live" | "cached" | "disabled"`.
 //     Residual risk, accepted by Brad 2026-10-14 after it was stated in full:
 //     ANY text the reviewer reads can steer it: the change, and under --live
 //     every page it opens (an issue comment on this public repo, a search
@@ -192,7 +191,7 @@
 //     from disk. A subject identical to its baseline (blob AND mode) is E_SUBJECT_UNCHANGED, never "Nothing to review". Instruction
 //     files at any depth are allowed as subjects and flagged as edits under review. Refused with --commit, --range
 //     and --loop;
-//   * `--brief <file>` (US-40 AC19, Brad 2026-11-27: twice that day a business brief sent with --subject came back as a
+//   * `--brief <file>` (US-40 AC20, Brad 2026-11-27: twice that day a business brief sent with --subject came back as a
 //     critique of its wording) makes the model ANSWER the brief instead of reviewing it. The brief takes a subject's
 //     place with `--baseline none`, so it passes every --subject rule and check above (tracked at HEAD or under a
 //     pinned subject root, privateDeny, the byte budget, the value and shape scan, drift), and the snapshot, the
@@ -217,11 +216,11 @@
 //   node tools/codex-review.mjs                 # uncommitted work vs HEAD
 //   node tools/codex-review.mjs --commit <sha>  # one commit
 //   node tools/codex-review.mjs --range A..B    # a range (e.g. main..HEAD)
-//   options: --model <id> --timeout-min <n> --out <json> --keep --codex <bin>
+//   options: --model <id> | --deep (gpt-6.2-astra) --timeout-min <n> --out <json> --keep --codex <bin>
 //            --message "<text>"  (uncommitted: the commit message you intend)
 //            --loop    the change was authored by an autonomous loop: the
 //                      contract's Tier 3 restrictions apply (US-40 AC10)
-//            --live    live web pages instead of OpenAI's cached index (US-40 AC14,
+//            --live    live web pages instead of cached or disabled search (US-40 AC14,
 //                      2026-10-14); our own changes only, never an outside PR;
 //                      refused with --record, --record-file and --loop
 //            --record  READ access (read_record, get_plan) to a local copy of
@@ -243,7 +242,7 @@
 //                      a path on the "privateDeny" list is never sent, in any mode)
 //            --brief <file>  ANSWER the questions in this file instead of reviewing a change (tracked, or untracked
 //                      under a pinned "subjectRoots" root); --context paths are its evidence; refused with --commit,
-//                      --range, --loop, --record, --record-file, --subject and --baseline (US-40 AC19)
+//                      --range, --loop, --record, --record-file, --subject and --baseline (US-40 AC20)
 // Exit: 0 clean, 2 blocking findings, 3 incomplete review, 1 usage error or a
 // patch that does not apply to the snapshot.
 
@@ -255,6 +254,8 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { fileURLToPath } from "node:url";
 import { externalSources, headBlob, LINK_POLICY, materialiseLinks } from "./codex-review-links.mjs";
 import { claimOut, stopReason, writeOut } from "./codex-review-out.mjs";
+import { checkLogin, chooseCodex, launchArgs, launchEnv, probeCodex, recheckCodex } from "./codex-review-bin.mjs";
+import { parseArgv, readers } from "./codex-review-args.mjs";
 import { eventMetadata, exitOneOutcome, searchDomains } from "./codex-review-events.mjs";
 import { includeHash, includeWalk, isHealthRecord, isInstructionName, readRegular } from "./codex-review-include.mjs";
 import { isSecretName, isSecretPath, SECRET_EXCLUDES } from "./codex-review-names.mjs";
@@ -263,38 +264,29 @@ import { COPY_SHAPES, isEnvPath, isPathValue, isPublic, isSecretKey, MIN_SECRET_
 import { ALLOWED_TOOLS, briefSchema, isFetch, payloadOk, pick, pickBrief, plainHost, READ_TOOLS, schema, urlHost, validate, validateBrief } from "./codex-review-verdict.mjs";
 import { briefPrompt, reviewPrompt } from "./codex-review-prompt.mjs";
 
-const args = process.argv.slice(2);
-const opt = (name, dflt) => { const i = args.indexOf(name); return i === -1 ? dflt : args[i + 1]; };
-const has = (name) => args.includes(name);
+const PARSED = parseArgv(process.argv.slice(2)), { has, opt, many } = readers(PARSED); // parsed once: an option's value is data, never a flag (Codex R1)
 const DEFAULT_RECORD = join(process.env.HOME ?? "", ".codex-review", "scratch-record.json");
 const usage = (why) => { console.error(`codex-review: ${why}`); stopReason(`E_USAGE: ${why}`); process.exit(1); };
-/** Every value of a repeatable flag, in order ("" for a flag with nothing after it). */
-const many = (name) => args.flatMap((a, i) => (a === name ? [args[i + 1] ?? ""] : []));
 const OUT = opt("--out"); // US-40 AC18: claimed before anything else can stop the run (tools/codex-review-out.mjs)
 // What the run reads: --include and the record (the default too, under --record) through links; --subject, --brief, --context and a --baseline other than none at resolve(given), as checkoutPath reads them. A --record-file without --record is named, never read.
 const READ_INPUTS = many("--include").concat(has("--record") ? [opt("--record-file", DEFAULT_RECORD)] : []).filter(Boolean), LEXICAL = [...many("--subject"), ...many("--brief"), ...many("--baseline").filter((p) => p !== "none"), ...many("--context")].filter(Boolean);
 const outRefused = OUT ? claimOut(OUT, READ_INPUTS.concat(many("--record-file").filter(Boolean)), READ_INPUTS, LEXICAL) : null;
 if (outRefused) usage(outRefused);
+for (const o of ["--codex", "--model"]) if (many(o).length > 1) usage(`${o} is given more than once`); // Codex R9: no occurrence goes unchecked
 
 const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
 const git = (a, o = {}) => execFileSync("git", a, { cwd: ROOT, encoding: "utf8", maxBuffer: 256 << 20, ...o });
-const CODEX = opt("--codex") ?? process.env.CODEX_BIN ?? findCodex();
-function findCodex() {
-  try { execFileSync("sh", ["-c", "command -v codex"], { stdio: "ignore" }); return "codex"; } catch { /* not on PATH */ }
-  try {
-    return execFileSync("sh", ["-c", "ls -d ~/.vscode/extensions/openai.chatgpt-*/bin/macos-*/codex 2>/dev/null | sort | tail -1"], { encoding: "utf8" }).trim() || null;
-  } catch { return null; }
-}
-if (!CODEX) usage("codex binary not found: pass --codex <path> or set CODEX_BIN");
-
-const MODEL = opt("--model", "gpt-6.1-sol");
+const { bin: CODEX, error: CODEX_ERROR } = chooseCodex(has("--codex") ? opt("--codex") ?? "" : process.env.CODEX_BIN); // AC19: one canonical path for every call
+if (CODEX_ERROR) usage(CODEX_ERROR);
+const DEEP = has("--deep"); // AC19 (Brad 2026-11-27): gpt-6.2-sol by default; gpt-6.2-astra for design notes and the high-risk classes
+if (has("--model") && !/^[^-]/.test(opt("--model") ?? "")) usage("--model needs a model id after it");
+if (DEEP && has("--model")) usage("--deep is refused with --model: --deep picks gpt-6.2-astra, --model names the model itself");
+const MODEL = opt("--model", DEEP ? "gpt-6.2-astra" : "gpt-6.2-sol");
 const TIMEOUT_MS = Number(opt("--timeout-min", "25")) * 60_000;
 const RECORD = has("--record");
 const LOOP = has("--loop");
-/** AC14 amendment (Brad 2026-10-14): live web pages for our own changes; the default stays OpenAI's cached index. */
-// A bare "--live" only: the VALUE of an option that takes one ("--message --live") is data, never the opt-in (Codex R1).
-const VALUE_OPTIONS = ["--codex", "--commit", "--range", "--message", "--model", "--out", "--timeout-min", "--record-file", "--include", "--include-limit-mb", "--subject", "--baseline", "--context", "--brief"];
-const WEB_ACCESS = args.some((a, i) => a === "--live" && !VALUE_OPTIONS.includes(args[i - 1])) ? "live" : "cached";
+/** AC14 amendment (Brad 2026-10-14): live web pages for our own changes; else cached on a verified build, disabled elsewhere (AC19). */
+let WEB_ACCESS = has("--live") ? "live" : "cached"; // the request; after the probe, "disabled" on a build where cached-only is unverified (AC19)
 /**
  * Under --live, the sites a reviewer is expected to OPEN (exact hostnames). Codex cannot be held to a list:
  * `tools.web_search.allowed_domains` did not stop `open_page` on codex-cli 0.162 (probe, 2026-10-14). So any other
@@ -305,7 +297,7 @@ const LIVE_EXPECTED_HOSTS = new Set(["github.com", "docs.github.com", "api.githu
   "www.npmjs.com", "nodejs.org", "developer.mozilla.org"]);
 // Refused first, before any other check can exit with a different status (Codex R1, 2026-10-14).
 if (WEB_ACCESS === "live" && (RECORD || has("--record-file") || LOOP)) usage("--live is refused with --record, --record-file and --loop: a URL the reviewer writes can carry out what it reads, so never with health data in reach or a loop's change");
-/** --brief (US-40 AC19, Brad 2026-11-27): the model ANSWERS one brief, with --context as its evidence. The brief takes a subject's place (`--baseline none`), so every path rule, check and the launch are --subject's. */
+/** --brief (US-40 AC20, Brad 2026-11-27): the model ANSWERS one brief, with --context as its evidence. The brief takes a subject's place (`--baseline none`), so every path rule, check and the launch are --subject's. */
 const BRIEF_ARGS = many("--brief"), BRIEF = BRIEF_ARGS.length > 0, SUBJECT_FLAG = BRIEF ? "--brief" : "--subject";
 const BRIEF_REFUSED = BRIEF ? ["--commit", "--range", "--loop", "--record", "--record-file", "--subject", "--baseline", "--message"].filter(has) : [];
 if (BRIEF_ARGS.length > 1 || BRIEF_REFUSED.length) usage(BRIEF_ARGS.length > 1 ? "--brief takes one brief per run" : `--brief is refused with ${BRIEF_REFUSED.join(", ")}: a brief is one file in the working tree, answered with --context as its evidence; never a commit, a range, a loop's change, a review subject, a commit message or a health record`);
@@ -336,7 +328,7 @@ const isInstruction = (f) => f === "docs/review-format.md" || f.split("/").some(
  * name a JSON policy of the same shape; that override is logged and reported. Anything less and it is ignored.
  */
 const realOrSelf = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
-const TEST_RUN = process.env.VITEST && has("--codex") && realOrSelf(opt("--codex")).startsWith(realOrSelf(tmpdir()) + sep);
+const TEST_RUN = process.env.VITEST && has("--codex") && CODEX.startsWith(realOrSelf(tmpdir()) + sep); // the canonical executable (Codex R4)
 const TEST_LINK_POLICY = (TEST_RUN && process.env.CODEX_REVIEW_TEST_LINK_POLICY) || null;
 /** Pinned --include roots (US-40 AC13); CODEX_REVIEW_TEST_INCLUDE_POLICY replaces the file under the same test gate. */
 const TEST_INCLUDE_POLICY = (TEST_RUN && process.env.CODEX_REVIEW_TEST_INCLUDE_POLICY) || null;
@@ -350,7 +342,7 @@ let recordCopy = null;
 let symlinks = [];
 let linksMaterialised = [], linksRefused = [];
 let keep = has("--keep");
-let work = null, snapshotId = "(not built)", instructionEdits = [], files = [], secretFiles = [], label = "(not built)", base = "", contractRev = "", included = [], includeRoots = [], subjects = [], context = [], excludedUncommitted = null, contextUncommitted = []; // declared here: an early stop reports them
+let work = null, snapshotId = "(not built)", instructionEdits = [], files = [], secretFiles = [], label = "(not built)", base = "", contractRev = "", included = [], includeRoots = [], subjects = [], context = [], excludedUncommitted = null, contextUncommitted = [], probe = {}; // declared here: an early stop reports them
 /** Every private-data path withheld this run (base tree, the change, --context: US-40 AC15), counted on stderr, in the prompt and the report. */
 const privateWithheld = new Set();
 let purge = false; // a work dir that may hold a credential is never kept
@@ -524,15 +516,15 @@ const rootIn = (roots, p) => {
 };
 /** Every --subject in order, each with the --baseline that follows it (adversary R7); `none` = review it as a new file. */
 const SUBJECT_ARGS = [];
-for (let i = 0; i < args.length; i++) {
-  if (args[i] === "--subject") SUBJECT_ARGS.push({ given: args[i + 1] ?? "", baseline: undefined });
-  else if (args[i] === "--baseline") {
+for (const { name, value = "" } of PARSED) {
+  if (name === "--subject") SUBJECT_ARGS.push({ given: value, baseline: undefined });
+  else if (name === "--baseline") {
     const last = SUBJECT_ARGS.at(-1);
-    if (!last || last.baseline !== undefined) usage(`--baseline ${JSON.stringify(args[i + 1] ?? "")}: a baseline pairs with the --subject just before it, and there is no unpaired --subject before this one`);
-    last.baseline = args[i + 1] ?? "";
+    if (!last || last.baseline !== undefined) usage(`--baseline ${JSON.stringify(value)}: a baseline pairs with the --subject just before it, and there is no unpaired --subject before this one`);
+    last.baseline = value;
   }
 }
-if (BRIEF) SUBJECT_ARGS.push({ given: BRIEF_ARGS[0], baseline: "none" }); // AC19: the whole brief, as a new file
+if (BRIEF) SUBJECT_ARGS.push({ given: BRIEF_ARGS[0], baseline: "none" }); // AC20: the whole brief, as a new file
 const contextArgs = many("--context");
 const SUBJECT_MODE = SUBJECT_ARGS.length > 0;
 if (!SUBJECT_MODE && contextArgs.length) usage("--context only goes with --subject or --brief");
@@ -609,7 +601,7 @@ const SUBJECTS = SUBJECT_ARGS.map(({ given, baseline: b }) => {
 if (new Set(SUBJECTS.map((s) => s.rel)).size < SUBJECTS.length) usage("--subject: the same file is named twice");
 for (const s of SUBJECTS) {
   pinnedOrTracked(s.abs, s.rel, (why) => usage(`${SUBJECT_FLAG} ${JSON.stringify(s.given)}: ${why}`));
-  if (BRIEF && !(() => { try { return readRegular(s.abs, BUDGET.bytes).toString("utf8").trim(); } catch { return "unread"; } })()) usage(`--brief ${JSON.stringify(s.given)}: is empty or holds only whitespace, so there is nothing to answer`); // AC19; a read error is left to the real, budgeted read
+  if (BRIEF && !(() => { try { return readRegular(s.abs, BUDGET.bytes).toString("utf8").trim(); } catch { return "unread"; } })()) usage(`--brief ${JSON.stringify(s.given)}: is empty or holds only whitespace, so there is nothing to answer`); // AC20; a read error is left to the real, budgeted read
   if (s.baseline) pinnedOrTracked(s.baseline.abs, s.baseline.rel, (why) => usage(`--baseline ${JSON.stringify(s.baselineGiven)}: ${why}`));
 }
 const subjectRels = new Set(SUBJECTS.map((s) => s.rel));
@@ -1015,6 +1007,30 @@ function collectCredentialValues(root = ROOT, name = null, extra = []) {
 }
 const namesOf = (vals) => [...new Set([...vals].flatMap((v) => [...credValues.get(v).names]))].sort();
 
+// --record: verify the local record BEFORE anything can read it, and before any codex call (AC6; Codex R7 on AC19): a wrong
+// account must never be disclosed, not merely detected afterwards. One read: the verified bytes are the bytes staged.
+let recordBytes = null;
+if (RECORD) {
+  const how = `Download health-roadmap.json from Brad's scratch account's Dropbox (Apps/Health Roadmap; which account: docs/claude-codex.md, "The record is always the scratch one") to ${SCRATCH_RECORD.path}.`;
+  if (!existsSync(SCRATCH_RECORD.path)) finish(incomplete(`E_NO_SCRATCH_RECORD: no local scratch record. ${how}`), "0.0");
+  let stamp; // a directory, an unreadable file, or non-JSON is a bounded incomplete, not a crash
+  try {
+    if (!statSync(SCRATCH_RECORD.path).isFile()) throw new Error("not a file");
+    recordBytes = readFileSync(SCRATCH_RECORD.path);
+    stamp = JSON.parse(recordBytes.toString("utf8"))?.meta?.createdAt;
+  } catch { stamp = undefined; }
+  if (typeof stamp !== "string") finish(incomplete(`E_BAD_SCRATCH_RECORD: the local record is not a readable roadmap file. ${how}`), "0.0");
+  if (stamp !== SCRATCH_RECORD.createdAt) finish(incomplete(`E_WRONG_RECORD: the local record is not the designated test record (its creation stamp differs). ${how} If that record was erased and recreated, re-pin SCRATCH_RECORD.`), "0.0");
+  // The server runtime is the checkout's own pinned tsx, never a launcher that can fetch (no network, US-40 AC6).
+  if (!existsSync(TSX)) finish(incomplete("E_NO_TSX: node_modules/.bin/tsx is missing in this checkout; run npm install"), "0.0");
+}
+// --- 1c. What the binary can do (AC19), before the snapshot; the yield first, so a queued signal stops the run before any codex call.
+await new Promise(setImmediate);
+const env = launchEnv(process.env); // the CR2 allow-list
+WEB_ACCESS = (probe = probeCodex(CODEX, env, has("--live"))).mode ?? WEB_ACCESS; // the search mode follows the version (Codex R1, PR 2222f)
+if (probe.stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); // E_FEATURES_UNREADABLE, E_UNKNOWN_FEATURES, E_CODEX_*: fail closed
+{ const stop = checkLogin(CODEX, env, probe.configArgs); if (stop) finish(incomplete(`${stop}; the reviewer was not started`), "0.0"); } // Codex R2 (PR 2222f): a ChatGPT login only, read, never changed
+
 // --- 2. Immutable snapshot: source in work/src, artifacts beside it (CR1) ---
 // Prune earlier runs' leftovers first: each work dir holds a ~2 GB snapshot, and a kept (incomplete) run or a
 // SIGKILL'd one never reaches the exit handler. 4,098 of them filled the disk by 2026-10-20 (196 GB).
@@ -1028,27 +1044,11 @@ const namesOf = (vals) => [...new Set([...vals].flatMap((v) => [...credValues.ge
   }
 }
 work = mkdtempSync(join(tmpdir(), "codex-review-"));
-// --record: verify the local record BEFORE anything can read it (a wrong
-// account must never be disclosed, not merely detected afterwards).
-if (RECORD) {
-  const how = `Download health-roadmap.json from Brad's scratch account's Dropbox (Apps/Health Roadmap; which account: docs/claude-codex.md, "The record is always the scratch one") to ${SCRATCH_RECORD.path}.`;
-  if (!existsSync(SCRATCH_RECORD.path)) finish(incomplete(`E_NO_SCRATCH_RECORD: no local scratch record. ${how}`), "0.0");
-  // One read: the bytes that are verified are the bytes that are served. A
-  // directory, an unreadable file, or non-JSON is a bounded incomplete, not a crash.
-  let bytes, stamp;
-  try {
-    if (!statSync(SCRATCH_RECORD.path).isFile()) throw new Error("not a file");
-    bytes = readFileSync(SCRATCH_RECORD.path);
-    stamp = JSON.parse(bytes.toString("utf8"))?.meta?.createdAt;
-  } catch { stamp = undefined; }
-  if (typeof stamp !== "string") finish(incomplete(`E_BAD_SCRATCH_RECORD: the local record is not a readable roadmap file. ${how}`), "0.0");
-  if (stamp !== SCRATCH_RECORD.createdAt) finish(incomplete(`E_WRONG_RECORD: the local record is not the designated test record (its creation stamp differs). ${how} If that record was erased and recreated, re-pin SCRATCH_RECORD.`), "0.0");
-  // The server runtime is the checkout's own pinned tsx, never a launcher that can fetch (no network, US-40 AC6).
-  if (!existsSync(TSX)) finish(incomplete("E_NO_TSX: node_modules/.bin/tsx is missing in this checkout; run npm install"), "0.0");
+if (RECORD) { // the bytes verified above, staged
   // Set BEFORE the write, so the exit handler removes a partial copy from a failed write too (US-40 AC5).
   recordCopy = join(work, "record.json");
   try {
-    writeFileSync(recordCopy, bytes, { flag: "wx" });
+    writeFileSync(recordCopy, recordBytes, { flag: "wx" });
   } catch {
     rmSync(recordCopy, { force: true });
     finish(incomplete("E_COPY_FAILED: the scratch record could not be staged for the reviewer"), "0.0");
@@ -1156,7 +1156,7 @@ const baselineCopies = subjectBaselines.map((bytes, i) => {
   writeFileSync(p, bytes, { flag: "wx", mode: 0o444 });
   return p;
 });
-const patchPath = BRIEF ? null : artifact("REVIEW_PATCH.diff", patch); // AC19: no review framing for a brief; its bytes sit in src/, which the final scan covers
+const patchPath = BRIEF ? null : artifact("REVIEW_PATCH.diff", patch); // AC20: no review framing for a brief; its bytes sit in src/, which the final scan covers
 if (!BRIEF) artifact("REVIEW_COMMITS.txt", messages);
 // The controlling contract and repo rules come from BASE, not the candidate (CR3).
 const baseContract = showAtBase("docs/review-format.md");
@@ -1190,9 +1190,9 @@ function stripSymlinks(dir) {
   return materialiseLinks({ src: dir, root: ROOT, links, policy: LINKS });
 }
 
-const schemaPath = artifact("REVIEW_SCHEMA.json", JSON.stringify(BRIEF ? briefSchema : schema)); // AC19: an answer, not findings
+const schemaPath = artifact("REVIEW_SCHEMA.json", JSON.stringify(BRIEF ? briefSchema : schema)); // AC20: an answer, not findings
 
-// The prompt (tools/codex-review-prompt.mjs): a review of the change, or under --brief an answer to the brief (US-40 AC19).
+// The prompt (tools/codex-review-prompt.mjs): a review of the change, or under --brief an answer to the brief (US-40 AC20).
 // Both describe this same snapshot, with the same safety wording; only the task and the output contract differ.
 const prompt = (BRIEF ? briefPrompt : reviewPrompt)({ SUBJECT_MODE, patchPath, files, subjects, baselineCopies, context, contextUncommitted, work, src, contractPath, baseDir, instructionEdits, symlinks, linksMaterialised, provenanceOf, included, includedDir, privateWithheld, WEB_ACCESS, LIVE_EXPECTED_HOSTS, label, snapshotId, LOOP, secretFiles, RECORD });
 
@@ -1207,20 +1207,7 @@ const RECORD_ARGS = RECORD
       "-c", 'mcp_servers.health.enabled_tools=["read_record","get_plan"]',
     ]
   : [];
-const codexArgs = [
-  "exec", "--ignore-user-config", "--strict-config", "--json", "--ephemeral", "--skip-git-repo-check",
-  "--sandbox", "read-only",
-  "--disable", "apps", "--disable", "image_generation", "--disable", "browser_use", "--disable", "computer_use",
-  "--disable", "plugins", "--disable", "memories", "--disable", "skill_search", "--disable", "multi_agent",
-  // Hosted search (AC14): "cached" (index only) by default, "live" under --live; never "indexed", never --search; the shell's sandbox network stays off.
-  "-c", `web_search="${WEB_ACCESS}"`, "-c", 'shell_environment_policy.inherit="core"', "-c", 'model_reasoning_effort="high"',
-  "-c", "project_doc_max_bytes=0", "-c", "project_doc_fallback_filenames=[]",
-  "--model", MODEL, ...RECORD_ARGS,
-  "-C", src, "--output-schema", schemaPath, "-o", outPath, "--color", "never", "-",
-];
-// Minimal environment (CR2): nothing from the parent beyond what the CLI needs to find itself and its auth.
-const env = Object.fromEntries(["PATH", "HOME", "TMPDIR", "LANG", "CODEX_HOME"].filter((k) => process.env[k]).map((k) => [k, process.env[k]]));
-env.CI = "1";
+const codexArgs = () => launchArgs({ disable: probe.disable, configArgs: probe.configArgs, model: MODEL, recordArgs: RECORD_ARGS, src, schemaPath, outPath });
 // Last check before anything leaves this machine (US-40 AC11): no credential
 // file anywhere in the work dir, and none named in the patch. Fail closed.
 guard("final credential check", () => {
@@ -1271,14 +1258,16 @@ guard("final credential check", () => {
 });
 valueChecked = true;
 if (secretValues.skipped.length) console.error(`codex-review: ${secretValues.skipped.length} unchanged base binary file(s) over ${SKIP_BINARY_OVER >> 20} MB not searched for credential values: ${secretValues.skipped.join(", ")}`);
-console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : ""}, timeout ${TIMEOUT_MS / 60000} min`);
-// Everything above is synchronous, so a signal that arrived during it has only been queued: one turn of the event loop
-// runs its handler (exit 130, the work dir deleted) before Codex can be spawned.
+// All above is synchronous, so a signal during it is only queued: each yield runs its handler (exit 130) before the next codex call.
 await new Promise(setImmediate);
+if ((probe = recheckCodex(CODEX, probe, env, has("--live"), (m) => console.error(`codex-review: ${m}`), { reprobe: !TEST_LINK_POLICY && !TEST_INCLUDE_POLICY })).stop) { WEB_ACCESS = probe.mode ?? WEB_ACCESS; finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); } // Codex R5; a failed replacement reports its own mode (R4, PR 2222h)
+if (probe.mode !== WEB_ACCESS) finish(incomplete(`E_CODEX_CHANGED: the replacement codex binary (${probe.version}) would change the search mode from ${WEB_ACCESS}; the reviewer was not started`), "0.0");
+console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, codex ${JSON.stringify(CODEX)} (${probe.version}), author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : WEB_ACCESS === "disabled" ? `, web search disabled (cached-only search is not verified on ${probe.version}; --live turns on live pages)` : ""}, timeout ${TIMEOUT_MS / 60000} min`);
+await new Promise(setImmediate); // Codex R6: a cancel during that check runs its handler before the prompt is sent
 const started = Date.now();
 const run = await new Promise((resolve) => {
   let stdout = "", stderr = "";
-  const child = spawn(CODEX, codexArgs, { cwd: src, stdio: ["pipe", "pipe", "pipe"], env });
+  const child = spawn(CODEX, codexArgs(), { cwd: src, stdio: ["pipe", "pipe", "pipe"], env });
   child.stdout.on("data", (d) => { stdout += d; });
   child.stderr.on("data", (d) => { stderr += d; });
   const timer = setTimeout(() => { child.kill("SIGKILL"); resolve({ code: null, timedOut: true, stdout, stderr }); }, TIMEOUT_MS);
@@ -1304,7 +1293,7 @@ else if (!existsSync(outPath)) review = incomplete("E_NO_OUTPUT: reviewer wrote 
 else {
   let parsed;
   try { parsed = JSON.parse(readFileSync(outPath, "utf8")); } catch { parsed = null; }
-  const problem = parsed === null ? "not JSON" : (BRIEF ? validateBrief : validate)(parsed); // AC19: a brief's answer has its own schema
+  const problem = parsed === null ? "not JSON" : (BRIEF ? validateBrief : validate)(parsed); // AC20: a brief's answer has its own schema
   if (problem) review = incomplete(`E_SCHEMA: ${problem}`);
   else if (parsed.target !== snapshotId) review = incomplete("E_TARGET: the reviewer named a different snapshot; its output is discarded");
   else review = (BRIEF ? pickBrief : pick)(parsed);
@@ -1350,7 +1339,7 @@ const recordAccess = !RECORD ? "not_requested"
 if (foreignCalls.length) {
   const names = [...new Set(foreignCalls.map((ev) => `${ev.item.server}.${ev.item.tool}`))].join(", ");
   review = incomplete(`E_TOOL_BOUNDARY: the reviewer called a tool outside the allow-list (${names}); detected after the fact, so a write may already have happened`);
-}
+} else if (WEB_ACCESS === "disabled" && (webSearches || startedSearchIds.length)) review = incomplete(`E_TOOL_BOUNDARY: web search events reached the stream although search was disabled for this build (${webSearches} completed, ${startedSearchIds.length} started)`); // Codex R3, PR 2222f
 
 let drift = null;
 if (SUBJECT_MODE) {
@@ -1387,15 +1376,15 @@ finish(review, elapsedMin, { drift, recordAccess, webSearches, webSearchDomains,
 // --- 5. Report, print, exit ---------------------------------------------------
 function finish(review, elapsedMin, extra = {}) {
   const { drift = null, recordAccess = RECORD ? "not_attempted" : "not_requested", webSearches = 0, webSearchDomains = [], webSearchesWithoutProvenance = 0, unexpectedHosts = [], unresolvedOpens = 0 } = extra;
-  const report = { ...review, ...(BRIEF ? { mode: "brief", answer: review.status === "complete" ? review.answer ?? null : null } : {}), model: MODEL, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_access: WEB_ACCESS, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, unexpected_hosts: unexpectedHosts, unresolved_opens: unresolvedOpens, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted, context_uncommitted: contextUncommitted, private_withheld: privateWithheld.size };
+  const report = { ...review, ...(BRIEF ? { mode: "brief", answer: review.status === "complete" ? review.answer ?? null : null } : {}), model: MODEL, deep: DEEP, codex_bin: CODEX, codex_version: probe.version ?? null, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_access: WEB_ACCESS, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, unexpected_hosts: unexpectedHosts, unresolved_opens: unresolvedOpens, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted, context_uncommitted: contextUncommitted, private_withheld: privateWithheld.size };
   writeOut(report); // a failed write says so and exits 1; the exit handler still cleans up
   const blocking = report.findings.filter((f) => f.blocks_merge);
   console.log(`## Codex ${BRIEF ? "answer" : "review"} (${MODEL}) — ${label}, snapshot ${snapshotId}, ${elapsedMin} min`);
-  console.log(`**Status:** ${report.status}${drift ? `  \n**Drift:** ${drift}` : ""}${RECORD ? `  \n**Record access:** ${recordAccess}` : ""}  \n**Web access:** ${WEB_ACCESS}${webSearches ? `  \n**Web searches:** ${webSearches} (hosted, ${WEB_ACCESS === "live" ? "live web" : "cached index"}${webSearchesWithoutProvenance ? `; ${webSearchesWithoutProvenance} without source domains` : ""})` : ""}${unexpectedHosts.length ? `  \n**⚠ Unexpected sites opened:** ${unexpectedHosts.join(", ")}` : ""}${unresolvedOpens ? `  \n**⚠ Opens with no traceable site:** ${unresolvedOpens}` : ""}`);
+  console.log(`**Status:** ${report.status}${drift ? `  \n**Drift:** ${drift}` : ""}${RECORD ? `  \n**Record access:** ${recordAccess}` : ""}  \n**Web access:** ${WEB_ACCESS}${webSearches ? `  \n**Web searches:** ${webSearches} (hosted, ${WEB_ACCESS === "live" ? "live web" : WEB_ACCESS === "cached" ? "cached index" : "search was disabled"}${webSearchesWithoutProvenance ? `; ${webSearchesWithoutProvenance} without source domains` : ""})` : ""}${unexpectedHosts.length ? `  \n**⚠ Unexpected sites opened:** ${unexpectedHosts.join(", ")}` : ""}${unresolvedOpens ? `  \n**⚠ Opens with no traceable site:** ${unresolvedOpens}` : ""}`);
   if (unexpectedHosts.length) console.error(`codex-review: NOTE (--live, advisory): the reviewer opened pages outside the expected sites: ${unexpectedHosts.join(", ")}. Usually a cited journal or agency; a URL it wrote could also have carried out anything it can read on this disk. Look before relying on the verdict.`);
   if (unresolvedOpens) console.error(`codex-review: NOTE (--live, advisory): ${unresolvedOpens} web action(s) could not be traced to a site (no plain hostname in their own URL, or never completed). Look before relying on the verdict.`);
   console.log(`\n${report.summary}\n`);
-  if (BRIEF && report.answer) console.log(`${report.answer}\n`); // AC19: the Markdown answer; a brief has no findings
+  if (BRIEF && report.answer) console.log(`${report.answer}\n`); // AC20: the Markdown answer; a brief has no findings
   for (const f of report.findings) {
     console.log(`### ${f.id} · ${f.severity}${f.blocks_merge ? " · BLOCKS MERGE" : ""} · ${f.file}:${f.line}`);
     console.log(`${f.summary}\n\n- **Failure:** ${f.failure_scenario}\n- **Evidence:** ${f.evidence}\n- **Remedy:** ${f.remedy}\n`);
