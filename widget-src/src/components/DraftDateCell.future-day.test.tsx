@@ -25,6 +25,15 @@ afterEach(() => { cleanup(); vi.useRealTimers(); localStorage.clear(); });
 
 const wait = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
 const pick = (input: HTMLInputElement, day: string) => fireEvent.change(input, { target: { value: day } });
+/** Keys typed into the focused date as Chrome sends them, a whole day per key; each must show as typed (B1). */
+const CHROME_12152025 = ['2026-01-26', '2026-12-26', '2026-12-01', '2026-12-15', '0002-12-15', '0020-12-15', '0202-12-15', '2025-12-15'];
+const CHROME_11272026 = ['2026-01-26', '2026-11-26', '2026-11-02', '2026-11-27', '0002-11-27', '0020-11-27', '0202-11-27', TOMORROW];
+const CHROME_03152099 = ['', '2026-03-26', '2026-03-01', '2026-03-15', '0002-03-15', '0020-03-15', '0209-03-15', YEAR_TYPO];
+function typeKeys(input: HTMLInputElement, values: string[]) {
+  act(() => input.focus());
+  for (const value of values) { pick(input, value); expect(input.value).toBe(value); }
+  act(() => input.blur());
+}
 const draftCell = (root: HTMLElement, label: string) => Array.from(root.querySelectorAll('.bt-row'))
   .find((r) => r.querySelector('.bt-name-label')?.textContent === label)!.querySelector('.bt-cell-draft input') as HTMLInputElement;
 
@@ -78,6 +87,36 @@ describe('US-03 AC1a: the New column never takes a day that has not happened', (
     expect(draftCell(view.container, 'Waist Circumference').value).toBe('90');
     expect(date.value).toBe(PAST);
     expect(date.max).toBe(TODAY);
+  });
+
+  it('blood tests, keyboard: a past day typed key by key is taken as typed, and tomorrow typed so is not', async () => {
+    const { view, onSaveBatch, date } = bloodGrid();
+    const ldl = draftCell(view.container, 'LDL Cholesterol');
+    typeInto(ldl, '3.2');
+    typeKeys(date, CHROME_11272026);
+    expect(date.value).toBe(TODAY);
+    typeKeys(date, CHROME_12152025);
+    fireEvent.keyDown(ldl, { key: 'Enter' });
+    await wait(0);
+    expect(onSaveBatch.mock.calls).toEqual([[[expect.objectContaining({ date: '2025-12-15', values: { ldl: 3.2 } })]]]);
+  });
+
+  it('vitals, keyboard: a year typo typed key by key is not taken, and a past day typed so is', () => {
+    const date = render(<StartingInfoVitals vitalsHistory={[]} unitSystem="si" onSave={vi.fn()} onCorrectValue={vi.fn()} formStage={4}
+      plan={{ age: 50, idealBodyWeight: 73, heightCm: 178 }} unitOverrides={{}} onToggleFieldUnit={() => {}}/>).getByLabelText('Choose draft date') as HTMLInputElement;
+    typeKeys(date, CHROME_03152099);
+    expect(date.value).toBe(TODAY);
+    typeKeys(date, CHROME_12152025);
+    expect(date.value).toBe('2025-12-15');
+  });
+
+  it('the day typed is handed on once, when the focus leaves; a focus with nothing typed hands on nothing', () => {
+    const onChange = vi.fn(), date = render(<DraftDateCell date={PAST} onChange={onChange} ariaLabel="Choose date"/>).getByLabelText('Choose date') as HTMLInputElement;
+    act(() => date.focus());
+    act(() => date.blur());
+    typeKeys(date, CHROME_12152025);
+    expect(onChange.mock.calls).toEqual([['2025-12-15']]);
+    expect(date.value).toBe(PAST);
   });
 
   it('a saved column\'s header (US-04 AC5) shares the picker, so it stops at today too', () => {
