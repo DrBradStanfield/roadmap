@@ -103,6 +103,9 @@ export const ERROR_CLASS_TAGS = ['StorageError', 'ConflictError', 'SchemaTooNewE
  *  later", "needs to be reconnected") read `none`: their status is not kept
  *  across the refresh, since overlapping refreshes would race. A network
  *  failure and a check that made no request also read `none`.
+ *  A wrapped failure reads the first StorageError in its cause chain that
+ *  carries a status, outer first (US-09 AC66); the walk stops at a
+ *  non-StorageError and after a few links, so a cycle ends.
  *  Never the message or the body. */
 export function failureTags(error: unknown): { errorClass: string; httpStatus: string } {
   const errorClass = error instanceof StorageError ? 'StorageError'
@@ -110,5 +113,7 @@ export function failureTags(error: unknown): { errorClass: string; httpStatus: s
     : error instanceof SchemaTooNewError ? 'SchemaTooNewError'
     : error instanceof RecordShapeError ? 'RecordShapeError'
     : 'other';
-  return { errorClass, httpStatus: httpStatusTag(error) };
+  let link = error;
+  for (let depth = 0; depth < 5 && link instanceof StorageError && link.status === undefined; depth++) link = link.cause;
+  return { errorClass, httpStatus: httpStatusTag(link) };
 }
