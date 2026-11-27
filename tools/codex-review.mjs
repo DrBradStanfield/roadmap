@@ -241,7 +241,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { fileURLToPath } from "node:url";
 import { externalSources, headBlob, LINK_POLICY, materialiseLinks } from "./codex-review-links.mjs";
 import { claimOut, stopReason, writeOut } from "./codex-review-out.mjs";
-import { configArgs, findCodex, launchEnv, probeCodex, resolveBin } from "./codex-review-bin.mjs";
+import { configArgs, findCodex, isExecutableFile, launchEnv, probeCodex, resolveBin } from "./codex-review-bin.mjs";
 import { eventMetadata, exitOneOutcome, searchDomains } from "./codex-review-events.mjs";
 import { includeHash, includeWalk, isHealthRecord, isInstructionName, readRegular } from "./codex-review-include.mjs";
 import { isSecretName, isSecretPath, SECRET_EXCLUDES } from "./codex-review-names.mjs";
@@ -267,7 +267,7 @@ if (outRefused) usage(outRefused);
 const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
 const git = (a, o = {}) => execFileSync("git", a, { cwd: ROOT, encoding: "utf8", maxBuffer: 256 << 20, ...o });
 const CODEX = (opt("--codex") ?? process.env.CODEX_BIN) ? resolveBin(opt("--codex") ?? process.env.CODEX_BIN) : findCodex(); // AC19: one absolute path for every call; none given, the ChatGPT app's CLI first
-if (!CODEX) usage("codex binary not found: pass --codex <path> or set CODEX_BIN");
+if (!CODEX || !isExecutableFile(CODEX)) usage(CODEX ? `codex binary ${JSON.stringify(CODEX)} is refused: it must be an executable file that neither group nor others can write` : "codex binary not found: pass --codex <path> or set CODEX_BIN");
 const DEEP = has("--deep"); // AC19 (Brad 2026-11-27): gpt-6.2-sol by default; gpt-6.2-astra for design notes and the high-risk classes
 if (has("--model") && !/^[^-]/.test(opt("--model") ?? "")) usage("--model needs a model id after it");
 if (DEEP && has("--model")) usage("--deep is refused with --model: --deep picks gpt-6.2-astra, --model names the model itself");

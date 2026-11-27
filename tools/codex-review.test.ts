@@ -214,15 +214,19 @@ describe('US-40 AC3 (CR2) — process environment and tool flags', () => {
   });
 });
 
-/** The --disable list per real binary (US-40 AC19, 2026-11-27): AC3's eight, then every sub-agent, agent-messaging, browser and automation feature that binary lists. */
+/** The --disable list per real binary (US-40 AC19, 2026-11-27): AC3's eight, then every sub-agent, agent-messaging, browser and automation feature that binary lists, then the ones a review has no use for. */
 const ALWAYS_OFF = ['apps', 'image_generation', 'browser_use', 'computer_use', 'plugins', 'memories', 'skill_search', 'multi_agent'];
 const OFF_0171 = [...ALWAYS_OFF, 'multi_agent_v2', 'multi_agent_v2_dynamic_tools', 'multi_agent_mode', 'agent_message_board', 'agent_message_board_mcp',
   'runtime_agent_instances', 'subagent_default_context_limits', 'subagent_thread_environments', 'send_async_message', 'send_message_to_user_async',
   'wake_on_agent_messages', 'defer_mailbox_preemption', 'enable_fanout', 'collaboration_modes', 'guardian_native_multi_agent_history',
-  'external_agent_memory_import', 'use_agent_identity', 'browser_use_external', 'browser_use_full_cdp_access', 'in_app_browser', 'in_app_local_automation'];
+  'external_agent_memory_import', 'use_agent_identity', 'browser_use_external', 'browser_use_full_cdp_access', 'in_app_browser', 'in_app_local_automation',
+  'hooks', 'daemon_auto_start', 'remote_plugin', 'plugin_sharing', 'skill_mcp_dependency_install', 'tool_suggest', 'goals', 'guardian_approval', 'worktrees',
+  'in_app_chat', 'in_app_dictation', 'in_app_updates', 'in_app_voice', 'realtime_conversation', 'browser_annotation_api'];
 const OFF_0163 = [...ALWAYS_OFF, 'multi_agent_v2', 'multi_agent_v2_dynamic_tools', 'multi_agent_mode', 'agent_message_board',
   'subagent_default_context_limits', 'send_async_message', 'send_message_to_user_async', 'defer_mailbox_preemption', 'enable_fanout',
-  'collaboration_modes', 'external_agent_memory_import', 'use_agent_identity', 'browser_use_external', 'browser_use_full_cdp_access', 'in_app_browser', 'in_app_local_automation'];
+  'collaboration_modes', 'external_agent_memory_import', 'use_agent_identity', 'browser_use_external', 'browser_use_full_cdp_access', 'in_app_browser', 'in_app_local_automation',
+  'hooks', 'daemon_auto_start', 'remote_plugin', 'plugin_sharing', 'skill_mcp_dependency_install', 'tool_suggest', 'goals', 'guardian_approval', 'worktrees',
+  'in_app_chat', 'in_app_dictation', 'in_app_updates', 'in_app_voice', 'realtime_conversation', 'browser_annotation_api'];
 
 describe('US-40 AC14 — hosted, index-only web search; the shell stays offline (Brad, 2026-10-03)', () => {
   it.each([['0.171', FEATURES_0171, OFF_0171], ['0.163', FEATURES_0163, OFF_0163]])('passes web_search="cached" and nothing that opens live fetches or sandbox network; every --disable stays (codex %s feature list)', (_v, features, off) => {
@@ -2598,6 +2602,20 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(findCodex({ appBin: d })).toBe(fallback);
     // group- or world-writable: refused, the next candidate wins
     for (const mode of [0o775, 0o757]) { chmodSync(app, mode); expect(findCodex({ appBin: app })).toBe(fallback); }
+  });
+  it('an explicit --codex or CODEX_BIN that group or others can write is a usage error naming it; nothing runs', () => {
+    writeFileSync(join(repo, 'a.txt'), 'writable codex\n');
+    for (const mode of [0o775, 0o757]) {
+      const f = fake({ output: CLEAN });
+      chmodSync(f.bin, mode);
+      const viaFlag = runWrapper(f.bin);
+      const viaEnv = spawnSync('node', [WRAPPER, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ CODEX_BIN: f.bin }) });
+      for (const r of [viaFlag, viaEnv]) {
+        expect(r.status).toBe(1);
+        expect(r.stderr).toContain(`codex binary ${JSON.stringify(f.bin)} is refused: it must be an executable file that neither group nor others can write`);
+      }
+      expect(existsSync(join(f.dir, 'calls.jsonl'))).toBe(false);
+    }
   });
   it('falls back to PATH, then to the newest VS Code extension copy by numeric version (0.10.0 beats 0.9.0)', async () => {
     const { findCodex, isExecutableFile } = await import('./codex-review-bin.mjs');

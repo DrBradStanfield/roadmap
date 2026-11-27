@@ -6,27 +6,30 @@
 /** Always disabled (AC3); every supported CLI lists them. */
 export const DISABLE_ALWAYS = ["apps", "image_generation", "browser_use", "computer_use", "plugins", "memories", "skill_search", "multi_agent"];
 
-/** Disabled when the binary lists them: sub-agents, agent messaging and delegation, then browser and local automation. */
+/** Disabled when the binary lists them: sub-agents, agent messaging and delegation; browser and local automation; then what a review has no use for (2026-11-27 ruling). */
 export const DISABLE_IF_LISTED = [
   "multi_agent_v2", "multi_agent_v2_dynamic_tools", "multi_agent_mode", "agent_message_board", "agent_message_board_mcp",
   "runtime_agent_instances", "subagent_default_context_limits", "subagent_thread_environments", "send_async_message",
   "send_message_to_user_async", "wake_on_agent_messages", "defer_mailbox_preemption", "enable_fanout", "collaboration_modes",
   "guardian_native_multi_agent_history", "external_agent_memory_import", "use_agent_identity",
   "browser_use_external", "browser_use_full_cdp_access", "in_app_browser", "in_app_local_automation",
+  "hooks", "daemon_auto_start", "remote_plugin", "plugin_sharing", "skill_mcp_dependency_install", "tool_suggest", "goals",
+  "guardian_approval", "worktrees", "in_app_chat", "in_app_dictation", "in_app_updates", "in_app_voice", "realtime_conversation",
+  "browser_annotation_api",
 ];
 
 const REMOVED = "stage removed in 0.171: accepted for old configs, no effect";
+const STUCK = "cannot be disabled on 0.171.0-alpha.13.2: stage removed, still true after --disable (it is disabled on 0.163)";
 const TUI = "interactive TUI or desktop app only; codex exec has no UI";
 /**
  * Features allowed to stay enabled, each with why. Seeded 2026-11-27 from codex-cli 0.171.0-alpha.13.2 after the disables
- * above (0.163.0's enabled set is a subset). "Judged" is a reading of the name and stage, not a probe of what it does.
+ * above (0.163.0's enabled set is a subset); two of them are named in DISABLE_IF_LISTED too, but 0.171 keeps them on. "Judged" is a reading of the name and stage, not a probe of what it does.
  */
 export const INERT = {
   api_key_cyber_access_programs: "API-key accounts only; the run is forced to the ChatGPT login",
   api_key_model_discovery: "API-key accounts only; the run is forced to the ChatGPT login",
   auth_elicitation: "login prompts; exec has no user to prompt",
   bedrock_setup_wizard: TUI,
-  browser_annotation_api: "annotation API for the browser tool, which is disabled",
   cli_daybreak: "CLI presentation layer",
   code_mode_host: "how tool calls are hosted in the session; same sandbox",
   code_mode_host_grpc: "transport for code_mode_host; same sandbox",
@@ -34,19 +37,11 @@ export const INERT = {
   code_mode_interrupt: "interrupts a running tool call",
   compaction_image_budget: "context compaction budget",
   content_item_kinds: "message content types",
-  daemon_auto_start: "shared background server for the TUI; exec runs in process",
   deferred_tool_world_state: "tool-state bookkeeping",
   enable_request_compression: "compresses requests to the model API",
   fast_mode: "model speed tier",
-  goals: "the session's own goal tracking; no new tool reach",
-  guardian_approval: "approval review; the read-only sandbox never escalates in exec",
   guardian_include_additional_context: "context for guardian_approval",
   guardian_reuse_parent_compaction: "context for guardian_approval",
-  hooks: "hooks need persisted trust; --ignore-user-config and --ephemeral give none",
-  in_app_chat: TUI,
-  in_app_dictation: TUI,
-  in_app_updates: TUI,
-  in_app_voice: TUI,
   incremental_tools: "tool list delivery",
   incremental_tools_legacy: "tool list delivery",
   incremental_tools_legacy_gcp: "tool list delivery",
@@ -54,16 +49,13 @@ export const INERT = {
   item_ids: REMOVED,
   mcp_oauth_refresh_coordination: "OAuth refresh for MCP servers; only the --record stdio server is configured",
   mentions_v2: "@-mentions in the composer",
-  plugin_sharing: "sharing for plugins, which are disabled",
   prediction_preserve_parent_tools: "tool list bookkeeping",
-  realtime_conversation: REMOVED,
+  realtime_conversation: STUCK,
   reasoning_effort_override: "lets the -c model_reasoning_effort setting apply",
-  remote_plugin: "remote plugins, under the disabled plugins feature",
   resize_all_images: REMOVED,
   retain_client_tool_outputs: "keeps tool outputs in context",
   shell_snapshot: "snapshots the shell environment for commands; same sandbox",
   shell_tool: "the read-only shell the review needs",
-  skill_mcp_dependency_install: "installs a skill's MCP dependencies; skills come from user config, ignored",
   sleep_tool: "lets the model wait",
   sqlite: REMOVED,
   steer: REMOVED,
@@ -71,7 +63,6 @@ export const INERT = {
   terminal_resize_reflow: REMOVED,
   tool_call_mcp_elicitation: "MCP elicitation prompts; exec has no user to prompt",
   tool_search_always_defer_mcp_tools: REMOVED,
-  tool_suggest: "suggests tools to the user; exec has no user",
   tui_app_server: REMOVED,
   tui_workspace: TUI,
   ultrafast_mode: "model speed tier",
@@ -82,7 +73,7 @@ export const INERT = {
   untrusted_as_tool_output: "marks untrusted text as tool output",
   view_image: "reads an image file the sandbox can already read",
   workspace_dependencies: "reads workspace dependency metadata; same sandbox",
-  worktrees: "managed git worktrees: the wrapper never passes --worktree and the sandbox is read-only (stable in 0.163)",
+  worktrees: STUCK,
   write_stdin_approval: "approval before writing to a running command's stdin",
 };
 
