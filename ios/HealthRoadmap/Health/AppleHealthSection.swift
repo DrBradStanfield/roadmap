@@ -39,7 +39,7 @@ struct AppleHealthSection: View {
                     if health.owedFooter { Text(EraseText.healthOwed) }
                     // Seen once it was drawn and the person leaves (US-72 AC18).
                     if health.undatedFooter { Text(Self.undated).onDisappear { health.undatedSeen() } }
-                    Text("Weight, height, waist and blood pressure come in from Health. Values you type here go to Health. A value you typed is never replaced by Health, and deleting a reading in Health leaves it here.")
+                    Text("Weight, height, waist and blood pressure come in from Apple Health. Values you type here go to Apple Health. A value you typed is never replaced by Apple Health, and deleting a reading in Apple Health leaves it here.")
                     if live?.available == true { Text(LiveFooter.cards) }
                 }
             }

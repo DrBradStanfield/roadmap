@@ -1,6 +1,6 @@
 import Foundation
 
-/// What the Sync screen and My data say about where the record is (US-25 AC11e,
+/// What the Sync screen and My health say about where the record is (US-25 AC11e,
 /// AC11f). Pure, so a test pins the words.
 enum SyncStatusText {
     /// The status line's headline.
@@ -79,7 +79,7 @@ enum SyncStatusText {
         }
     }
 
-    /// The footer under My data: where the record is kept, and nothing more.
+    /// The footer under Settings: where the record is kept, and nothing more.
     /// `earlier`: the cloud it was synced with before a Disconnect, whose copy stays.
     static func myDataFooter(provider: CloudProvider?, earlier: CloudProvider?) -> String {
         if let provider {

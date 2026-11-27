@@ -61,7 +61,7 @@ struct BloodPressureSheet: View {
             .confirmationDialog("This day already has a blood pressure", isPresented: Binding(get: { state.held != nil }, set: { if !$0 { SheetSave.send(&state, .declined) } }), titleVisibility: .visible, presenting: state.held) { held in
                 Button("Replace it") { save(.confirmed(held), replace: true, seen: held) }
             } message: { _ in
-                Text("The old value stays in your record, marked as entered in error.")
+                Text("The old value stays in your record, kept as a mistake.")
             }
             .onAppear { focus = .systolic }
             .onChange(of: systolic) { step(.typed(systolic: systolic, diastolic: diastolic)) }
