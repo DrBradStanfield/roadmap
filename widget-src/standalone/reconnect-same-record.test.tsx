@@ -47,7 +47,7 @@ const DRIVE_SCOPE = 'openid email https://www.googleapis.com/auth/drive.file';
 const CACHED_ID = 'cached-record-id';
 const OLD_TOKEN = 'test-token-old';
 const POPUP_TOKEN = 'test-token-good';
-const CANNOT_OPEN = 'Google Drive did not connect: this sign-in cannot open the record saved in this browser. Nothing changed. To keep working, choose Use this browser only.';
+const CANNOT_OPEN = 'Google Drive did not connect: this sign-in cannot open the record saved in this browser. Nothing was sent. To keep working, choose Use this browser only.';
 const NOW = '2026-11-25T00:00:00.000Z';
 
 const freshRecord = () => createEmptyFile({ deviceId: 'd', now: NOW });
@@ -55,7 +55,7 @@ const fullRecord = () => ({ ...freshRecord(), measurements: [createMeasurement({
 const deviceRowIds = () => (JSON.parse(localStorage.getItem(DEVICE_FILE)!) as { measurements: { id: string }[] }).measurements.map((m) => m.id);
 
 /** How the fake Drive answers the popup token's lookup of the cached file. */
-type Lookup = 'visible' | 'notFound' | 'serverError' | 'forbidden' | 'network' | 'trashed';
+type Lookup = 'visible' | 'notFound' | 'serverError' | 'forbidden' | 'unauthorized' | 'network' | 'trashed';
 let lookup: Lookup;
 /** While set, the lookup's answer waits for the test. */
 let hold: { release: () => void } | null;
@@ -73,6 +73,7 @@ function answer(): Response {
     case 'trashed': return json(200, { version: '8' }); // Drive serves a trashed file by id to an account that can see it
     case 'notFound': return json(404, { error: { code: 404, message: 'File not found' } });
     case 'forbidden': return json(403, { error: { code: 403, errors: [{ reason: 'userRateLimitExceeded' }] } });
+    case 'unauthorized': return json(401, { error: { code: 401, message: 'Invalid Credentials' } });
     case 'serverError': return json(500, { error: { code: 500 } });
     case 'network': throw new TypeError('Failed to fetch');
   }
@@ -253,6 +254,7 @@ describe('US-09 AC65: a Drive popup reconnect confirms the record file', () => {
     ['the lookup fails with a network error', 'network'],
     ['the lookup fails with a 500', 'serverError'],
     ['the lookup fails with a 403 rate limit', 'forbidden'],
+    ['the lookup fails with a 401', 'unauthorized'],
   ])('%s: kept as before, after one lookup with the popup token', async (_name, answer) => {
     seed({ device: fullRecord() });
     lookup = answer;

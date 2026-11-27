@@ -145,7 +145,7 @@ function storageBarLabel(backend: Backend, lost: LostSignIn | undefined, facts: 
 /** US-09 AC30: said instead of starting a popup the browser would block. */
 export const GIS_LOADING = 'Google is loading. Tap again.';
 /** US-09 AC65 (words approved 2026-11-27): a reconnect whose sign-in cannot open this browser's record file. */
-const CANNOT_OPEN_RECORD = 'Google Drive did not connect: this sign-in cannot open the record saved in this browser. Nothing changed. To keep working, choose Use this browser only.';
+const CANNOT_OPEN_RECORD = 'Google Drive did not connect: this sign-in cannot open the record saved in this browser. Nothing was sent. To keep working, choose Use this browser only.';
 
 /** US-09 AC13: the way back to a provider that could not be read this session,
  *  shared by the plan panel and the top bar so the two cannot drift. Drive

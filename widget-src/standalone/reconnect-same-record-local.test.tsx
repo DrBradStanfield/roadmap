@@ -31,7 +31,7 @@ const DRIVE_CONFIG = 'health_roadmap_gdrive';
 const DEVICE_FILE = 'health_roadmap_file_v2';
 const CACHED_ID = 'cached-record-id';
 const NOW = '2026-11-25T00:00:00.000Z';
-const CANNOT_OPEN = 'Google Drive did not connect: this sign-in cannot open the record saved in this browser. Nothing changed. To keep working, choose Use this browser only.';
+const CANNOT_OPEN = 'Google Drive did not connect: this sign-in cannot open the record saved in this browser. Nothing was sent. To keep working, choose Use this browser only.';
 
 let fetchCalls: string[];
 let reload: ReturnType<typeof vi.fn>;
