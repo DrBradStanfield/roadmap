@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, StrictMode, createElement, type ReactNode } from 'react';
-import { renderHook } from '@testing-library/react';
+import { render, renderHook } from '@testing-library/react';
 import type { FormStage, RecordHoldings } from '@roadmap/health-core/mappings';
 
 // The erase the screen shows: HealthTool's React state (D5).
@@ -14,7 +14,7 @@ const shown = { erase: 'erase-1' };
 const tracked = vi.hoisted(() => ({ calls: [] as Array<[string, unknown]> }));
 vi.mock('../lib/server-api', () => ({ trackProductEvent: (name: string, meta?: unknown) => { tracked.calls.push([name, meta]); } }));
 
-import { transition, useOnboarding, waitsOn, type Landing, type LandingEvent, type LandingField } from './useOnboarding';
+import { transition, useLeaveField, useOnboarding, waitsOn, type Landing, type LandingEvent, type LandingField } from './useOnboarding';
 
 const EMPTY: RecordHoldings = { saved: [], medications: [], screenings: [], supplements: [], documents: [], labValues: [] };
 // The land action HealthTool passes in; frames run at once here.
@@ -286,5 +286,37 @@ describe('US-62 AC25b: the landing, decided by the hook from two facts', () => {
     view.rerender({ stage: 1 });
     view.rerender({ stage: 4 });
     expect(land).toHaveBeenCalledTimes(1);
+  });
+
+  it('R4: a render while the four answers still dip does not land; the next render with them whole does', () => {
+    const view = setup(3);
+    act(() => view.result.current.answered('weightKg'));
+    view.rerender({ stage: 4 }); // ended on the weight: awaiting its rest
+    view.rerender({ stage: 3 }); // a value cleared
+    act(() => view.result.current.rested()); // the weight at rest while they dip
+    view.rerender({ stage: 3 }); // any render before they hold again
+    expect(land).not.toHaveBeenCalled();
+    view.rerender({ stage: 4 });
+    expect(land).toHaveBeenCalledTimes(1);
+  });
+
+  // A landing field's box with its leave ref, as InputPanel (the weight) and AboutYou (the birth year) give it.
+  function Box({ label, left, shown }: { label: string; left: () => void; shown: boolean }) {
+    const ref = useLeaveField(left);
+    return createElement('div', null, shown && createElement('input', { ref, 'aria-label': label }), createElement('button', null, 'elsewhere'));
+  }
+  it('the page changing layout during the weight\'s wait: the weight box going with the focus means no jump; the birth year box going without it still lands', () => {
+    for (const [label, focused] of [['Weight', true], ['Birth year', false]] as const) {
+      land.mockClear();
+      const view = setup(3);
+      act(() => view.result.current.answered('weightKg'));
+      view.rerender({ stage: 4 }); // ended on the weight: awaiting its rest
+      const box = render(createElement(Box, { label, left: view.result.current.left, shown: true }));
+      act(() => (focused ? box.getByLabelText(label) : box.getByRole('button')).focus());
+      box.rerender(createElement(Box, { label, left: view.result.current.left, shown: false }));
+      act(() => view.result.current.rested());
+      expect([label, land.mock.calls.length]).toEqual([label, focused ? 0 : 1]);
+      box.unmount();
+    }
   });
 });

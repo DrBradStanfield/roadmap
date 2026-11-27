@@ -784,6 +784,18 @@ describe('US-62 AC10 (design review 2026-11-06): the value page leads with its l
   });
 });
 
+describe('US-05 AC4: a value page reads in its field\'s own unit', () => {
+  it('LDL switched to mg/dL on an SI page: its page\'s latest value and its tile both read mg/dL', async () => {
+    localStorage.setItem('health_roadmap_unit_overrides', JSON.stringify({ ldlC: 'conventional' }));
+    const view = await show(RECORDS['a woman of 52 with her screenings answered']); // LDL 2.8 mmol/L
+    fireEvent.click(rowNamed(view, '[data-topic="cholesterol"]', 'LDL Cholesterol')!);
+    const page = view.container.querySelector<HTMLElement>('.md-page')!;
+    expect(page.querySelector('.md-page-latest-unit')!.textContent).toBe('mg/dL');
+    const tile = within(page).getByText('LDL Cholesterol', { selector: '.stat-label' }).closest('.stat-card')!;
+    expect(tile.querySelector('.stat-value')!.textContent).toMatch(/mg\/dL$/);
+  });
+});
+
 describe('US-62 AC27: the desktop section list', () => {
   it('lists the sections the page holds, in order, as links in a nav landmark; one is current; a red dot marks an urgent one', async () => {
     const scrolled: Element[] = [];
