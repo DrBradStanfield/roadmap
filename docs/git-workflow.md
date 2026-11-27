@@ -53,8 +53,10 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    Prefer PRs under 100 changed files where a change splits cleanly; orphaned code still dies in the same PR (CLAUDE.md).
 4. **Merge** it yourself when the work is done and its gates have passed. **The gate per PR** (Brad 2026-11-13):
    - unit tests written with the change;
-   - CI green on the exact head sha. `ios-compile` is advisory to `tools/merge-gated.sh` and `tools/wait-run.sh`,
-     but a red one is a real compile error: fix it before asking for a merge word;
+   - CI green on the exact head sha. `ios-compile` is required when the PR changes what it builds (any Swift file
+     under `ios/`, the Xcode project, the app and test folders, the Info.plist or entitlements; the one rule is
+     `tools/ios-compile-paths.sh`, US-64 AC43) and advisory otherwise, to both `tools/merge-gated.sh` and
+     `tools/wait-run.sh`. Even advisory, a red one is a real compile error: fix it before asking for a merge word;
    - one review where the class needs one (§ Reviews below), and clinical citation numbering checked;
    - the owner thread's word on that sha. A conditional word counts ("merge if the prod diff is exactly X and CI
      is green").
@@ -74,8 +76,9 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    left open, or a draft private security advisory for a security or privacy one (docs/review-format.md).
    **Merge by hand with `sh tools/merge-gated.sh <pr> <full sha>`**, never a scratch script of your own (US-64
    AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, the newest `ci.yml` run on
-   that sha ended success, every rollup check finished green with a `test` check SUCCESS (except the advisory
-   `ios-compile`, which only prints a note, Brad 2026-11-13), no generated file is out of step with main (below),
+   that sha ended success, every rollup check finished green with a `test` check SUCCESS (except an advisory
+   `ios-compile`, which only prints a note, Brad 2026-11-13; on a PR that changes what it builds it must be
+   there, finished and green, or the merge is refused, US-64 AC43), no generated file is out of step with main (below),
    main's own CI is not red (below) and no Deploy run is unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI
    was started by workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the
    `ci.yml` run check. Generated files (US-64 AC34): when the PR touches a file listed in
@@ -97,8 +100,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    red or re-running. When main has
    moved since the PR's merge base, it prints one note with how many commits; it never refuses for that, but
    read the note: CI may have tested an older main.
-   A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json` or
-   `.github/workflows/ci.yml`) needs nothing different from you: the script fetches main and lets main's copies
+   A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json`,
+   `tools/ios-compile-paths.sh` or `.github/workflows/ci.yml`) needs nothing different from you: the script fetches main and lets main's copies
    judge it, and refuses (16) when main has no copy, so the owner merges that PR by hand. A `ci.yml` PR also prints
    a note: its own CI ran the PR's workflow, so read that diff before merging. Every gh call and the fetch are
    killed after 60 s; a merge cut off that way has an unknown outcome, so check the PR. Each kind of refusal has

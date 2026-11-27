@@ -120,7 +120,7 @@ function repos(withOutput = true, manifest = TEST_MANIFEST) {
   const work = join(d, 'work');
   git(d, 'clone', '-q', origin, work);
   mkdirSync(join(work, 'tools'));
-  copyFileSync(join(TOOLS, 'merge-gated.sh'), join(work, 'tools', 'merge-gated.sh'));
+  for (const f of ['merge-gated.sh', 'ios-compile-paths.sh']) copyFileSync(join(TOOLS, f), join(work, 'tools', f));
   const generated = withOutput ? { 'out.txt': 'o\n', 'gen.mjs': 'g\n' } : {};
   commit(work, { 'tools/generated-files.json': manifest, 'in.txt': 'a\n', 'src/x.txt': 'x\n', 'src/y.txt': 'y\n', README: 'r\n', ...generated }, 'base');
   pushMain(work);
@@ -385,7 +385,7 @@ describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has m
       moveMain(r, { 'out.txt': 'o2\n' });
       const copy = join(r.d, 'elsewhere');
       mkdirSync(copy);
-      copyFileSync(join(TOOLS, 'merge-gated.sh'), join(copy, 'merge-gated.sh'));
+      for (const f of ['merge-gated.sh', 'ios-compile-paths.sh']) copyFileSync(join(TOOLS, f), join(copy, f));
       // Beside the copy: no rows, so it merges. The caller's tools/generated-files.json would refuse.
       writeFileSync(join(copy, 'generated-files.json'), '{"rows":[]}');
       const g = gate(r, sha, ['in.txt'], { cwd: r.caller, script: join(copy, 'merge-gated.sh') });

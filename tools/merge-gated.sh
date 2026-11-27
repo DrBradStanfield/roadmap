@@ -5,9 +5,10 @@
 # In order, refusing at the first that fails:
 #   1. the sha is 40 hex (exit 3)
 #   2. the PR is open (5) and its head is that sha (6)
-#   3. gate files: a PR that changes tools/merge-gated.sh, tools/generated-files.json or .github/workflows/ci.yml
-#      must not be judged by the copy it changed. This script then fetches main (explicit refspec), writes main's
-#      tools/merge-gated.sh and tools/generated-files.json (when main has one) to a temp dir and runs that copy
+#   3. gate files: a PR that changes tools/merge-gated.sh, tools/generated-files.json, tools/ios-compile-paths.sh
+#      or .github/workflows/ci.yml must not be judged by the copy it changed. This script then fetches main
+#      (explicit refspec), writes main's tools/merge-gated.sh, plus generated-files.json and ios-compile-paths.sh
+#      when main has them, to a temp dir and runs that copy
 #      with the same arguments and MERGE_GATED_FROM_MAIN=1, exiting with its code. A failed fetch, or no or an
 #      empty copy on main, refuses (16): the owner merges that PR by hand. A copy run with the
 #      marker skips this step. The marker guards against accidents, not against someone who sets it on purpose:
@@ -29,7 +30,10 @@
 #      it is for CI started by workflow_dispatch, whose runs do not reach the PR's rollup; step 4 is its gate.
 #      Advisory checks are the exception: an entry named exactly `ios-compile` (iOS compile workflow; Brad
 #      2026-11-13: it warns, it does not block) never refuses. Pending or not green, it gets one stderr note. The
-#      list is a literal in the jq filter below, so nothing at call time can widen it.
+#      list is a literal in the jq filter below, so nothing at call time can widen it. Unless the PR changes what
+#      that job builds (US-64 AC43, 2026-11-27: a PR changing a Swift test merged while it still ran): when a path
+#      in git's list (step 3) passes tools/ios-compile-paths.sh, the one rule, ios-compile counts like any check,
+#      and its absence refuses (8) too. That rule is a gate file: main's copy judges a PR that changes it.
 #   6. generated files (US-64 AC34; PR 954 went green against an older main, then main went red). Pure git: it runs
 #      nothing but gh, git, jq and perl, never a command from the manifest or the PR (a row's `script` is only a
 #      pathspec). Step 3 fetched main (explicit refspec, so origin/main is fresh in a narrow-refspec clone) and the PR
@@ -135,6 +139,8 @@ $1
 tools/merge-gated.sh
 "*|*"
 tools/generated-files.json
+"*|*"
+tools/ios-compile-paths.sh
 "*) gatefile=true ;; esac
   case "
 $1
@@ -151,7 +157,9 @@ to_main() {
   bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main >&2 || die "PR $pr changes a gate file and the fetch of main failed, so main's copy cannot judge it: the owner merges this PR by hand" 16
   git show refs/remotes/origin/main:tools/merge-gated.sh > "$tmp/merge-gated.sh" 2>/dev/null && [ -s "$tmp/merge-gated.sh" ] \
     || die "PR $pr changes a gate file and main has no copy of the gate yet: the owner merges this PR by hand" 16
-  git show refs/remotes/origin/main:tools/generated-files.json > "$tmp/generated-files.json" 2>/dev/null || rm -f "$tmp/generated-files.json"
+  for f in generated-files.json ios-compile-paths.sh; do
+    git show "refs/remotes/origin/main:tools/$f" > "$tmp/$f" 2>/dev/null || rm -f "$tmp/$f"
+  done
   echo "merge-gated: PR $pr changes a gate file; main's copy judges it" >&2
   MERGE_GATED_FROM_MAIN=1 sh "$tmp/merge-gated.sh" $args; exit $?
 }
@@ -166,6 +174,9 @@ scan "$paths"
 to_main
 [ "$ciyml" = true ] && echo "merge-gated: note: PR $pr changes .github/workflows/ci.yml, so its own CI result came from the PR's workflow; the reviewer must have read that diff" >&2
 [ "$changed" = "$listed" ] || die "PR $pr changes $changed files and gh lists $listed; cannot check them for gate files" 17
+# The folder holding this script, its manifest and its iOS path rule. $0 has no slash when run as
+# `sh merge-gated.sh` inside tools/ (T-12).
+case "$0" in */*) here=${0%/*} ;; *) here=. ;; esac
 
 # Each filter prints one line: "ok", or "<code> <reason>". Check names are outside text: they go only into the
 # reason, never into the decision.
@@ -184,13 +195,23 @@ esac
 if [ "$mode" = rollup ]; then
   # Line 1 is the verdict, from the non-advisory entries only. Any later lines name an advisory check (the literal
   # list below, exact names) that is pending or not green; they go to stderr and never refuse.
+  # The list is empty when the PR changes what ios-compile builds (AC43); $iosreq is this script's own true/false.
+  [ -r "$here/ios-compile-paths.sh" ] || die "cannot read $here/ios-compile-paths.sh" 4
+  . "$here/ios-compile-paths.sh"
+  printf '%s\n' "$paths" | ios_compile_paths
+  case $? in
+    0) iosreq=true; echo "merge-gated: note: PR $pr changes iOS build files, so ios-compile is required" >&2 ;;
+    1) iosreq=false ;;
+    *) die "cannot check PR $pr's paths against $here/ios-compile-paths.sh" 4 ;;
+  esac
   verdict=$(gh pr view "$pr" --json statusCheckRollup --jq '[.statusCheckRollup[]
       | {n: (.name // .context | if type == "string" then gsub("[\n\r]"; " ") else . end), s: (if .__typename == "StatusContext" then (if .state == "PENDING" or .state == "EXPECTED" then "PENDING" else "COMPLETED" end) else .status end),
          c: (if .__typename == "StatusContext" then .state else .conclusion end)}] as $all
-    | ["ios-compile"] as $adv
+    | '"$iosreq"' as $req | (if $req then [] else ["ios-compile"] end) as $adv
     | [$all[] | select(.n | IN($adv[]) | not)] as $a
     | (if ($a | length) == 0 then "7 the PR has no checks"
       elif any($a[]; .s != "COMPLETED") then "8 still running: \([$a[] | select(.s != "COMPLETED") | .n] | join(", "))"
+      elif $req and all($a[]; .n != "ios-compile") then "8 required check ios-compile has not reported yet"
       elif any($a[]; .c != "SUCCESS" and .c != "SKIPPED") then "9 not green: \([$a[] | select(.c != "SUCCESS" and .c != "SKIPPED") | "\(.n)=\(.c)"] | join(", "))"
       elif any($a[]; .n == "test" and .c == "SUCCESS") then "ok"
       else "10 no check named test succeeded" end),
@@ -210,8 +231,8 @@ case "$behind" in 0) ;; 1) w=commit ;; *) w=commits ;; esac
 [ "$behind" = 0 ] || echo "merge-gated: note: main has moved $behind $w since this PR's merge base; CI may have tested an older main" >&2
 # The rows whose output or an input matches a PR path, one index a line. A glob becomes an anchored regex:
 # * any run of characters (slash too, as in a git pathspec), ? one character, everything else literal.
-# The manifest sits beside this script. $0 has no slash when run as `sh merge-gated.sh` inside tools/ (T-12).
-case "$0" in */*) manifest=${0%/*}/generated-files.json ;; *) manifest=./generated-files.json ;; esac
+# The manifest sits beside this script.
+manifest=$here/generated-files.json
 hits=$(jq -r --arg p "$paths" 'def re: "^" + gsub("(?<c>[.+^$(){}|\\[\\]\\\\])"; "\\\(.c)") + "$" | gsub("\\*"; ".*") | gsub("\\?"; ".");
   ($p | split("\n")) as $p | .rows | to_entries[]
   | select(any(.value.output, .value.inputs[]; re as $r | any($p[]; test($r)))) | .key' "$manifest") \

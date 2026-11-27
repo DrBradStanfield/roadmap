@@ -17,6 +17,8 @@
 # check is SUCCESS, SKIPPED or NEUTRAL, the script reads that check's Actions run, and when the run has completed it
 # concludes from the run's conclusion and says so in detail. Beside any red check it waits as before. An empty check
 # list after the wait above now ends untested (exit 1); before AC41 it polled to the time limit (timeout, exit 3).
+# The check ios-compile is advisory (not waited on, not a failure) unless the PR changes what it builds (US-64 AC43,
+# the rule in tools/ios-compile-paths.sh): then it is waited on, even before it appears, and counted like any check.
 #
 # Exit: 0 success; 1 the run or a check failed, no `test` check passed, a final read failed, or healthz is not
 # 200; 2 usage; 3 gave up
@@ -149,12 +151,16 @@ poll() {
         finish conflict 1 "PR conflicts with main; merge main in"; fi
       [ "$state" = nochecks ] && [ $(( $(date +%s) - start )) -ge "$nc_s" ] && return 0
     else
-      errors=$((errors + 1))
-      if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; finish gh_errors 3 "10 gh errors in a row"; fi
+      gh_error
     fi
     give_up_if_late
     nap
   done
+}
+# One more gh error in a row; the 10th gives up.
+gh_error() {
+  errors=$((errors + 1))
+  if [ "$errors" -ge 10 ]; then echo "gave up: 10 gh errors in a row" >&2; finish gh_errors 3 "10 gh errors in a row"; fi
 }
 
 # One REST request per poll.
@@ -165,7 +171,8 @@ run_state() { gh api "repos/{owner}/{repo}/actions/runs/$id" --jq 'if .status ==
 # completed run's conclusion, else the run's status), and count it pending unless gh gives that state a bucket.
 # The same query reads mergeability. Finished checks are judged first, so they print their counts even if main
 # moved since; unfinished checks on a PR in conflict with main get no new CI run, so waiting on them never ends.
-# The advisory check ios-compile (exact name) is left out, so it is never waited on.
+# The advisory check ios-compile (exact name) is left out, so it is never waited on, unless $iosreq (AC43): then it
+# counts like any check and its absence is pending.
 # No checks at all prints "nochecks", which poll waits on for WAIT_RUN_NO_CHECKS_MIN. A check run whose status is
 # not COMPLETED though its conclusion is a finished one is stuck: only when every other check is SUCCESS, SKIPPED or
 # NEUTRAL, every stuck one's own conclusion is SUCCESS and each links its Actions run, it prints "stuck <tested
@@ -174,12 +181,13 @@ run_state() { gh api "repos/{owner}/{repo}/actions/runs/$id" --jq 'if .status ==
 pr_state() {
   s=$(gh pr view "$id" --json statusCheckRollup,mergeable,mergeStateStatus --jq 'def fin: IN("SUCCESS", "SKIPPED", "NEUTRAL", "ERROR", "FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "CANCELLED"); def ok: IN("SUCCESS", "SKIPPED", "NEUTRAL");
     (.mergeable == "CONFLICTING" or .mergeStateStatus == "DIRTY") as $c
-    | [.statusCheckRollup // [] | .[] | select((.name // .context) != "ios-compile")] | [group_by(.context // "\(.name)/\(.workflowName)") | .[] | max_by(.startedAt)]
+    | '"$iosreq"' as $req | [.statusCheckRollup // [] | .[] | select($req or (.name // .context) != "ios-compile")] | [group_by(.context // "\(.name)/\(.workflowName)") | .[] | max_by(.startedAt)]
+    | ($req and all(.[]; (.name // .context) != "ios-compile")) as $miss
     | [.[] | select((.state // "") == "" and .status != "COMPLETED")] as $open
     | [$open[] | select((.conclusion // "") | fin) | (.detailsUrl // "") | split("/actions/runs/") | select(length > 1) | .[1] | split("/")[0] | select(test("^[0-9]+$"))] as $runs
     | [.[] | if (.state // "") != "" then .state elif .status == "COMPLETED" then .conclusion else .status end] as $s
-    | if ($s | length) > 0 and ($s | all(fin)) then "done"
-      elif ($open | length) > 0 and ($runs | length) == ($open | length) and ($open | all(.conclusion == "SUCCESS")) and ([$s[] | select(ok | not)] | length) == ($open | length)
+    | if ($miss | not) and ($s | length) > 0 and ($s | all(fin)) then "done"
+      elif ($miss | not) and ($open | length) > 0 and ($runs | length) == ($open | length) and ($open | all(.conclusion == "SUCCESS")) and ([$s[] | select(ok | not)] | length) == ($open | length)
       then "stuck \(if any(.[]; .name == "test" and .conclusion == "SUCCESS") then "yes" else "no" end) \($runs | unique | join(" "))"
       elif $c then "conflict" elif ($s | length) == 0 then "nochecks" else "pending" end') || return 1
   case "$s" in "stuck "*) ;; *) echo "$s"; return 0 ;; esac
@@ -208,6 +216,21 @@ if [ "$mode" = deploy ]; then
   finish success 0 "conclusion=success healthz=200"
 fi
 
+# Does the PR change what ios-compile builds (US-64 AC43)? Then it is waited on and counted; otherwise advisory.
+# The one rule is tools/ios-compile-paths.sh beside this script; a missing or failing rule counts as yes. One REST read,
+# before the polls, retried like a poll.
+case "$0" in */*) here=${0%/*} ;; *) here=. ;; esac
+iosreq=true
+if [ -r "$here/ios-compile-paths.sh" ]; then
+  . "$here/ios-compile-paths.sh"
+  until files=$(gh api --paginate "repos/{owner}/{repo}/pulls/$id/files?per_page=100" --jq '.[] | .filename, (.previous_filename // empty)' 2>/dev/null); do
+    gh_error; give_up_if_late; nap
+  done
+  errors=0
+  printf '%s\n' "$files" | ios_compile_paths
+  [ $? = 1 ] && iosreq=false
+fi
+
 # One read gives the counts and the verdict. A check that went back to pending (a re-run or new push between the
 # poll and this read) sends the wait back to polling, within the same time limit.
 checks=; summary=
@@ -215,11 +238,13 @@ while :; do
   poll pr_state
   case "$state" in nochecks|"runs "*) break ;; esac
   # ios-compile is advisory (exact name, Brad 2026-11-13; tools/merge-gated.sh lists it too): never waited on,
-  # never a failure; pending or red, it gets one note line after the others.
-  checks=$(gh pr checks "$id" --json name,bucket --jq '
-    [.[] | select(.name == "ios-compile" and .bucket != "pass" and .bucket != "skipping")
-      | "note: advisory check ios-compile is \(.bucket); not counted"] as $notes | [.[] | select(.name != "ios-compile")] |
-    "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) tested=\(if any(.[]; .name == "test" and .bucket == "pass") then "yes" elif any(.[]; .name == "test") then "no" else "absent" end) pending=\([.[] | select(.bucket == "pending")] | length)",
+  # never a failure; pending or red, it gets one note line after the others. With $iosreq (AC43) it counts like
+  # any check, and its absence counts as one pending.
+  checks=$(gh pr checks "$id" --json name,bucket --jq "$iosreq"' as $req |
+    [.[] | select(($req | not) and .name == "ios-compile" and .bucket != "pass" and .bucket != "skipping")
+      | "note: advisory check ios-compile is \(.bucket); not counted"] as $notes
+    | (if $req and all(.[]; .name != "ios-compile") then 1 else 0 end) as $miss | [.[] | select($req or .name != "ios-compile")] |
+    "pass=\([.[] | select(.bucket == "pass")] | length) fail=\([.[] | select(.bucket == "fail" or .bucket == "cancel")] | length) skipped=\([.[] | select(.bucket == "skipping")] | length) tested=\(if any(.[]; .name == "test" and .bucket == "pass") then "yes" elif any(.[]; .name == "test") then "no" else "absent" end) pending=\([.[] | select(.bucket == "pending")] | length + $miss)",
     (.[] | select(.bucket == "fail" or .bucket == "cancel") | "failed: \(.name | gsub("[[:cntrl:]]"; " "))"), $notes[]' 2>/dev/null)
   # Verdicts come only from line 1, the fixed-format summary. A check name (outside text) cannot forge it: the
   # names go only into the `failed:` lines, and the one name that counts, tested=, is an exact match on `test`.
