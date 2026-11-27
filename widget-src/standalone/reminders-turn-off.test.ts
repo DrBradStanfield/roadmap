@@ -14,6 +14,7 @@ import type { TurnOff, TurnOffEvent } from './reminders-turn-off';
 let file: RoadmapFile;
 let edits = 0;
 const refuseWrite = { next: false };
+const shown = { now: true }; // the record is still at the erase the Turn off was asked under
 const trackProductEvent = vi.fn();
 vi.mock('../src/lib/roadmap-data', () => ({
   getReminderOptIn: () => file.reminderOptIn,
@@ -25,7 +26,7 @@ vi.mock('../src/lib/roadmap-data', () => ({
   },
   getShownErase: () => '[0,null]',
   getEraseIdentity: () => '[1,null]',
-  stillShown: () => true,
+  stillShown: () => shown.now,
   flushRoadmapStore: async () => {},
 }));
 vi.mock('../src/lib/server-api', () => ({ trackProductEvent: (...a: unknown[]) => trackProductEvent(...a) }));
@@ -56,6 +57,7 @@ beforeEach(() => {
   file = createEmptyFile({ deviceId: 'dev_turn_off', now: '2026-11-01T00:00:00.000Z' });
   edits = 0;
   refuseWrite.next = false;
+  shown.now = true;
   posts.length = 0;
   trackProductEvent.mockReset();
 });
@@ -86,6 +88,9 @@ describe('US-17 AC19: the TurnOff transition', () => {
     ['written with nothing (every row changed since the read) counts nothing', writing(['token-a']), { type: 'written', wrote: [], refused: null }, { kind: 'ended', error: null, counts: null }],
     ['written after a failure still ends with the failure, counted', writing(['token-b'], 'words for token-a'), { type: 'written', wrote: ['token-b'], refused: null }, { kind: 'ended', error: 'words for token-a', counts: 'dropbox' }],
     ['a refused write ends with its words, counted nothing', writing(['token-a']), { type: 'written', wrote: [], refused: 'refused words' }, { kind: 'ended', error: 'refused words', counts: null }],
+    ['stopped with something landed: writing, with the refusal\'s words', posting(['token-b'], ['token-a']), { type: 'stopped', refused: 'refused words' }, writing(['token-a'], 'refused words')],
+    ['stopped with nothing landed: ended with the refusal\'s words', posting(['token-a', 'token-b'], []), { type: 'stopped', refused: 'refused words' }, { kind: 'ended', error: 'refused words', counts: null }],
+    ['stopped outside posting changes nothing', writing(['token-a']), { type: 'stopped', refused: 'refused words' }, writing(['token-a'])],
     ['written outside writing changes nothing', { kind: 'idle' }, { type: 'written', wrote: ['token-a'], refused: null }, { kind: 'idle' }],
   ];
   it.each(table)('%s', (_name, state, event, next) => {
@@ -161,6 +166,25 @@ describe('US-17 AC19: Turn off cancels every token, in one edit', () => {
     await turningOff;
     expect(statusOf()).toEqual({ 'token-a': 'cancelled', 'token-b': 'active' });
     expect(rowsOf(file.reminderOptIn).find((r) => r.token === 'token-b')?.provider).toBe('github');
+  });
+
+  it('an erase that begins while the first cancel is out stops the second from being posted (review R4)', async () => {
+    file.reminderOptIn = optIn(row('token-a', 'active', 2), row('token-b', 'active', 1));
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    server(async (token) => {
+      if (token === 'token-a') await held;
+      return 200;
+    });
+    const turningOff = cancelReminders();
+    await vi.waitFor(() => expect(posts).toHaveLength(1));
+    shown.now = false; // the record moved to another erase
+    refuseWrite.next = true; // and so refuses the write
+    release();
+    await expect(turningOff).rejects.toThrow('Not saved: your record changed since you asked.');
+    expect(posts.map((p) => p.token)).toEqual(['token-a']);
+    expect(statusOf()).toEqual({ 'token-a': 'active', 'token-b': 'active' });
+    expect(trackProductEvent).not.toHaveBeenCalled(); // one cancel posted, no row written
   });
 
   it('a refused write cancels on the server but writes nothing and counts nothing', async () => {

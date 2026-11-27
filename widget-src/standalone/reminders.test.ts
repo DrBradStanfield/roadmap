@@ -1071,7 +1071,7 @@ describe('US-11 AC4c — the EraseCancel transition', () => {
   it.each(sends)('toCancel: %s', async (_name, state, standing, out) => {
     await loadReminders();
     const { toCancel } = await import('./reminders-erase-cancel');
-    expect(toCancel(state, standing)).toEqual(out);
+    expect(toCancel(state, [standing])).toEqual(out);
   });
 });
 

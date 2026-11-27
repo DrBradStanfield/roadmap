@@ -50,6 +50,11 @@ export interface EraseSteps {
    *  the device copy's, and this copy's after every merge taken in since (US-11
    *  AC15). For the caller's teardown, which cancels each active row's token. */
   swapping?: (read: FileReminderOptIn[]) => void;
+  /** Told once the erase's write is done, landed or not, the opt-in of the
+   *  copy that took it, as read back (the cloud's check, or the device copy's
+   *  merge); undefined when none was read. Only the teardown's choice of which
+   *  tokens still stand reads it (US-11 AC15). */
+  landed?: (optIn: FileReminderOptIn | undefined) => void;
 }
 
 /**
@@ -58,7 +63,7 @@ export interface EraseSteps {
  * teardown on Brad's server, the chat-history tombstones), so an erase
  * refused here has changed nothing anywhere (US-09 AC23).
  */
-export async function eraseSession(s: RecordSession, beforeErase?: () => Promise<void>, swapping?: EraseSteps['swapping']): Promise<EraseResult> {
+export async function eraseSession(s: RecordSession, beforeErase?: () => Promise<void>, { swapping, landed }: Pick<EraseSteps, 'swapping' | 'landed'> = {}): Promise<EraseResult> {
   // Refused before anything moves: a session on-device because the cloud could not be read, as an erase
   // lists the rows it removes from the record it reads (a reload would not help it); a tab off the record
   // this browser has chosen, read live here (US-11 AC6); and a second erase while one runs (US-16 AC2f).
@@ -122,7 +127,8 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
     // caller's step has run, and its page must leave its deleting state.
     s.saveWarning = undefined;
     swapping?.([ownOptIn, stored?.reminderOptIn, device?.reminderOptIn, s.current.reminderOptIn].filter((o): o is FileReminderOptIn => o !== undefined));
-    try { s.current = buildErasedFile({ stored, own: s.current, device, ctx: s.ctx() }); } catch (e) { return { success: false, error: (e as Error).message }; }
+    // The opt-in held as the erase began counts too: a merge taken in since may hold none (review R2).
+    try { s.current = buildErasedFile({ stored, own: s.current, device, began: ownOptIn, ctx: s.ctx() }); } catch (e) { return { success: false, error: (e as Error).message }; }
     s.clearedFor = s.eraseIdentity; // an erase made here owes no clear: its own follows the write, or the page's
     s.dispatch({ type: 'eraseSwapped' });
   } finally {
@@ -137,6 +143,9 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
       else await s.flush();
     } finally {
       s.dispatch({ type: 'eraseEnded' });
+      // Only a copy at this erase's epoch or later: a pass begun before the swap wrote the record it replaced.
+      const copy = s.landedOptIn;
+      landed?.(copy && copy.epoch >= (s.current.meta.eraseEpoch ?? 0) ? copy.optIn : undefined);
     }
     erased = true;
     // The erase reached the cloud — wipe the on-device residue too (failure
@@ -209,7 +218,7 @@ export async function deleteAllDataSession(s: RecordSession, steps: EraseSteps =
     } catch (error) {
       s.host.report(error, { op: 'chat-erase', repeat: false });
     }
-  }, steps.swapping);
+  }, steps);
   return { ...result, chatErased };
 }
 

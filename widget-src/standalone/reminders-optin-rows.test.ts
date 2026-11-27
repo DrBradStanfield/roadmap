@@ -68,7 +68,7 @@ async function setUp(optIn?: FileReminderOptIn) {
   };
   edits.mockClear();
   const posts: Posted[] = [];
-  const answer = { of: (_body: Posted): Response => new Response('{}', { status: 200 }) };
+  const answer = { of: (_body: Posted): Response | Promise<Response> => new Response('{}', { status: 200 }) };
   vi.stubGlobal('fetch', vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body)) as Posted;
     posts.push(body);
@@ -157,7 +157,7 @@ describe('US-11 AC15: an erase cancels every active row of every copy it reads',
     expect(t.cancels()).toEqual([A]);
   });
 
-  it('a merge taken in while the erase first reads, which drops this copy\'s active token, still leaves it cancelled (review E2)', async () => {
+  it.each([['carrying its own erase marker', true], ['holding no opt-in at all (review R2)', false]] as const)('a merge taken in while the erase first reads, %s, which drops this copy\'s active token, still leaves it cancelled and reminders off (review E2)', async (_case, marker) => {
     const t = await setUp(row(A, 'active', 1));
     let release!: () => void;
     const gate = new Promise<void>((r) => { release = r; });
@@ -171,12 +171,18 @@ describe('US-11 AC15: an erase cancels every active row of every copy it reads',
     const erasing = t.data.deleteUserData();
     await vi.waitFor(() => expect(held).toBe(true));
     // Another device erased meanwhile; this page takes it in while the erase's read is held.
-    t.cloudWrites(row('', 'cancelled', 5, { email: '' }), (f) => { f.meta.eraseEpoch = 1; f.meta.erasedAt = T(5); f.schemaVersion = 2; f.erasedRows = { fromEpoch: 1, ids: [] }; });
+    t.cloudWrites(marker ? row('', 'cancelled', 5, { email: '' }) : undefined, (f) => { f.meta.eraseEpoch = 1; f.meta.erasedAt = T(5); f.schemaVersion = 2; f.erasedRows = { fromEpoch: 1, ids: [] }; });
     expect(await t.page().refreshFromRemote()).toBe(true);
     expect(rowsOf(t.data.getReminderOptIn())).toEqual([]);
     release();
     expect((await erasing).success).toBe(true);
     expect(t.cancels()).toEqual([A]);
+    // The erased record says reminders are off, so the next load enrols nobody (US-11 AC4).
+    const stored = JSON.parse(t.cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+    expect(stored.reminderOptIn).toMatchObject({ status: 'cancelled', token: '', email: '' });
+    t.posts.length = 0;
+    await t.reminders.autoEnrolReminders('dropbox');
+    expect(t.posts).toEqual([]);
   });
 
   it('a token another device re-enrols between the erase write and its check read gets no cancel (review E3)', async () => {
@@ -199,7 +205,50 @@ describe('US-11 AC15: an erase cancels every active row of every copy it reads',
       return read.apply(this, args);
     });
     expect((await t.data.deleteUserData()).success).toBe(true);
-    expect(statusOf(t.data.getReminderOptIn())).toEqual({ [A]: 'active' });
+    const stored = JSON.parse(t.cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+    expect(statusOf(stored.reminderOptIn)).toEqual({ [A]: 'active' });
+    // The check read reaches only the teardown's choice of what stands (review R1).
+    expect(statusOf(t.data.getReminderOptIn())).toEqual({});
+    expect(t.cancels()).toEqual([]);
+  });
+
+  it('every cancel leaves before any answer, so a tab closed after the first still sent the rest (review R3)', async () => {
+    const t = await setUp(nest(row(A, 'active', 2), row(B, 'active', 1)));
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    t.answer.of = async (body) => {
+      if (body.op === 'cancel' && body.token === A) await held; // the first answer never comes before the page closes
+      return new Response('{}', { status: 200 });
+    };
+    const erasing = t.data.deleteUserData();
+    await vi.waitFor(() => expect(t.cancels().sort()).toEqual([A, B]));
+    release();
+    expect((await erasing).success).toBe(true);
+  });
+
+  it('a refused cloud write held in the device copy spares a token another tab re-enrolled there (review R5)', async () => {
+    const t = await setUp(row(A, 'active', 1, { provider: 'google-drive' }));
+    const { StorageError } = await import('@roadmap/health-core/adapter');
+    const write = MemoryAdapter.prototype.write;
+    vi.spyOn(MemoryAdapter.prototype, 'write').mockImplementation(async function (this: MemoryAdapter, ...args) {
+      if ((args[1] as RoadmapFile).meta.eraseEpoch === 1) throw new StorageError('Dropbox write failed (403)', undefined, undefined, 403, undefined, 'refused');
+      return write.apply(this, args);
+    });
+    t.proof.mockImplementation(async () => {
+      // Another tab, after this erase read the device copy: its own erase to the same epoch, then token A on again.
+      const tab = createEmptyFile({ deviceId: 'dev_tab', now: T(5) });
+      Object.assign(tab, { schemaVersion: 2, erasedRows: { fromEpoch: 1, ids: [] } });
+      tab.meta.eraseEpoch = 1;
+      tab.meta.erasedAt = T(5);
+      tab.reminderOptIn = row(A, 'active', 1, { provider: 'google-drive', updatedAt: '2026-12-01T00:00:00.000Z', lamport: 9 });
+      localStorage.setItem('health_roadmap_file_v2', JSON.stringify(tab));
+      return null;
+    });
+    const before = t.data.getEraseIdentity();
+    await t.data.deleteUserData();
+    expect(t.data.getEraseIdentity()).not.toBe(before); // held in this browser for a retry
+    const device = JSON.parse(localStorage.getItem('health_roadmap_file_v2')!) as RoadmapFile;
+    expect(statusOf(device.reminderOptIn)).toEqual({ [A]: 'active' });
     expect(t.cancels()).toEqual([]);
   });
 

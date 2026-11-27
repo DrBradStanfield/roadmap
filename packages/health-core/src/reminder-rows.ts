@@ -42,7 +42,9 @@ export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileRem
   const rows = mergeByKey(rowsOf(local), rowsOf(remote), (row) => row.token);
   // Remote first: an exact tie keeps the remote object, as `pickNewerOptional` did.
   const stored = [remote, local].flatMap((o) => (o ? [ownRow(o)] : [])).concat(rows).reduce(newer);
-  const tokens = rows.filter((row) => row.token !== stored.token);
+  // A nested row needs a string address to survive migrate: one that had none
+  // keeps its token with an empty address, which the control names as none (review R6).
+  const tokens = rows.filter((row) => row.token !== stored.token).map((row) => (typeof row.email === 'string' ? row : { ...row, email: '' }));
   return tokens.length > 0 ? { ...stored, tokens } : stored;
 }
 

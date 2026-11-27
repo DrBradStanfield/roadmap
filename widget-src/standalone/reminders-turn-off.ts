@@ -3,9 +3,10 @@
  *
  * One named state, changed only through the pure `turnOffTransition`;
  * `cancelReminders` below sends the events and runs the calls.
- * - posting: a cancel is out for every token read, active rows first (the
- *   route is idempotent, so a token already off costs nothing). Each answer
- *   moves its token from `owed` to `landed`, or records why it failed.
+ * - posting: a cancel goes for every token read, one at a time, active rows
+ *   first (the route is idempotent, so a token already off costs nothing).
+ *   Each answer moves its token from `owed` to `landed`, or records why it
+ *   failed; `stopped` (the erase moved before the next cancel) drops the rest.
  * - writing: every answer is in; the landed tokens' cancelled rows are
  *   written in one edit, each only if its row is unchanged since the read.
  * - ended: the words to show, if any, and the provider to count, if a row
@@ -30,6 +31,8 @@ export type TurnOffEvent =
   | { type: 'posted'; read: ReminderTokenRow[] }
   /** A cancel answered; `failure` is its words when it did not land. */
   | { type: 'answered'; token: string; failure: string | null }
+  /** The record's erase moved before the next cancel left: none of the owed go, for these words (US-11 AC4b). */
+  | { type: 'stopped'; refused: string }
   /** The edit ran: the tokens whose rows it wrote, or why the record refused it. */
   | { type: 'written'; wrote: string[]; refused: string | null };
 
@@ -56,6 +59,9 @@ export function turnOffTransition(state: TurnOff, event: TurnOffEvent): TurnOff 
       const wasActive = state.read.some((row) => row.token === event.token && row.status === 'active');
       return settled({ ...state, owed, failure: state.failure ?? (wasActive ? event.failure : null) });
     }
+    case 'stopped':
+      // What already landed is still written (and refused there); nothing else leaves.
+      return state.kind === 'posting' ? settled({ ...state, owed: [], failure: event.refused }) : state;
     case 'written': {
       if (state.kind !== 'writing') return state;
       if (event.refused !== null) return { kind: 'ended', error: event.refused, counts: null };
@@ -107,13 +113,18 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
   const proofs = new Map<Provider, string | null>(
     await Promise.all(providers.map(async (p) => [p, keepalive ? null : await cancelProofFor(p)] as const)),
   );
-  // A write that would be refused is refused before any POST, so no row is
-  // cancelled under a switch that stays on (US-11 AC4b, lead S59b).
-  if (!stillShown(erase)) throw new Error(refusedWhy(erase));
   // One at a time, active rows first: the route takes about 20 requests a
   // minute from one address, so the rows that matter land first, and a
   // refused one stays on for the next Turn off (US-17 AC19).
+  let posted = 0;
   for (const { token, provider } of read) {
+    // A write that would be refused is refused before its POST, so no row is cancelled under a switch
+    // that stays on (US-11 AC4b, lead S59b); checked before each, so an erase begun meanwhile stops the rest (review R4).
+    if (!stillShown(erase)) {
+      state = turnOffTransition(state, { type: 'stopped', refused: refusedWhy(erase) });
+      break;
+    }
+    posted += 1;
     const failure = await postCancel(token, proofs.get(provider) ?? null, keepalive).then(
       (res) => (res.ok ? null : `Could not turn reminders off (${res.status}). Please retry.`),
       (error: unknown) => (error instanceof Error ? error.message : String(error)),
@@ -121,7 +132,7 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
     state = turnOffTransition(state, { type: 'answered', token, failure });
   }
   // How often a Turn off reaches more than one token, landed or not: counts only (US-17 AC19).
-  if (count && read.length > 1) trackProductEvent('reminder_cancel_many', { provider: closedProvider(read[0].provider), count: read.length });
+  if (count && posted > 1) trackProductEvent('reminder_cancel_many', { provider: closedProvider(read[0].provider), count: posted });
   if (state.kind === 'writing') {
     const landed = state.landed;
     // Only rows nobody changed while the cancels were out: a later decision

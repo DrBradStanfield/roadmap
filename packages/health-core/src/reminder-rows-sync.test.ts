@@ -152,3 +152,20 @@ describe('US-17 AC19 (review C1): an active row with no address string', () => {
     expect(() => visibleContentOf(file)).not.toThrow();
   });
 });
+
+describe('US-17 AC19 (review R6): an addressless active row moved beneath a newer row keeps its token', () => {
+  it('merge, serialise and migrate keep it active, with an empty address, so it can still be cancelled', async () => {
+    const { mergeFiles } = await import('./merge');
+    const { migrateFile } = await import('./migrate');
+    const { activeAddresses, rowsOf, shownOptIn } = await import('./reminder-rows');
+    const ctx = { deviceId: 'dev', now: NOW };
+    const a = createEmptyFile({ deviceId: 'a', now: NOW });
+    a.reminderOptIn = { ...row('token-a', 'active', '2026-10-21T10:00:00.000Z'), email: null as unknown as string };
+    const b = createEmptyFile({ deviceId: 'b', now: NOW });
+    b.reminderOptIn = row('token-b', 'cancelled', '2026-10-21T11:00:00.000Z');
+    const reopened = migrateFile(JSON.parse(JSON.stringify(mergeFiles(a, b, ctx))), ctx);
+    expect(rowsOf(reopened.reminderOptIn).map((r) => [r.token, r.status, r.email])).toEqual([['token-a', 'active', ''], ['token-b', 'cancelled', 'token-b@example.test']]);
+    expect(shownOptIn(reopened)?.token).toBe('token-a'); // the control reads on, naming no address
+    expect(activeAddresses(reopened)).toEqual([]);
+  });
+});

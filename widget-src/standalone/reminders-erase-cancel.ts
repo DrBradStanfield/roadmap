@@ -78,9 +78,9 @@ export function eraseCancelTransition(state: EraseCancel, event: EraseCancelEven
  *  row of the record holds it active once the erase stands, nested or not.
  *  That one survived the erase's save (another device erased to the same
  *  epoch, then turned reminders on), so it is live consent, not a pre-erase row. */
-export function toCancel(state: EraseCancel, standing: FileReminderOptIn | undefined): { token: string; idToken: string | null }[] {
+export function toCancel(state: EraseCancel, standing: (FileReminderOptIn | undefined)[]): { token: string; idToken: string | null }[] {
   if (state.kind !== 'watching') return [];
-  const live = new Set(rowsOf(standing).filter((row) => row.status === 'active').map((row) => row.token));
+  const live = new Set(standing.flatMap(rowsOf).filter((row) => row.status === 'active').map((row) => row.token));
   return state.cancels.filter(({ token }) => !live.has(token));
 }
 

@@ -366,7 +366,9 @@ export async function readDocumentFile(fileRef: string): Promise<Blob | null> {
  * inside the erase, before the swap, and returns the step that sends it
  * (commit), run only once the erase stands (US-11 AC4c).
  */
-type EraseCommit = (read: FileReminderOptIn[]) => Promise<void>;
+/** `read`: every opt-in the erase read up to its swap; `landed`: the opt-in of the copy that took its write, as read back (US-11 AC15). */
+export type EraseSeen = { read: FileReminderOptIn[]; landed: FileReminderOptIn | undefined };
+type EraseCommit = (seen: EraseSeen) => Promise<void>;
 let preEraseHook: (() => Promise<EraseCommit | null>) | null = null;
 export function setPreEraseHook(fn: () => Promise<EraseCommit | null>): void {
   preEraseHook = fn;
@@ -396,16 +398,17 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
   const prepare = preEraseHook;
   let commit = null as EraseCommit | null;
   // Every opt-in the erase read, handed over at its swap (US-11 AC15); memory only.
-  let read: FileReminderOptIn[] = [];
+  const seen: EraseSeen = { read: [], landed: undefined };
   const before = store.eraseIdentity;
   const { chatErased, ...result } = await store.deleteAllData({
     teardown: prepare ? async () => { commit = await prepare(); } : undefined,
     chat,
-    swapping: (optIns) => { read = optIns; },
+    swapping: (optIns) => { seen.read = optIns; },
+    landed: (optIn) => { seen.landed = optIn; },
   });
   // The erased copy stands, landed or held for a retry (useErase's signal): only
   // then does the server step run, once. A refused erase cancels nothing (S59).
-  if (store.eraseIdentity !== before) await commit?.(read);
+  if (store.eraseIdentity !== before) await commit?.(seen);
   const ran = step as EraseChatStep | null; // set in the closures above, which TS's narrowing does not see
   return { ...result, chat: ran && (chatErased ? 'erased' : ran) };
 }

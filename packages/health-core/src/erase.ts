@@ -19,10 +19,12 @@ export interface EraseInputs {
   /** On a cloud, the device copy where failed saves wait; null when there is
    *  none or it could not be read into a record. */
   device: RoadmapFile | null;
+  /** The opt-in this copy held as the erase began, before any merge it took in meanwhile. */
+  began?: RoadmapFile['reminderOptIn'];
   ctx: SyncContext;
 }
 
-export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): RoadmapFile {
+export function buildErasedFile({ stored, own, device, began, ctx }: EraseInputs): RoadmapFile {
   // Bump the erase epoch so the empty file BEATS the merge — persist goes
   // through read-merge-write, whose never-lose-data semantics would otherwise
   // resurrect every record from the stored copy (and any other device's).
@@ -58,8 +60,8 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   // the device file (US-11 AC4). Any of them turns reminders off; the newest
   // stamp only picks which provider the cancelled opt-in names.
   // Each object's own row, its other tokens' list left out of the tie-break (US-17 AC19).
-  const priorProvider = [stored, device].reduce(
-    (newest, file) => pickNewerOptional(newest, file?.reminderOptIn && ownRow(file.reminderOptIn)),
+  const priorProvider = [stored?.reminderOptIn, device?.reminderOptIn, began].reduce(
+    (newest, optIn) => pickNewerOptional(newest, optIn && ownRow(optIn)),
     own.reminderOptIn && ownRow(own.reminderOptIn),
   )?.provider ?? null;
   // WHEN, beside WHICH: read only by a copy that missed an earlier erase

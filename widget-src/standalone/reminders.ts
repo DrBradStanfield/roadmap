@@ -35,6 +35,7 @@ import {
   isKnownMinorNow,
   setReminderRows,
 } from '../src/lib/roadmap-data';
+import type { EraseSeen } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
 import { eraseCancelState, stepEraseCancel, toCancel } from './reminders-erase-cancel';
 import { cancelProofFor, post, postCancel } from './reminders-post';
@@ -355,7 +356,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
  * reminders. Registered as a hook by the standalone entry, because `src/`
  * (where the store lives) must never import `standalone/`.
  */
-export async function cancelRemindersForErase(): Promise<(read?: FileReminderOptIn[]) => Promise<void>> {
+export async function cancelRemindersForErase(): Promise<(seen?: EraseSeen) => Promise<void>> {
   stepEraseCancel({ type: 'prepared', at: getEraseIdentity() });
   try {
     const rows = rowsOf(getReminderOptIn());
@@ -366,18 +367,19 @@ export async function cancelRemindersForErase(): Promise<(read?: FileReminderOpt
   } catch {
     stepEraseCancel({ type: 'failed' }); // what failed may quote the token or proof: nothing of it is kept
   }
-  // `read`: every opt-in the erase read, up to its swap (US-11 AC15).
-  return async (read: FileReminderOptIn[] = []) => {
+  // `seen.read`: every opt-in the erase read, up to its swap; `seen.landed`: the copy that took its write (US-11 AC15).
+  return async ({ read, landed }: EraseSeen = { read: [], landed: undefined }) => {
     // An erase leaves no reminder token on the device, not even a cancelled one.
     safeRemoveItem(SWITCH_CANCELLED_KEY);
     stepEraseCancel({ type: 'read', rows: read.flatMap(rowsOf) });
     const held = eraseCancelState();
     stepEraseCancel({ type: 'committed' });
-    // One at a time, within the route's per-address limit as far as it goes (US-11 AC15).
-    const failed: (string | null)[] = held.kind === 'unprepared' ? ['unprepared'] : [];
-    for (const { token, idToken } of held.kind === 'unprepared' ? [] : toCancel(held, getReminderOptIn())) {
-      failed.push(await postCancel(token, idToken, true).then((res) => (res.ok ? null : String(res.status)), () => 'unsent'));
-    }
+    // Every cancel leaves at once, keepalive, so a tab closed after the first still sends the rest
+    // (review R3); past the route's per-address rate the rest are refused and reported (US-11 AC15).
+    // A token still active where the erase stands, the copy that took the write or this one, is spared.
+    const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(toCancel(held, [landed, getReminderOptIn()]).map(
+      ({ token, idToken }) => postCancel(token, idToken, true).then((res) => (res.ok ? null : String(res.status)), () => 'unsent'),
+    ));
     for (const status of failed) {
       if (status) Sentry.captureException(new Error(`Reminder row delete failed (${status}).`), { tags: { area: 'reminders', op: 'erase-cancel' } });
     }
