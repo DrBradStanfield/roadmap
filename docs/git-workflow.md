@@ -305,6 +305,9 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    checkpoint's Deploy, which starts only after any running Deploy finishes (deploy.yml's later jobs check out
    main by name). If CI fails, find the PR by halves (rebuild the batch without half, re-run) rather than re-running
    each PR alone.
+6. **Our own held PRs batch too** (2026-11-27, PR 2249). When held PRs conflict with each other only in a shared
+   ledger file, build one batch PR rather than merging them one by one. A batch that includes Swift gets one
+   combined simulator run; if main's engine inputs move before it merges, rerun the unit tests only.
 
 Rough cost (2026-11-04): one PR at a time paid about 9 min of CI, 8 min of local tests and its own review and
 deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run and one review round.

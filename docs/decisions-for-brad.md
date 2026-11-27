@@ -41,8 +41,9 @@ issue, and nothing private.
 
 ### Waiting on your own yes
 
-- Nothing waits today. Checked 2026-11-27: engine releases 202611262054 and 202611270239 were signed in CI, and no
-  Engine release run waits at its signing step.
+- iPhone build 15 (version 0.3), archived 27 Nov from 511eb0b10, waits for your TestFlight upload.
+- No engine release waits. Checked 2026-11-27: engine releases 202611262054, 202611270239 and 202611270756 were
+  signed in CI, and no Engine release run waits at its signing step.
 
 ## Decided
 
@@ -60,8 +61,17 @@ issue, and nothing private.
 - Reminder opt-ins merge per token, "option B": "just do option B now. that's the proper fix". The reminders control
   shows every active address; one Turn off cancels them all; a schedule change goes only to the newest address; an
   erase reaches the rows of the epoch it erased. Design of record:
-  [drafts/r9-optin-cancel-merge-design.md](drafts/r9-optin-cancel-merge-design.md) (PRs 2215 and 2220, merged). The
-  build is in review, not merged: PRs 2221 and 2230.
+  [drafts/r9-optin-cancel-merge-design.md](drafts/r9-optin-cancel-merge-design.md) (PRs 2215 and 2220, merged). Built
+  and live the same day: PR 2230, which carries PR 2221, merged as 9b90e9aaa (US-17 AC19, US-11 AC15); Deploy
+  45959526193 and engine release 45961796099 green.
+- iPhone build 15 (version 0.3) was archived on 27 Nov from 511eb0b10, the merged tour PR 2209. It waits for your
+  TestFlight upload; TestFlight only.
+- The feedback form's hidden field (contributor PR 2235), the owner's ruling: delete the field rather than make it
+  fire. A filled hidden field would refuse a real person's message with no way for them to clear it, while a direct
+  post simply leaves the field out. Abuse stays bounded by the signed proxy and the per-address limit. Not built
+  yet; PR 2235 is open.
+- The reminders error line asked of contributor PR 1968: "We could not read the email address on your cloud storage
+  account. Type the address reminders should go to." PR 1968 is open.
 - CI tidying (PR 2217): weighted test shards are dropped, since earlier speed work brought the shards close. The
   Pages smoke check stays inline in the deploy workflow: a gate's definition stays in an owner-only file.
 
