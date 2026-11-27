@@ -23,7 +23,7 @@
     "schemaVersion": {
       "type": "integer",
       "enum": [1, 2, 3],
-      "description": "On-disk shape version. A file with a HIGHER version than the reading app understands must not be rewritten — migrate.ts throws SchemaTooNewError rather than downgrade it. 3 marks a file that holds a core blood row (a labValues row with `core: true`, any status; US-66 AC15); 2 a file that carries `erasedRows` and no core row (US-09 AC23); every other file is 1. A version is never lowered."
+      "description": "On-disk shape version. A file with a HIGHER version than the reading app understands must not be rewritten — migrate.ts throws SchemaTooNewError rather than downgrade it. 3 marks a file that holds a core blood row (a labValues row with `core: true`, any status; US-66 AC15); 2 a file with no core row that carries `erasedRows` (US-09 AC23) or a `reminderOptIn.tokens` row (US-17 AC19); every other file is 1. A version is never lowered: an already higher version stays higher."
     },
     "meta": { "$ref": "#/$defs/RoadmapFileMeta" },
     "profile": { "$ref": "#/$defs/RoadmapProfile" },
