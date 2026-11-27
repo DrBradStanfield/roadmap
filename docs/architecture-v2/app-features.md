@@ -42,6 +42,8 @@ sequenceDiagram
 
 The email is *provider-verified*, never client-typed — the only address anyone can target is their own. Two tokens, never interchanged: the powerful cloud token stays on the device; a per-subscription capability token (stored raw, because the unsubscribe link must carry it) controls only the reminder schedule. A daily cron emails what's due; one-click unsubscribe (RFC 8058) deletes the row.
 
+In the record, `reminderOptIn` keeps one row per token (US-17 AC19, [reminder-rows.ts](../../packages/health-core/src/reminder-rows.ts)): the object is the newest row, and `tokens` holds the newest row of every other token. The merge keeps the newest row per token, in any order. The control names every active address, and one Turn off cancels them all. An erase leaves a cancelled marker with no token (US-11 AC15).
+
 Route [api.reminders-v2.ts](../../app/routes/api.reminders-v2.ts); cron [reminder-v2-cron.server.ts](../../app/lib/reminder-v2-cron.server.ts) (lock `reminder_v2_cron`); table `reminder_optin_v2`. Group cooldowns: screening 90 d / blood test 180 d / medication review 365 d. The vocabulary is "opt-in", never "subscription" (which means paid products in this business).
 
 <a id="lead-capture"></a>

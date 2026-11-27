@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H431,blood-test grid,"One day check where the record saves, covering every route to a day that has not happened",lead,not started,"Filed 2026-11-27 after PR 2232 (US-03 AC1a), which stops the grid New column saving under a day that has not happened. Each route checks its own day today. One check where the record saves would cover them all. Record-save class: needs the owner's yes on a design first.",,yes

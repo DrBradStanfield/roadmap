@@ -1,5 +1,7 @@
 # R9: how reminder opt-ins and cancels merge (design of record)
 
+Status: built in PRs 2221 and 2230 (merged 27 Nov 2026, US-17 AC19, US-11 AC15); this note is history.
+
 Evidence: main at 5c3c5ae65 (27 Nov); amendments checked at 0065415e7. Leads: H115 (this root fix), H126 (R1),
 A4 (R19). Paths under packages/health-core/src unless named. Reviewed three times; this is the design the build follows.
 
