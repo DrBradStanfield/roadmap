@@ -167,6 +167,30 @@ that auto-ship may merge. The PR body or final report lists their numbers. Dropp
 stated reason (disputed, with evidence). Open gap (Brad's call): on a PR auto-ship merges, a note the
 CI reviewer posts after the PR opens has no session left to file it; it stays in that PR comment.
 
+## Lessons on review rounds (2026-11-27)
+
+Guidance from the 27 Nov reviews (PRs 2218, 2222, 2226 and the R9 design note). It works inside the cap above
+and never extends it. CLAUDE.md's rule stands as written: "Review rounds capped: one round by class + one
+fix-scoped re-check, then `helper`, then Brad".
+
+1. **Use `--deep` where the stakes are.** Design notes, plans before code and the high-risk classes get Codex with
+   `--deep` (gpt-6.2-astra; `.claude/skills/codex-review/SKILL.md`, US-40 AC19).
+2. **When pass after pass finds a blocking issue, stop patching.** Get an independent diagnosis of the structure
+   (`helper`, or a fresh adversary asked about the shape, not the last finding). Prefer removing what the fix
+   added over adding a guard: in PR 2218 the fix that held deleted the refused phase and let the form alone
+   decide, and in PR 2226 it deleted the emptiness rule.
+3. **A deliberately partial fix ends with one question.** A fresh adversary is asked: "is anything worse than main
+   for a person?" The story's AC states what the fix leaves undone, in a Limit sentence (check 10 above).
+4. **A design summarised for a reviewer keeps its options and its limits.** A summary that drops the options not
+   chosen, or the cases the design does not cover, gets a review of a different design.
+5. **A test fake behaves like the real tool on what the code depends on**: which stream a status line is printed
+   on (the real CLI printed its login status on stderr, the fake on stdout), and whether output is written in one
+   piece before exit. A fake that differs there passes tests the real tool fails (PR 2222; both entries dated
+   2026-11-27 in docs/gotchas.md).
+6. **Review a PR's own changes with a three-dot range**: `git diff origin/main...HEAD`. A two-dot range
+   (`origin/main..HEAD` given to `git diff`) also shows main's newer work, reversed, as if the PR undid it.
+   `tools/codex-review.mjs --range` already diffs from the merge base for either form.
+
 ## Merge
 
 Claude is the only model that merges. That is an instruction, not a

@@ -2,6 +2,7 @@
 // picker.
 
 import { useRef } from 'react';
+import { localDay } from '@roadmap/health-core/merge';
 import { MONTHS_SHORT } from '../lib/constants';
 import { DAY_CONTROL_TEXT } from '@roadmap/health-core/upload-text';
 
@@ -58,6 +59,7 @@ export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel
       <input ref={ref} type="date" value={needsDay ? '' : picked ?? date} disabled={disabled}
              onChange={e => onChange(e.target.value)}
              className="bt-date-hidden-icon"
+             max={localDay(new Date())}
              aria-label={ariaLabel ?? 'Choose date'}/>
     </button>
   );

@@ -354,7 +354,7 @@ export const OUTPUTS = {
 export type ToolName = keyof typeof INPUTS;
 
 export function isToolName(name: string): name is ToolName {
-  return name in INPUTS;
+  return Object.prototype.hasOwnProperty.call(INPUTS, name); // own keys only: `toString` is not a tool (US-32 AC1a)
 }
 
 /**

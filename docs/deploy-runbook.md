@@ -27,6 +27,17 @@ output with `sed -n`, never `head`. The manual
 sequence below remains valid for local/emergency use; agents cannot trigger
 the workflow (auto-mode blocks production deploys — a human clicks Run).
 
+**A red Deploy run: read which step failed first** (2026-11-27; entries in docs/gotchas.md). Three failures seen
+that day, each fixed by running the Deploy again:
+- **The last step (closing the heads-up issue) fails on a GitHub 502.** Production is live and verified, but the
+  run is red. Close the heads-up issue by hand. No engine release follows a red run: run a fresh Deploy when the
+  phones need the engine (docs/git-workflow.md, "When an engine release is skipped").
+- **The Pages smoke's Playwright install fails on a 403 from the package server.** Nothing was deployed. Run the
+  Deploy again.
+- **The second Fly deploy (health-tool-edu) hangs until the job's time limit.** The run shows the deploy job as
+  cancelled. The storefront extensions and health-tool-app are deployed; whether edu took the new build is not
+  known, and the health gates and the live check never ran. Run the Deploy again; the gates and the live check then run.
+
 Full manual deploy (widget + Shopify extensions + backend):
 
 ```bash

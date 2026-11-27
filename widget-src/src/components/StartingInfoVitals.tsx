@@ -174,7 +174,7 @@ export function StartingInfoVitals({
   };
   const {
     holdsText,
-    draft, backfills, type, setDate, unitOf, expected, clashes, taken, settle, refusal,
+    draft, savable, backfills, type, setDate, unitOf, expected, clashes, taken, settle, refusal,
   } = useMatrixDraft<VitalsKey>(VITALS_DRAFT_KEY, { onScreen, rowsUnder, cellOf: key => (key === 'dia' ? 'sys' : key),
     legacyUnit: key => (key === 'weight' || key === 'waist' ? startUnitOf?.(FIELD_OF[key]) : undefined) });
   // No weight typed here while its row is hidden (the weight shows beside the
@@ -302,7 +302,7 @@ export function StartingInfoVitals({
   // clear one (US-03 AC3). A cell that cannot be saved stays in the draft,
   // with its error. A saved column's cell that is not on screen is not
   // committed (useMatrixDraft).
-  const cells = [...Object.entries(backfills), [null, draft.values] as const].flatMap(([column, typed]) =>
+  const cells = [...Object.entries(backfills), [null, savable] as const].flatMap(([column, typed]) =>
     vitalsCellsOf(typed, metric => typedUnit(column, metric)).filter(c => column === null || onScreen(column, c.keys[0])).map(c => ({
       ...c,
       column,
