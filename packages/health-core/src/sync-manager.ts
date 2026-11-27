@@ -77,11 +77,6 @@ export interface DocumentSpec<T extends SyncedFile> {
    *  right for health-record data; best-effort documents (chat history) can
    *  drop it and save a full-file transfer per save. */
   verify?: boolean;
-  /** After a write conflict or a lost write, the retry merges from the state
-   *  that attempt tried to write, so what its read taught it is kept; the
-   *  merge's erase gate still decides against a newer erase (the record, US-17
-   *  AC19). Unset, the retry merges from the save's input, as chat history does. */
-  carryMerged?: boolean;
 }
 
 export interface SaveResult<T> {
@@ -125,9 +120,7 @@ export class SyncManager<T extends SyncedFile> {
    * Persist `local`, merging in any concurrent remote changes. Returns the
    * merged file actually written (the new source of truth for this device).
    */
-  async save(input: T, signal?: AbortSignal): Promise<SaveResult<T>> {
-    // What the next attempt merges from (`carryMerged`).
-    let local = input;
+  async save(local: T, signal?: AbortSignal): Promise<SaveResult<T>> {
     let lastError: unknown;
     let mayHaveWritten = false;
     // The adapter's note on a landed write, kept for a failure that follows it.
@@ -149,10 +142,7 @@ export class SyncManager<T extends SyncedFile> {
           // A write that threw may still have landed (a lost answer, a 5xx): its adapter says so in
           // its outcome; one it did not name is marked, never rewrapped, so its words stay (lead S57).
           else afterWrite(error);
-          if (error instanceof ConflictError) { // remote moved (a lost write is one): re-read and merge again
-            if (this.doc.carryMerged) local = merged;
-            continue;
-          }
+          if (error instanceof ConflictError) continue; // remote moved — re-read & re-merge
           // This save's read answered before its write failed, so its words cannot say nothing was read (US-10 AC20).
           if (!mayHaveWritten && error instanceof StorageError) error.afterRead = true;
           throw error;

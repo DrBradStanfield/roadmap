@@ -10,7 +10,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ROADMAP_FILE_NAME, StorageError } from './adapter';
-import type { FileReminderOptIn, RoadmapFile } from './roadmap-file';
+import type { FileReminderOptIn, FileSupplement, RoadmapFile } from './roadmap-file';
 import { pickNewerOptional } from './merge';
 import { DriveAdapter } from './drive-rest';
 import { createEmptyFile, createMeasurement } from './roadmap-file';
@@ -400,7 +400,8 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     expect(drive.body.meta.eraseEpoch).toBe((base.meta.eraseEpoch ?? 0) + 1);
   });
 
-  it('a row this save learned only from its first read is kept when the retry merges again', async () => {
+  // Limit (US-17 AC19, US-10 AC6a): the retry merges the save's own input with the new read, as main does.
+  it('limit: a row this save learned only from its first read, which another writer then removed, is not written back', async () => {
     const plain = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
     const base = withOptIn({ ...plain, tokens: [optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z')] });
     const drive = new ControlledDrive(base, false); drive.install();
@@ -411,12 +412,11 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     // This device never saw token B: its copy holds the object alone, plus an edit.
     const saved = await manager('a').save(stampProfile(withOptIn(plain), { heightCm: 181 }, NOW));
     expect(saved.attempts).toBe(1);
-    expect(saved.file.reminderOptIn?.tokens?.map((r) => r.token)).toEqual(['token-b']);
-    expect(drive.body.reminderOptIn?.tokens?.map((r) => r.token)).toEqual(['token-b']);
+    expect(drive.body.reminderOptIn?.tokens).toBeUndefined();
     expect(drive.body.profile.heightCm).toBe(181);
   });
 
-  it('the same mechanism keeps a profile field this save learned only from its first read', async () => {
+  it('limit: the same holds for a profile field this save learned only from its first read', async () => {
     const base = stampProfile(seeded(), { birthYear: 1981 }, '2026-10-21T11:00:00.000Z');
     const drive = new ControlledDrive(base, false); drive.install();
     drive.clobberWith = seeded();
@@ -424,7 +424,7 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     drive.clobberOnce = true;
     const saved = await manager('a').save(stampProfile(seeded(), { heightCm: 181 }, NOW));
     expect(saved.attempts).toBe(1);
-    expect(drive.body.profile.birthYear).toBe(1981);
+    expect(drive.body.profile.birthYear).toBe(1980);
     expect(drive.body.profile.heightCm).toBe(181);
   });
 
@@ -438,7 +438,7 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     expect(drive.body.profile.heightCm).toBe(182);
   });
 
-  it('a cancel learned on the first read survives a write conflict (conditional store)', async () => {
+  it('limit: a cancel learned only on the first read is not written back after a write conflict (conditional store)', async () => {
     const cloud = new MemoryCloud();
     const cancelledA = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
     const first = withOptIn({ ...cancelledA, tokens: [optInRow('token-b', 'cancelled', '2026-10-21T10:30:00.000Z')] });
@@ -459,7 +459,36 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     const saved = await new SyncManager(store, 'a', ROADMAP_DOC, { now: () => NOW }).save(ours);
     expect(saved.attempts).toBe(1);
     const stored: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
-    expect(stored.reminderOptIn?.tokens).toEqual([optInRow('token-b', 'cancelled', '2026-10-21T10:30:00.000Z')]);
+    // This device's own older row is what the retry writes; the other writer dropped the cancel.
+    expect(stored.reminderOptIn?.tokens).toEqual([optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z')]);
+  });
+
+  it('US-09 AC23: a row the first merge set aside, which a concurrent erase never saw, survives the retry', async () => {
+    const supplement = (id: string, updatedAt: string): FileSupplement => ({
+      id, supplementKey: 'vitamin-d', supplementName: 'Vitamin D', doseValue: 1000, doseUnit: 'IU',
+      status: 'active', startedAt: '2026-10-01', updatedAt, lamport: 1,
+    });
+    // Another device added the same supplement under its own id, newer than this one.
+    const cloudCopy = { ...seeded(), supplements: [supplement('supp-cloud', '2026-10-21T11:00:00.000Z')] };
+    const cloud = new MemoryCloud();
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(cloudCopy), version: 1 });
+    const store = new MemoryAdapter(cloud);
+    const write = store.write.bind(store);
+    let raced = false;
+    store.write = async (...args: Parameters<MemoryAdapter['write']>) => {
+      if (!raced) {
+        raced = true;
+        // An erase that saw only the cloud copy lands before this conditional upload.
+        const erased = buildErasedFile({ stored: cloudCopy, own: cloudCopy, device: null, ctx: CTX });
+        cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(erased), version: 2 });
+      }
+      return write(...args);
+    };
+    const ours = { ...seeded(), supplements: [supplement('supp-local', '2026-10-21T10:00:00.000Z')] };
+    const saved = await new SyncManager(store, 'a', ROADMAP_DOC, { now: () => NOW }).save(ours);
+    expect(saved.attempts).toBe(1);
+    const stored: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+    expect(stored.supplements.map((s) => [s.id, s.status])).toEqual([['supp-local', 'active']]);
   });
 
   it('an old-code writer that drops the list in the window costs one retry, then the save settles', async () => {

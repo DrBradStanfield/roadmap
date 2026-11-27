@@ -49,7 +49,6 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
   fileName: ROADMAP_FILE_NAME,
   migrate: migrateRecord,
   merge: (local, base, ctx) => mergeFiles(local, base, ctx),
-  carryMerged: true,
   // The append-only, id-carrying arrays: rows here are never removed or
   // rewritten, so their ids are exactly what a write can be checked against
   // afterwards. (`recommendationSnapshots` are keyed by date, not id, and are
