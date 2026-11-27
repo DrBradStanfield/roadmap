@@ -47,6 +47,17 @@ describe('visibleContentOf', () => {
     expect(visibleContentOf(mergeFiles(a, createEmptyFile(ctx), ctx))).toBe(visibleContentOf(a));
   });
 
+  it('leaves out a medication row’s own clocks, and sees a changed dose (US-34 AC3)', () => {
+    // The same row under other clocks: nothing a person sees has changed.
+    const a = file();
+    a.medications.push({ id: 'm1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', updatedAt: ctx.now, lamport: 1 });
+    const b = structuredClone(a);
+    Object.assign(b.medications[0], { updatedAt: '2026-10-22T00:00:00.000Z', lamport: 42 });
+    expect(visibleContentOf(b)).toBe(visibleContentOf(a));
+    b.medications[0].doseValue = 40;
+    expect(visibleContentOf(b)).not.toBe(visibleContentOf(a));
+  });
+
   it('sees an erase that leaves an empty record empty (US-16 AC2a)', () => {
     const before = file();
     const after = structuredClone(before);
