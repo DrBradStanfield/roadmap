@@ -148,6 +148,7 @@ describe('US-17 AC19: what counts as a row', () => {
         { ...row('x', 'active', 0), email: { address: 'x@example.test' } },
         { ...row('x', 'active', 0), status: 'paused' },
         { ...row('x', 'active', 0), provider: 3 },
+        { ...row('token-z', 'active', 2), provider: 'free text' },
         'not a row',
         { ...row('token-c', 'cancelled', 0), tokens: [row('token-d', 'active', 0)] },
         unstamped,
@@ -164,6 +165,12 @@ describe('US-17 AC19: what counts as a row', () => {
     ]);
     const empty = file({ ...row('token-a', 'active', 0), tokens: [{ ...row('x', 'active', 0), token: '' }] });
     expect(migrateFile(JSON.parse(JSON.stringify(empty)), CTX).reminderOptIn).not.toHaveProperty('tokens');
+    // A row naming a provider the app does not write is dropped, so no merge can make it the stored object.
+    const free = file({ ...row('token-a', 'active', 0), tokens: [{ ...row('token-z', 'active', 2), provider: 'free text' } as unknown as ReminderTokenRow] });
+    free.meta.updatedAt = T[2];
+    const merged = merge(migrateFile(JSON.parse(JSON.stringify(free)), CTX), file(row('token-a', 'active', 0)));
+    expect(merged.reminderOptIn?.token).toBe('token-a');
+    expect(JSON.stringify(merged)).not.toContain('free text');
   });
 });
 
@@ -202,7 +209,7 @@ describe('US-17 AC19: the published schema describes the rows (US-29)', () => {
     const merged = merge(file(row('token-a', 'active', 0)), file(row('token-b', 'cancelled', 1)));
     expect(valid(merged)).toBe(true);
     expect(valid({ ...merged, schemaVersion: 1 })).toBe(false);
-    for (const bad of [{ token: '' }, { token: 'x'.repeat(257) }, { status: 'paused' }, { email: { a: 1 } }, { provider: 3 }]) {
+    for (const bad of [{ token: '' }, { token: 'x'.repeat(257) }, { status: 'paused' }, { email: { a: 1 } }, { provider: 3 }, { provider: 'free text' }]) {
       const opt = { ...merged.reminderOptIn!, tokens: [{ ...merged.reminderOptIn!.tokens![0], ...bad }] };
       expect(valid({ ...merged, reminderOptIn: opt }), JSON.stringify(bad)).toBe(false);
     }

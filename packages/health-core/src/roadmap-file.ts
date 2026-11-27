@@ -252,8 +252,11 @@ export interface ReminderTokenRow extends SyncStamp {
   token: string;
   /** Provider-verified destination address (display + change-detection only). */
   email: string;
-  provider: 'google-drive' | 'dropbox' | 'github';
+  provider: (typeof REMINDER_PROVIDERS)[number];
 }
+
+/** The clouds an opt-in names: the only providers a reminders writer stores. */
+export const REMINDER_PROVIDERS = ['google-drive', 'dropbox', 'github'] as const;
 
 /**
  * What the erases removed, by row (US-09 AC23). The merge and `migrate` drop

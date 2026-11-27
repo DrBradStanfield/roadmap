@@ -441,7 +441,7 @@
               "status": { "enum": ["active", "cancelled"] },
               "token": { "type": "string", "minLength": 1, "maxLength": 256 },
               "email": { "type": "string" },
-              "provider": { "type": "string" }
+              "provider": { "enum": ["google-drive", "dropbox", "github"] }
             }
           }
         }

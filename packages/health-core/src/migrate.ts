@@ -37,6 +37,7 @@ import {
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   recordSchemaVersion,
+  REMINDER_PROVIDERS,
   type ErasedRows,
   type FileLabValue,
   type FileMeasurement,
@@ -187,10 +188,11 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
 }
 
 /** A nested opt-in row worth keeping: a token of 1-256 characters, a known
- *  status, and a string address and provider (US-17 AC19). */
+ *  status, a string address and a provider the app writes (US-17 AC19). */
 function isTokenRow(row: unknown): row is Record<string, unknown> {
   return isObject(row) && typeof row.token === 'string' && row.token.length >= 1 && row.token.length <= 256
-    && (row.status === 'active' || row.status === 'cancelled') && typeof row.email === 'string' && typeof row.provider === 'string';
+    && (row.status === 'active' || row.status === 'cancelled') && typeof row.email === 'string'
+    && (REMINDER_PROVIDERS as readonly unknown[]).includes(row.provider);
 }
 
 /** The opt-in and its `tokens` rows (US-17 AC19): each row's stamp sanitized
