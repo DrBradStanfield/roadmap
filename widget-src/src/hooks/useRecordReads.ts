@@ -26,7 +26,7 @@ export type ShownCopy = () => Pick<LatestMeasurementsResult, 'inputs' | 'medicat
 
 /**
  * The page's reads of the record (US-21, US-34, US-15 AC10): the values the
- * plan shows, every measurement for both matrices, and the lab rows. Each
+ * plan shows, every vital and core blood test for both matrices, and the lab rows. Each
  * read replaces the screen's copy (hooks/useRecordState) and keeps the chat
  * mirror in step. Every save and correction ends in `reloadValues`, so
  * nothing reads a patched copy that could disagree with the record.

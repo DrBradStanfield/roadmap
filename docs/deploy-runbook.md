@@ -180,7 +180,7 @@ EDU app serves `drstanfield.com/pages/roadmap` (education). The same bundle ship
 to both — deploy twice, see "Shopify app configs".**)
 
 - **`VITE_LOCAL_FIRST`** — marks every local-first build: the user's plan lives
-  client-side (their cloud), so chat sends it as context, legacy login-sync
+  client-side (their cloud), so chat sends it as context, legacy sign-in sync
   server calls are neutralized, etc.
 - **`VITE_SHOPIFY_SURFACE`** — marks the Shopify-storefront v2 build ONLY (prod +
   edu apps; never Pages): gates features that need Brad's server via the Shopify app proxy.
