@@ -14,6 +14,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MCP_TOOL_NAMES } from '../packages/health-core/src/product-events';
 import { REPO_PUBLIC } from '../packages/health-core/src/plan';
+import { escapeHtml } from '../tools/escape-html.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(here, 'build-guide-html.mjs');
@@ -102,16 +103,18 @@ describe('build-guide-html.mjs — links (US-38 AC7)', () => {
   const kept = [
     ['https://example.com/a?b=1&c=2', 'https://example.com/a?b=1&amp;c=2'], ['http://example.com/', 'http://example.com/'],
     ['mailto:someone@example.com', 'mailto:someone@example.com'], ['/blogs/guides/scratch#steps', '/blogs/guides/scratch#steps'],
-    ['#steps', '#steps'],
+    ['#steps', '#steps'], ['HTTPS://example.com/', 'HTTPS://example.com/'],
   ];
-  const paragraphs = (urls: string[]) =>
-    build(FRONT_MATTER + urls.map((u, i) => `Case ${i}: [go](${u}).`).join('\n\n')).html.match(/<p>Case[\s\S]*?<\/p>/g) ?? [];
+  const paragraphs = (urls: string[], label = 'go') =>
+    build(FRONT_MATTER + urls.map((u, i) => `Case ${i}: [${label}](${u}).`).join('\n\n')).html.match(/<p>Case[\s\S]*?<\/p>/g) ?? [];
 
   it('US-38 AC7: renders any other link as its plain text, so nothing runs on click', () => {
     const out = paragraphs(refused);
     expect(out).toHaveLength(refused.length);
     out.forEach((p) => expect(p).not.toMatch(/<a\b|href/));
-    expect(out[0]).toBe('<p>Case 0: [go](javascript:location=document.domain).</p>');
+    expect(out).toEqual(refused.map((u, i) => `<p>Case ${i}: [go](${escapeHtml(u)}).</p>`));
+    // A site-path label does not make a link safe: only the url is checked.
+    expect(paragraphs(['javascript:x'], '/docs')).toEqual(['<p>Case 0: [/docs](javascript:x).</p>']);
   });
 
   it('US-38 AC7: keeps web, mail, site-path and anchor links exactly as before', () => {
