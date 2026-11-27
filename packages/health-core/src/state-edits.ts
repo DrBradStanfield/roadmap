@@ -26,7 +26,8 @@ import { screeningRange } from './mappings';
 import { laterStamp, stampFields } from './merge';
 import { commaQuestion, parseLocalisedNumber } from './parseNumber';
 import { newId, stampUpdatedAt } from './record-edits';
-import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, RoadmapFile, RoadmapProfile } from './roadmap-file';
+import { mergeOptIn, rowsOf } from './reminder-rows';
+import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, ReminderTokenRow, RoadmapFile, RoadmapProfile } from './roadmap-file';
 
 export interface StateEditResult {
   /** A new file. The one passed in is untouched. */
@@ -153,4 +154,18 @@ export function setScreening(file: RoadmapFile, screeningKey: string, value: str
 export function setReminderOptIn(file: RoadmapFile, fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, now: string): RoadmapFile {
   const reminderOptIn = { ...fields, updatedAt: laterStamp(now, file.reminderOptIn?.updatedAt), lamport: (file.reminderOptIn?.lamport ?? 0) + 1 };
   return stampUpdatedAt({ ...file, reminderOptIn }, now);
+}
+
+/**
+ * Write one token's opt-in row (US-17 AC19), keeping every other token's row.
+ * Stamped past the stored object's clock (the erase marker's included) and
+ * every row's, so the row written is also the stored object. A cancelled row
+ * keeps its address: blank, a stale active row would win a clock tie.
+ */
+export function setReminderRow(file: RoadmapFile, fields: Omit<ReminderTokenRow, 'updatedAt' | 'lamport'>, now: string): RoadmapFile {
+  const optIn = file.reminderOptIn;
+  const clocks = optIn ? [optIn, ...rowsOf(optIn)] : [];
+  const updatedAt = clocks.reduce((at, row) => laterStamp(at, row.updatedAt), now);
+  const lamport = Math.max(0, ...clocks.map((row) => row.lamport ?? 0)) + 1;
+  return stampUpdatedAt({ ...file, reminderOptIn: mergeOptIn(optIn, { ...fields, updatedAt, lamport }) }, now);
 }

@@ -186,6 +186,25 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
   } as T;
 }
 
+/** A nested opt-in row worth keeping: a token of 1-256 characters, a known
+ *  status, and a string address and provider (US-17 AC19). */
+function isTokenRow(row: unknown): row is Record<string, unknown> {
+  return isObject(row) && typeof row.token === 'string' && row.token.length >= 1 && row.token.length <= 256
+    && (row.status === 'active' || row.status === 'cancelled') && typeof row.email === 'string' && typeof row.provider === 'string';
+}
+
+/** The opt-in and its `tokens` rows (US-17 AC19): each row's stamp sanitized
+ *  as the object's, its own `tokens` dropped; any other row is dropped, and so
+ *  is a list left empty. */
+function optInOf(optIn: Record<string, unknown>, anchor: string): Record<string, unknown> {
+  const { tokens, ...own } = optIn;
+  const rows = (Array.isArray(tokens) ? tokens : [])
+    .filter(isTokenRow)
+    // A row with no stamp is an unknown time, `""`, as a singleton's is.
+    .map(({ tokens: _nested, ...row }) => sanitizeStamp('updatedAt' in row ? row : { ...row, updatedAt: '' }, anchor));
+  return { ...sanitizeStamp(own, anchor), ...(rows.length > 0 ? { tokens: rows } : null) };
+}
+
 /** The printed row's id plus this suffix, so every device computes the SAME id
  *  for the same conversion and `mergeFiles` folds their copies into one row. */
 const SI_SUFFIX = '#si';
@@ -354,7 +373,7 @@ export function migrateFile(
     reminderPreferences: stamped(raw.reminderPreferences),
     recommendationSnapshots: rowsOf(raw.recommendationSnapshots),
     // Absent stays absent — present-beats-absent is how a cancellation wins.
-    ...(isObject(raw.reminderOptIn) ? { reminderOptIn: sanitizeStamp(raw.reminderOptIn, anchor) } : null),
+    ...(isObject(raw.reminderOptIn) ? { reminderOptIn: optInOf(raw.reminderOptIn, anchor) } : null),
   } as RoadmapFile;
   // Every reader drops the listed rows, so the widget, `read_record` and the
   // CLI agree on what the record holds.

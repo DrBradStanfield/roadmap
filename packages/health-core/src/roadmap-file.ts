@@ -46,15 +46,22 @@ export const CURRENT_SCHEMA_VERSION = 3;
 
 /**
  * The version a file is stamped with (US-66 AC15): its stated version as an
- * integer in [1, CURRENT], raised to 2 when it carries `erasedRows` and to 3
- * when it holds a core row. Never lowers a version. Every migrate, merge,
- * erase and edit stamps through it, so no writer saves a core row below 3.
+ * integer in [1, CURRENT], raised to 2 when it carries `erasedRows` or opt-in
+ * `tokens` rows, and to 3 when it holds a core row. Never lowers a version.
+ * Every migrate, merge, erase and edit stamps through it, so no writer saves a
+ * core row below 3. A reader from before version 2 strips only the opt-in's
+ * own `token` from what an agent sees, so it must refuse a file with
+ * `tokens` (US-17 AC19).
  */
-export function recordSchemaVersion(file: { schemaVersion?: unknown; erasedRows?: unknown; labValues?: readonly unknown[] }): number {
+export function recordSchemaVersion(file: {
+  schemaVersion?: unknown; erasedRows?: unknown; labValues?: readonly unknown[]; reminderOptIn?: { tokens?: readonly unknown[] };
+}): number {
   const stated = file.schemaVersion;
   const base = typeof stated === 'number' && stated >= BASE_SCHEMA_VERSION ? Math.min(CURRENT_SCHEMA_VERSION, Math.floor(stated)) : BASE_SCHEMA_VERSION;
   const core = (file.labValues ?? []).some((row) => typeof row === 'object' && row !== null && (row as { core?: unknown }).core === true);
-  return Math.max(base, file.erasedRows ? ERASED_ROWS_SCHEMA_VERSION : BASE_SCHEMA_VERSION, core ? CORE_ROWS_SCHEMA_VERSION : BASE_SCHEMA_VERSION);
+  const tokens = file.reminderOptIn?.tokens;
+  const listed = file.erasedRows || (Array.isArray(tokens) && tokens.length > 0);
+  return Math.max(base, listed ? ERASED_ROWS_SCHEMA_VERSION : BASE_SCHEMA_VERSION, core ? CORE_ROWS_SCHEMA_VERSION : BASE_SCHEMA_VERSION);
 }
 
 /** Sync bookkeeping carried on every mutable record so merge can pick a winner. */
@@ -232,7 +239,14 @@ export interface FileReminderPreference extends SyncStamp {
  * flips `status` rather than deleting the object, so last-write-wins merge
  * propagates the cancel to every device (an absent field can't win a merge).
  */
-export interface FileReminderOptIn extends SyncStamp {
+export interface FileReminderOptIn extends ReminderTokenRow {
+  /** The newest row of every other token this record has held, sorted by
+   *  token; absent when there is none (US-17 AC19, reminder-rows.ts). */
+  tokens?: ReminderTokenRow[];
+}
+
+/** One token's opt-in row: the object's own fields and stamp, no `tokens`. */
+export interface ReminderTokenRow extends SyncStamp {
   status: 'active' | 'cancelled';
   /** Opaque server-issued capability token — manages ONLY the reminder schedule. */
   token: string;

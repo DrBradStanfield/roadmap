@@ -224,7 +224,8 @@ someone's medical history, or lose their data at the next device sync.
 11. **Deleting a document** means setting `deleted: true` on its row. A removed row comes
     straight back from any other device.
 12. **`reminderOptIn.token` is a capability secret.** Leave it where it is; never copy it
-    out of the file.
+    out of the file. So is every `token` in `reminderOptIn.tokens`, the rows of the
+    record's other tokens (US-17 AC19).
 13. **Never write `fieldStamps`** on `profile` or `screenings` (US-10 AC6). They say when
     each field was last written, so the merge can take each field's newest write
     instead of the newest whole object. To change a field by hand, change it, set that

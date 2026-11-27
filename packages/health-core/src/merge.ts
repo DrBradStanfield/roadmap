@@ -55,7 +55,6 @@ import {
   type FileMedication,
   type FileSupplement,
   type FileReminderPreference,
-  type FileReminderOptIn,
   type FileDocument,
   type FieldStamped,
   type RoadmapProfile,
@@ -65,7 +64,8 @@ import {
 } from './roadmap-file';
 import type { MeasurementStatus } from './validation';
 import { isFoldRow, labRowSlot, v2FormOf } from './core-rows';
-import { clockOf, cmpClock, cmpStored, cmpStr, dayOf, laterStamp, latestStamp, stampInstant, type Clock } from './record-time';
+import { clockOf, cmpClock, cmpStored, cmpStr, dayOf, laterStamp, latestStamp, mergeByKey, stampInstant, stampIsNewer, type Clock } from './record-time';
+import { mergeOptIn } from './reminder-rows';
 // The time and stamp primitives live in record-time.ts; these keep the old import paths working.
 export { cmpStr, dayOf, daysBetween, laterStamp, latestDayOnEarth, latestStamp, localDay, stampInstant } from './record-time';
 
@@ -270,31 +270,6 @@ function mergeSlotted<T extends SlottableRow>(
 
   out.sort((a, b) => cmpStr(a.id, b.id));
   return out;
-}
-
-/**
- * Recency for a mutable record: the clock order (`cmpClock`), then the
- * deterministic content tie-break. Returns true if `a` should win over `b`.
- */
-function stampIsNewer(a: SyncStamp, b: SyncStamp): boolean {
-  const order = cmpClock(clockOf(a), clockOf(b));
-  return order !== 0 ? order > 0 : stableStringify(a) > stableStringify(b);
-}
-
-/** Per-key last-write-wins for current-state lists (medications, supplements,
- *  prefs): of every row for a key, on either side or the same one, the newest
- *  by `stampIsNewer` stays and the others are not kept (US-10 AC15). */
-function mergeByKey<T extends SyncStamp>(
-  local: T[],
-  remote: T[],
-  keyOf: (row: T) => string,
-): T[] {
-  const map = new Map<string, T>();
-  for (const row of [...remote, ...local]) {
-    const existing = map.get(keyOf(row));
-    if (!existing || stampIsNewer(row, existing)) map.set(keyOf(row), row);
-  }
-  return [...map.values()].sort((a, b) => cmpStr(keyOf(a), keyOf(b)));
 }
 
 /**
@@ -706,6 +681,7 @@ export function mergeFiles(
     };
   }
 
+  const reminderOptIn = mergeOptIn(local.reminderOptIn, remote.reminderOptIn);
   return {
     // Spread both first so unknown/future top-level fields are preserved at
     // runtime (H7). Known fields below overwrite these.
@@ -713,6 +689,8 @@ export function mergeFiles(
     ...local,
 
     ...listing,
+    // The merge that first writes opt-in `tokens` lifts the file to their version (US-17 AC19).
+    schemaVersion: Math.max(listing.schemaVersion, recordSchemaVersion({ reminderOptIn })),
     meta: {
       createdAt:
         local.meta.createdAt < remote.meta.createdAt ? local.meta.createdAt : remote.meta.createdAt,
@@ -732,10 +710,7 @@ export function mergeFiles(
 
     profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),
     screenings: mergeFields<FileScreenings>(local.screenings, remote.screenings),
-    reminderOptIn: pickNewerOptional<FileReminderOptIn>(
-      local.reminderOptIn,
-      remote.reminderOptIn,
-    ),
+    reminderOptIn,
 
     measurements: mergeSlotted<FileMeasurement>(
       local.measurements,

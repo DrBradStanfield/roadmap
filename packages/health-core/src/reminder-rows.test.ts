@@ -1,0 +1,347 @@
+/**
+ * US-17 AC19 (untangle R9): the reminders opt-in merges as one row per token.
+ * The stored object stays the newest row overall, today's rule; `shownOptIn`
+ * is the newest active row. Every merge here runs the real `mergeFiles`, and
+ * every tie runs the real `stableStringify`. Synthetic tokens and addresses.
+ */
+import { describe, expect, it } from 'vitest';
+import { buildErasedFile } from './erase';
+import { mergeFiles, pickNewerOptional } from './merge';
+import { migrateFile } from './migrate';
+import { stampIsNewer } from './record-time';
+import { mergeOptIn, rowsOf, shownOptIn } from './reminder-rows';
+import { createEmptyFile, stableStringify, type FileReminderOptIn, type ReminderTokenRow, type RoadmapFile } from './roadmap-file';
+import { setReminderOptIn, setReminderRow } from './state-edits';
+
+const CTX = { deviceId: 'dev_rows', now: '2026-05-09T12:00:00.000Z' };
+const T = ['2026-05-01T10:00:00.000Z', '2026-05-02T10:00:00.000Z', '2026-05-03T10:00:00.000Z'];
+const TOKENS = ['token-a', 'token-b', 'token-c'];
+
+function row(token: string, status: 'active' | 'cancelled', t: number, lamport = 1, email = `${token}@example.test`): ReminderTokenRow {
+  return { status, token, email, provider: 'dropbox', updatedAt: T[t], lamport };
+}
+
+function file(optIn?: FileReminderOptIn, epoch = 0): RoadmapFile {
+  const f = createEmptyFile({ deviceId: 'dev_rows', now: '2026-04-01T00:00:00.000Z' });
+  f.meta.eraseEpoch = epoch;
+  if (optIn) f.reminderOptIn = optIn;
+  return f;
+}
+
+const merge = (a: RoadmapFile, b: RoadmapFile) => mergeFiles(a, b, CTX);
+/** The object's own fields: what every reader of the stored object sees. */
+const own = (optIn: FileReminderOptIn | undefined) => {
+  if (!optIn) return undefined;
+  const { tokens: _t, ...rest } = optIn;
+  return rest;
+};
+const key = (optIn: FileReminderOptIn | undefined) => stableStringify(optIn ?? null);
+
+describe('US-17 AC19: one device turns reminders on while another turns them off', () => {
+  it('case 3 shows active B in both orders, and the stored object is cancelled A', () => {
+    const one = file(row('token-b', 'active', 0));
+    const two = file(row('token-a', 'cancelled', 1));
+    for (const merged of [merge(one, two), merge(two, one)]) {
+      expect(own(merged.reminderOptIn)).toEqual(row('token-a', 'cancelled', 1));
+      expect(shownOptIn(merged)).toEqual(row('token-b', 'active', 0));
+      expect(merged.reminderOptIn?.tokens).toEqual([row('token-b', 'active', 0)]);
+    }
+  });
+
+  const cases: Array<[string, RoadmapFile, RoadmapFile, ReminderTokenRow, ReminderTokenRow]> = [
+    ['1: active A, then cancelled A', file(row('token-a', 'active', 0)), file(row('token-a', 'cancelled', 1)), row('token-a', 'cancelled', 1), row('token-a', 'cancelled', 1)],
+    ['2: active A, then active B', file(row('token-a', 'active', 0)), file(row('token-b', 'active', 1)), row('token-b', 'active', 1), row('token-b', 'active', 1)],
+    ['3: active B, then cancelled A', file(row('token-b', 'active', 0)), file(row('token-a', 'cancelled', 1)), row('token-a', 'cancelled', 1), row('token-b', 'active', 0)],
+    ['4: cancelled A, then active B', file(row('token-a', 'cancelled', 0)), file(row('token-b', 'active', 1)), row('token-b', 'active', 1), row('token-b', 'active', 1)],
+    ['5: cancelled A, then cancelled B', file(row('token-a', 'cancelled', 0)), file(row('token-b', 'cancelled', 1)), row('token-b', 'cancelled', 1), row('token-b', 'cancelled', 1)],
+  ];
+  for (const [label, a, b, stored, shown] of cases) {
+    it(`case ${label}: stored and shown, both orders`, () => {
+      for (const merged of [merge(a, b), merge(b, a)]) {
+        expect(own(merged.reminderOptIn)).toEqual(stored);
+        expect(shownOptIn(merged)).toEqual(shown);
+      }
+    });
+  }
+
+  it('case 6: an erase at a higher epoch stands, token empty, and nothing nested travels', () => {
+    const before = file(row('token-a', 'active', 0));
+    before.reminderOptIn!.tokens = [row('token-b', 'active', 0)];
+    const erased = buildErasedFile({ stored: before, own: before, device: null, ctx: CTX });
+    for (const merged of [merge(before, erased), merge(erased, before)]) {
+      expect(merged.reminderOptIn).toMatchObject({ status: 'cancelled', token: '', email: '' });
+      expect(merged.reminderOptIn?.tokens).toBeUndefined();
+      expect(shownOptIn(merged)).toMatchObject({ status: 'cancelled', token: '' });
+    }
+  });
+});
+
+describe('US-17 AC19: a file with one real token is what it is today, byte for byte', () => {
+  it('merges to the newer object exactly, with no tokens key', () => {
+    const a = file(row('token-a', 'active', 0));
+    const b = file(row('token-a', 'cancelled', 1));
+    for (const merged of [merge(a, b), merge(b, a)]) {
+      expect(JSON.stringify(merged.reminderOptIn)).toBe(JSON.stringify(b.reminderOptIn));
+      expect(JSON.stringify(merged)).not.toContain('"tokens"');
+    }
+  });
+
+  it('drops a superseded erase marker, as today', () => {
+    const marker = file({ ...row('token-a', 'cancelled', 0), token: '', email: '' });
+    const live = file(row('token-a', 'active', 1));
+    for (const merged of [merge(marker, live), merge(live, marker)]) {
+      expect(JSON.stringify(merged.reminderOptIn)).toBe(JSON.stringify(live.reminderOptIn));
+    }
+  });
+
+  it('round-trips through migrate unchanged', () => {
+    const f = file(row('token-a', 'active', 0));
+    f.meta.updatedAt = T[2];
+    const read = migrateFile(JSON.parse(JSON.stringify(f)), CTX);
+    expect(JSON.stringify(read.reminderOptIn)).toBe(JSON.stringify(f.reminderOptIn));
+  });
+});
+
+describe('US-17 AC19: what counts as a row', () => {
+  it('skips an empty or non-string token, in the list or as the object', () => {
+    const optIn = {
+      ...row('token-a', 'active', 0),
+      tokens: [{ ...row('x', 'active', 2), token: '' }, { ...row('x', 'active', 2), token: 5 }, row('token-b', 'cancelled', 1)],
+    } as unknown as FileReminderOptIn;
+    expect(rowsOf(optIn).map((r) => r.token)).toEqual(['token-a', 'token-b']);
+    expect(rowsOf({ ...row('token-a', 'cancelled', 0), token: '' })).toEqual([]);
+  });
+
+  it('keeps one row per token, the newest, duplicates and nested lists included', () => {
+    const optIn = {
+      ...row('token-a', 'cancelled', 2),
+      tokens: [row('token-b', 'active', 0), row('token-b', 'cancelled', 1), { ...row('token-a', 'active', 1), tokens: [row('token-c', 'active', 2)] }],
+    } as FileReminderOptIn;
+    expect(rowsOf(optIn)).toEqual([row('token-a', 'cancelled', 2), row('token-b', 'cancelled', 1)]);
+  });
+
+  it('never lets the object\'s own tokens key reach a comparison', () => {
+    // One instant in two spellings, one lamport: the content tie-break decides,
+    // and the shorter spelling sorts higher. Compared whole, the holder's
+    // `tokens` key sorts before the other's `updatedAt` and it would lose.
+    const holder = { ...row('token-a', 'active', 0), updatedAt: '2026-05-01T10:00:00Z', tokens: [row('token-c', 'cancelled', 0, 0)] };
+    const plain = { ...row('token-a', 'active', 0), updatedAt: '2026-05-01T10:00:00.000Z' };
+    for (const [a, b] of [[plain, holder], [holder, plain]]) {
+      const merged = merge(file(a), file(b)).reminderOptIn;
+      expect(merged?.updatedAt).toBe('2026-05-01T10:00:00Z');
+      expect(merged?.tokens).toEqual([row('token-c', 'cancelled', 0, 0)]);
+    }
+  });
+
+  it('migrate sanitizes each row as it does the object, and drops a malformed row', () => {
+    const { updatedAt: _none, ...unstamped } = row('token-e', 'active', 0);
+    const f = file({
+      ...row('token-a', 'active', 0),
+      tokens: [
+        { ...row('token-b', 'active', 0), updatedAt: '2099-01-01T00:00:00.000Z', lamport: -3 },
+        { ...row('x', 'active', 0), token: '' },
+        { ...row('x', 'active', 0), token: 'x'.repeat(257) },
+        { ...row('x', 'active', 0), email: { address: 'x@example.test' } },
+        { ...row('x', 'active', 0), status: 'paused' },
+        { ...row('x', 'active', 0), provider: 3 },
+        'not a row',
+        { ...row('token-c', 'cancelled', 0), tokens: [row('token-d', 'active', 0)] },
+        unstamped,
+        { ...row('token-f', 'active', 0), token: 'f'.repeat(256) },
+      ],
+    } as unknown as FileReminderOptIn);
+    f.meta.updatedAt = T[2];
+    const read = migrateFile(JSON.parse(JSON.stringify(f)), CTX).reminderOptIn;
+    expect(read?.tokens).toEqual([
+      { ...row('token-b', 'active', 0), updatedAt: T[2], lamport: 0 },
+      row('token-c', 'cancelled', 0),
+      { ...unstamped, updatedAt: '' },
+      { ...row('token-f', 'active', 0), token: 'f'.repeat(256) },
+    ]);
+    const empty = file({ ...row('token-a', 'active', 0), tokens: [{ ...row('x', 'active', 0), token: '' }] });
+    expect(migrateFile(JSON.parse(JSON.stringify(empty)), CTX).reminderOptIn).not.toHaveProperty('tokens');
+  });
+});
+
+describe('US-17 AC19: a file with tokens rows is at least version 2', () => {
+  it('the merge that first writes tokens lifts two version-1 files to 2, in either order', () => {
+    const [a, b] = [file(row('token-a', 'active', 0)), file(row('token-b', 'active', 1))];
+    expect([a.schemaVersion, b.schemaVersion]).toEqual([1, 1]);
+    for (const merged of [merge(a, b), merge(b, a)]) {
+      expect(merged.reminderOptIn?.tokens).toHaveLength(1);
+      expect(merged.schemaVersion).toBe(2);
+    }
+  });
+
+  it('a one-token merge stays at version 1, byte for byte', () => {
+    const [a, b] = [file(row('token-a', 'active', 0)), file(row('token-a', 'cancelled', 1))];
+    const merged = merge(a, b);
+    expect(merged.schemaVersion).toBe(1);
+    expect(JSON.stringify(merged)).toBe(JSON.stringify(merge(b, a)));
+    expect(JSON.stringify(merged)).not.toContain('"tokens"');
+  });
+
+  it('migrate stamps a hand-written version-1 file with tokens at 2, and leaves a core file at 3', () => {
+    const f = file({ ...row('token-a', 'active', 0), tokens: [row('token-b', 'active', 0)] });
+    f.meta.updatedAt = T[2];
+    expect(migrateFile(JSON.parse(JSON.stringify(f)), CTX).schemaVersion).toBe(2);
+    expect(migrateFile(JSON.parse(JSON.stringify({ ...f, schemaVersion: 3 })), CTX).schemaVersion).toBe(3);
+  });
+});
+
+describe('US-17 AC19: setReminderRow writes the stored object', () => {
+  const NOW = '2026-05-09T12:00:00.000Z';
+
+  it('stamps past an erase marker whose clock runs ahead, and keeps the other rows', () => {
+    const ahead = '2026-06-01T00:00:00.000Z';
+    const f = file({ ...row('token-a', 'cancelled', 0, 4), token: '', email: '', updatedAt: ahead, tokens: [row('token-b', 'active', 2, 7)] });
+    const written = setReminderRow(f, { status: 'active', token: 'token-c', email: 'token-c@example.test', provider: 'dropbox' }, NOW).reminderOptIn;
+    expect(own(written)).toEqual({ status: 'active', token: 'token-c', email: 'token-c@example.test', provider: 'dropbox', updatedAt: ahead, lamport: 8 });
+    expect(written?.tokens).toEqual([row('token-b', 'active', 2, 7)]);
+  });
+
+  it('a Turn off of one token keeps its address and leaves the other token on', () => {
+    const f = file({ ...row('token-a', 'active', 1), tokens: [row('token-b', 'active', 0)] });
+    const after = setReminderRow(f, { status: 'cancelled', token: 'token-a', email: 'token-a@example.test', provider: 'dropbox' }, NOW);
+    expect(own(after.reminderOptIn)).toMatchObject({ status: 'cancelled', token: 'token-a', email: 'token-a@example.test', updatedAt: NOW, lamport: 2 });
+    expect(shownOptIn(after)).toEqual(row('token-b', 'active', 0));
+  });
+
+  it('on a file with no rows, stamps as setReminderOptIn does', () => {
+    const fields = { status: 'active', token: 'token-a', email: 'token-a@example.test', provider: 'dropbox' } as const;
+    expect(setReminderRow(file(), fields, NOW)).toEqual(setReminderOptIn(file(), fields, NOW));
+    const f = file(row('token-a', 'cancelled', 0, 3));
+    expect(setReminderRow(f, fields, NOW)).toEqual(setReminderOptIn(f, fields, NOW));
+  });
+});
+
+describe('US-17 AC19: pinned ties (the real comparator)', () => {
+  it('on a clock tie a cancelled row beats its active twin while both keep the address', () => {
+    const [on, off] = [row('token-a', 'active', 0), row('token-a', 'cancelled', 0)];
+    expect(own(mergeOptIn(on, off))).toEqual(off);
+    expect(own(mergeOptIn(off, on))).toEqual(off);
+    // With the address blanked the active twin would win: why cancelled rows keep it.
+    expect(own(mergeOptIn(on, { ...off, email: '' }))).toEqual(on);
+  });
+
+  it('an old merge keeps the identical object without its list (a stated limit)', () => {
+    const bare = row('token-a', 'active', 1);
+    const listed: FileReminderOptIn = { ...bare, tokens: [row('token-b', 'cancelled', 0)] };
+    expect(pickNewerOptional<FileReminderOptIn>(bare, listed)).toBe(bare);
+    expect(pickNewerOptional<FileReminderOptIn>(listed, bare)).toBe(bare);
+    // The new merge keeps the row the list holds.
+    expect(mergeOptIn(bare, listed)?.tokens).toEqual(listed.tokens);
+  });
+});
+
+/* ---- Seeded properties over the real merge ---------------------------- */
+
+function rng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** A random row: three tokens, both statuses, three times, two lamports, and
+ *  two addresses, so rows tie on the clock and differ only by content. */
+function randomRow(r: () => number): ReminderTokenRow {
+  const pick = <T>(xs: readonly T[]) => xs[Math.floor(r() * xs.length)];
+  return row(pick(TOKENS), r() < 0.5 ? 'active' : 'cancelled', Math.floor(r() * 3), Math.floor(r() * 2), pick(['x@example.test', 'y@example.test']));
+}
+
+/** A random opt-in: absent, an erase marker, or a row with a list that may be
+ *  absent, may miss the object's own token, and may repeat a token. */
+function randomOptIn(r: () => number): FileReminderOptIn | undefined {
+  if (r() < 0.15) return undefined;
+  const top: FileReminderOptIn = r() < 0.1 ? { ...randomRow(r), status: 'cancelled', token: '', email: '' } : randomRow(r);
+  if (r() < 0.5) return top;
+  const tokens = Array.from({ length: Math.floor(r() * 4) }, () => randomRow(r));
+  return tokens.length > 0 ? { ...top, tokens } : top;
+}
+
+const randomFile = (r: () => number) => file(randomOptIn(r), Math.floor(r() * 3));
+const optKey = (f: RoadmapFile) => key(f.reminderOptIn);
+
+describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStringify)', () => {
+  it('is commutative, associative and idempotent, in every order, over 3,000 triples', () => {
+    for (let seed = 1; seed <= 3000; seed++) {
+      const r = rng(seed);
+      const [a, b, c] = [randomFile(r), randomFile(r), randomFile(r)];
+      expect(optKey(merge(a, b)), `commutative ${seed}`).toBe(optKey(merge(b, a)));
+      const left = merge(merge(a, b), c);
+      expect(optKey(left), `associative ${seed}`).toBe(optKey(merge(a, merge(b, c))));
+      // A copy the gate passed whole may be hand-written, its rows out of order;
+      // once merged at its own epoch it is a fixed point.
+      const settled = merge(left, left);
+      expect(optKey(settled), `idempotent ${seed}`).toBe(key(mergeOptIn(left.reminderOptIn, undefined)));
+      expect(optKey(merge(settled, settled)), `idempotent ${seed}`).toBe(optKey(settled));
+      expect(optKey(merge(settled, a)), `absorbs ${seed}`).toBe(optKey(settled));
+      // Every order of the three copies, either grouping, ends on one opt-in and one shown row.
+      const orders = [[a, b, c], [a, c, b], [b, a, c], [b, c, a], [c, a, b], [c, b, a]];
+      const ends = orders.flatMap(([x, y, z]) => [merge(merge(x, y), z), merge(x, merge(y, z))]);
+      expect(new Set(ends.map(optKey)).size, `orders ${seed}`).toBe(1);
+      expect(new Set(ends.map((f) => stableStringify(shownOptIn(f) ?? null))).size, `shown ${seed}`).toBe(1);
+    }
+  });
+
+  it('stores the newest of every row at the top epoch, the erase marker included', () => {
+    for (let seed = 1; seed <= 3000; seed++) {
+      const r = rng(seed);
+      const copies = [randomFile(r), randomFile(r), randomFile(r)];
+      const top = Math.max(...copies.map((f) => f.meta.eraseEpoch ?? 0));
+      const live = copies.filter((f) => (f.meta.eraseEpoch ?? 0) === top).map((f) => f.reminderOptIn);
+      const candidates = live.flatMap((o) => (o ? [own(o)!, ...rowsOf(o)] : []));
+      const merged = copies.reduce((x, y) => merge(x, y));
+      if (candidates.length === 0) continue;
+      const newest = candidates.reduce((x, y) => (stampIsNewer(y, x) ? y : x));
+      // Only one copy at the top epoch passes through the gate untouched, as today.
+      if (live.length === 1) expect(key(merged.reminderOptIn), `${seed}`).toBe(key(live[0]));
+      else expect(own(merged.reminderOptIn), `${seed}`).toEqual(newest);
+    }
+  });
+});
+
+/* ---- A mixed fleet: old merges keep the newer object whole ------------- */
+
+/** What a merge from before this change does to the opt-in: the newer object, its list with it. */
+const oldMerge = (a: RoadmapFile, b: RoadmapFile): RoadmapFile => ({
+  ...merge(a, b),
+  reminderOptIn: pickNewerOptional(a.reminderOptIn, b.reminderOptIn),
+});
+
+describe('US-17 AC19: old and new merges mixed', () => {
+  it('stores today\'s object after every merge, and converges once old merges stop', () => {
+    for (let seed = 1; seed <= 1500; seed++) {
+      const r = rng(seed);
+      const pick = (n: number) => Math.floor(r() * n);
+      // Each copy as an app leaves it: the object newest of its own rows.
+      const copies = Array.from({ length: 2 + pick(3) }, (): RoadmapFile => {
+        const f = file(randomOptIn(r));
+        return { ...f, reminderOptIn: mergeOptIn(f.reminderOptIn, undefined) };
+      });
+      for (let step = 0; step < 8; step++) {
+        const [i, j] = [pick(copies.length), pick(copies.length)];
+        if (r() < 0.25) {
+          // An old web write: a fresh object, no list (state-edits.ts).
+          const at = `2026-05-0${4 + step}T10:00:00.000Z`;
+          copies[i] = setReminderOptIn(copies[i], { status: r() < 0.5 ? 'active' : 'cancelled', token: TOKENS[pick(3)], email: '', provider: 'dropbox' }, at);
+          continue;
+        }
+        const today = pickNewerOptional(copies[i].reminderOptIn, copies[j].reminderOptIn);
+        const merged = r() < 0.4 ? oldMerge(copies[i], copies[j]) : merge(copies[i], copies[j]);
+        expect(own(merged.reminderOptIn), `seed ${seed} step ${step}`).toEqual(own(today));
+        copies[i] = merged;
+        copies[j] = merged;
+      }
+      // New code gossips until quiet: every copy ends on one opt-in.
+      const end = copies.reduce((x, y) => merge(x, y));
+      expect(optKey(copies.reduceRight((x, y) => merge(x, y))), `converge ${seed}`).toBe(optKey(end));
+      for (const c of copies) expect(optKey(merge(c, end)), `converge ${seed}`).toBe(optKey(end));
+    }
+  });
+});

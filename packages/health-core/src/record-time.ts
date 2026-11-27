@@ -4,7 +4,7 @@
  * tie). Moved out of merge.ts unchanged (US-64, lead A1-2); merge.ts re-exports
  * the ones it exported, so old import paths keep working.
  */
-import type { SyncStamp } from './roadmap-file';
+import { stableStringify, type SyncStamp } from './roadmap-file';
 
 /** Normalise an ISO timestamp to its calendar day — the slot granularity. */
 export function dayOf(iso: string): string {
@@ -83,6 +83,32 @@ export function cmpClock(a: Clock, b: Clock): number {
  *  writes the same spelling whichever side merges. Never picks a value. */
 export function cmpStored(a: Clock, b: Clock): number {
   return cmpClock(a, b) || cmpStr(a.updatedAt, b.updatedAt);
+}
+
+/**
+ * Recency for a mutable record: the clock order (`cmpClock`), then the
+ * deterministic content tie-break. Returns true if `a` should win over `b`.
+ * Moved out of merge.ts unchanged, with `mergeByKey`, for reminder-rows.ts.
+ */
+export function stampIsNewer(a: SyncStamp, b: SyncStamp): boolean {
+  const order = cmpClock(clockOf(a), clockOf(b));
+  return order !== 0 ? order > 0 : stableStringify(a) > stableStringify(b);
+}
+
+/** Per-key last-write-wins for current-state lists (medications, supplements,
+ *  prefs): of every row for a key, on either side or the same one, the newest
+ *  by `stampIsNewer` stays and the others are not kept (US-10 AC15). */
+export function mergeByKey<T extends SyncStamp>(
+  local: T[],
+  remote: T[],
+  keyOf: (row: T) => string,
+): T[] {
+  const map = new Map<string, T>();
+  for (const row of [...remote, ...local]) {
+    const existing = map.get(keyOf(row));
+    if (!existing || stampIsNewer(row, existing)) map.set(keyOf(row), row);
+  }
+  return [...map.values()].sort((a, b) => cmpStr(keyOf(a), keyOf(b)));
 }
 
 /**
