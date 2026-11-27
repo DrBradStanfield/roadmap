@@ -2,7 +2,7 @@
 // Left to right, an option that takes a value consumes the next word, whatever it looks like, exactly once:
 // `--message --model --out r.json` is a message "--model" and a real --out. Every reader works from this one parse.
 
-export const VALUE_OPTIONS = ["--codex", "--commit", "--range", "--message", "--model", "--out", "--timeout-min", "--record-file", "--include", "--include-limit-mb", "--subject", "--baseline", "--context"];
+export const VALUE_OPTIONS = ["--codex", "--commit", "--range", "--message", "--model", "--out", "--timeout-min", "--record-file", "--include", "--include-limit-mb", "--subject", "--baseline", "--context", "--brief"];
 
 /** argv as an ordered list of { name, value? }; a value option at the very end has no value (undefined). */
 export function parseArgv(argv) {

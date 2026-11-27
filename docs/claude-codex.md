@@ -890,3 +890,48 @@ content); an instruction file as a subject, at any
 depth, is reviewed and flagged. Subject, baseline and context bytes go
 through the same credential value and shape scan as everything else. Not with
 `--commit`, `--range` or `--loop`.
+
+## Answering a brief: `--brief` (2026-11-27, US-40 AC20)
+
+Brad chose this mode on 2026-11-27, after two briefs of open business
+questions ("what are we doing that is dumb, how do we win first-time
+customers") went in with `--subject`. Each time, Codex critiqued the brief's
+wording instead of answering it. `--subject` is a review, so that is what it
+does. `--brief` asks for an answer:
+
+```bash
+node ~/Documents/roadmap/tools/codex-review.mjs \
+  --brief "codex-drafts/first-customers-brief.md" \
+  --context "codex-drafts/first-customers-evidence" \
+  --out "$SCRATCH/codex-answer.json"
+```
+
+- The brief takes a subject's place, as a new file (`--baseline none`). It
+  follows every `--subject` rule above: tracked, or untracked under a pinned
+  `subjectRoots` root; never on `privateDeny`; the shared byte budget; the
+  credential value and shape scan; drift. The snapshot, the final checks and
+  the Codex launch are the same code, with the same sandbox and flags.
+- `--context` files and folders are the evidence. `--include`, `--model`,
+  `--timeout-min`, `--out` and `--keep` work as in a review.
+- Only the prompt and the output differ. The prompt (`tools/codex-review-prompt.mjs`,
+  beside the review prompt, sharing its web-search and untrusted-text rules)
+  says the brief is questions to answer, not a document to critique. The model
+  answers each question in order, names the files and pages each answer rests
+  on, marks guesses "Guess:", and ranks where the brief asks. One rule is for
+  briefs only: nothing from the brief or the context, not even a paraphrase of
+  a plan, number or strategy, goes into a search query or a URL.
+- Output: `## Codex answer (<model>) — brief "<path>", snapshot <id>, <n> min`,
+  with the review's status, web-access and unexpected-site lines, then the
+  summary and the Markdown answer. `--out` holds `mode: "brief"`, `summary`,
+  `answer` and the usual metadata; `findings` is always `[]`. Exit 0 answered,
+  3 incomplete, never 2. `answer` is `null` on any incomplete, including one
+  the model declares itself, whose summary is kept.
+- The work dir gets no `REVIEW_PATCH.diff` or `REVIEW_COMMITS.txt`: those
+  frame a review.
+- Refused, as usage errors: a second `--brief`, an empty or whitespace-only
+  brief, and `--brief` with `--commit`, `--range`, `--loop`, `--record`,
+  `--record-file`, `--subject`, `--baseline` or `--message`.
+- `--live` follows the existing rules, and only for a brief and context we
+  wrote ourselves (the same limit as "our own changes"). Never use it when the
+  context holds third-party pages: they could steer the model into carrying
+  what it reads out in a URL.
