@@ -47,10 +47,13 @@ export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileRem
 /** True when a re-read lost an opt-in row this save wrote: the stored object,
  *  or a row of `rowsOf`, has no row for its token as new in `theirs`. */
 export function optInBehind(ours: FileReminderOptIn | undefined, theirs: FileReminderOptIn | undefined): boolean {
-  const held = theirs ? [ownRow(theirs), ...rowsOf(theirs)] : [];
-  return (ours ? [ownRow(ours), ...rowsOf(ours)] : []).some((row) => {
-    const match = held.filter((r) => r.token === row.token);
-    return match.length === 0 || match.every((r) => stampIsNewer(row, r));
+  if (!ours) return false;
+  const held = new Map(rowsOf(theirs).map((row) => [row.token, row]));
+  // The stored object counts too, the erase marker included, which rowsOf skips.
+  if (theirs && !held.has(theirs.token)) held.set(theirs.token, ownRow(theirs));
+  return [ownRow(ours), ...rowsOf(ours)].some((row) => {
+    const match = held.get(row.token);
+    return !match || stampIsNewer(row, match);
   });
 }
 

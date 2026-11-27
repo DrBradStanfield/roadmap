@@ -71,10 +71,10 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
     // then bring that row back (Codex review of PR #299).
     const kept = new Set(parsed.erasedRows?.ids);
     if ([...listed].some((id) => !kept.has(id))) return 'the erased list this save wrote';
-    // Past a newer erase this reports our fields too, and the retry takes the
-    // erase in: mergeFiles lets the higher epoch decide them.
     // At one erase, the opt-in this save wrote, every token's row (US-17 AC19).
     if (stored === epoch && optInBehind(ours.reminderOptIn, parsed.reminderOptIn)) return 'the reminders opt-in this save wrote';
+    // Past a newer erase this reports our fields too, and the retry takes the
+    // erase in: mergeFiles lets the higher epoch decide them.
     const behind = fieldsBehind(ours.profile, parsed.profile).length + fieldsBehind(ours.screenings, parsed.screenings).length;
     return behind > 0 ? `${behind} profile or screening field(s) this save wrote` : null;
   },
