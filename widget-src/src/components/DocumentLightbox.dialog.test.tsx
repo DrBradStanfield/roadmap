@@ -6,9 +6,9 @@
  * the row that opened it when it closes. Before this it was a plain box: the
  * focus stayed on the row behind the backdrop and Tab walked the page behind.
  * jsdom has no showModal, so the stub does what the tests need: it opens the
- * dialog and moves the focus to its first button, as a browser does. jsdom
- * does not move the focus on Tab, so Tab order is not tested here. Synthetic
- * document only.
+ * dialog and moves the focus to its first button, as Firefox does (Chromium
+ * and WebKit focus the title itself). jsdom does not move the focus on Tab, so
+ * Tab order is not tested here. Synthetic document only.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { StrictMode, useState } from 'react';
