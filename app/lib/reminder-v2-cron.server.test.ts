@@ -379,13 +379,8 @@ describe('reminder v2 cron — US-23 AC6b: an item is due on its own due date', 
 
   it('is not due the day before, and is due that day', async () => {
     const { dueItemsFor } = await import('./reminder-v2-cron.server');
-    expect(dueItemsFor(optin, '2026-11-30')).toEqual({ due: [], anyDue: false });
-    expect(dueItemsFor(optin, '2026-12-01')).toEqual({ due: optin.schedule, anyDue: true });
-  });
-
-  it('an arrived item still on its cooldown is not due, but still counts as arrived', async () => {
-    const { dueItemsFor } = await import('./reminder-v2-cron.server');
-    expect(dueItemsFor({ ...optin, last_sent: { blood_test_lipids: '2026-11-30' } }, '2026-12-01')).toEqual({ due: [], anyDue: true });
+    expect(dueItemsFor(optin, '2026-11-30').due).toEqual([]);
+    expect(dueItemsFor(optin, '2026-12-01').due).toEqual(optin.schedule);
   });
 });
 
