@@ -32,7 +32,7 @@ final class ChatHistoryStore {
     /// The file's text, or nil when there is none yet (or it cannot be read: history
     /// is best effort, as on the web, and never stops a question being asked).
     private nonisolated static func text(_ file: URL) -> String? {
-        try? String(contentsOf: file, encoding: .utf8)
+        (try? stored(file)) ?? nil
     }
 
     /// Reads the list again, on the engine's queue. A newer refresh wins over an older one.
@@ -48,24 +48,33 @@ final class ChatHistoryStore {
     /// then (an earlier delete's refresh) never shows them again (re-check N3).
     @ObservationIgnored private var deleting: Set<String> = []
 
+    /// The read of the conversation opened from History (US-52 AC17).
+    private(set) var thread = ChatThreadRead.ready(attempt: 0)
+
     /// A saved conversation's messages for the screen, read by the engine. Nil when the
     /// screen moved on while they were read (New chat, `leave`, or another `open`): a late
     /// load never replaces what the screen shows then (Codex). Its turn is taken in the tap.
+    /// Nil too when the file is there but cannot be read: `thread` is then `failed`, never an empty conversation.
     func open(_ conversationId: String) -> Task<[ChatMessage]?, Never> {
-        opens += 1
-        let (file, deviceId, mine) = (file, deviceId, opens)
+        send(.open(id: conversationId))
+        let (file, deviceId, attempt) = (file, deviceId, thread.attempt)
         return Task {
-            let read = await engine.perform { (try? $0.chatMessages(historyJSON: Self.text(file), conversationId: conversationId, now: .now, deviceId: deviceId)) ?? [] }
-            return mine == opens ? read : nil
+            let read = await engine.perform { try? $0.chatMessages(historyJSON: Self.stored(file), conversationId: conversationId, now: .now, deviceId: deviceId) }
+            send(read == nil ? .unreadable(attempt: attempt) : .loaded(attempt: attempt))
+            return thread == .ready(attempt: attempt) ? read : nil
         }
     }
 
-    /// New chat: a conversation still loading is dropped.
+    /// New chat, or an erase: a conversation still loading is dropped, and a failed read is let go.
     func leave() {
-        opens += 1
+        send(.leave)
     }
 
-    @ObservationIgnored private var opens = 0
+    /// The one door to `thread`; an event that changes nothing redraws nothing.
+    private func send(_ event: ChatThreadRead.Event) {
+        let next = ChatThreadRead.transition(thread, event)
+        if next != thread { thread = next }
+    }
 
     /// Saves one exchange. A failure is dropped: the answer is already on screen.
     /// `askedAt` is `erasures` when the question was sent; an erase since refuses it.
@@ -105,6 +114,11 @@ final class ChatHistoryStore {
     /// The file's text for "Delete all my data"; nil when there is none. Throws when
     /// it is there but cannot be read, so the erase never claims a history it missed.
     func textForErase() throws -> String? {
+        try Self.stored(file)
+    }
+
+    /// The file's text; nil when there is none. Throws when it is there but cannot be read.
+    private nonisolated static func stored(_ file: URL) throws -> String? {
         guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) else { return nil }
         return try String(contentsOf: file, encoding: .utf8)
     }

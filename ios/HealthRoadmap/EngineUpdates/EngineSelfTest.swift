@@ -23,7 +23,7 @@ enum EngineSelfTest {
             try check((try? engine.evaluate("typeof HealthEngine.\(door)").toString()) == "function", "door \(door)")
         }
 
-        // A record, values in through edits, My data and the plan out.
+        // A record, values in through edits, My health's rows and the plan out.
         var record = try engine.newRecord(now: now, deviceId: device, locale: Locale(identifier: "en-NZ"), timeZone: TimeZone(identifier: "Pacific/Auckland")!)
         for edit: RecordEdit in [.profile(sex: "male", birthYear: 1970, birthMonth: 6, height: 178), .add(metric: "weight", value: 81, day: "2026-10-19"), .add(metric: "weight", value: 80, day: "2026-10-20")] {
             let outcome = try engine.apply(edit, to: record, now: now, deviceId: device)

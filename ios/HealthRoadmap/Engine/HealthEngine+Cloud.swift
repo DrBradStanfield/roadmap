@@ -69,7 +69,7 @@ extension HealthEngine {
         return view
     }
 
-    /// One My data edit through the open session, checked against the erase and the
+    /// One My health edit through the open session, checked against the erase and the
     /// units the screen showed when the edit began (a sheet's opening).
     /// `choices`: the per-test units the sheet showed (US-25 AC17e), as JSON.
     /// `order`: the engine's stamp, taken as it answers (`stamp`).

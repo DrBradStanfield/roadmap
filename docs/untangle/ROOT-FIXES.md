@@ -121,6 +121,7 @@ Not independent today: R4 (files held PR 2155 edits), R16 (engine contract files
     - U10 U12
 22. **R17** Generate the phone's network allow-list from the adapters; one file-kinds rule for both clients. [security] `EngineHTTP.swift`, `dropbox-rest.ts`, `drive-rest.ts`, `file-kinds.ts`, `DocumentPage.swift`
     - M12 M13
+    - Status: the file-kinds half (M13) in review (US-14 AC14); the allow-list half (M12) not started.
 23. **R33** Security track, held by the orchestrator.
     - C14 C19
 24. **R24** Chat docs load as one state; a missing doc refuses or reports, like the prompt. [server] `app/lib/chat.server.ts`, `chat-router.server.ts`
@@ -225,3 +226,9 @@ which waits for Brad's look.
   build is held: PR 2221 (health-core, draft) and PR 2230 (web). Not merged; nothing of it is live.
 - **R19** blocked by R1: the owner's order is R1, then R9, then the switch hold union.
 - **R2, R22, R28** done, as recorded above.
+- **R29** built (US-52 AC17, lead C24): the iPhone's conversation read is one `ChatThreadRead` state; a failed read
+  says so in the web's words and keeps Send locked. Swift tests written, not yet run in the simulator.
+- **R30** iPhone half built (US-02 AC12, lead H73; draft PR 2203, held): the rule moved to health-core `bp-advance.ts`,
+  the sheet asks it through the optional door `bpSysAdvance` and holds its move as one `SystolicAdvance` state.
+  Swift tests written, not run. Web half left: `ValuePage.tsx` and `useBpPair.ts` still check the diastolic
+  themselves and could pass it to `bpSysAdvance` instead; `ValuePage.tsx` waits on held PR 2146.
