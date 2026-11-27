@@ -31,4 +31,4 @@ If applicable, and only with your own values cropped or blanked out.
 **Device info**
 - Browser: (e.g. Chrome, Safari)
 - Device: (e.g. iPhone, Desktop)
-- Logged in: Yes / No
+- Cloud storage connected: Yes / No
