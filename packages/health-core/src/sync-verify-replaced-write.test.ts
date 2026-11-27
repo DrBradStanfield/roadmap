@@ -438,6 +438,30 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     expect(drive.body.profile.heightCm).toBe(182);
   });
 
+  it('a cancel learned on the first read survives a write conflict (conditional store)', async () => {
+    const cloud = new MemoryCloud();
+    const cancelledA = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
+    const first = withOptIn({ ...cancelledA, tokens: [optInRow('token-b', 'cancelled', '2026-10-21T10:30:00.000Z')] });
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(first), version: 1 });
+    const store = new MemoryAdapter(cloud);
+    const write = store.write.bind(store);
+    let raced = false;
+    store.write = async (...args: Parameters<MemoryAdapter['write']>) => {
+      if (!raced) {
+        raced = true;
+        // An old writer saves A alone between this save's read and its conditional upload.
+        cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(withOptIn(cancelledA)), version: 2 });
+      }
+      return write(...args);
+    };
+    // This device holds B active, from before the cancel.
+    const ours = withOptIn(optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z'));
+    const saved = await new SyncManager(store, 'a', ROADMAP_DOC, { now: () => NOW }).save(ours);
+    expect(saved.attempts).toBe(1);
+    const stored: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+    expect(stored.reminderOptIn?.tokens).toEqual([optInRow('token-b', 'cancelled', '2026-10-21T10:30:00.000Z')]);
+  });
+
   it('an old-code writer that drops the list in the window costs one retry, then the save settles', async () => {
     const base = withOptIn(optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z'));
     const drive = new ControlledDrive(base, true); drive.install();
