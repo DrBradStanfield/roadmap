@@ -47,7 +47,7 @@ Part of [Health by Dr Brad — Architecture (v2, local-first)](../architecture-v
 - **A daily-use SaaS** — contradicts intermittent-by-design (\~95% of benefit for \~5–10% of effort, meaningful use every 2–3 months).
 - **Self-hosted server as the default** — makes the user the operator; fine as door B, fatal as door A.
 - **OpenRouter-style AI aggregators** — a third party in the data path with users' lab PII.
-- **CloudKit / iCloud as the sync backend** — Apple-only; would fragment data into two incompatible stores. (A future HealthKit iOS app would still sync via Drive/Dropbox.)
+- **CloudKit / iCloud as the sync backend** — Apple-only; would fragment data into two incompatible stores. (A future HealthKit iPhone app would still sync via Drive/Dropbox.)
 - **A paid feature tier** — economics ride on supplements + the email list; never paywall the health advice.
 
 <a id="gotchas"></a>

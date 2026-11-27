@@ -204,7 +204,7 @@ export function renderText(plan: Plan, from = 'your record file', schemaVersion 
   for (const v of values) out.push(row(v));
 
   if (plan.labs.length > 0) {
-    out.push('', 'ADDITIONAL LAB RESULTS (latest per test — informational; not used to compute suggestions)');
+    out.push('', 'ADDITIONAL BLOOD TESTS (latest per test — informational; not used to compute suggestions)');
     for (const l of plan.labs) out.push(row(l));
   }
 
@@ -313,7 +313,7 @@ footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 <h2>Current values</h2>
 ${values.length === 0 ? '<p class="sub">Nothing recorded yet.</p>' : `<table>${rows(values)}</table>`}
 
-${plan.labs.length === 0 ? '' : `<h2>Additional lab results</h2>
+${plan.labs.length === 0 ? '' : `<h2>Additional blood tests</h2>
 <p class="sub">Latest per test. Informational — these do not feed the suggestions below.</p>
 <table>${rows(plan.labs)}</table>`}
 

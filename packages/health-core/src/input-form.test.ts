@@ -339,7 +339,7 @@ describe('screeningMonths', () => {
 describe('medicationForm', () => {
   it('shows every cholesterol and weight question, without hints, when no cascade is on', () => {
     const form = medicationForm({}, flat);
-    expect(form.map((s) => s.title)).toEqual(['Cholesterol Medications', 'Weight & Diabetes Medications']);
+    expect(form.map((s) => s.title)).toEqual(['Cholesterol medications', 'Weight & diabetes medications']);
     expect(keys(form)).toEqual(['statin', 'ezetimibe', 'bempedoic_acid', 'pcsk9i', 'glp1', 'sglt2i', 'metformin']);
     expect(field(form, 'statin').hint).toBeUndefined();
   });

@@ -12,9 +12,9 @@ This takes about five minutes. Everything happens in ChatGPT's own settings; the
 
 ## Before you start
 
-You need a paid ChatGPT plan on the web, and your record has to be in Dropbox or Google Drive. Those are the two clouds this works with today. A record in GitHub can only be reached by an AI running on your own computer. That path is in [how to let an AI read and update your health record](/blogs/guides/ai-health-record).
+You need a paid ChatGPT plan on the web, and your record has to be in Dropbox or Google Drive. Those are the two clouds this works with today. A record in GitHub can only be reached by an AI assistant running on your own computer. That path is in [how to let your AI assistant read and update your health record](/blogs/guides/ai-health-record).
 
-If you have never connected a cloud provider, there is no record to reach yet: the tool is holding it in your browser. Open [the tool](https://drstanfield.com/pages/roadmap), connect Dropbox or Google Drive, and save a value first.
+If you have never connected Dropbox or Google Drive, there is no record to reach yet: the website is holding it in your browser. Open [the website](https://drstanfield.com/pages/roadmap), connect Dropbox or Google Drive, and save a value first.
 
 The address ChatGPT asks for:
 
@@ -48,9 +48,9 @@ Claude needs no equivalent step. If you use both, [connecting Claude](/blogs/gui
 
 ## What it can do
 
-It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: a public issue on the project's GitHub, filed as you ask, carrying its description of the problem. It refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree.
+It reads your record: every value in the file, including ones the website does not show on its front page. It works out your plan, the same one the website shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: a public issue on the project's GitHub, filed as you ask, carrying its description of the problem. It refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree.
 
-It can import lab files, too. Two ways in. Drop a file straight into the conversation,
+It can read lab files, too. Two ways in. Drop a file straight into the conversation,
 from a computer or a phone: a PDF, a JPEG or PNG photo, or a clinic letter. ChatGPT reads
 it itself, the way it reads any file you give it, and sends our server only the values it
 read: the test name as printed, the number, the unit, the date. The file never reaches our
@@ -76,7 +76,7 @@ Drive record it refuses to import at all, because the permission it holds cannot
 files you drop in that folder; drop the file into the chat instead, or use the website
 upload. A file you drop into the chat never reaches our server; only the values ChatGPT read
 do, in memory for one request, written to your own folder. A file in your Dropbox folder goes
-through our server to Anthropic's API for extraction, as soon as ChatGPT reads it and before
+through our server to Anthropic's API to be read, as soon as ChatGPT reads it and before
 you confirm anything. We keep none of it. Anthropic's terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days unless they need to keep them to enforce their usage policy or comply with the law ([their policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)). That is a different path
 from the website's own upload, which reads the PDF in your browser and sends only the
 extracted text to our server.
@@ -87,7 +87,7 @@ Paste in a lab report and ask it to file the results. Ask what your LDL has done
 
 It cannot delete anything. There is no delete tool, and no call it can make removes a row.
 
-It cannot erase a mistake either. A correction adds a new row with the right number and marks the old row "entered-in-error", and both stay in your file for good. That is how a hospital record works, and it is why you can always see what you were told and when. A correction on a row older than 90 days is refused: old results are history, not typos.
+It cannot remove a mistake either. A correction adds a new row with the right number and keeps the old row, marked as a mistake, and both stay in your record for good. That is how a hospital record works, and it is why you can always see what you were told and when. A correction on a row older than 90 days is refused: old results are history, not typos.
 
 It cannot touch your medications, supplements or screenings. Those are current state that another device can overwrite, so for now only clinical values are writable this way. Documents are the one exception, and only through import: it files what it imports as a record with a name and a date, never the text or the image itself, and the original file stays wherever you put it.
 
@@ -95,7 +95,7 @@ It can change four things about you: your sex, your birth year, your birth month
 
 It cannot add a second value for a test on a day that already has one. That call is refused by name, and the refusal tells ChatGPT to make a correction instead of an overwrite.
 
-It cannot see the token that runs your email reminders, if you use them. That token is stripped out of every read, so it can never reach a chat transcript.
+It cannot see the token that runs your email reminders, if you use them. That token is stripped out of every read, so it can never reach a conversation.
 
 ## What we can see
 
@@ -111,7 +111,7 @@ Take care with the web tool open in another tab while ChatGPT is writing. The pa
 
 Go to [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps), or [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive, and unlink Health by Dr Brad. That is the real switch, and it is yours, not ours. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing of your record, and how to disconnect.
 
-One thing to know before you press it: the provider ties the folder to the app, so unlinking also disconnects this website from your record. The tool will ask you to connect again next time you open it, which is one click.
+One thing to know before you press it: Dropbox or Google Drive ties the folder to the app, so unlinking also disconnects this website from your record. The website will ask you to connect again next time you open it, which is one click.
 
 Removing the app inside ChatGPT stops ChatGPT reaching the connector, which is worth doing too. It does not unlink your storage by itself.
 
@@ -119,8 +119,8 @@ Removing the app inside ChatGPT stops ChatGPT reaching the connector, which is w
 
 The connector does not appear in a chat: developer mode is per conversation. Open the + menu, then More, then Developer mode, and pick it again.
 
-ChatGPT says it cannot find your record: open [the tool](https://drstanfield.com/pages/roadmap) and check your cloud provider is connected and a value is saved. The connector reads the same file the tool writes.
+ChatGPT says it cannot find your record: open [the website](https://drstanfield.com/pages/roadmap) and check Dropbox or Google Drive is connected and a value is saved. The connector reads the same file the website writes.
 
-Something looks wrong in your data: open the tool and correct the value there. The app appends the correction and marks the old row as an error, which is the safest undo you have.
+Something looks wrong in your data: open the website and correct the value there. The app appends the correction and marks the old row as an error, which is the safest undo you have.
 
 Anything else: ask ChatGPT to report the problem and it files a bug report for you, as a public issue on the project's GitHub carrying its description of the problem. It refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues), or open the chat bubble on any page of this site and ask.

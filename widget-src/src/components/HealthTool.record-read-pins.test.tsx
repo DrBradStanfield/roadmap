@@ -53,7 +53,7 @@ vi.mock('../lib/server-api', async original => {
   };
 });
 // The profile save refuses once when asked, as the store refuses a write (US-16 AC2a).
-const refuse = vi.hoisted(() => ({ next: false, gate: null as null | Promise<void> }));
+const refuse = vi.hoisted(() => ({ next: false, gate: null as null | Promise<void>, calls: 0 }));
 // How many times the page re-reads the record (survey R8: a held change applied twice).
 const reads = vi.hoisted(() => ({ count: 0 }));
 // The next medication (`gate`) or screening (`screening`) save waits on this when asked: true lands it, false refuses it (US-15 AC10).
@@ -66,6 +66,7 @@ vi.mock('../lib/roadmap-data', async original => {
     // The lab read fails on every call when asked: a lasting failure of the first read's mirror (PR 1155 review R1).
     loadLabValues: () => failMirror.always ? Promise.reject(new Error('Synthetic test: lab read failed')) : real.loadLabValues(),
     saveChangedMeasurements: (...args: Parameters<typeof real.saveChangedMeasurements>) => {
+      refuse.calls++;
       if (refuse.next) { refuse.next = false; return Promise.resolve({ ok: false }); }
       // Held on its way when asked: the store has taken the write, the page has not heard it land (US-34 AC8).
       const gate = refuse.gate;
@@ -163,6 +164,12 @@ beforeEach(async () => {
   Object.assign(atMount, { run: null, effectsRan: false, inGap: false });
   upload.complete = null;
   Object.assign(chat, { target: null, context: null });
+  // React's development build writes window.event back after each handler it calls, and Vitest's
+  // jsdom globals keep any value written to them: the last click stayed window.event for every
+  // later test, so a later mount ran at click priority and flushed its effects with no gap.
+  // Read it from jsdom again, as a browser does: an event only while it is dispatched.
+  const dom = (globalThis as unknown as { jsdom: { window: Window } }).jsdom.window;
+  Object.defineProperty(window, 'event', { configurable: true, get: () => dom.event, set() {} });
   vi.mocked(Sentry.captureException).mockClear();
   viewport.mobile = false;
   viewport.listeners.clear();
@@ -236,8 +243,6 @@ async function eraseFromAnotherDevice(profile: Partial<RoadmapFile['profile']> =
   await act(async () => { window.dispatchEvent(new StorageEvent('storage', { key: null })); });
 }
 
-// First in the file: after other tests here, React's first commit flushed its effects in the
-// same task (no gap) in trials, and `inGap` would fail these.
 describe('US-34 AC4: a change announced before the page has shown its first read', () => {
   // Survey R2 (2026-11-10, PR 1155 review R1): the page reads the record as it first renders
   // and shows that read in its first passive effects. A change announced between the commit
@@ -955,7 +960,16 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     await settle(700);
     expect(field(view, 'heightCm')).toBe('400');
   }
-  /** Another writer changes the birth year: held behind the dirty profile. */
+  /** As heightOutOfRange, then a valid birth month whose save is still on its way: a remote change holds behind
+   *  it (an out-of-range value alone holds nothing, US-34 AC13). The next profile save, or a re-read, ends the hold. */
+  async function heightOnItsWay(view: RenderResult) {
+    await heightOutOfRange(view);
+    refuse.gate = new Promise<void>(() => {}); // never lands: the saves after it go through
+    field(view, 'birthMonth');
+    fireEvent.change(q(view, '#birthMonth')!, { target: { value: '4' } });
+    await settle(600);
+  }
+  /** Another writer changes the birth year: held behind the profile still being saved. */
   async function heldBirthYear(view: RenderResult) {
     await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }, getShownErase()));
     await settle(50);
@@ -1015,7 +1029,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it.each(OWN_SAVES.filter(([, , , endsHold]) => !endsHold))('US-34 AC4a: %s, a change held: one read, the held profile change still waits, then applies once when the profile is clean', async (_name, save, shows) => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     reads.count = 0;
     await save(view);
@@ -1037,7 +1051,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it.each(OWN_SAVES.filter(([, , , endsHold]) => endsHold))('US-34 AC4a, AC8 (H14): %s, a change held: the profile save it flushes first settles, refused, so the held change shows once; 400 stays', async (_name, save, shows) => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     reads.count = 0;
     await save(view);
@@ -1061,7 +1075,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC9 (H15): under a hold, an own save\'s read leaves the chat\'s context on the profile the page shows; only the corrected value moves', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     const shown = mirrorContext(); // the context the page's own record builds, before the other device's change
     expect(shown.birthYear).toBe(1980);
     await heldBirthYear(view);
@@ -1079,7 +1093,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC9 (H15): the hold ends: the mirror takes the applied record in that read, written once, and a later own save keeps it', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     await OWN_SAVES[1][1](view); // its values read lands under the hold
     await settle(50);
@@ -1110,7 +1124,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC10 (H16b): under a hold, an own save\'s read writes the medication and screening lists the page shows beside its profile; the hold\'s read writes the record\'s', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     const shown = mirrorContext();
     // Another device changes the birth year and adds a statin and a colonoscopy: all held behind the dirty profile.
     await anotherWriter(async () => {
@@ -1144,7 +1158,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase());
     await flushRoadmapStore();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     return view;
   }
@@ -1204,7 +1218,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     listSave.screening = new Promise<boolean>((r) => { answerLands = r; });
     fireEvent.change(q(view, '#colorectal-method')!, { target: { value: 'colonoscopy_10yr' } });
     await settle(300); // the answer's save is on its way, not landed
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     fireEvent.change(q(view, '#statin-dose')!, { target: { value: '40' } });
     await settle(300); // the dose's save lands
@@ -1224,7 +1238,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC9 (H15), US-16 AC2: under a hold, the mirror sends the sex the page shows; the proposal is checked against, and saved to, the profile on screen, as before', async () => {
     await recordWithLdl(); // female, 170 cm
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await anotherWriter(() => saveChangedMeasurements({ sex: 'male' }, { sex: 'female' }, getShownErase()));
     await settle(50);
     await OWN_SAVES[1][1](view); // an own save's read under the hold
@@ -1250,10 +1264,10 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   const heightOnDisk = async () => (await recordOnDisk()).profile.heightCm;
   const heightError = (view: RenderResult) => { field(view, 'heightCm'); return q(view, '#heightCm')!.getAttribute('aria-invalid'); };
 
-  it('US-34 AC8 (H14): height 400 left, a remote birth year held; the height fixed and saved: the change shows once, the saved height kept', async () => {
+  it('US-34 AC8 (H14): height 400 left and a birth month still saving, a remote birth year held; the height fixed and saved: the change shows once, the saved height kept', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     reads.count = 0;
     type(q(view, '#heightCm'), '171');
@@ -1267,10 +1281,10 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     expect(reads.count).toBe(1);
   });
 
-  it('US-34 AC8 (H14): height 400 left, a remote birth year held; the next save is refused again: the change shows once, and 450 stays with its error', async () => {
+  it('US-34 AC8 (H14): height 400 left and a birth month still saving, a remote birth year held; the next save refuses 450: the change shows once, and 450 stays with its error', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     reads.count = 0;
     type(q(view, '#heightCm'), '450');
@@ -1280,6 +1294,29 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     expect(field(view, 'heightCm')).toBe('450');
     expect(heightError(view)).toBe('true');
     expect(await heightOnDisk()).toBe(170);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect(reads.count).toBe(1);
+  });
+
+  it('US-34 AC8 (H14): a remote height held behind a valid birth year still saving; the year then typed out of range (198) and its save refused: the hold ends, the height shows once, 198 keeps its error', async () => {
+    await recordWithLdl();
+    const view = await open();
+    refuse.gate = new Promise<void>(() => {}); // the year's save never lands: the saves after it go through
+    field(view, 'birthYear');
+    type(q(view, '#birthYear'), '1985');
+    await settle(600); // on its way: the form holds 1985, the page has not heard it land
+    reads.count = 0;
+    await anotherWriter(() => saveChangedMeasurements({ heightCm: 175 }, { heightCm: 170 }, getShownErase()));
+    await settle(50);
+    expect(field(view, 'heightCm')).toBe('170'); // held behind the year
+    expect(reads.count).toBe(0);
+    type(q(view, '#birthYear'), '198');
+    leave(q(view, '#birthYear'));
+    await waitFor(() => expect(field(view, 'heightCm')).toBe('175'), { timeout: 3000 });
+    await settle(800);
+    expect(field(view, 'birthYear')).toBe('198');
+    expect(q(view, '#birthYear')!.getAttribute('aria-invalid')).toBe('true');
+    expect((await recordOnDisk()).profile).toMatchObject({ heightCm: 175, birthYear: 1985 });
     expect(calls('remote_change_applied')).toHaveLength(1);
     expect(reads.count).toBe(1);
   });
@@ -1303,6 +1340,59 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     await settle(800);
     expect(field(view, 'heightCm')).toBe('175');
     expect(await heightOnDisk()).toBe(175);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect(reads.count).toBe(1);
+  });
+
+  // US-34 AC13: what a hold for a half-typed out-of-range value would have protected, and the apply keeps anyway.
+  it('US-34 AC13 (H14): mid-typing "1" on the way to 170, a remote birth year applies at once; the height keeps its text, focus and caret, and the next keystrokes land and save', async () => {
+    await recordWithLdl();
+    const view = await open();
+    field(view, 'heightCm');
+    const height = q(view, '#heightCm') as HTMLInputElement;
+    type(height, '1'); // focused, out of range, its save still waiting
+    // The metric box is type=number: browsers give it no selection API (jsdom throws, as Chrome and WebKit do), so
+    // its caret is the browser's own, kept while nothing writes the box's value. Record every write the page makes.
+    const own = Object.getOwnPropertyDescriptor(height, 'value')!; // React's value tracker on the node
+    const writes: unknown[] = [];
+    Object.defineProperty(height, 'value', { configurable: true, get() { return own.get!.call(this); }, set(v) { writes.push(v); own.set!.call(this, v); } });
+    reads.count = 0;
+    refuse.calls = 0;
+    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }, getShownErase()));
+    await settle(50);
+    // At once: shown before the height's 500 ms save has run (the only save so far is the other writer's).
+    expect(refuse.calls).toBe(1);
+    expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1981');
+    Object.defineProperty(height, 'value', own);
+    expect(writes).toEqual([]); // the apply never wrote the box: text and caret stand
+    expect(reads.count).toBe(1);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect(q(view, '#heightCm')).toBe(height); // the same field, not one drawn again
+    expect(height.value).toBe('1');
+    expect(document.activeElement).toBe(height);
+    fireEvent.change(height, { target: { value: '17' } });
+    fireEvent.change(height, { target: { value: '170' } });
+    expect(height.value).toBe('170');
+    fireEvent.change(height, { target: { value: '172' } });
+    leave(height);
+    await waitFor(async () => expect(await heightOnDisk()).toBe(172), { timeout: 3000 });
+    expect(field(view, 'heightCm')).toBe('172');
+    expect((await recordOnDisk()).profile.birthYear).toBe(1981);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+  });
+
+  // US-34 AC13 (H14 follow-up): a refused value is told apart from a half-typed one. Nothing typed is at risk.
+  it('US-34 AC13 (H14): height 400 refused and left; a remote birth year then shows at once, with no further edit, and 400 stays with its error', async () => {
+    await recordWithLdl();
+    const view = await open();
+    await heightOutOfRange(view);
+    reads.count = 0;
+    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }, getShownErase()));
+    await waitFor(() => expect(field(view, 'birthYear')).toBe('1981'), { timeout: 3000 });
+    await settle(800); // the re-read's form schedules one more save, refused again: it reads nothing more
+    expect(field(view, 'heightCm')).toBe('400');
+    expect(heightError(view)).toBe('true');
+    expect(await heightOnDisk()).toBe(170);
     expect(calls('remote_change_applied')).toHaveLength(1);
     expect(reads.count).toBe(1);
   });

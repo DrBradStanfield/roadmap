@@ -20,6 +20,8 @@ struct RootView: View {
     @State private var analytics = Analytics()
     /// The backup offer after the person's third save (US-57 AC8).
     @State private var cloudPrompt = CloudPrompt()
+    /// The tour after onboarding (US-57), shown on My health.
+    @State private var tour = TourGuide()
     @State private var offer = Offer.idle
     /// Each ask for the backup offer bumps it: one wait, which a newer ask restarts (S16).
     @State private var offerAsks = 0
@@ -56,19 +58,21 @@ struct RootView: View {
         }
         .sensoryFeedback(.selection, trigger: tab)
         .onChange(of: tab) { offerCloud() }
-        // A tour tip shows only on its own tab (TourTips.swift).
-        .onChange(of: tab, initial: true) { Tour.showing(tab == .health ? .health : .other) }
         // Clarity starts only once the whole window is masked (Analytics.swift, D9).
         .background(WindowReader {
             window = $0
             analytics.start(in: $0, on: screenName)
+            // A due tip waits while anything else is presented in the window (US-57 AC12, review R2).
+            tour.presenting = { [weak window = $0] in TourGuide.presenting(over: window) }
         })
         .onChange(of: screenName, initial: true) { analytics.screen(screenName) }
         // Edit sheets pin the record they opened on (MyData/RecordPin.swift).
         .environment(store)
+        .environment(tour)
         .environment(\.analytics, analytics)
         .onAppear {
-            Tour.finished = { offerAsks += 1 }
+            tour.analytics = analytics
+            tour.ended = { offerAsks += 1 }
             health?.analytics = analytics
         }
         // Back up closes the prompt by leaving `prompting`; Sync opens once it has gone (onDismiss).
@@ -88,7 +92,7 @@ struct RootView: View {
             guard keys.onboarded, !cover.shown else { return cloudPrompt.ignoreSaves(upTo: store.ownSaves) }
             cloudPrompt.ownSaves(store.ownSaves)
             // The third own save ends a tour still running, so it never blocks the prompt (R2b).
-            if cloudPrompt.endsTour { _ = Tour.end() }
+            if cloudPrompt.endsTour { tour.send(.ended) }
             offerAsks += 1
         }
         // The one wait before the offer, so the sheet that saved, or the tip that closed, has
@@ -104,6 +108,10 @@ struct RootView: View {
                 // The launch screen's colour, so the opening and a relaunch mid-questions never flash (US-25 AC21b).
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(.systemGroupedBackground), ignoresSafeAreaEdges: .all)
+                // Up from its first frame until it has gone: a tip waits for it (a scroll asked
+                // for while it slid away did nothing, measured).
+                .onAppear { tour.coverUp(true) }
+                .onDisappear { tour.coverUp(false) }
         }
         .onAppear(perform: decideFirstRun)
         .onChange(of: eraser.startsOver) { send(.erased) }
@@ -139,7 +147,7 @@ struct RootView: View {
             try? await Task.sleep(for: .seconds(2))
             // Never over the cloud prompt, a tour tip or any sheet (review R7): a later
             // visit asks instead, since planOpened is not used up here.
-            guard !Task.isCancelled, offer == .idle, quiet else { return }
+            guard !Task.isCancelled, offer == .idle, quiet, !tour.state.isRunning else { return }
             if reviewPrompt.planOpened() { requestReview() }
         }
     }
@@ -246,7 +254,7 @@ struct RootView: View {
         // Onboarding's answers, the last one included, are not the person's own saves (R1).
         cloudPrompt.ignoreSaves(upTo: store.ownSaves)
         // The tour continues on My health, once ever (US-57 AC1).
-        if Tour.start() { analytics.event(.tourStarted) }
+        if tour.start() { analytics.event(.tourStarted) }
     }
 
     /// What the review prompt's wait restarts on: the tab, and a plan coming on screen.

@@ -120,7 +120,7 @@ function repos(withOutput = true, manifest = TEST_MANIFEST) {
   const work = join(d, 'work');
   git(d, 'clone', '-q', origin, work);
   mkdirSync(join(work, 'tools'));
-  copyFileSync(join(TOOLS, 'merge-gated.sh'), join(work, 'tools', 'merge-gated.sh'));
+  for (const f of ['merge-gated.sh', 'ios-compile-paths.sh']) copyFileSync(join(TOOLS, f), join(work, 'tools', f));
   const generated = withOutput ? { 'out.txt': 'o\n', 'gen.mjs': 'g\n' } : {};
   commit(work, { 'tools/generated-files.json': manifest, 'in.txt': 'a\n', 'src/x.txt': 'x\n', 'src/y.txt': 'y\n', README: 'r\n', ...generated }, 'base');
   pushMain(work);
@@ -385,7 +385,7 @@ describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has m
       moveMain(r, { 'out.txt': 'o2\n' });
       const copy = join(r.d, 'elsewhere');
       mkdirSync(copy);
-      copyFileSync(join(TOOLS, 'merge-gated.sh'), join(copy, 'merge-gated.sh'));
+      for (const f of ['merge-gated.sh', 'ios-compile-paths.sh']) copyFileSync(join(TOOLS, f), join(copy, f));
       // Beside the copy: no rows, so it merges. The caller's tools/generated-files.json would refuse.
       writeFileSync(join(copy, 'generated-files.json'), '{"rows":[]}');
       const g = gate(r, sha, ['in.txt'], { cwd: r.caller, script: join(copy, 'merge-gated.sh') });
@@ -394,6 +394,28 @@ describe('US-64 AC34 merge-gated.sh refuses a PR whose generated file main has m
       // And with the test manifest beside it, the same copy refuses.
       writeFileSync(join(copy, 'generated-files.json'), TEST_MANIFEST);
       expect(gate(r, sha, ['in.txt'], { cwd: r.caller, script: join(copy, 'merge-gated.sh') }).status).toBe(REFUSED);
+    });
+  });
+
+  // US-64 AC43 (PR 2214 review): git quotes a path holding `"`, `\` or a control character even with
+  // core.quotepath=false, and a quoted path missed the iOS rule. Real git here; the stub rollup has no ios-compile,
+  // so a PR the rule catches refuses 8.
+  describe('US-64 AC43: an iOS path git would quote still makes ios-compile required (real git)', () => {
+    for (const [label, name] of [['a double quote', 'ios/HealthRoadmap/a"b.swift'], ['a backslash', 'ios/HealthRoadmap/a\\b.swift'],
+      ['a tab (judged by main\'s copy, fail closed)', 'docs/a\tb.md']]) {
+      it(`a PR adding a file whose name holds ${label} refuses (8): ios-compile has not reported`, () => {
+        const r = repos();
+        const sha = openPr(r, { [name]: 'x\n' });
+        const g = gate(r, sha, [name]);
+        expect(g.status).toBe(8);
+        expect(g.stderr).toContain('required check ios-compile has not reported');
+        expect(g.merges).toEqual([]);
+      });
+    }
+    it('control: a plain non-iOS PR still merges with no ios-compile at all', () => {
+      const r = repos();
+      const sha = openPr(r, { 'docs/plain.md': 'x\n' });
+      expect(gate(r, sha, ['docs/plain.md']).status).toBe(0);
     });
   });
 });

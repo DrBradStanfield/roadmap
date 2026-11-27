@@ -1,8 +1,9 @@
-# iOS compile: compile-only and advisory. It builds the app and its test targets for the simulator; it runs no
-# tests, builds no engine bundle and signs nothing. Not a required check, and listed as advisory in
-# tools/merge-gated.sh: that list matches the job's check name, so keep the job name `ios-compile`. Brad approved
-# it 2026-11-13 (warns, does not block). Fallback if the xcode-27 label will not start: runs-on macos-26 with
-# Xcode 26.6.
+# iOS compile: compile-only. It builds the app and its test targets for the simulator; it runs no tests, builds
+# no engine bundle and signs nothing. Not a required check in GitHub's branch rules, but the session merge gate
+# (tools/merge-gated.sh, tools/wait-run.sh) requires it to pass when a PR changes files the Swift build reads (the
+# one list is tools/ios-compile-paths.sh, US-64 AC43) and treats it as advisory otherwise. Those tools match the
+# job's check name, so keep the job name `ios-compile`. Brad approved it 2026-11-13. Fallback if the xcode-27
+# label will not start: runs-on macos-26 with Xcode 26.6.
 name: iOS compile
 
 on:
