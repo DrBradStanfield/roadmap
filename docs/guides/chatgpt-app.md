@@ -8,7 +8,7 @@ stories: ["US-32", "US-36"]
 
 Your health record is one file, `health-roadmap.json`, in your own Dropbox or Google Drive. It is yours. We do not hold a copy, and we have no database of your results.
 
-The Health by Dr Brad app is the bridge between that file and ChatGPT. You authorize it once, against your own cloud account, and ChatGPT can then read your results, work out your plan, add new values and correct an old one. Setting it up takes about five minutes: the steps are in [connecting ChatGPT to your health record](/blogs/guides/connect-chatgpt).
+The Health by Dr Brad app is the bridge between that file and ChatGPT. You authorize it once, against your own Dropbox or Google Drive account, and ChatGPT can then read your results, work out your plan, add new values and correct an old one. Setting it up takes about five minutes: the steps are in [connecting ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 
 This page is the plain description of what the app can do. It is for anyone deciding whether to connect it.
 
@@ -16,7 +16,7 @@ This page is the plain description of what the app can do. It is for anyone deci
 
 You connect Dropbox or Google Drive yourself, through that provider's own permission screen, and you can withdraw it there at any time: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) or [myaccount.google.com/connections](https://myaccount.google.com/connections).
 
-To answer one request, our server fetches your file using your own credential, holds it in memory for that request, and writes it back if you asked for a change. None of it is kept afterwards. There is no per-user row on our side, no health table, and no copy at rest. We keep a count of connector use: which tool ran, from which assistant, whether it worked, and when. Your values never enter our logs, our error reports or our analytics.
+To answer one request, our server fetches your record using your own credential, holds it in memory for that request, and writes it back if you asked for a change. None of it is kept afterwards. There is no row about you on our side, no health table, and no copy at rest. We keep a count of connector use: which tool ran, from which assistant, whether it worked, and when. Your values never enter our logs, our error reports or our analytics.
 
 One exception, and it is yours to trigger: if you ask the app to import the lab files in your connected Dropbox folder, those files go to Anthropic's API so the text can be read. Your record itself is never sent. We keep none of the files afterwards.
 
@@ -26,7 +26,7 @@ Nine tools. Each one says what it does and what it will not do.
 
 ### `read_record`: Read the health record
 
-Reads your file and returns what it holds: your profile, your measurements, your lab results, your medications and supplements, the screenings you have recorded, and the documents you have filed.
+Reads your record and returns what it holds: your profile, your measurements, your lab results, your medications and supplements, the screenings you have recorded, and the documents you have filed.
 
 **What it will not do.** It writes nothing, and it never returns your reminder token.
 
@@ -50,7 +50,7 @@ Adds a whole blood panel in one go, up to 50 tests, each with the unit the lab p
 
 ### `correct_value`: Correct a recorded value
 
-Fixes a number that went in wrong. The new value is added at the original date and the old row is marked entered-in-error.
+Corrects a number that went in wrong. The new value is added at the original date and the old row is kept, marked as a mistake.
 
 **What it will not do.** It deletes nothing, it cannot be undone, and it refuses unless the value it is told to expect is the value it finds.
 
@@ -78,7 +78,7 @@ Files the results from a report you drop into the chat. ChatGPT reads the file i
 
 **What it will not do.** The file never reaches our server, and the document is filed as a record with a title, a date and at most a one-line summary, never the file itself.
 
-There is no delete. Nothing in your record can be removed by any tool here. A correction adds the right value and marks the wrong one entered-in-error, so the history stays honest and you can see what was changed.
+There is no delete. Nothing in your record can be removed by any tool here. A correction adds the right value and keeps the wrong one, marked as a mistake, so the history stays honest and you can see what was changed.
 
 ## Before anything permanent
 

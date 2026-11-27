@@ -6,7 +6,7 @@ updated: "2026-11-09"
 stories: ["US-32"]
 ---
 
-Your record from the Health by Dr Brad tool is one file: `health-roadmap.json`, in your own Dropbox, Google Drive or GitHub folder. This repo ships a small program that hands that file to Claude as a set of named tools. Once it is connected you can say "add my new blood panel" or "what does my plan say about my LDL" and Claude does it, in your file, on your machine.
+Your record from the Health by Dr Brad tool is one file: `health-roadmap.json`, in your own Dropbox, Google Drive or GitHub folder. This repo ships a small program that hands that file to Claude as a set of named tools. Once it is connected you can say "add my new blood panel" or "what does my plan say about my LDL" and Claude does it, in your record, on your machine.
 
 This guide is for people who have the tool installed on a computer and are comfortable pasting a line into a terminal or editing one settings file. It takes about five minutes.
 
@@ -16,25 +16,25 @@ A short, fixed list of tools, and nothing else:
 
 Read your record. Everything in the file: profile, measurements, blood tests, medications, supplements, screenings, documents. Claude can ask for one test, or only the results since a date, instead of the lot.
 
-Compute your plan. The same plan the web tool shows, worked out offline from your file, with the reason and the citations behind every suggestion.
+Compute your plan. The same plan the web tool shows, worked out offline from your record, with the reason and the citations behind every suggestion.
 
-Add a measurement. One core value, such as a weight or an LDL.
+Add a value. One core value, such as a weight or an LDL.
 
 Add lab results. A whole panel in one call, up to 50 tests, in the numbers and units your lab printed. A test the catalogue knows is stored in one standard unit, converted for you, so a year of results reads as one series instead of a mixture; a unit it does not recognise for that test is refused rather than guessed at, and a test it does not know keeps the unit it was reported in.
 
-Correct a value. Fix a number that went in wrong.
+Correct a value. For a number that went in wrong.
 
 Change four things about you. Your sex, your birth year, your birth month and your height, because your plan is worked out from those. Nothing else about you is writable.
 
 Report a problem. If a tool refuses something you reasonably expected, ask Claude to report it. The program on your computer holds no key to anything, so it cannot file anything itself: it hands you a prefilled link to a public issue on the project's GitHub, carrying its description of the problem. It refuses a report that looks like it holds a value, an email or a phone number. It can miss one, and it cannot spot a diagnosis written in words, so read the report before you agree. Nothing is filed until you open that link and press the button. (The hosted connectors, Claude on the web and ChatGPT, do file it themselves. Their guides say so.)
 
-File results from a document. Give Claude a lab PDF or a photo of a result sheet and it reads the file itself, then hands the program the values it read. The program checks each one against the record's catalogue, units and ranges, shows you the candidates, and files only what you confirm. The candidates wait in the program's memory between the two steps, so a restart loses them and Claude reads the file again.
+File results from a document. Give Claude a lab PDF or a photo of a lab report and it reads the file itself, then hands the program the values it read. The program checks each one against the record's catalogue, units and ranges, shows you the candidates, and files only what you confirm. The candidates wait in the program's memory between the two steps, so a restart loses them and Claude reads the file again.
 
 Import lab files from your folder. This one is hosted-only, over Dropbox: the local program you run here has no model and no network, so it lists the tool and refuses it, pointing you at the website's upload or the hosted connector instead.
 
-The file stays where it is. Nothing is uploaded, no account is created, no key is needed. The program opens no network connection at all: it reads your file, changes it, and writes it back.
+The file stays where it is. Nothing is uploaded, no account is created, no key is needed. The program opens no network connection at all: it reads your record, changes it, and writes it back.
 
-One thing is held back on purpose. If you use email reminders, your record carries a token that manages that schedule on our server. It is stripped out of every read, so it can never end up in a chat transcript.
+One thing is held back on purpose. If you use email reminders, your record carries a token that manages that schedule on our server. It is stripped out of every read, so it can never end up in a conversation.
 
 ## Before you start
 
@@ -44,7 +44,7 @@ Node.js 22 or newer, from [nodejs.org](https://nodejs.org). Check with `node --v
 
 This repo on your computer: `git clone https://github.com/DrBradStanfield/roadmap.git`. Then `cd roadmap && npm install`.
 
-The path to your record. Your cloud folder has to be synced to disk, so the file is really there. Dropbox puts it at `~/Dropbox/Apps/Health Plan by Dr Brad/health-roadmap.json` for a new connection; a connection made before the app was renamed keeps `~/Dropbox/Apps/Health Roadmap by Dr Brad/`. Google Drive for desktop mounts My Drive somewhere like `~/Library/CloudStorage/GoogleDrive-you@example.com/My Drive/Health Plan by Dr Brad/health-roadmap.json` on a Mac, and the folder has to be set "Available offline" or Drive streams the file instead of storing it. If you have never connected a cloud provider there is no file on disk at all, because the tool is holding your record in your browser. Connect Dropbox or Google Drive in the tool first, and it moves your record there.
+The path to your record. Your cloud folder has to be synced to disk, so the file is really there. Dropbox puts it at `~/Dropbox/Apps/Health Plan by Dr Brad/health-roadmap.json` for a new connection; a connection made before the app was renamed keeps `~/Dropbox/Apps/Health Roadmap by Dr Brad/`. Google Drive for desktop mounts My Drive somewhere like `~/Library/CloudStorage/GoogleDrive-you@example.com/My Drive/Health Plan by Dr Brad/health-roadmap.json` on a Mac, and the folder has to be set "Available offline" or Drive streams the file instead of storing it. If you have never connected your cloud storage there is no file on disk at all, because the website is holding your record in your browser. Connect Dropbox or Google Drive on the website first, and it moves your record there.
 
 ## Claude Code
 
@@ -94,7 +94,7 @@ Your record holds one value per test per day. Ask Claude to add a second weight 
 
 That is the design, not a fault. Two weights for one day and nothing downstream knows which one is you.
 
-A correction is its own step, and it never erases anything. Claude adds a new row with the corrected number and the original date, and marks the old row "entered-in-error". Both rows stay in the file for good. That is how a hospital record works, and it is why you can always see what you were told and when.
+A correction is its own step, and it never deletes anything. Claude adds a new row with the corrected number and the original date, and keeps the old row, marked as a mistake. Both rows stay in the file for good. That is how a hospital record works, and it is why you can always see what you were told and when.
 
 There is no delete tool. Nothing Claude can call removes a row. It also cannot touch your medications, supplements or screenings: those are current state that a second device could overwrite, so for now only clinical values are writable this way. A document is filed only when you confirm results from it, as a record with a title, a date and at most a one-line summary, never the file itself.
 
@@ -102,7 +102,7 @@ It can change four things about you: your sex, your birth year, your birth month
 
 Every write copies your record to a backup beside it first, named `health-roadmap.json.bak-` and the time. The last three are kept. If a write goes wrong, that file is your record from the moment before it.
 
-Two more habits worth keeping. The local writer takes a lock file and merges its edit in if it hits a conflict. A browser tab writing through your cloud provider's own API sits outside that lock. Do not have both open at once. And check what it files, because an AI can misread a lab report the same way a person can.
+Two more habits worth keeping. The local writer takes a lock file and merges its edit in if it hits a conflict. A browser tab writing through your cloud storage's own API sits outside that lock. Do not have both open at once. And check what it files, because Claude can misread a lab report the same way a person can.
 
 ## Claude on the web
 
@@ -126,9 +126,9 @@ https://mcp.drstanfield.com/mcp
 
 The hosted version is append-only, like this one, with two extra limits: a correction on a row older than 90 days is refused, and Claude has to state the value it believes it is replacing, so a correction written from a stale read changes nothing.
 
-It can also import lab files, two ways. Drop a PDF, a photo of a result sheet or a clinic letter into the conversation and Claude reads it itself, then sends our server only the values it read: the name as printed, the number, the unit, the date. The file never reaches our server; only those values do, in memory for one request, written to your own folder. Our server checks each one against the record's own catalogue, unit table and ranges, and files only what you confirm. This works on Dropbox and Google Drive alike. Or, on a connected Dropbox, ask it to import the lab files in your Dropbox folder (`Apps/Health Plan by Dr Brad`) and it reads the PDFs, JPEG or PNG images and ZIPs sitting there, five files at a time; those files go through our server to Anthropic's API for extraction. That happens as soon as it reads them, before you confirm anything. We keep none of them. Anthropic's terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days unless they need to keep them to enforce their usage policy or comply with the law ([their policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)). Drop files in that folder and the next time you ask Claude anything about your record it offers them; nothing runs while you are away. Either way nothing is written to your record until you confirm; the candidates wait in a pending file in your own folder for an hour. A value already in your record is held rather than replaced.
+It can also read lab files, two ways. Drop a PDF, a photo of a lab report or a clinic letter into the conversation and Claude reads it itself, then sends our server only the values it read: the name as printed, the number, the unit, the date. The file never reaches our server; only those values do, in memory for one request, written to your own folder. Our server checks each one against the record's own catalogue, unit table and ranges, and files only what you confirm. This works on Dropbox and Google Drive alike. Or, on a connected Dropbox, ask it to import the lab files in your Dropbox folder (`Apps/Health Plan by Dr Brad`) and it reads the PDFs, JPEG or PNG images and ZIPs sitting there, five files at a time; those files go through our server to Anthropic's API to be read. That happens as soon as it reads them, before you confirm anything. We keep none of them. Anthropic's terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days unless they need to keep them to enforce their usage policy or comply with the law ([their policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)). Drop files in that folder and the next time you ask Claude anything about your record it offers them; nothing runs while you are away. Either way nothing is written to your record until you confirm; the candidates wait in a pending file in your own folder for an hour. A value already in your record is held rather than replaced.
 
-You cancel it at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps), or [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. That also disconnects this website from the folder, and reconnecting in the tool is one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing of your record, and how to disconnect.
+You cancel it at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps), or [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. That also disconnects this website from the folder, and reconnecting on the website is one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing of your record, and how to disconnect.
 
 ChatGPT connects the same way, with one extra step: [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 

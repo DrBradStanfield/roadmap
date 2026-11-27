@@ -1,12 +1,12 @@
 ---
-title: "Upload a lab report and fix a value it got wrong"
+title: "Upload a lab report and correct a value it got wrong"
 description: "Add a blood test PDF or photo to the Health by Dr Brad tool, check what it read before you save, and correct a value later if it went in wrong."
 slug: "upload-lab-report"
 updated: "2026-11-23"
 stories: ["US-04", "US-12", "US-13", "US-14"]
 ---
 
-You can add blood test results to [the tool](https://drstanfield.com/pages/roadmap) without typing them in. Upload the report, check what the tool read, then save. If a number still goes in wrong, you fix it where it shows.
+You can add blood test results to [the website](https://drstanfield.com/pages/roadmap) without typing them in. Upload the report, check what it read, then save. If a number still goes in wrong, you fix it where it shows.
 
 ## What you can upload
 
@@ -16,7 +16,7 @@ Some files will not read. An old Word .doc file cannot be opened, so save it as 
 
 ## Upload it
 
-1. Open [the tool](https://drstanfield.com/pages/roadmap). On a phone, stay on the My health tab.
+1. Open [the website](https://drstanfield.com/pages/roadmap). On a phone, stay on the My health tab.
 
 2. Find the Blood tests section. It appears once you have answered the first questions: your height, weight, sex and birth date.
 
@@ -26,7 +26,7 @@ Some files will not read. An old Word .doc file cannot be opened, so save it as 
 
 5. Drop your files in, or click to choose them. Reading starts straight away.
 
-A progress bar shows each file as it is read. A large upload takes longer. You can close the upload window and keep using the tool while it works: a small box at the edge of the screen shows the progress, and clicking it opens the upload again. Cancel stops the upload.
+A progress bar shows each file as it is read. A large upload takes longer. You can close the upload window and keep using the website while it works: a small box at the edge of the screen shows the progress, and clicking it opens the upload again. Cancel stops the upload.
 
 ## Check what it read
 
@@ -36,13 +36,13 @@ Go through it with the report beside you.
 
 - Every new number can be changed. Click it and type the right one.
 - To leave a value out, clear its box. An empty box is not saved.
-- A box with a coloured outline is one the tool was unsure about. Check those first.
-- A "Printed:" note under a number shows what the report said, when the tool converted the unit or had to guess it.
+- A box with a coloured outline is one the website was unsure about. Check those first.
+- A "Printed:" note under a number shows what the report said, when the website converted the unit or had to guess it.
 - Plain numbers you cannot edit are values already in your record. They are there for comparison and are not saved again.
 - Each new column needs the day the blood was taken. If the report gave no full date, pick the day in the column heading. Save waits until every new column has a day.
-- If the report has a column of earlier results with no date, the tool asks you for that date too.
+- If the report has a column of earlier results with no date, the website asks you for that date too.
 - If your record already holds a different number for that test on that day, the cell shows both, with a Replace box. Tick Replace only if the report is right. Leave it unticked and your saved number stays.
-- For the main blood tests, a number outside the range the tool accepts is marked, and Save waits until you correct it or clear it. For other tests, a value the record cannot accept is marked with the reason and left out when you save. That includes a number far outside anything a body could show, which is almost always a misread number or unit.
+- For the main blood tests, a number outside the range the website accepts is marked, and Save waits until you correct it or clear it. For other tests, a value the record cannot accept is marked with the reason and left out when you save. That includes a number far outside anything a body could show, which is almost always a misread number or unit.
 
 Look hardest at the test names and the dates. Once a value is saved, the tool cannot move it to a different test or a different day. The review is the place to catch that.
 
@@ -60,17 +60,17 @@ If you upload the same report twice, values already in your record show as plain
 
 2. Click or tap the number. It turns into a box you can type in. You can also press All results as a table at the foot of Blood tests and click the number there. In the table, tests outside the main grid sit below it, under Additional lab results.
 
-3. Type the right number. Press Enter, or click anywhere else, to save it. Press Escape to stop without saving. If you clear the box and leave it, nothing changes. If the number is not one the tool accepts, Enter does nothing, and clicking away puts the old number back without saving.
+3. Type the right number. Press Enter, or click anywhere else, to save it. Press Escape to stop without saving. If you clear the box and leave it, nothing changes. If the number is not one the website accepts, Enter does nothing, and clicking away puts the old number back without saving.
 
-For the main blood tests, if the number is right but the unit is wrong, change the unit first, then type the value. The units are in Settings on a computer and in the Account tab on a phone, or beside each row in the table. Changing the unit while the box is open closes it without saving, and the tool tells you so. Other tests keep the unit they were saved in, so check those units in the review before you save. If a unit is wrong there, clear that box so the value is not saved.
+For the main blood tests, if the number is right but the unit is wrong, change the unit first, then type the value. The units are in Settings on a computer and in the Account tab on a phone, or beside each row in the table. Changing the unit while the box is open closes it without saving, and the website tells you so. Other tests keep the unit they were saved in, so check those units in the review before you save. If a unit is wrong there, clear that box so the value is not saved.
 
-A correction never overwrites the old number. The tool adds the right number as a new entry and marks the old one as entered in error. Both stay in your record file, so you can always see what was there before. Your plan uses only the corrected number. There is no delete button: a correction is how a wrong value is fixed.
+A correction never overwrites the old number. The website adds the right number as a new value and keeps the old one, marked as a mistake. Both stay in your record, so you can always see what was there before. Your plan uses only the corrected number. There is no delete button: a correction is how a wrong value is fixed.
 
 If you see "This value changed on another device, so your edit was not saved", the value changed somewhere else while your box was open, on another device or through a connected AI. Look at the number now showing, and correct it again if it is still wrong.
 
 ## When a file will not read
 
-The tool names each file it could not read, with the reason.
+The website names each file it could not read, with the reason.
 
 - "Our server could not read it. Please try again." Upload that one file again later. Our server already retries short outages on its own, so pressing again at once rarely helps.
 - "Not read. Claude declined to read this file, so trying again will not help." Type those values in yourself.
@@ -89,4 +89,4 @@ The values you save go into your own record, the `health-roadmap.json` file in y
 
 ## If you get stuck
 
-Ask the chat on the tool page. On a phone it is the Chat tab.
+Ask Chat on the website. On a phone it is the Chat tab.
