@@ -81,7 +81,7 @@ const STATIN_BRANDS: Array<[string, string]> = ([
 /** An answer as a token: trimmed, lower case, no apostrophes, runs of spaces or hyphens as '_' ("Not yet" is not_yet). */
 const tokenOf = (text: string) => text.trim().toLowerCase().replace(/['\u2019]/g, '').replace(/[\s-]+/g, '_');
 /** The brands an option's own label names, each to the option's value: the single words in its parentheses
- *  ("Semaglutide injection (Ozempic/Wegovy)") and a one-word name before them ("Nexletol (bempedoic acid
+ *  ("Semaglutide injection (Ozempic/Wegovy)") and a one-word name before them ("Nexletol (Bempedoic acid
  *  180mg)"), never a word of the value itself (US-16 AC3, review R2). */
 const brandsOf = ({ value, label }: { value: string; label: string }): Array<[string, string]> => {
   const paren = /^(.*?) \((.*)\)$/.exec(label);

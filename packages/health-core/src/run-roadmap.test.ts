@@ -927,10 +927,12 @@ describe('US-67 AC3: the app\'s words for the form tools', () => {
   // a value that looks implausible for its unit. It moved again with US-16 AC3 (Brad 2026-11-02):
   // propose_medication_edit lists each key's own answers (a drug key: "or another drug's generic name"). It moved
   // again with US-67 N3 (Brad 2026-11-03, "Option 1"): propose_medication_edit never promises an Undo. It moved
-  // again with US-06 AC22 (Brad 2026-11-23): glp1, sglt2i and metformin list 'no' (No). Any other move is a cache-prefix change to explain.
+  // again with US-06 AC22 (Brad 2026-11-23): glp1, sglt2i and metformin list 'no' (No). It moved again with
+  // US-07 AC19 (Brad 2026-11-27, "Capitals everywhere"): the bempedoic acid answers read "Nexletol (Bempedoic
+  // acid 180mg)" and "Nexlizet (Bempedoic acid + Ezetimibe)". Any other move is a cache-prefix change to explain.
   it('US-67 AC3: the web\'s tools are byte-identical to the pinned ones (prompt cache prefix)', () => {
     const sha = (x: unknown) => createHash('sha256').update(JSON.stringify(x)).digest('hex');
-    expect(sha(CHAT_TOOLS)).toBe('a5a152a5b89d6ebc2c0a558e2146c8d0b4ad6f29ac5c5a641b23389b224eddb4');
+    expect(sha(CHAT_TOOLS)).toBe('ccd5fc688114dcdaf0d6e3fb2dd9286d6c1dac9ace78bf6decdba6d7e1d9ebed');
     expect(chatToolsFor(said)).toBe(CHAT_TOOLS);
     expect(chatToolsFor(said, true, false)).toBe(CHAT_TOOLS);
   });

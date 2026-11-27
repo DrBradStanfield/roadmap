@@ -472,7 +472,7 @@ describe("US-67 AC3: the medication banner names each answer in its form's own w
     ['pcsk9i', 'not_tolerated', 'PCSK9 inhibitor: Not tolerated'],
     ['bempedoic_acid', 'not_yet', "Bempedoic acid: Haven't tried yet"],
     ['bempedoic_acid', 'none', 'Bempedoic acid: Not taking'],
-    ['bempedoic_acid', 'bempedoic_acid', 'Bempedoic acid: Nexletol (bempedoic acid 180mg)'],
+    ['bempedoic_acid', 'bempedoic_acid', 'Bempedoic acid: Nexletol (Bempedoic acid 180mg)'],
     ['bempedoic_acid', 'not_tolerated', 'Bempedoic acid: Not tolerated'],
     ['glp1', 'none', "GLP-1 medication: Haven't tried yet"],
     ['glp1', 'other', 'GLP-1 medication: Other GLP-1'],
