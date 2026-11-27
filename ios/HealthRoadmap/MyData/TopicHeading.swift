@@ -52,7 +52,7 @@ struct TopicHeading<Controls: View>: View {
     }
 
     /// The room above a heading, in its row: the tour counts it as the heading's (`tourTip`).
-    static let rowTop: CGFloat = 20
+    static var rowTop: CGFloat { 20 }
 }
 
 extension TopicHeading where Controls == EmptyView {
