@@ -9,7 +9,7 @@
  * No DOM and no Node: engine-portability.test.ts checks.
  */
 import { mergeByKey, stampIsNewer, timeOf } from './record-time';
-import type { FileReminderOptIn, ReminderTokenRow, RoadmapFile } from './roadmap-file';
+import { stableStringify, type FileReminderOptIn, type ReminderTokenRow, type RoadmapFile } from './roadmap-file';
 
 /** A row's own fields: its `tokens` key, if any, left out. */
 export function ownRow<T extends object>(row: T): Omit<T, 'tokens'> {
@@ -59,12 +59,14 @@ export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileRem
  *  row before the re-read's erase time is not owed: the merge drops it too. */
 export function optInBehind(ours: FileReminderOptIn | undefined, theirs: FileReminderOptIn | undefined, erasedAt?: string): boolean {
   if (!ours) return false;
+  // A hand-edited token that is not a string keys by its content, so two parsed copies agree.
+  const keyOf = (token: unknown) => (typeof token === 'string' ? token : `\u0000${stableStringify(token)}`);
   const held = new Map(rowsOf(theirs).map((row) => [row.token, row]));
   // The stored object counts too, the erase marker included, which rowsOf skips.
-  if (theirs && !held.has(theirs.token)) held.set(theirs.token, ownRow(theirs));
+  if (theirs && !held.has(keyOf(theirs.token))) held.set(keyOf(theirs.token), ownRow(theirs));
   const owed = rowsOf(ours).filter((row) => row.token === ours.token || !beforeErase(row, erasedAt));
   return [ownRow(ours), ...owed].some((row) => {
-    const match = held.get(row.token);
+    const match = held.get(keyOf(row.token));
     return !match || stampIsNewer(row, match);
   });
 }

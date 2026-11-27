@@ -428,6 +428,16 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     expect(drive.body.profile.heightCm).toBe(181);
   });
 
+  it('a hand-edited opt-in whose token is not a string saves with an unrelated edit in one attempt', async () => {
+    const malformed = { ...optInRow('x', 'cancelled', '2026-10-21T11:00:00.000Z'), token: { not: 'a string' } } as unknown as FileReminderOptIn;
+    const base = withOptIn(malformed);
+    const drive = new ControlledDrive(base, false); drive.install();
+    const saved = await manager('a').save(stampProfile(clone(base), { heightCm: 182 }, NOW));
+    expect(saved.attempts).toBe(0);
+    expect(drive.body.reminderOptIn?.status).toBe('cancelled');
+    expect(drive.body.profile.heightCm).toBe(182);
+  });
+
   it('a nested row from before the re-read erase time is not owed: no retry', async () => {
     const plain = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
     const atEpoch = (f: RoadmapFile, erasedAt: string): RoadmapFile => ({ ...f, meta: { ...f.meta, eraseEpoch: 1, erasedAt } });
