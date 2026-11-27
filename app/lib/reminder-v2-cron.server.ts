@@ -52,10 +52,13 @@ async function processWithConcurrency<T, R>(
   return results;
 }
 
+/** The cron_lock row this cron takes and its fence re-reads (US-23 AC15). */
+export const REMINDER_LOCK = 'reminder_v2_cron';
+
 const cron = dailyCron({
   label: 'Reminder v2 cron',
   feature: 'reminder_v2_cron',
-  lockName: 'reminder_v2_cron',
+  lockName: REMINDER_LOCK,
   shared: true,
   targetHour: TARGET_HOUR_UTC,
   clock: utcNowParts,
@@ -63,7 +66,7 @@ const cron = dailyCron({
   // A failed pass re-runs the day (US-28 AC3); the day-stamp (US-23 AC15)
   // skips whoever an earlier run, in this process or a dead one, went to email.
   run: async (todayStr, lockedAt) => {
-    const count = await processV2Reminders(todayStr, () => stillHoldsLock('reminder_v2_cron', MACHINE_ID, lockedAt));
+    const count = await processV2Reminders(todayStr, () => stillHoldsLock(REMINDER_LOCK, MACHINE_ID, lockedAt));
     return count === LOCK_LOST ? LOCK_LOST : `Reminder v2 cron: completed, sent ${count} emails`;
   },
 });
