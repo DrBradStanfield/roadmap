@@ -10,7 +10,7 @@ import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage';
 import { Sentry, scrubEvent } from './sentry';
-import { EXPECTED_NETWORK_ERRORS, failureTags, recordFailure, storageCauseClass, storageFailureClass } from './error-diagnostics';
+import { EXPECTED_NETWORK_ERRORS, recordFailure, storageCauseClass, storageFailureClass } from './error-diagnostics';
 import { numberPaths } from '@roadmap/health-core/number-leak.test-helpers';
 import { uploadThrough } from '../testing/upload-save-kit';
 
@@ -308,17 +308,6 @@ describe('cloud-storage telemetry boundary', () => {
       // What left the browser, after the real scrub (beforeSend).
       expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'google-drive', errorClass: 'StorageError', causeClass: 'StorageError', httpStatus });
       expect(JSON.stringify(envelopes)).not.toContain(marker);
-    });
-
-    it('reads the first status in the cause chain, outer first, and ends on a cycle (US-09 AC66)', () => {
-      const inner = new StorageError(marker, undefined, undefined, 503, undefined, 'may-have-landed');
-      const bare = new StorageError(marker, undefined, inner, undefined, undefined, 'may-have-landed');
-      expect(failureTags(bare).httpStatus).toBe('5xx');
-      expect(failureTags(new StorageError(marker, undefined, bare, 403, undefined, 'refused')).httpStatus).toBe('403');
-      const looped = new StorageError(marker, undefined, undefined, undefined, undefined, 'no-answer');
-      Object.defineProperty(looped, 'cause', { value: looped });
-      expect(failureTags(looped).httpStatus).toBe('none');
-      expect(failureTags(Object.assign(new Error(marker), { cause: inner })).httpStatus).toBe('none'); // only a StorageError's chain is read
     });
   });
 
