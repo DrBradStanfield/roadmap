@@ -77,6 +77,9 @@ describe('US-07 AC16: a snapshot tile with evidence from the keyboard', () => {
     const ldl = tile(view, 'LDL Cholesterol');
     const control = within(ldl).getByRole('button'); // the tile's title (US-07 AC16a)
     expect(control.tabIndex).toBe(0);
+    // The focus stop is the title alone; the tile itself is no control.
+    expect(ldl.hasAttribute('tabindex')).toBe(false);
+    expect(ldl.hasAttribute('aria-expanded')).toBe(false);
     expect(control.getAttribute('aria-expanded')).toBe('false');
     expect(key(control, 'Enter')).toBe(false);
     expect(ldl.querySelector('.stat-detail')).not.toBeNull();
@@ -110,6 +113,7 @@ describe('US-07 AC16: a snapshot tile with evidence from the keyboard', () => {
       expect(within(c).queryByRole('button')).toBeNull();
       expect(c.querySelector('[aria-labelledby]')).toBeNull();
       expect(c.hasAttribute('tabindex')).toBe(false);
+      expect(c.querySelector('[tabindex]')).toBeNull();
       expect(c.hasAttribute('aria-expanded')).toBe(false);
       expect(key(c, 'Enter')).toBe(true);
       expect(c.querySelector('.stat-detail')).toBeNull();
