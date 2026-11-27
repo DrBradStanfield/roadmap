@@ -4,7 +4,7 @@ import SwiftUI
 extension OnboardingView {
     func begin() async {
         guard mode == .starting else { return }
-        // An unreadable record: My data says why, so never strand the person here (review R13).
+        // An unreadable record: My health says why, so never strand the person here (review R13).
         guard let data = store.myData else { return send(.began(nil)) }
         fromHealth = OnboardingSteps.decode(fromHealthNames)
         if onlyMissing { healthAsked = true }

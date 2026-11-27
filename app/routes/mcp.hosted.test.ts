@@ -332,6 +332,24 @@ describe('a record-free tool needs no record and no Dropbox (US-32)', () => {
   });
 });
 
+describe('US-32 AC1a: a name every object carries is not a tool on the hosted server', () => {
+  it('answers toString, constructor, __proto__ and hasOwnProperty as a made-up name, with no Dropbox call', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const calls = () => (fetch as unknown as { mock: { calls: unknown[] } }).mock.calls.length;
+    const before = calls();
+    let opened = 0;
+    makeAdapter = () => { opened++; return new MemoryAdapter(cloud); };
+    const control = await callTool(access, 'no_such_tool', {});
+    for (const name of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+      expect(await callTool(access, name, {}), name).toEqual({ ...control, text: `No tool named ${name}.` });
+    }
+    expect(control).toEqual({ text: 'No tool named no_such_tool.', structured: undefined, isError: true });
+    expect(calls()).toBe(before);
+    expect(opened).toBe(0);
+  });
+});
+
 describe('US-32 AC9 — the hosted server files the issue itself', () => {
   const TOKEN = 'ghp-test-token';
   const REPORT = { kind: 'bug', title: 'correct_value refused a row', detail: 'It said the row was superseded.' } as const;

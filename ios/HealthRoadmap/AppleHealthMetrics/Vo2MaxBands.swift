@@ -16,7 +16,7 @@ enum Vo2MaxBand: CaseIterable {
 }
 
 /// The person's VO2 max bands (US-56 AC8, display only, AC1): their row of FRIEND 2022's
-/// treadmill table, served by the engine on My data (`vo2Bands`, ios/engine/my-data.ts) for
+/// treadmill table, served by the engine on My health (`vo2Bands`, ios/engine/my-data.ts) for
 /// their sex and age today. Low is below `p20`, the Low line (FRIEND's P20; from 60, Apple's
 /// Low Cardio Fitness alert line), Below Average to P50, Above Average to P80, High from P80; each band includes
 /// its lower bound, and a band with no room is left out. Only the table comes out of the
@@ -95,7 +95,7 @@ struct Vo2MaxBands: Decodable, Equatable {
     }
 }
 
-/// A My data field read leniently: a malformed one reads as nil, so it never blanks the tab.
+/// A My health field read leniently: a malformed one reads as nil, so it never blanks the tab.
 struct Lenient<Value: Decodable & Sendable>: Decodable, Sendable {
     let value: Value?
 

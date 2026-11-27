@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H430,reminders,The erase marker without a provider gets its own type arm instead of a cast,lead,not started,"Filed 2026-11-27 from the R9 review. packages/health-core/src/erase.ts:85-88 builds the cancelled marker (token and address empty, provider only when known) and casts it as FileReminderOptIn, whose provider field is required (roadmap-file.ts:250-257). Give the marker its own arm of the opt-in type so the compiler checks it. US-11 AC15 (I2).",,no

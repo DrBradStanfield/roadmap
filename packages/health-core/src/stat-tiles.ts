@@ -1,5 +1,5 @@
 // The summary tiles at the top of the plan: the web's Quick Stats (ResultsPanel.tsx)
-// and the phone's My plan tiles (US-25 AC22). One source for which tiles show, in what
+// and the phone's plan tiles (US-25 AC22). One source for which tiles show, in what
 // order, with what words and status; each surface only draws them.
 import type { HealthResults } from './types';
 import type { SuggestionEvidence } from './evidence';

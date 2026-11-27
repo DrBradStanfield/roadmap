@@ -15,7 +15,7 @@ struct Headline: Equatable {
     var span = ""
 }
 
-/// The headline drawn large, shared by every metric page: My data's (MetricDetailView) and
+/// The headline drawn large, shared by every metric page: My health's (MetricDetailView) and
 /// Apple Health's (LiveMetricPage, SleepPage).
 struct PageHeadline: View {
     let headline: Headline

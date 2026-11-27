@@ -160,6 +160,8 @@ export interface ApiDocument {
   fileRef?: string | null;
   /** 'sha256-<hex>' of the original's bytes — ONE dedup key with the connector (US-35 AC6). */
   contentHash?: string | null;
+  /** The original's stored type, as the row holds it; it decides a preview when the ref has no extension (US-14 AC14). */
+  mimeType?: string | null;
 }
 
 /** The upload's quota preflight. Only `quota`, the server's daily limit, names

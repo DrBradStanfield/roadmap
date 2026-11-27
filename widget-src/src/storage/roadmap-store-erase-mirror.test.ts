@@ -14,7 +14,7 @@ import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
 import { BT_TIMELINE_DRAFT_KEY } from '../lib/storage';
 import {
-  addMeasurement, currentSaveStatus, deleteUserData, flushRoadmapStore, getEraseIdentity, getReminderOptIn, initRoadmapStore, setPreEraseHook, setReminderOptIn, getShownErase,
+  addMeasurement, currentSaveStatus, deleteUserData, flushRoadmapStore, getEraseIdentity, getReminderOptIn, initRoadmapStore, setPreEraseHook, setReminderRows, getShownErase,
 } from '../lib/roadmap-data';
 import { cancelRemindersForErase } from '../../standalone/reminders';
 import { LocalStorageAdapter } from './local-storage-adapter';
@@ -51,7 +51,7 @@ describe('Delete all my data when neither the cloud nor this browser takes it (l
     const cloud = new FailingCloud();
     const store = await RoadmapStore.create(cloud);
     store.addMeasurement('weight', 82, '2026-09-01', store.shownErase);
-    store.setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' }, store.shownErase);
+    store.setReminderRows([{ status: 'active', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' }], store.shownErase);
     await store.flush();
     // An edit the cloud has not taken: its failed save is held in this browser.
     cloud.failWrites = true;
@@ -98,7 +98,7 @@ describe('S69, US-11 AC4c: on "This device", an erase the browser refused cancel
     localStorage.removeItem(BACKEND_KEY);
     await initRoadmapStore(new LocalStorageAdapter());
     setPreEraseHook(cancelRemindersForErase); // as standalone/app.tsx registers it
-    expect(setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' }, getShownErase())).toBe(true);
+    expect(setReminderRows([{ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' }], getShownErase())).toBe(true);
     await flushRoadmapStore();
     const posts: string[] = [];
     vi.stubGlobal('fetch', vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
@@ -152,7 +152,7 @@ describe('S69 R2, US-11 AC4c: a cloud erase is kept, and the cancel sent, only w
     const cloud = new FailingCloud();
     await initRoadmapStore(cloud);
     setPreEraseHook(cancelRemindersForErase); // as standalone/app.tsx registers it
-    expect(setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' }, getShownErase())).toBe(true);
+    expect(setReminderRows([{ status: 'active', token: 'test-token-good', email: 'synthetic-person@example.com', provider: 'dropbox' }], getShownErase())).toBe(true);
     await flushRoadmapStore();
     const posts: string[] = [];
     vi.stubGlobal('fetch', vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
@@ -394,7 +394,8 @@ describe('S69 R2, US-11 AC4c: a cloud erase is kept, and the cancel sent, only w
   it('another tab wrote a later erase to the device copy and this write stored nothing: held, cancel sent', async () => {
     const posts = await cloudWithOptIn();
     const before = getEraseIdentity();
-    const later = { ...deviceFile(), measurements: [], meta: { ...deviceFile().meta, eraseEpoch: 2 } };
+    // A later erase holds no live token (since US-11 AC15 the commit spares a token active in the copy holding the erase).
+    const later = { ...deviceFile(), measurements: [], reminderOptIn: undefined, meta: { ...deviceFile().meta, eraseEpoch: 2 } };
     const setItem = Storage.prototype.setItem;
     let otherTabWrote = false;
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H426,sync,"A stamped row written at the counter ceiling keeps its order after the record is read again",bug,not started,"Found in the R9 PR 1 review (2026-11-27). Scope: a stamped writer at the counter ceiling.",,no

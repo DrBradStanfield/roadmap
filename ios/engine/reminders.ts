@@ -1,4 +1,4 @@
-// The iOS app's on-device reminders (US-25 AC12, ios/architecture.md D7).
+// The iPhone app's on-device reminders (US-25 AC12, ios/architecture.md D7).
 // What is due, and when, is health-core's computeReminderSchedule: the same
 // schedule the web pushes for its reminder emails, with the record's own
 // per-category preferences and the annual floor. This file adds only the

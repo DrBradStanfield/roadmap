@@ -41,10 +41,39 @@ issue, and nothing private.
 
 ### Waiting on your own yes
 
-- **An iPhone engine release waits at its signing step.** Today's deploy started it. It was left unsigned on purpose
-  while the App Store review is open.
+- iPhone build 15 (version 0.3), archived 27 Nov from 511eb0b10, waits for your TestFlight upload.
+- No engine release waits. Checked 2026-11-27: engine releases 202611262054, 202611270239 and 202611270756 were
+  signed in CI, and no Engine release run waits at its signing step.
 
 ## Decided
+
+2026-11-27, Brad's words in quotes:
+- Medicine names: "Capitals everywhere. Every medicine name gets a capital, in titles and sentences." Every medicine
+  name the app shows starts with a capital; drug classes stay lower case; citation titles and the article prose in
+  `roadmap_text.html` are unchanged (PR 2201, merged, US-07 AC19).
+- iPhone build 15 is version 0.3, in TestFlight only (PRs 2180 and 2190, merged).
+- Auto-ship never merges a PR that touches `ios/`: "make auto-ship refuse any PR that touches ios/". Such a PR is
+  merged by hand through the session merge gate, and its simulator run comes at the checkpoint (PR 2217, merged,
+  US-46 AC20).
+- The Codex reviewer runs gpt-6.2-sol by default, and gpt-6.2-astra with `--deep` for design notes and the
+  high-risk classes. It runs on the ChatGPT subscription login only. Web search is off unless `--live` is passed
+  (PR 2222, merged, US-40 AC19; the codex-review skill has the detail).
+- Reminder opt-ins merge per token, "option B": "just do option B now. that's the proper fix". The reminders control
+  shows every active address; one Turn off cancels them all; a schedule change goes only to the newest address; an
+  erase reaches the rows of the epoch it erased. Design of record:
+  [drafts/r9-optin-cancel-merge-design.md](drafts/r9-optin-cancel-merge-design.md) (PRs 2215 and 2220, merged). Built
+  and live the same day: PR 2230, which carries PR 2221, merged as 9b90e9aaa (US-17 AC19, US-11 AC15); Deploy
+  45959526193 and engine release 45961796099 green.
+- iPhone build 15 (version 0.3) was archived on 27 Nov from 511eb0b10, the merged tour PR 2209. It waits for your
+  TestFlight upload; TestFlight only.
+- The feedback form's hidden field (contributor PR 2235), the owner's ruling: delete the field rather than make it
+  fire. A filled hidden field would refuse a real person's message with no way for them to clear it, while a direct
+  post simply leaves the field out. Abuse stays bounded by the signed proxy and the per-address limit. Not built
+  yet; PR 2235 is open.
+- The reminders error line asked of contributor PR 1968: "We could not read the email address on your cloud storage
+  account. Type the address reminders should go to." PR 1968 is open.
+- CI tidying (PR 2217): weighted test shards are dropped, since earlier speed work brought the shards close. The
+  Pages smoke check stays inline in the deploy workflow: a gate's definition stays in an owner-only file.
 
 2026-11-26, Brad's words in quotes:
 - Per-address limits (PR 2082, merged): "Recommendation: raise the two, then merge." "do it". For a key that is an
@@ -123,7 +152,8 @@ issue, and nothing private.
   to main.
 - Built storefront bundles in git: stop tracking them. Not started.
 - The story file every PR edits: split it, one file per story section. Not started.
-- One workflow PR for CI tidying: decided in principle; workflow files are Brad's to change. Not started.
+- One workflow PR for CI tidying: decided in principle; workflow files are Brad's to change. Done 2026-11-27 in
+  PR 2217 (one typecheck list; see 2026-11-27 for what was dropped).
 - The storefront chat embed's events: merged (PR 2079), so the embed's use is counted like the tool's; each event
   carries its name alone.
 - "Two server items to close" and "Files lost when a lab batch times out (self-hosted build)" are closed with no
@@ -133,31 +163,3 @@ issue, and nothing private.
   reader ships one app version before the writer.
 - The reminders switch when iPhone permission was already decided shows the existing Settings row, with no new words
   ("go with your recommendations"). It waits for the next iPhone build (lead S33).
-
-2026-11-23, Brad's words in quotes:
-- Original files are stored in the background after Save, with no action from the person at Save and at every
-  launch; the person acts only on a final failure, with one "Try again" (Brad's requirement).
-- Files waiting to be stored may stay on a device for 30 days: "this". Kept because a medical file should not sit
-  indefinitely in a browser on a shared computer, and a job that can never succeed needs an end. Narrowed by the
-  next line: the limit now applies to the phone apps only, for jobs that can never succeed.
-- The website keeps no waiting file once the page is gone; the phone apps keep them until stored: "the webapp
-  shouldn't keep it, but the iOS (and eventually the android app) can keep". On the web, uploads run while the page
-  stays open, leaving asks first, and a file not stored by then stays as details only (uploading it again stores it).
-- The phone apps' privacy notice and erase confirm gain "Files waiting to be stored in your cloud are kept on this device until
-  they are stored. Erasing your data removes them.": "do it. I approve the sentence that you draft".
-- One person's files never reach another person's cloud: "agreed". The design ties the files to their own record,
-  so another account's record never receives them; they wait for their own record rather than being deleted at once.
-- "Done" appears at once, with one live line while originals are stored: "yes".
-- Another device shows such a document with its details and without the file: "yes".
-- About eight retries, then "Try again": "yes".
-- Words: "I agree with your wording, so long as it's succinct": "Storing {n} original files in your cloud." (one
-  file: "Storing 1 original file in your cloud."), "{n} original files couldn't be stored; their details are saved.",
-  "Original being stored", with the existing kept, not-stored, "Try again" and "Done" words.
-- When a lab report saved with nothing ticked fails to reach the cloud, the done screen says "The original file couldn't
-  be stored." alone, since no details were saved; every other case keeps "; its details are saved.": "this" (option 2).
-- When a report has nothing to check, its values stay behind "Show all": "this. we want the UI to be clean and if a
-  person wants to investigate their blood tests further, then they can click 'show all'" (option 1).
-- A screening date never goes backwards, within one Save: a ticked letter's date is written only if it is later than the
-  date the record holds when the Save commits; among letters in one upload the latest wins. Across devices the record
-  still merges last-writer-wins. An earlier date can still be set by hand in the form: "this" (option 2).
-- Erase leaves original files in the person's cloud folder, and the confirm text keeps saying so: "this".

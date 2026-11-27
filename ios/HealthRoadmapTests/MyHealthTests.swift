@@ -135,6 +135,23 @@ final class MyHealthTests: XCTestCase {
         XCTAssertNil(try self.page(try text(sample())).urgent, "no urgent card, no banner")
     }
 
+    /// US-57 AC2: each tour tip's anchor is one the page draws: the waist row, the first
+    /// Weight & diabetes card (the one `cardSection` hangs tip 2 on) and the Blood tests heading,
+    /// which every page has. A record without one names no target, so that step passes.
+    func testEveryTourTargetIsAnAnchorThePageDraws_US57_AC2() throws {
+        var full = 0
+        for (name, json) in try records() {
+            let page = try page(json)
+            let targets = MyDataView.tourTargets(page)
+            XCTAssertEqual(targets[.bloodTests], TourTarget(id: HealthTopic.bloodTests.anchor, atTop: true), "\(name): Blood tests' heading, scrolled to the top")
+            XCTAssertEqual(targets[.snapshot], page.waist == nil ? nil : TourTarget(id: MyDataView.firstRow, atTop: false), "\(name): the first row, when the waist row draws")
+            XCTAssertEqual(targets[.foundation]?.id, (page[.weight].urgent + page[.weight].cards).first?.anchor, "\(name): the first weight card")
+            if targets.count == 3 { full += 1 }
+        }
+        XCTAssertGreaterThan(full, 0, "some record has all three anchors")
+        XCTAssertNil(HealthPage(data: nil, plan: .needsDetails, layout: nil, whtr: nil, egfr: nil).firstWeightCard, "no plan, no card: tip 2 passes")
+    }
+
     // MARK: AC3
 
     /// Every suggestion the plan holds is drawn exactly once (Codex R4, adversary R8): in one card,

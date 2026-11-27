@@ -27,6 +27,17 @@ export function generateInstanceId(): string {
 }
 
 let channel: BroadcastChannel | null = null;
+/** Each subscriber's listener, added to every channel this page opens. */
+const listeners = new Set<(e: MessageEvent) => void>();
+
+// The channel closes as the page goes (pagehide), not as a leave starts: a
+// leave the person cancels keeps the page and its sync. A page the browser
+// shows again from the back-forward cache opens a new one (US-15 AC17f).
+function closeChannel(): void {
+  channel?.close();
+  channel = null;
+  window.addEventListener('pageshow', getChannel);
+}
 
 function getChannel(): BroadcastChannel | null {
   if (typeof BroadcastChannel === 'undefined') return null;
@@ -34,10 +45,8 @@ function getChannel(): BroadcastChannel | null {
     // Firefox throws a SecurityError here when the site's storage is blocked:
     // the chat then runs without cross-tab sync (US-09 AC16a).
     try { channel = new BroadcastChannel(CHANNEL_NAME); } catch { return null; }
-    window.addEventListener('beforeunload', () => {
-      channel?.close();
-      channel = null;
-    }, { once: true });
+    for (const listener of listeners) channel.addEventListener('message', listener);
+    window.addEventListener('pagehide', closeChannel);
   }
   return channel;
 }
@@ -53,8 +62,9 @@ export function subscribeSync(handler: (msg: SyncMessage) => void): () => void {
   const ch = getChannel();
   if (!ch) return () => {};
   const listener = (e: MessageEvent) => handler(e.data as SyncMessage);
+  listeners.add(listener);
   ch.addEventListener('message', listener);
-  return () => ch.removeEventListener('message', listener);
+  return () => { listeners.delete(listener); channel?.removeEventListener('message', listener); };
 }
 
 // rAF-throttled input broadcaster — batches keystrokes to one broadcast per animation frame
