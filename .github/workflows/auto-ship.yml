@@ -80,16 +80,16 @@ jobs:
           case ",${labels}," in *,hold,*) echo "'hold' label present — vetoed."; exit 0;; esac
 
           # iPhone code (Brad 2026-11-27, US-46 AC20): a PR that changes, adds, deletes or
-          # renames any path under ios/ is never auto-merged. Every page of the file list is
-          # read (one page holds 100), and its length must equal the PR's changed_files, so
-          # a long diff cannot hide an ios/ path; a list that cannot be read is a refusal.
+          # renames any path under ios/ (in any case) is never auto-merged. The file list is
+          # paginated (one page holds 100) and its length must equal the PR's changed_files,
+          # so a long diff cannot hide an ios/ path; a list that cannot be read is a refusal.
           pr_files=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files?per_page=100" \
             --jq '.[] | [.filename, (.previous_filename // "")] | @tsv') \
             || { echo "Could not list the PR's files — not shipping (the ios/ check fails closed)."; exit 0; }
           [ "$(grep -c . <<<"${pr_files}")" = "$(pr_json | jq -r '.changed_files')" ] \
             || { echo "File list does not hold every changed file — not shipping (the ios/ check fails closed)."; exit 0; }
-          if awk -F'\t' '$1 ~ /^ios\// || $2 ~ /^ios\// { f = 1 } END { exit !f }' <<<"${pr_files}"; then
-            echo "touches ios/: merged only through a session's merge gate and simulator run — not shipping."; exit 0
+          if awk -F'\t' 'tolower($1) ~ /^ios\// || tolower($2) ~ /^ios\// { f = 1 } END { exit !f }' <<<"${pr_files}"; then
+            echo "touches ios/: merged by hand through the session merge gate; the simulator run comes at the checkpoint — not shipping."; exit 0
           fi
 
           # Reviewer verdict: trusted bot author + pinned to the CURRENT head sha.

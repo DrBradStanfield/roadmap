@@ -47,8 +47,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    on more fixes or a review, or whose merge order you are managing (shared files, a deploy in flight):
    auto-ship merges any `claude/` PR 30 minutes after a Claude Review approval and a green `test` unless it
    carries `hold` (PRs 677 and 734 merged early, 2026-11-02/03; PR 850 mid-deploy, 2026-11-05). It never merges
-   a PR that touches any path under `ios/` (Brad 2026-11-27, US-46 AC20): that PR merges only through a session's
-   merge gate and simulator run, and the auto-ship run ends with that line in its log. Remove `hold`, or
+   a PR that touches any path under `ios/`, in any case (Brad 2026-11-27, US-46 AC20): that PR is merged by hand
+   through the session merge gate, and the simulator run comes at the checkpoint; the auto-ship run says so in its log. Remove `hold`, or
    merge with it on, when you merge by hand. A PR that carries `hold` gets no automatic Claude Review (its run ends green
    at once); adding or removing a label never starts or cancels one. It needs none (Brad 2026-11-13, PR 1533): the
    fresh adversary, plus Codex where the class needs it (§ Reviews below), is its review.

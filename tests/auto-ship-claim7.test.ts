@@ -478,7 +478,7 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
   // issue, with no merge; an unreadable or short list refuses too (fail closed).
   describe("PRs that touch ios/ (US-46 AC20)", () => {
     const file = (filename: string, previous_filename?: string) => ({ filename, previous_filename, additions: 1, deletions: 0 });
-    const IOS = "touches ios/: merged only through a session's merge gate and simulator run — not shipping.";
+    const IOS = "touches ios/: merged by hand through the session merge gate; the simulator run comes at the checkpoint — not shipping.";
     const refusedWith = (over: Record<string, unknown>, line: string) => {
       const r = run(over);
       expect(r.code).toBe(0);
@@ -488,7 +488,7 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
       expect(r.out).toContain(line);
     };
 
-    it("reads every page of the file list", () => {
+    it("asks for the file list with --paginate", () => {
       const r = run({ prFiles: [file("a.ts")] });
       expect(r.calls).toContain("api --paginate repos/o/r/pulls/7/files?per_page=100");
       expect(merged(r.calls)).toHaveLength(1);
@@ -500,6 +500,10 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
     });
     it("a file renamed out of ios/ refuses", () => {
       refusedWith({ prFiles: [file("docs/old.swift", "ios/App/Old.swift")] }, IOS);
+    });
+    it("the ios/ match ignores case", () => {
+      refusedWith({ prFiles: [file("IOS/HealthRoadmap/X.swift")] }, IOS);
+      refusedWith({ prFiles: [file("docs/x.swift", "Ios/HealthRoadmap/X.swift")] }, IOS);
     });
     it("a path that only contains ios/ further in, or starts with ios but not ios/, still ships", () => {
       const r = run({ prFiles: [file("docs/ios/notes.md"), file("iosx/a.ts"), file("tools/ios-compile-paths.sh")] });

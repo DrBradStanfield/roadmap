@@ -156,9 +156,9 @@ describe('ci.yml jobs (US-64 AC12)', () => {
 
 /**
  * CI tidy (Brad 2026-11-26, docs/decisions-for-brad.md "One workflow PR for CI tidying"): CI and Deploy share
- * one typecheck list, and the Pages smoke is a file in tools/, not a script written inline in deploy.yml.
+ * one typecheck list. (The Pages smoke stays inline in deploy.yml: a gate's definition stays in an owner-only file.)
  */
-describe('one typecheck list and the Pages smoke file (CI tidy, 2026-11-26)', () => {
+describe('one typecheck list (CI tidy, 2026-11-26)', () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
   const deploy = readFileSync(join(ROOT, '.github/workflows/deploy.yml'), 'utf8')
     .split('\n')
@@ -180,16 +180,6 @@ describe('one typecheck list and the Pages smoke file (CI tidy, 2026-11-26)', ()
     for (const text of [ci, deploy]) {
       expect(text).not.toMatch(/tsc --noEmit|npm run typecheck:(server|engine)/);
     }
-  });
-
-  it('deploy.yml runs the Pages smoke from tools/pages-smoke.mjs, with no inline script', () => {
-    const smoke = deploy.slice(deploy.indexOf('\n  pages-smoke:\n'), deploy.indexOf('\n  deploy:\n'));
-    expect(smoke).toContain('run: node tools/pages-smoke.mjs\n');
-    expect(deploy).not.toMatch(/<<'?EOF|playwright'|webkit\.launch/);
-    const tool = readFileSync(join(ROOT, 'tools/pages-smoke.mjs'), 'utf8');
-    expect(tool).toContain("await page.goto('https://drbradstanfield.github.io/roadmap/'");
-    expect(tool).toContain("await page.waitForSelector('#health-tool-root'");
-    expect(tool).toContain("page.on('pageerror'");
   });
 });
 
