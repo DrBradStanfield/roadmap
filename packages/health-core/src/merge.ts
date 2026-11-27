@@ -663,11 +663,10 @@ export function mergeFiles(
     if (kept) {
       // `now: updatedAt` carries the max over BOTH metas into the re-merge —
       // the pruned copy wears the winner's meta, so the loser's own clock
-      // would otherwise be dropped here (the never-rewind guard above).
+      // would otherwise be dropped here (the never-rewind guard above). The
+      // winner's opt-in stands whole, as when nothing is rescued (US-17 AC19).
       const next = { ...opts, now: updatedAt };
-      const rescued = localWins ? mergeFiles(winner, kept, next) : mergeFiles(kept, winner, next);
-      // The winner's opt-in stands whole, as when nothing is rescued (US-17 AC19).
-      return { ...rescued, reminderOptIn: winner.reminderOptIn };
+      return { ...(localWins ? mergeFiles(winner, kept, next) : mergeFiles(kept, winner, next)), reminderOptIn: winner.reminderOptIn };
     }
     return {
       ...winner,
@@ -724,8 +723,7 @@ export function mergeFiles(
     supplementHistory: unionLog<FileSupplement>(local.supplementHistory, remote.supplementHistory),
     documents: mergeDocuments(local.documents, remote.documents),
   } as RoadmapFile;
-  // Stamped on what the merge holds: the merge that first writes opt-in `tokens` lifts the file (US-17 AC19).
-  return { ...merged, schemaVersion: recordSchemaVersion(merged) };
+  return { ...merged, schemaVersion: recordSchemaVersion(merged) }; // the merge that first writes opt-in `tokens` lifts it (US-17 AC19)
 }
 
 type KeyedLists = Pick<RoadmapFile, 'medications' | 'supplements' | 'reminderPreferences' | 'recommendationSnapshots'>;

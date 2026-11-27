@@ -125,10 +125,9 @@ function recoveredClock(raw: Record<string, unknown>): string {
     if (!isObject(row)) continue;
     stamps.push(row.updatedAt);
     // The opt-in's valid nested rows are clocks too (US-17 AC19).
-    if (key === 'reminderOptIn' && Array.isArray(row.tokens)) {
-      for (const nested of row.tokens) if (isTokenRow(nested)) stamps.push(nested.updatedAt);
-    }
-    if (key !== 'reminderOptIn' && isObject(row.fieldStamps)) {
+    if (key === 'reminderOptIn') {
+      for (const nested of Array.isArray(row.tokens) ? row.tokens : []) if (isTokenRow(nested)) stamps.push(nested.updatedAt);
+    } else if (isObject(row.fieldStamps)) {
       for (const stamp of Object.values(row.fieldStamps)) {
         if (isObject(stamp)) stamps.push(stamp.updatedAt);
       }

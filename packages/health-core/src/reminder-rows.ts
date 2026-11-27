@@ -12,8 +12,8 @@ import { mergeByKey, stampIsNewer } from './record-time';
 import type { FileReminderOptIn, ReminderTokenRow, RoadmapFile } from './roadmap-file';
 
 /** A row's own fields: its `tokens` key, if any, left out. */
-function ownRow(row: FileReminderOptIn): ReminderTokenRow {
-  const { tokens: _tokens, ...own } = row;
+export function ownRow<T extends object>(row: T): Omit<T, 'tokens'> {
+  const { tokens: _tokens, ...own } = row as T & { tokens?: unknown };
   return own;
 }
 
@@ -25,7 +25,7 @@ export function rowsOf(optIn: FileReminderOptIn | undefined): ReminderTokenRow[]
   if (!optIn) return [];
   const rows = [optIn, ...(Array.isArray(optIn.tokens) ? optIn.tokens : [])]
     .filter((row) => typeof row?.token === 'string' && row.token !== '')
-    .map(ownRow);
+    .map((row) => ownRow(row));
   return mergeByKey(rows, [], (row) => row.token);
 }
 

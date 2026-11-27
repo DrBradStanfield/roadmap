@@ -6,6 +6,7 @@
  */
 import { eraseOf } from './erase-identity';
 import { CLOCK_KEYS } from './merge';
+import { ownRow } from './reminder-rows';
 import { stableStringify, type RoadmapFile } from './roadmap-file';
 
 /** The record minus its own clocks — what a person would call a change. Keys
@@ -31,10 +32,7 @@ export function visibleContentOf(file: RoadmapFile): string {
   // itself is: it drops the chat's banners (US-16 AC2a).
   const { meta: _clocks, erasedRows: _list, schemaVersion: _version, ...rest } = file;
   // The opt-in's other tokens' rows are bookkeeping no screen shows yet (US-17 AC19).
-  if (rest.reminderOptIn) {
-    const { tokens: _rows, ...shown } = rest.reminderOptIn;
-    rest.reminderOptIn = shown;
-  }
+  if (rest.reminderOptIn) rest.reminderOptIn = ownRow(rest.reminderOptIn);
   const seen: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(rest)) {
     seen[key] = Array.isArray(value) ? value.map((row) => stableStringify(row, CLOCK_KEYS)).sort() : value;

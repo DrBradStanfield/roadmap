@@ -153,12 +153,12 @@ async function eraseSetUp() {
 
   /** Another device: its own store over the same cloud, its writes counted apart from the page's, and
    *  its own announces kept off the page's window listeners (US-17 AC19 review, R7). */
-  const otherWrites: string[] = [];
+  const otherWrites = { count: 0 };
   const otherAnnounced: unknown[] = [];
   const asOtherDevice = async <T>(act: (other: InstanceType<typeof RoadmapStore>) => Promise<T>): Promise<T> => {
     const adapter = new MemoryAdapter(cloud);
     const write = adapter.write.bind(adapter);
-    adapter.write = (...args: Parameters<typeof adapter.write>) => { otherWrites.push('other'); return write(...args); };
+    adapter.write = (...args: Parameters<typeof adapter.write>) => { otherWrites.count += 1; return write(...args); };
     const other = await RoadmapStore.create(adapter);
     const dispatch = window.dispatchEvent.bind(window);
     const sink = vi.spyOn(window, 'dispatchEvent').mockImplementation((event: Event) =>
@@ -308,7 +308,7 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     expect(t.data.getEraseIdentity()).not.toBe(before);
     expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_A, idToken: PROOF }]);
     // Writes and announces by store: the other device wrote once and told this page nothing.
-    expect(t.otherWrites).toEqual(['other']);
+    expect(t.otherWrites.count).toBe(1);
     expect(t.otherAnnounced).toEqual([]);
     window.removeEventListener(REMOTE, announcer);
     expect(t.listening.size).toBe(0);

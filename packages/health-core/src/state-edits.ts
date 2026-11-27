@@ -26,7 +26,7 @@ import { screeningRange } from './mappings';
 import { laterStamp, stampFields } from './merge';
 import { commaQuestion, parseLocalisedNumber } from './parseNumber';
 import { newId, stampUpdatedAt } from './record-edits';
-import { mergeOptIn } from './reminder-rows';
+import { mergeOptIn, ownRow } from './reminder-rows';
 import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, ReminderTokenRow, RoadmapFile, RoadmapProfile } from './roadmap-file';
 
 export interface StateEditResult {
@@ -153,8 +153,7 @@ export function setScreening(file: RoadmapFile, screeningKey: string, value: str
  * `tokens` list the caller spread in from the stored object is not the row.
  */
 export function setReminderOptIn(file: RoadmapFile, fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, now: string): RoadmapFile {
-  const { tokens: _rows, ...row } = fields;
-  return setReminderRow(file, row, now);
+  return setReminderRow(file, ownRow(fields), now);
 }
 
 /**

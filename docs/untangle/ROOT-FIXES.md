@@ -25,7 +25,7 @@ part done, open (can start), held (built, PR open with `hold`), blocked (waits o
 | R7 | iPhone keeps the landed record's erase epoch apart from its drawing | open | leads H113, H130, H200; iPhone erase series, one at a time | none | |
 | R8 | The unsent erase is one persisted owed state | open | leads H119, H120 (H121 waits on words); iPhone erase series | none | |
 | R12 | Clear pending reminder notifications after an erase | open | lead S68, design note first; iPhone erase series | none | |
-| R9 | Opt-in merge: a cancel beats an opt-in only for its own token | part done: PR 1 held | PR 2: web writers and readers (lead H115; design docs/drafts/r9-optin-cancel-merge-design.md) | 2221 (held) | orchestrator's call (merge) |
+| R9 | Opt-in merge: a cancel beats an opt-in only for its own token | part done | PR 1 held (2221); PR 2: web writers and readers (lead H115; design docs/drafts/r9-optin-cancel-merge-design.md) | 2221 (held) | orchestrator's call (merge) |
 | R13 | One record-apply hold state | held | H14's follow-up built: an out-of-range value, refused or half-typed, holds no remote change (US-34 AC13, the form alone) | 2084, 2110, 2113, 2117, 2119 merged; 2218 held | PR 2218 |
 | R14 | A malformed Observation date is refused or flagged | done | nothing (lead H35) | 2181 | |
 | R22 | Value page Add fields read-only while saving | done | nothing (lead H301, US-03 AC2b) | 2060 | |
