@@ -40,6 +40,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
   const [message, setMessage] = useState('');
 
   const formRef = useRef<HTMLFormElement>(null);
+  const websiteRef = useRef<HTMLInputElement>(null);
   const formShown = mode.kind === 'open' || mode.kind === 'sending' || mode.kind === 'failed';
   const canSubmit = email.trim() !== '' && message.trim() !== '' && mode.kind !== 'sending';
   // The latest onClose, so a parent's new callback each render does not restart the thank-you.
@@ -74,7 +75,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
 
     const sendId = Symbol('feedback-send');
     send({ type: 'send', sendId });
-    const success = await sendFeedback(email.trim(), message.trim());
+    const success = await sendFeedback(email.trim(), message.trim(), websiteRef.current!.value);
     send({ type: success ? 'sendOk' : 'sendFailed', sendId });
   }
 
@@ -130,7 +131,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
           </label>
           {/* Honeypot — hidden from real users */}
           <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', opacity: 0 }}>
-            <input type="text" name="website" tabIndex={-1} autoComplete="off" />
+            <input ref={websiteRef} type="text" name="website" tabIndex={-1} autoComplete="off" />
           </div>
           {mode.kind === 'failed' && (
             <p className="feedback-error">Failed to send. Please try again.</p>
