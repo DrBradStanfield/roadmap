@@ -113,7 +113,26 @@ node tools/codex-review.mjs --live --out "$SCRATCH/codex-review.json"       # + 
 node tools/codex-review.mjs --loop --range <first>^..HEAD --out "$SCRATCH/codex-review.json"  # loop-authored: Tier 3 applies
 node tools/codex-review.mjs --include <dir> --out "$SCRATCH/codex-review.json"  # + a read-only source folder under a root pinned in tools/codex-review-includes.json (repeatable; 64 MB cap, --include-limit-mb; never with --loop; US-40 AC13)
 node tools/codex-review.mjs --subject <file> [--baseline <earlier file>|none] [--context <dir>] --out "$SCRATCH/codex-review.json"  # ONLY these files vs their baselines; nothing else from the tree (a --baseline pairs with the --subject before it; never with --commit/--range/--loop; US-40 AC15)
+node tools/codex-review.mjs --brief <file> [--context <path>] [--live] --out "$SCRATCH/codex-answer.json"  # ANSWER the questions in <file>, with --context as evidence; a Markdown answer, not findings (US-40 AC19)
 ```
+
+**Answer a brief** (US-40 AC19, Brad 2026-11-27). When the file holds
+questions to answer ("what are we doing that is dumb", "how do we win
+first-time customers"), use `--brief <file>`, not `--subject`: a subject is
+reviewed, so Codex critiques the brief's wording instead of answering it. The
+brief passes the same path rules as a subject (tracked, or untracked under a
+pinned `subjectRoots` root such as `codex-drafts/`; never a `privateDeny`
+path), and every protection above applies unchanged. Point `--context` at the
+evidence. The model is told to answer each question in order, name the files
+and pages each answer rests on, mark guesses "Guess:", and rank where the
+brief asks. It prints `## Codex answer (...)` with the review's status and
+web-access lines, then the summary and the Markdown answer; `--out` holds
+`mode: "brief"`, `summary` and `answer` (`findings` is always `[]`). Exit 0
+answered, 3 incomplete (`answer` is `null`); never 2. Refused with
+`--commit`, `--range`, `--loop`, `--record`, `--record-file`, `--subject`
+and `--baseline`. Its web search is the review's: cached by default, with
+queries held to public identifiers and claims in its own words, so it cannot
+research a market freely; `--live` opens pages under the existing rules.
 
 **Pick the subject** (US-40 AC15, Brad 2026-10-05: "Codex reviewed the wrong
 file last time"). The default run reviews whatever the working tree holds.
