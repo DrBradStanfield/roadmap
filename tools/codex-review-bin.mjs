@@ -1,6 +1,6 @@
 // The codex binary tools/codex-review.mjs launches, and what it learns from it before the snapshot (US-40 AC19).
 // Side-effect free until called, so the tests pass their own candidates; no test hook sits in the wrapper.
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { accessSync, closeSync, constants, fstatSync, mkdtempSync, openSync, readdirSync, readSync, realpathSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -123,15 +123,16 @@ export function recheckCodex(bin, probe, env, live, say, { reprobe = true } = {}
 
 /**
  * The stored login the review will use, read with `login status` under the run's own environment and CODEX_HOME (Codex R2,
- * PR 2222f): null when its first line is exactly "Logged in using ChatGPT" and it exits 0, else a stop reason naming only
- * the exit code. The CLI's text (which can carry a masked key) never reaches the report.
+ * PR 2222f): null when it exits 0 and the first non-empty line of its output is exactly "Logged in using ChatGPT", else a
+ * stop reason naming only the exit code. Both supported CLIs print that line on STDERR with stdout empty (0.163.0 and
+ * 0.171.0-alpha.13.2, 2026-11-27), so both streams are read, stdout first. The CLI's text (which can carry a masked key)
+ * never reaches the report.
  */
 export function checkLogin(bin, env) {
-  try {
-    const out = execFileSync(bin, ["login", "status"], { encoding: "utf8", env, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 1 << 20 });
-    if (out.trim().split("\n")[0] === "Logged in using ChatGPT") return null;
-    return "E_LOGIN_NOT_CHATGPT: `login status` (exit 0) does not report a ChatGPT login";
-  } catch (e) { return `E_LOGIN_NOT_CHATGPT: \`login status\` ${failed(e)}`; }
+  const r = spawnSync(bin, ["login", "status"], { encoding: "utf8", env, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 1 << 20 });
+  if (r.error || r.signal || r.status !== 0) return `E_LOGIN_NOT_CHATGPT: \`login status\` ${failed({ code: r.error?.code, signal: r.signal, status: r.status })}`;
+  const first = `${r.stdout ?? ""}\n${r.stderr ?? ""}`.split("\n").map((l) => l.trim()).find(Boolean);
+  return first === "Logged in using ChatGPT" ? null : "E_LOGIN_NOT_CHATGPT: `login status` (exit 0) does not report a ChatGPT login";
 }
 
 /** The review's argument list, as the wrapper launches it (AC3, AC14, AC19). */

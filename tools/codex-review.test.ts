@@ -57,9 +57,11 @@ if (all.includes('--version')) {
   console.log(fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n') ? cfg.version + '-v2' : cfg.version); process.exit(0);
 }
 if (all.at(-2) === 'login' && all.at(-1) === 'status') {
-  if (cfg.login === 'api') { console.log('Logged in using an API key - test-***'); process.exit(0); }
-  if (cfg.login === 'none') { console.log('Not logged in'); process.exit(1); }
-  console.log('Logged in using ChatGPT'); process.exit(0);
+  // Both real CLIs (0.163.0 and 0.171.0-alpha.13.2) print the status on STDERR with stdout empty (checked 2026-11-27 under an
+  // empty CODEX_HOME: "Not logged in", exit 1; Brad's real ChatGPT login: "Logged in using ChatGPT", exit 0).
+  if (cfg.login === 'api') { console.error('Logged in using an API key - test-***'); process.exit(0); }
+  if (cfg.login === 'none') { console.error('Not logged in'); process.exit(1); }
+  console.error('Logged in using ChatGPT'); process.exit(0);
 }
 if (all.at(-2) === 'features' && all.at(-1) === 'list') {
   if (cfg.failFeatures) { process.stderr.write(cfg.failFeatures.stderr); process.exit(cfg.failFeatures.code); }
