@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import { DAY_NOT_HAPPENED } from '@roadmap/health-core/lab-series';
+import { isCalendarDay } from '@roadmap/health-core/measurement-history';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
 import { DRAFTS_CLEARED_EVENT, ownLogOffHasBegun, pageOnChosenRecord, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
@@ -51,6 +52,8 @@ const holdsAny = (cells: object) => Object.values(cells).some(Boolean);
 const holdsText = (state: MatrixDraft<string>) => holdsAny(state.draft.values) || holdsAny(state.backfills);
 const isDay = (day: unknown): day is string => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day);
 const isObject = (v: unknown): v is object => !!v && typeof v === 'object';
+/** A kept draft's day, or none when the calendar does not have it (2024-02-31): the column is then today's (US-03 AC5a). */
+const keptDay = (day: unknown) => (isDay(day) && isCalendarDay(day) ? day : undefined);
 const dayOf = (state: MatrixDraft<string>) => state.draft.date ?? localDay(new Date());
 /** A day after the device's own: the New column saves nothing under it (US-03 AC1a). */
 const notYet = (day: string) => day > localDay(new Date());
@@ -67,7 +70,7 @@ function loadDraft<K extends string>(storageKey: string): MatrixDraft<K> | null 
     if (!isObject(kept)) return null;
     const { draft, backfills, meta } = kept as Partial<MatrixDraft<K>>;
     return {
-      draft: { date: isDay(draft?.date) ? draft.date : undefined, values: isObject(draft?.values) ? draft.values : {} },
+      draft: { date: keptDay(draft?.date), values: isObject(draft?.values) ? draft.values : {} },
       backfills: isObject(backfills) ? backfills : {},
       meta: isObject(meta) ? meta : {},
     };
