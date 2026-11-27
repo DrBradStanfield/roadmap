@@ -27,7 +27,7 @@ import { type AddLabValueRequest, type AddLabValueResult, addLabValue as addReco
 import { LiveRefresh } from '@roadmap/health-core/live-refresh';
 import { RecordSession, saveRecordInto, type EraseResult, type EraseSteps } from '@roadmap/health-core/record-session';
 import { documentView, writtenLabRows } from '@roadmap/health-core/document-save';
-import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
+import { setReminderRow, setScreening, type ReminderRowFields, stampProfile, upsertMedication, upsertSupplement } from '@roadmap/health-core/state-edits';
 import { medicationChanges } from '@roadmap/health-core/medication-annotations';
 import { computeReminderSchedule, type ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
 import { diffInputsToMeasurements, measurementsToInputs, PREFILL_FIELDS, type ApiMeasurement, type ApiMedication } from '@roadmap/health-core/mappings';
@@ -396,9 +396,15 @@ export class RoadmapStore {
     return this.file.reminderOptIn;
   }
 
-  /** Set/replace the opt-in singleton (status flips included), stamped + persisted. */
-  setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase: string): boolean {
-    return this.session.edit((file) => setReminderOptIn(file, fields, new Date().toISOString()), erase);
+  /** The erase's observed set so far, while an erase reads (US-11 AC15, I1). */
+  eraseObserved(): FileReminderOptIn | undefined {
+    return this.session.eraseSeen?.optIn;
+  }
+
+  /** Write opt-in rows, one token each, in one guarded edit; every other token's row stays (US-17 AC19). */
+  setReminderRows(rows: ReminderRowFields[], erase: string): boolean {
+    const now = new Date().toISOString();
+    return this.session.edit((file) => rows.reduce((next, row) => setReminderRow(next, row, now), file), erase);
   }
 
   /** The client-computed forward schedule that gets pushed to the server (§10). */

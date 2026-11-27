@@ -38,7 +38,7 @@ describe('US-11 AC4b: a Turn off in flight during an erase leaves the erased rec
     const { cancelReminders } = await import('./reminders');
     const cloud = new MemoryCloud();
     await data.initRoadmapStore(new MemoryAdapter(cloud));
-    expect(data.setReminderOptIn({ status: 'active', token: 'test-token-good', email: ADDRESS, provider: 'dropbox' }, data.getShownErase())).toBe(true);
+    expect(data.setReminderRows([{ status: 'active', token: 'test-token-good', email: ADDRESS, provider: 'dropbox' }], data.getShownErase())).toBe(true);
     await data.flushRoadmapStore();
 
     let release!: () => void;
@@ -125,7 +125,7 @@ async function eraseSetUp() {
   const held = await heldCloud(cloud);
   await data.initRoadmapStore(held);
   data.setPreEraseHook(reminders.cancelRemindersForErase); // as standalone/app.tsx registers it
-  expect(data.setReminderOptIn({ status: 'active', token: TOKEN_A, email: ADDRESS, provider: 'google-drive' }, data.getShownErase())).toBe(true);
+  expect(data.setReminderRows([{ status: 'active', token: TOKEN_A, email: ADDRESS, provider: 'google-drive' }], data.getShownErase())).toBe(true);
   await data.flushRoadmapStore();
 
   const posts: Posted[] = [];
@@ -138,43 +138,47 @@ async function eraseSetUp() {
     return new Response('{}', { status: body.token && refuse.has(body.token) ? 500 : 200 });
   }));
 
-  // The page's hr:remote-changed listeners, as added and removed.
-  const listening = new Set<unknown>();
-  const add = window.addEventListener.bind(window);
-  const remove = window.removeEventListener.bind(window);
-  vi.spyOn(window, 'addEventListener').mockImplementation(((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | AddEventListenerOptions) => {
-    if (type === REMOTE) listening.add(fn);
-    add(type, fn, opts);
-  }) as typeof window.addEventListener);
-  vi.spyOn(window, 'removeEventListener').mockImplementation(((type: string, fn: EventListenerOrEventListenerObject, opts?: boolean | EventListenerOptions) => {
-    if (type === REMOTE) listening.delete(fn);
-    remove(type, fn, opts);
-  }) as typeof window.removeEventListener);
-
+  /** Another device: its own store over the same cloud, its writes counted apart from the page's, and
+   *  its own announces kept off the page's window listeners (US-17 AC19 review, R7). */
+  const otherWrites = { count: 0 };
+  const otherAnnounced: unknown[] = [];
+  const asOtherDevice = async <T>(act: (other: Awaited<ReturnType<typeof RoadmapStore.create>>) => Promise<T>): Promise<T> => {
+    const adapter = new MemoryAdapter(cloud);
+    const write = adapter.write.bind(adapter);
+    adapter.write = (...args: Parameters<typeof adapter.write>) => { otherWrites.count += 1; return write(...args); };
+    const other = await RoadmapStore.create(adapter);
+    const dispatch = window.dispatchEvent.bind(window);
+    const sink = vi.spyOn(window, 'dispatchEvent').mockImplementation((event: Event) =>
+      event.type === REMOTE ? (otherAnnounced.push((event as CustomEvent).detail), true) : dispatch(event));
+    try { return await act(other); } finally { sink.mockRestore(); }
+  };
   /** Another device turns reminders on with its own row, and this page re-reads the cloud. */
   const otherDeviceTurnsOn = async (token = TOKEN_B) => {
-    const other = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect(other.setReminderOptIn({ status: 'active', token, email: ADDRESS, provider: 'dropbox' }, other.shownErase)).toBe(true);
-    await other.flush();
+    await asOtherDevice(async (other) => {
+      expect(other.setReminderRows([{ status: 'active', token, email: ADDRESS, provider: 'dropbox' }], other.shownErase)).toBe(true);
+      await other.flush();
+    });
     return page.refreshFromRemote();
   };
   /** Another device erases first, then turns reminders on; this page re-reads both in. */
   const otherDeviceErasesThenTurnsOn = async (reread = true) => {
-    const other = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect((await other.deleteAllData()).success).toBe(true);
-    expect(other.setReminderOptIn({ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }, other.eraseIdentity)).toBe(true);
-    await other.flush();
+    await asOtherDevice(async (other) => {
+      expect((await other.deleteAllData()).success).toBe(true);
+      expect(other.setReminderRows([{ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }], other.eraseIdentity)).toBe(true);
+      await other.flush();
+    });
     return reread ? page.refreshFromRemote() : false;
   };
   /** Another device turns reminders on, written straight to the cloud, with no re-read here. */
   const otherDeviceWrites = async () => {
-    const other = await RoadmapStore.create(new MemoryAdapter(cloud));
-    expect(other.setReminderOptIn({ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }, other.shownErase)).toBe(true);
-    await other.flush();
+    await asOtherDevice(async (other) => {
+      expect(other.setReminderRows([{ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }], other.shownErase)).toBe(true);
+      await other.flush();
+    });
   };
   const proof = vi.spyOn(GoogleDriveAdapter.prototype, 'getReminderIdToken');
   proof.mockResolvedValue(PROOF);
-  return { data, cloud, held, posts, keepalive, refuse, listening, otherDeviceTurnsOn, otherDeviceErasesThenTurnsOn, otherDeviceWrites, proof, ChatSession, Sentry, trackProductEvent };
+  return { data, cloud, held, posts, keepalive, refuse, otherDeviceTurnsOn, otherDeviceErasesThenTurnsOn, otherDeviceWrites, otherWrites, otherAnnounced, proof, ChatSession, Sentry, trackProductEvent };
 }
 
 describe('US-11 AC4c: an erase cancels every active reminders token it sees (lead S59b)', () => {
@@ -193,8 +197,8 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
 
     expect(adopted).toBe(true);
     expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([
+      { op: 'cancel', token: TOKEN_B }, // the commit sends in token order
       { op: 'cancel', token: TOKEN_A, idToken: PROOF },
-      { op: 'cancel', token: TOKEN_B },
     ]);
     expect(t.keepalive).toEqual([true, true]);
   });
@@ -212,8 +216,8 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
 
     expect(adopted).toBe(true);
     expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([
+      { op: 'cancel', token: TOKEN_B }, // the commit sends in token order
       { op: 'cancel', token: TOKEN_A, idToken: PROOF },
-      { op: 'cancel', token: TOKEN_B },
     ]);
   });
 
@@ -241,10 +245,9 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     expect(adopted).toBe(true);
     expect(t.data.getEraseIdentity()).not.toBe(before);
     expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([
+      { op: 'cancel', token: TOKEN_B }, // the commit sends in token order
       { op: 'cancel', token: TOKEN_A, idToken: PROOF },
-      { op: 'cancel', token: TOKEN_B },
     ]);
-    expect(t.listening.size).toBe(0);
   });
 
   // D3 (b): a save that began before Delete folds token B in during the proof
@@ -252,7 +255,7 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
   // pass lands, after the swap, when the working copy holds the erased opt-in.
   // Nothing here hears B: it is US-11 AC4c's Limit, lead H126. This pins the
   // limit as it stands; a fix turns the last line into [A, B].
-  it('Limit (H126): a token a running save folds in during the proof wait, announced only after the swap, is not cancelled', async () => {
+  it('US-11 AC15: a token a running save folds in during the proof wait, announced only after the swap, is cancelled (was the H126 Limit)', async () => {
     const t = await eraseSetUp();
     const before = t.data.getEraseIdentity();
     let foldedSilently = false;
@@ -289,9 +292,12 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     expect(announcedAt.length).toBeGreaterThan(0);
     expect(announcedAt.every((at) => at !== before)).toBe(true);
     expect(t.data.getEraseIdentity()).not.toBe(before);
-    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_A, idToken: PROOF }]);
+    // The swap hands the teardown every row the working copy took in, announced or not (US-11 AC15).
+    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_B }, { op: 'cancel', token: TOKEN_A, idToken: PROOF }]);
+    // Writes and announces by store: the other device wrote once and told this page nothing.
+    expect(t.otherWrites.count).toBe(1);
+    expect(t.otherAnnounced).toEqual([]);
     window.removeEventListener(REMOTE, announcer);
-    expect(t.listening.size).toBe(0);
   });
 
   // Re-check F1 / Codex R1: a token merged in after the swap, while the
@@ -314,7 +320,7 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_A, idToken: PROOF }]);
   });
 
-  it('a refused erase posts nothing, and its listener goes at the next re-read', async () => {
+  it('a refused erase posts nothing, then or at the next re-read', async () => {
     const erase = await import('@roadmap/health-core/erase');
     const t = await eraseSetUp();
     vi.spyOn(erase, 'buildErasedFile').mockImplementation(() => { throw new Error('build failed'); });
@@ -322,43 +328,21 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
 
     expect((await t.data.deleteUserData()).success).toBe(false);
     expect(t.data.getEraseIdentity()).toBe(before);
-    expect(t.listening.size).toBe(1); // still watching: nothing has told it the erase was refused
     expect(await t.otherDeviceTurnsOn()).toBe(true);
 
     expect(t.posts).toEqual([]);
-    expect(t.listening.size).toBe(0);
+    // Review R4: the Drive proof lived in that erase's closure; no module state holds it after.
+    const teardown = await import('./reminders-erase-cancel');
+    expect(Object.keys(teardown).sort()).toEqual(['eraseCancelTransition', 'toCancel']);
   });
 
-  it('an erase that lands leaves no listener behind: the commit removes it', async () => {
-    const t = await eraseSetUp();
-    let during = 0;
-    const eraseChat = t.ChatSession.prototype.eraseAll;
-    vi.spyOn(t.ChatSession.prototype, 'eraseAll').mockImplementation(async function (this: import('@roadmap/health-core/chat-session').ChatSession) {
-      during = t.listening.size;
-      return eraseChat.call(this);
-    });
-
-    expect((await t.data.deleteUserData()).success).toBe(true);
-
-    expect(during).toBe(1); // it watched while the erase ran
-    expect(t.listening.size).toBe(0);
-  });
-
-  it('a prepare that throws leaves no listener behind, and posts nothing', async () => {
+  it('a prepare that throws posts nothing', async () => {
     const t = await eraseSetUp();
     // Thrown before any promise exists, so it escapes the lookup's own catch.
     t.proof.mockImplementation(() => { throw new Error('proof lookup broke'); });
-    let during = -1;
-    const eraseChat = t.ChatSession.prototype.eraseAll;
-    vi.spyOn(t.ChatSession.prototype, 'eraseAll').mockImplementation(async function (this: import('@roadmap/health-core/chat-session').ChatSession) {
-      during = t.listening.size;
-      return eraseChat.call(this);
-    });
 
     expect((await t.data.deleteUserData()).success).toBe(true);
 
-    expect(during).toBe(0);
-    expect(t.listening.size).toBe(0);
     expect(t.posts).toEqual([]);
   });
 

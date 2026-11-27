@@ -81,3 +81,40 @@ describe('US-17 AC17: the control follows the record, and a refused Turn off say
     expect(view.container.textContent).toContain('Email health reminders on');
   });
 });
+
+describe('US-17 AC19: the control shows every active address the record holds', () => {
+  const row = (token: string, email: string, status: 'active' | 'cancelled', lamport: number) =>
+    ({ status, token, email, provider: 'dropbox' as const, updatedAt: `2026-11-0${lamport}T00:00:00.000Z`, lamport });
+
+  it('two active addresses: the on line names both, the shown one first, and one Turn off', () => {
+    recordOptIn = { ...row('test-token-a', 'a@example.test', 'active', 2), tokens: [row('test-token-b', 'b@example.test', 'active', 1), row('test-token-c', 'c@example.test', 'cancelled', 3)] };
+    const view = render(<RemindersControl backend="dropbox" />);
+    expect(view.container.textContent).toContain('✓ Email health reminders on → a@example.test and b@example.test');
+    expect(view.container.textContent).not.toContain('c@example.test');
+    expect(view.getAllByRole('button', { name: 'Turn off' })).toHaveLength(1);
+  });
+
+  it('three: listed with commas and a last "and"; one address cased two ways is named once', () => {
+    recordOptIn = { ...row('test-token-a', 'a@example.test', 'active', 4), tokens: [row('test-token-b', 'b@example.test', 'active', 1), row('test-token-c', 'c@example.test', 'active', 2), row('test-token-d', ' A@Example.test', 'active', 3)] };
+    const view = render(<RemindersControl backend="dropbox" />);
+    expect(view.container.textContent).toContain('✓ Email health reminders on → a@example.test, b@example.test and c@example.test');
+  });
+
+  it('an active row with no address string still shows on, naming the addresses it can (review C1)', () => {
+    recordOptIn = { ...row('test-token-a', 'a@example.test', 'active', 2), email: null as unknown as string, tokens: [row('test-token-b', 'b@example.test', 'active', 1)] };
+    const view = render(<RemindersControl backend="dropbox" />);
+    expect(view.container.textContent).toContain('✓ Email health reminders on → b@example.test');
+    cleanup();
+    recordOptIn = { ...row('test-token-a', 'a@example.test', 'active', 2), email: null as unknown as string };
+    const alone = render(<RemindersControl backend="dropbox" />);
+    expect(alone.container.textContent).toContain('✓ Email health reminders onTurn off');
+    expect(alone.getByRole('button', { name: 'Turn off' })).toBeTruthy();
+  });
+
+  it('a stored cancelled row over a nested active one shows on, with the active address', () => {
+    recordOptIn = { ...row('test-token-a', 'a@example.test', 'cancelled', 2), tokens: [row('test-token-b', 'b@example.test', 'active', 1)] };
+    const view = render(<RemindersControl backend="dropbox" />);
+    expect(view.container.textContent).toContain('✓ Email health reminders on → b@example.test');
+    expect(view.container.textContent).not.toContain('a@example.test');
+  });
+});

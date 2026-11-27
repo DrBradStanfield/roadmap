@@ -34,6 +34,9 @@ export const PRODUCT_EVENT_NAMES = [
   // of optins means the default-on call was wrong.
   'reminder_optin',
   'reminder_optout',
+  // US-17 AC19: a Turn off that posted a cancel for more than one token, landed
+  // or not. Metadata: the provider (closed list) and how many cancels, nothing else.
+  'reminder_cancel_many',
   // Fired by the reminder cron on each successful send (server-originated,
   // nil-UUID sentinel; metadata = provider + due-item count only) — sends
   // were invisible until the first real one (2026-08-28) surfaced the gap.
@@ -215,7 +218,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
  * a distinct user action whose count is the signal (US-12 AC10, one per upload
  * run). The events route's per-visitor and per-IP limits still bound them.
  */
-export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures
+export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved', 'reminder_optout', 'reminder_cancel_many'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures; US-17 AC19: once per Turn off
 
 /**
  * The hosted connector's tool names, as a counter may name them. They live in

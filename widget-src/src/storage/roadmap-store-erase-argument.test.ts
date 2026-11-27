@@ -61,7 +61,7 @@ const WRITERS: Array<[string, (s: RoadmapStore, ids: Ids, erase: string) => unkn
   ['saveScreening', (s, _ids, erase) => s.saveScreening('colorectal_method', 'colonoscopy_10yr', erase), false, (f) => f.screenings],
   ['addLabValue', (s, _ids, erase) => s.addLabValue({ metricName: 'ferritin', unit: 'ng/mL', value: 80, day: '2026-09-03' }, erase), null, (f) => f.labValues.filter((v) => v.metricName === 'ferritin')],
   ['markReportEmailCaptured', (s, _ids, erase) => s.markReportEmailCaptured(erase), false, (f) => f.profile.reportEmailCaptured ?? null],
-  ['setReminderOptIn', (s, _ids, erase) => s.setReminderOptIn({ status: 'active', token: 'test-token-good', email: 'person@example.test', provider: 'dropbox' }, erase), false, (f) => f.reminderOptIn ?? null],
+  ['setReminderRows', (s, _ids, erase) => s.setReminderRows([{ status: 'active', token: 'test-token-good', email: 'person@example.test', provider: 'dropbox' }], erase), false, (f) => f.reminderOptIn ?? null],
 ];
 
 beforeEach(() => {
@@ -116,7 +116,7 @@ export function writersRequireAnErase(s: RoadmapStore, session: RecordSession): 
   // @ts-expect-error the erase is required
   s.setLpaUnit('nmol/L');
   // @ts-expect-error the erase is required
-  s.setReminderOptIn({ status: 'cancelled', token: '', email: '', provider: 'dropbox' });
+  s.setReminderRows([{ status: 'cancelled', token: '', email: '', provider: 'dropbox' }]);
   // @ts-expect-error the erase is required
   s.refuses();
   // @ts-expect-error a Save's state carries its erase (`WebSaving`), a saving state without one does not compile
@@ -153,7 +153,7 @@ export function writersRequireAnErase(s: RoadmapStore, session: RecordSession): 
   // @ts-expect-error the erase is required
   data.setLpaUnit('nmol/L');
   // @ts-expect-error the erase is required
-  data.setReminderOptIn({ status: 'cancelled', token: '', email: '', provider: 'dropbox' });
+  data.setReminderRows([{ status: 'cancelled', token: '', email: '', provider: 'dropbox' }]);
   // @ts-expect-error a Save's state carries its erase
   void data.saveUpload({} as never, { phase: 'saving', platform: 'web', run: 1, files: [], started: '', firstRead: null, attempt: 1 }, '', {} as never);
 }

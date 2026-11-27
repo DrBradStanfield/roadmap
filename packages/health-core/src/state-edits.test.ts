@@ -5,7 +5,7 @@
  * tests pin the same writes through RoadmapStore.
  */
 import { describe, expect, it } from 'vitest';
-import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement, type SupplementSave } from './state-edits';
+import { setReminderRow, setScreening, stampProfile, upsertMedication, upsertSupplement, type SupplementSave } from './state-edits';
 import { mergeFiles } from './merge';
 import { createEmptyFile, type RoadmapFile } from './roadmap-file';
 
@@ -124,7 +124,7 @@ describe('upsertSupplement (US-06)', () => {
   });
 });
 
-describe('stampProfile, setScreening, setReminderOptIn (US-10 AC6, US-17)', () => {
+describe('stampProfile, setScreening, setReminderRow (US-10 AC6, US-17)', () => {
   it('stamps only the profile fields changed, and the file clock', () => {
     const before = empty();
     const snapshot = structuredClone(before);
@@ -169,12 +169,12 @@ describe('stampProfile, setScreening, setReminderOptIn (US-10 AC6, US-17)', () =
     expect(setScreening(held, 'prostate_psa_value', '10001', T2).screenings).toMatchObject({ prostatePsaValue: 10001 });
   });
 
-  it('replaces the reminders opt-in with lamport one past the last, and the file clock', () => {
+  it('writes the reminders opt-in with lamport one past the last, and the file clock', () => {
     const fields = { status: 'active' as const, token: 't', email: 'a@b.c', provider: 'dropbox' as const };
-    const first = setReminderOptIn(empty(), fields, T1);
+    const first = setReminderRow(empty(), fields, T1);
     expect(first.reminderOptIn).toEqual({ ...fields, updatedAt: T1, lamport: 1 });
     expect(first.meta.updatedAt).toBe(T1);
-    const cancelled = setReminderOptIn(first, { ...fields, status: 'cancelled' }, T2);
+    const cancelled = setReminderRow(first, { ...fields, status: 'cancelled' }, T2);
     expect(cancelled.reminderOptIn).toMatchObject({ status: 'cancelled', updatedAt: T2, lamport: 2 });
     expect(first.reminderOptIn?.status).toBe('active');
   });

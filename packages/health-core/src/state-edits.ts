@@ -26,7 +26,8 @@ import { screeningRange } from './mappings';
 import { laterStamp, stampFields } from './merge';
 import { commaQuestion, parseLocalisedNumber } from './parseNumber';
 import { newId, stampUpdatedAt } from './record-edits';
-import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, RoadmapFile, RoadmapProfile } from './roadmap-file';
+import { mergeOptIn, ownRow } from './reminder-rows';
+import type { FileMedication, FileScreenings, FileSupplement, HistoryChangeType, ReminderTokenRow, RoadmapFile, RoadmapProfile } from './roadmap-file';
 
 export interface StateEditResult {
   /** A new file. The one passed in is untouched. */
@@ -146,11 +147,20 @@ export function setScreening(file: RoadmapFile, screeningKey: string, value: str
   return stampUpdatedAt({ ...file, screenings: stampFields(file.screenings, answer, now) }, now);
 }
 
+/** One opt-in row as a writer gives it: the stamp is the edit's. */
+export type ReminderRowFields = Omit<ReminderTokenRow, 'updatedAt' | 'lamport'>;
+
 /**
- * Set or replace the reminders opt-in singleton (US-17), status flips
- * included: lamport one past the copy it replaces, so the last write wins.
+ * Write one token's opt-in row (US-17 AC19), keeping every other token's row.
+ * Stamped past the stored object's clock (the erase marker's included) and
+ * every row's, so the row written is also the stored object. A cancelled row
+ * keeps its address: blank, a stale active row would win a clock tie.
  */
-export function setReminderOptIn(file: RoadmapFile, fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, now: string): RoadmapFile {
-  const reminderOptIn = { ...fields, updatedAt: laterStamp(now, file.reminderOptIn?.updatedAt), lamport: (file.reminderOptIn?.lamport ?? 0) + 1 };
-  return stampUpdatedAt({ ...file, reminderOptIn }, now);
+export function setReminderRow(file: RoadmapFile, fields: ReminderRowFields, now: string): RoadmapFile {
+  const optIn = file.reminderOptIn;
+  const clocks = optIn ? [optIn, ...(optIn.tokens ?? [])] : [];
+  const updatedAt = clocks.reduce((at, row) => laterStamp(at, row.updatedAt), now);
+  const lamport = Math.max(0, ...clocks.map((row) => row.lamport ?? 0)) + 1;
+  // Only the row given: a caller that spread a read opt-in cannot bring in its list.
+  return stampUpdatedAt({ ...file, reminderOptIn: mergeOptIn(optIn, { ...ownRow(fields), updatedAt, lamport }) }, now);
 }

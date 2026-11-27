@@ -12,7 +12,7 @@
 import { createCoreRow } from './blood-tests';
 import { stampInstant } from './merge';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
-import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from './state-edits';
+import { setReminderRow, setScreening, stampProfile, upsertMedication, upsertSupplement } from './state-edits';
 
 /**
  * A record built by the real writers at `at`, so every stamp equals
@@ -27,7 +27,7 @@ export function stampedRecord(at: string): RoadmapFile {
   file = setScreening(file, 'colorectal_method', 'fit_annual', at);
   file = upsertMedication(file, { medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg' }, at).file;
   file = upsertSupplement(file, { supplementKey: 'vitamin_d', supplementName: 'Vitamin D', doseValue: 1000, doseUnit: 'IU', status: 'active' }, at).file;
-  file = setReminderOptIn(file, { status: 'active', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' }, at);
+  file = setReminderRow(file, { status: 'active', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' }, at);
   file.reminderPreferences.push({ category: 'blood_test', enabled: false, updatedAt: at, lamport: 0 });
   file.measurements.push(createMeasurement({ id: 'w1', metricType: 'weight', value: 82, recordedAt: '2026-08-20', createdAt: at }));
   file.labValues.push(createCoreRow({ id: 'l1', metric: 'ldl', value: 3.4, recordedAt: '2026-08-20', createdAt: at, source: 'lab_import' }));
