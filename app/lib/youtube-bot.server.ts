@@ -35,7 +35,6 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
-import { YOUTUBE_PROMPT_TEMPLATE } from './youtube-context';
 import {
   POLL_INTERVAL_MS,
   DAILY_REPLY_CAP,
@@ -124,14 +123,13 @@ export function startYouTubeBot(): void {
     return;
   }
 
-  if (!YOUTUBE_PROMPT_TEMPLATE) {
-    console.warn('YouTube bot: chat-youtube-prompt.md missing — bot disabled');
-    return;
-  }
-
   const docs = chatDocs();
   if (docs.kind === 'missing') {
     console.warn(`YouTube bot: chat docs missing (${docs.files.join(', ')}) — bot disabled`);
+    return;
+  }
+  if (!docs.docs.youtubePrompt) {
+    console.warn('YouTube bot: chat-youtube-prompt.md missing — bot disabled');
     return;
   }
 
