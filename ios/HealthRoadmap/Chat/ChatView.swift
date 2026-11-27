@@ -51,6 +51,7 @@ struct ChatView: View {
         // and the next question starts a new one (US-25 AC13). The shared list was read
         // again by the eraser (DataEraser), and History reads it again as it opens.
         .onChange(of: store.erasures) {
+            history.leave()
             transcript = ChatTranscript()
             conversationId = UUID().uuidString.lowercased()
         }
@@ -84,7 +85,7 @@ struct ChatView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.tint)
-                .disabled(sending)
+                .disabled(!canAsk)
             }
         }
         .padding(.top, 8)
@@ -95,7 +96,16 @@ struct ChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {
-                        if transcript.lines.isEmpty {
+                        if case .failed(let id, _) = history.thread {
+                            // A conversation that could not be read is never shown empty (US-52 AC17), in the web's words (US-15 AC7a).
+                            Text("Couldn't open this conversation.").foregroundStyle(.red).font(.footnote)
+                            HStack {
+                                Button("Try again", systemImage: "arrow.clockwise") { open(id) }
+                                Button("New chat", systemImage: "square.and.pencil") { startNew() }
+                            }
+                            .font(.footnote)
+                            .buttonStyle(.bordered)
+                        } else if transcript.lines.isEmpty {
                             Text("Ask about your plan, a test result, or a guideline. The answer uses your saved values.")
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 24)
@@ -147,7 +157,7 @@ struct ChatView: View {
                     } label: {
                         Image(systemName: "arrow.up.circle.fill").font(.title)
                     }
-                    .disabled(sending || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(!canAsk || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .accessibilityLabel("Send")
                 }
             }
@@ -185,26 +195,34 @@ struct ChatView: View {
         edits.drop()
     }
 
-    /// Shows a saved conversation once the engine has read it. An erase, a question sent,
+    /// Shows a saved conversation once the engine has read it, or its read failed. An erase,
     /// New chat or another conversation opened meanwhile wins: the screen keeps what it shows.
     private func open(_ id: String) {
         showingHistory = false
         let erasures = store.erasures
         let loading = history.open(id)
+        let attempt = history.thread.attempt
         Task {
-            guard let messages = await loading.value, store.erasures == erasures, !sending else { return }
+            let messages = await loading.value
+            // The erase's `leave` runs at the next view update; a read that lands before it is dropped here.
+            guard store.erasures == erasures else { return }
+            let failed = history.thread == .failed(id: id, attempt: attempt)
+            guard messages != nil || failed else { return }
             conversationId = id
             edits.drop()
-            transcript = ChatTranscript(lines: messages.map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) })
+            // A failed read shows no turns of another conversation under its line (US-52 AC17).
+            transcript = ChatTranscript(lines: (messages ?? []).map { ChatLine(role: $0.role == "user" ? .user : .assistant, text: $0.content) })
         }
     }
 
     private var sending: Bool { turn != nil }
+    /// No turn in flight, and no conversation being read or failed to read (US-52 AC17).
+    private var canAsk: Bool { !sending && history.thread.canAsk }
 
     private func ask(_ question: String) {
         let question = question.trimmingCharacters(in: .whitespacesAndNewlines)
         // One turn at a time: a double tap sends once, and Stop always cancels the turn on screen.
-        guard turn == nil, !question.isEmpty, AIConsent.chat.given else { return }
+        guard canAsk, !question.isEmpty, AIConsent.chat.given else { return }
         // A failed turn is never history (US-52 AC6d), so a retried first question is still new.
         let earlier = transcript.history
         // The question goes on screen now, so a Stop always acts on this turn, never the one before.

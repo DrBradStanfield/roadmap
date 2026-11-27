@@ -225,3 +225,5 @@ which waits for Brad's look.
   build is held: PR 2221 (health-core, draft) and PR 2230 (web). Not merged; nothing of it is live.
 - **R19** blocked by R1: the owner's order is R1, then R9, then the switch hold union.
 - **R2, R22, R28** done, as recorded above.
+- **R29** built (US-52 AC17, lead C24): the iPhone's conversation read is one `ChatThreadRead` state; a failed read
+  says so in the web's words and keeps Send locked. Swift tests written, not yet run in the simulator.
