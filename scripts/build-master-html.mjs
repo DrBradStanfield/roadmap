@@ -79,8 +79,10 @@ export function splitMaster(md) {
 /** Anchor id: the live bodies use "Forms-and-Bioavailability"; keep that shape so old #links still land. */
 const anchorId = (s) => s.replace(/^\s*\d+\.\s+/, '').replace(/\s*\([^)]*\)\s*$/, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-// A site-relative path, never a protocol-relative //host. The guide builder uses it too.
-export const safeHref = (url) => /^(https?:\/\/|mailto:|\/(?!\/)|#)/i.test(url);
+// A site-relative path, never a protocol-relative //host: the character after the first / is not a
+// slash, a backslash, whitespace or a control character (the URL standard reads /\host as //host and
+// drops a tab or newline, so /<tab>/host is one too). The guide builder uses it too.
+export const safeHref = (url) => /^(https?:\/\/|mailto:|\/(?![\/\\\s\x00-\x1f\x7f-\x9f])|#)/i.test(url);
 
 // [1], [3][5], [3,5], [51-54]: each number, or a range's start, links its reference. A run of
 // adjacent brackets, [1][48][49], renders as one small group, [1, 48, 49], styled by MASTER_CSS.

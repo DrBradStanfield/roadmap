@@ -93,22 +93,26 @@ Read my health record.
 
 // US-38 AC7: a guide link goes only to a web or mail address, a site path or an
 // anchor, by the rule the master builder already uses (safeHref). A javascript:
-// link used to come out live, and would run on click.
+// link used to come out as a live <a href>.
 describe('build-guide-html.mjs — links (US-38 AC7)', () => {
   const refused = [
     'javascript:location=document.domain', 'JavaScript:location=1', 'data:text/html;base64,PHA+', 'vbscript:msgbox',
     ' javascript:location=1', 'java\tscript:location=1', 'java\nscript:location=1', '\u0001javascript:location=1',
     '&#106;avascript:location=1', '&#x6A;avascript:location=1', '//example.com/x', 'connect-chatgpt',
+    // A site path whose next character is a backslash, whitespace or a control character, and two web forms.
+    '/\\evil.example', '/\t/evil.example', '/\n/evil.example', '/ /evil.example', '/\u0001/evil.example',
+    '/\u007f/evil.example', '/\u0085/evil.example',
+    ' https://example.com/', 'https:example.com',
   ];
   const kept = [
     ['https://example.com/a?b=1&c=2', 'https://example.com/a?b=1&amp;c=2'], ['http://example.com/', 'http://example.com/'],
     ['mailto:someone@example.com', 'mailto:someone@example.com'], ['/blogs/guides/scratch#steps', '/blogs/guides/scratch#steps'],
-    ['#steps', '#steps'], ['HTTPS://example.com/', 'HTTPS://example.com/'],
+    ['#steps', '#steps'], ['HTTPS://example.com/', 'HTTPS://example.com/'], ['/', '/'],
   ];
   const paragraphs = (urls: string[], label = 'go') =>
     build(FRONT_MATTER + urls.map((u, i) => `Case ${i}: [${label}](${u}).`).join('\n\n')).html.match(/<p>Case[\s\S]*?<\/p>/g) ?? [];
 
-  it('US-38 AC7: renders any other link as its plain text, so nothing runs on click', () => {
+  it('US-38 AC7: renders any other link as its plain text', () => {
     const out = paragraphs(refused);
     expect(out).toHaveLength(refused.length);
     out.forEach((p) => expect(p).not.toMatch(/<a\b|href/));
@@ -119,6 +123,26 @@ describe('build-guide-html.mjs — links (US-38 AC7)', () => {
 
   it('US-38 AC7: keeps web, mail, site-path and anchor links exactly as before', () => {
     expect(paragraphs(kept.map(([u]) => u))).toEqual(kept.map(([, href], i) => `<p>Case ${i}: <a href="${href}">go</a>.</p>`));
+    // A kept link's label is still formatted.
+    expect(paragraphs(['https://example.com/'], '**b** `c`')).toEqual(['<p>Case 0: <a href="https://example.com/"><strong>b</strong> <code>c</code></a>.</p>']);
+  });
+
+  it('US-38 AC7: a refused link comes out as its original markdown text, its label not formatted', () => {
+    const { html } = build(`${FRONT_MATTER}Case 0: [**bold** "quoted" \`code\`](javascript:x) and **this** stays bold.
+
+[go](javascript:x)
+
+\`[go](javascript:x)\`
+
+\`\`\`
+a fence
+\`\`\``);
+    expect(html).toContain('<p>Case 0: [**bold** &quot;quoted&quot; `code`](javascript:x) and <strong>this</strong> stays bold.</p>');
+    // Alone in its paragraph it keeps the paragraph (a fence still gets none); written inside a code span it stays code.
+    expect(html).toContain('\n<p>[go](javascript:x)</p>\n<p><code>[go](javascript:x)</code></p>\n<pre><code>a fence</code></pre>');
+    expect(html).not.toMatch(/@@T/);
+    // A link that only forms once a code span holding "]" is parked is refused by the later check; that code span stays formatted.
+    expect(paragraphs(['javascript:x'], 'a`]`')).toEqual(['<p>Case 0: [a<code>]</code>](javascript:x).</p>']);
   });
 });
 

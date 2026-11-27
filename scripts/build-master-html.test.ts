@@ -370,6 +370,12 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(html).toContain('<a href="/pages/roadmap">ok</a>');
   });
 
+  it('US-38 AC7: a /\\host link is not a site path either, and / alone still is', () => {
+    const { html } = build(MASTER.replace('Magnesium matters', '[x](/\\evil.example/a) [home](/) Magnesium matters'), { store: 'edu' });
+    expect(html).toContain('[x](/\\evil.example/a)');
+    expect(html).toContain('<a href="/">home</a>');
+  });
+
   it('US-50 AC9: a citation run renders as one small group; each number, or a range, links its reference', () => {
     const { html } = build(MASTER.replace('Magnesium matters', 'A [51-54], B [3,5], C [3, 6\u20138], D [1][48][49].'), { store: 'edu' });
     const a = (n: number, t: string | number = n) => `<a href="#ref-${n}">${t}</a>`;
