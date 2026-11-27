@@ -1861,6 +1861,8 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     state, below), `OnboardingView` and `OnboardingPage` (one screen's layout). The tour after it (US-57): `TourTips` (three TipKit tips, one
     line each; `TourSetup` configures TipKit at launch and hides it under `--ui-testing`
     unless `--show-tips`) and `CloudPrompt` (the one backup offer after the third own save).
+    In review, not merged (2026-11-27): PR 2209 makes the tour one explicit state that shows each tip once its
+    anchor is at rest (US-57). Until it merges, the tour works as described here.
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
     Promises; `EngineNatives.swift` is the bridge (D2); `PhoneFiles.swift` the phone's copy
     of the health record and pending marker the natives read and write; `EngineHTTP.swift` its network
