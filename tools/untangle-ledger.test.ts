@@ -47,3 +47,23 @@ describe('untangle ledgers: one file per row (US-64 AC31)', () => {
     });
   }
 });
+
+// US-64 AC31: ROOT-FIXES.md's status table is read first, so a fix missing from it would look unknown, not open.
+describe('ROOT-FIXES.md: every ranked fix has one status row', () => {
+  const text = readFileSync(join(DIR, 'ROOT-FIXES.md'), 'utf8');
+  const ranked = text.slice(text.indexOf('## Ranked'), text.indexOf('## Must not run in parallel'));
+  const rows = [...ranked.matchAll(/^\| (R\d+) \| [^|]+ \| ([^|]+) \|/gm)];
+  const listed = [...ranked.slice(ranked.indexOf('### The 25 Nov triage')).matchAll(/^\d+\. \*\*(R\d+)\*\*/gm)].map((m) => m[1]);
+
+  it('the table and the ranked list name the same fixes, once each', () => {
+    expect(listed.length).toBeGreaterThan(0);
+    const inTable = rows.map((m) => m[1]);
+    expect(new Set(inTable).size, 'a fix with two rows').toBe(inTable.length);
+    expect([...inTable].sort()).toEqual([...listed].sort());
+  });
+
+  it('every state is one of the table\'s five words', () => {
+    const states = ['done', 'part done', 'open', 'held', 'blocked'];
+    expect(rows.map((m) => m[2].trim()).filter((s) => !states.includes(s))).toEqual([]);
+  });
+});
