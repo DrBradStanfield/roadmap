@@ -143,6 +143,9 @@ struct MyData: Decodable {
             /// The file's name in the cloud, "2026-09-14 Cardiology follow-up.pdf".
             let name: String
             let mimeType: String
+            /// The name Quick Look may open it under, or nil when it may not open: health-core's
+            /// one rule (file-kinds.ts originalPreview, US-14 AC14). Nil from an older engine too.
+            var previewName: String? = nil
         }
 
         let id: String

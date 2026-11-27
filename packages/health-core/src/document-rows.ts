@@ -44,6 +44,8 @@ export interface DocumentView {
   createdAt: string;
   fileRef: string | null;
   contentHash: string | null;
+  /** The original's stored type; null when the row holds none. */
+  mimeType: string | null;
 }
 
 export function documentView(d: FileDocument): DocumentView {
@@ -58,6 +60,7 @@ export function documentView(d: FileDocument): DocumentView {
     createdAt: d.addedAt,
     fileRef: d.fileRef || null,
     contentHash: d.contentHash || null,
+    mimeType: d.mimeType || null,
   };
 }
 

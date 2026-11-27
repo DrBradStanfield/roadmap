@@ -121,6 +121,7 @@ Not independent today: R4 (files held PR 2155 edits), R16 (engine contract files
     - U10 U12
 22. **R17** Generate the phone's network allow-list from the adapters; one file-kinds rule for both clients. [security] `EngineHTTP.swift`, `dropbox-rest.ts`, `drive-rest.ts`, `file-kinds.ts`, `DocumentPage.swift`
     - M12 M13
+    - Status: the file-kinds half (M13) in review (US-14 AC14); the allow-list half (M12) not started.
 23. **R33** Security track, held by the orchestrator.
     - C14 C19
 24. **R24** Chat docs load as one state; a missing doc refuses or reports, like the prompt. [server] `app/lib/chat.server.ts`, `chat-router.server.ts`
