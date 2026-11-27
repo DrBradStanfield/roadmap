@@ -14,6 +14,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import type { ShownCopy } from './useRecordReads';
+import type { ProfileForm } from '../lib/remote-replay';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import type { EraseEffect, EraseState } from '../lib/erase-machine';
 
@@ -44,11 +45,11 @@ function setup(loaded = true) {
     setInputs: vi.fn(),
     reloadValues: vi.fn(async (_shown?: ShownCopy) => RESULT),
     applyLists: vi.fn(),
-    units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
+    units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): 'si' | 'conventional' | undefined => undefined) },
     // The erase machine as apply sees it: the screen shows 'erase-1'; `dispatch` records each read's erase.
     erase: { getSnapshot: () => ({ shown: 'erase-1' }) as EraseState, dispatch: vi.fn((): EraseEffect[] => []) },
     later: {
-      markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn(),
+      markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileForm: vi.fn((): ProfileForm => 'clean'), clearAnswered: vi.fn(),
       savedProfile: vi.fn(() => ({ heightCm: 170, birthYear: 1980 })),
     },
   };
@@ -68,7 +69,7 @@ interface Seen { reads: number; form: boolean; saved: boolean; lists: boolean; f
 async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
   const { fx, hook } = setup();
   if (held) {
-    fx.later.profileDirty.mockReturnValue(true); // the profile stays dirty through the signal
+    fx.later.profileForm.mockReturnValue('typing'); // the profile stays dirty through the signal
     await act(async () => { await hook.result.current.signal('remote'); });
     await settle();
     expect(counted()).toBe(0); // held
@@ -92,7 +93,7 @@ async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
   };
   // The save that cleans the profile: a change still held applies now, read and counted once.
   vi.clearAllMocks();
-  await act(async () => { hook.result.current.settled(); });
+  await act(async () => { hook.result.current.settled('clear'); });
   await settle();
   return { ...seen, holdLeft: counted() === 1 && fx.reloadValues.mock.calls.length === 1 };
 }
@@ -152,13 +153,13 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     const mirrored = () => fx.reloadValues.mock.calls.map(([shown]) => shown?.());
     await act(async () => { await hook.result.current.ownSave(); });
     expect(mirrored()).toEqual([undefined]); // nothing held
-    fx.later.profileDirty.mockReturnValue(true);
+    fx.later.profileForm.mockReturnValue('typing');
     await act(async () => { await hook.result.current.signal('remote'); }); // held
     fx.reloadValues.mockClear();
     await act(async () => { await hook.result.current.ownSave(); });
     expect(mirrored()).toEqual([{ inputs: { heightCm: 170, birthYear: 1980 }, ...MIRRORED }]); // never the page's lists, which can hold an unsaved edit
     fx.reloadValues.mockClear();
-    await act(async () => { hook.result.current.settled(); });
+    await act(async () => { hook.result.current.settled('clear'); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(mirrored()).toEqual([undefined]); // the hold's read: the record's
@@ -188,7 +189,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
 
   it('US-11 AC6, US-34 AC4 (fix 4 2b-3): held, another device\'s erase arrives with the profile still dirty: it goes to the erase machine, whose read ends the hold, uncounted here', async () => {
     const { fx, hook } = setup();
-    fx.later.profileDirty.mockReturnValue(true);
+    fx.later.profileForm.mockReturnValue('typing');
     await act(async () => { await hook.result.current.signal('remote'); });
     await settle();
     expect(counted()).toBe(0); // held
@@ -206,7 +207,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(fx.later.clearAnswered.mock.calls).toEqual([[]]);
     expect(counted()).toBe(0); // the machine counts the erase
     // The hold is over: the save that cleans the profile reads nothing more.
-    await act(async () => { hook.result.current.settled(); });
+    await act(async () => { hook.result.current.settled('clear'); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(counted()).toBe(0);
@@ -235,6 +236,29 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     await settle();
     expect(fx.erase.dispatch.mock.calls[0]).toEqual([{ type: 'loaded', shown: false }]);
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
+  });
+
+  it('US-34 AC13 (H14): an out-of-range value still being typed holds a remote change; once its save settles refused, the next change applies at once, keeping it; a unit switch waiting still holds', async () => {
+    const { fx, hook } = setup();
+    fx.later.profileForm.mockReturnValue('out-of-range');
+    await act(async () => { await hook.result.current.signal('remote'); });
+    await settle();
+    expect(fx.reloadValues).not.toHaveBeenCalled(); // half-typed: held for its save
+    await act(async () => { hook.result.current.settled('refused'); });
+    await settle();
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1); // the save settled: the held change shows (AC8)
+    vi.clearAllMocks();
+    await act(async () => { await hook.result.current.signal('remote'); });
+    await settle();
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1); // refused and left: the next change shows at once
+    expect(counted()).toBe(1);
+    const form = fx.setInputs.mock.calls[0][0] as (prev: Record<string, unknown>) => Record<string, unknown>;
+    expect(form({ heightCm: 400, birthYear: 1980 })).toMatchObject({ heightCm: 400, birthYear: 1981 }); // the refused height rides through
+    vi.clearAllMocks();
+    fx.units.pending.mockReturnValue('conventional');
+    await act(async () => { await hook.result.current.signal('remote'); });
+    await settle();
+    expect(fx.reloadValues).not.toHaveBeenCalled(); // held behind the switch
   });
 
   it('US-34 AC4: before the first read is shown, a reread leaves a waiting change for that read, then it applies once', async () => {

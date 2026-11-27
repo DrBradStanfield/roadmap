@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRe
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
 import { PREFILL_FIELDS, hasUnsavedProfileEdits } from '@roadmap/health-core/mappings';
-import { birthRefusedMessage } from '@roadmap/health-core/validation';
+import { birthRefusedMessage, inputRangeFault } from '@roadmap/health-core/validation';
+import type { ProfileForm, SaveOutcome } from '../lib/remote-replay';
 import { getBackendKind, getShownErase, saveChangedMeasurements } from '../lib/roadmap-data';
 import { healthWritesAllowed } from '../lib/storage';
 import { writeMirror } from '../lib/chat-mirror';
@@ -32,7 +33,8 @@ function copyField<K extends keyof HealthInputs>(to: Partial<HealthInputs>, from
  *   (unless typed over since) and says why in `birthRefused` until the next
  *   birth edit.
  *
- * A remote change that arrived while the form was dirty is held by the relay
+ * A remote change that arrived while the form held an edit is held by the relay
+ * (an out-of-range value whose save refused it is none: `profileForm`, AC13)
  * and released (`onSettled`) when the next save settles (US-34 AC4, AC8):
  * landed, a value refused, or nothing left to save. An out-of-range value
  * still in the form rides through the re-read with its error (useRecordApply).
@@ -48,8 +50,8 @@ export interface ProfileSave {
   markSaved: (inputs: Partial<HealthInputs>) => void;
   /** A copy of the record's profile as last read or saved: the profile the page shows as saved (US-34 AC9). */
   savedProfile: () => Partial<HealthInputs>;
-  /** The form holds a profile edit the record does not (US-34 AC4). */
-  profileDirty: () => boolean;
+  /** The form against the record: clean, unsaved only in out-of-range values, or holding an edit (US-34 AC4, AC13). */
+  profileForm: () => ProfileForm;
   birthRefused: string | null;
   clearBirthRefused: () => void;
 }
@@ -60,7 +62,7 @@ export function useProfileSave(args: {
   setInputs: Dispatch<SetStateAction<Partial<HealthInputs>>>;
   loaded: boolean;
   /** A save settled: a held remote change may apply (the relay's `settled`). */
-  onSettled: () => void;
+  onSettled: (outcome: SaveOutcome) => void;
   writeRefused: (erase?: string) => void;
   /** The units machine (useUnits' `record`): this tab's unsaved switch, and the save that wrote one. */
   units: { pending: () => UnitSystem | undefined; saved: (system: unknown) => void };
@@ -72,7 +74,7 @@ export function useProfileSave(args: {
   // A fresh function each render: the timer runs the one from the render that scheduled it.
   async function flushProfile(erase: string): Promise<boolean> {
     // Writes stopped: nothing is saved, so this tab's switch ends, and a change the relay held during it applies (PR 1204).
-    if (getBackendKind() === 'local' && !healthWritesAllowed()) { units.saved(units.pending()); onSettled(); return true; }
+    if (getBackendKind() === 'local' && !healthWritesAllowed()) { units.saved(units.pending()); onSettled('clear'); return true; }
     const current: Partial<HealthInputs> = {};
     const previous: Partial<HealthInputs> = {};
     // This tab's unit switch is written even when the copy saved holds it: switched,
@@ -86,7 +88,7 @@ export function useProfileSave(args: {
 
     const hasChanges = switched || PROFILE_FIELDS.some(f => inputs[f] !== saved.current[f]);
     // Clean (a refused value cleared or put back): a held remote change applies now (N1).
-    if (!hasChanges) { onSettled(); return true; }
+    if (!hasChanges) { onSettled('clear'); return true; }
 
     const result = await saveChangedMeasurements(current, previous, erase);
     if (!result.ok) {
@@ -97,7 +99,8 @@ export function useProfileSave(args: {
     if (getBackendKind() === 'local' && !healthWritesAllowed()) return true;
     const refused = result.birthRefused;
     // A value out of range was refused (US-02 AC5): it stays in the form, unsaved, its error shown.
-    const kept = new Set(Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>);
+    const outOfRange = Object.keys(result.refused ?? {}) as Array<keyof HealthInputs>;
+    const kept = new Set(outOfRange);
     if (refused) { kept.add('birthYear'); kept.add('birthMonth'); }
     for (const field of PROFILE_FIELDS) {
       if (!kept.has(field)) copyField(saved.current, inputs, field);
@@ -114,8 +117,9 @@ export function useProfileSave(args: {
     // The chat copy holds the saved profile beside the record's saved values
     // (US-15 AC10, US-34 AC11).
     writeMirror({ profile: { ...saved.current } });
-    // Settled, landed or refused (AC8): release a held remote change (see the header).
-    if (!PROFILE_FIELDS.some(f => inputsRef.current[f] !== inputs[f])) onSettled();
+    // Settled, landed or refused (AC8): release a held remote change (see the header); a refused birth pair went
+    // back, so only an out-of-range value left makes it `refused` (AC13, lib/remote-replay).
+    if (!PROFILE_FIELDS.some(f => inputsRef.current[f] !== inputs[f])) onSettled(outOfRange.length > 0 ? 'refused' : 'clear');
     return true;
   }
 
@@ -131,8 +135,13 @@ export function useProfileSave(args: {
 
   const markSaved = useCallback((record: Partial<HealthInputs>) => { saved.current = { ...record }; }, []);
   const savedProfile = useCallback(() => ({ ...saved.current }), []);
-  const profileDirty = useCallback(() => hasUnsavedProfileEdits(inputsRef.current, saved.current), [inputsRef]);
+  const profileForm = useCallback((): ProfileForm => {
+    const form = inputsRef.current;
+    if (!hasUnsavedProfileEdits(form, saved.current)) return 'clean';
+    // A value the store refuses rides through a re-read with its error (useRecordApply); any other unsaved value would not.
+    return PREFILL_FIELDS.every(f => form[f] === saved.current[f] || inputRangeFault(f, form[f])) ? 'out-of-range' : 'typing';
+  }, [inputsRef]);
   const clearBirthRefused = useCallback(() => setBirthRefused(null), []);
 
-  return { flushProfile, profileTimer, markSaved, savedProfile, profileDirty, birthRefused, clearBirthRefused };
+  return { flushProfile, profileTimer, markSaved, savedProfile, profileForm, birthRefused, clearBirthRefused };
 }

@@ -959,7 +959,13 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     await settle(700);
     expect(field(view, 'heightCm')).toBe('400');
   }
-  /** Another writer changes the birth year: held behind the dirty profile. */
+  /** As heightOutOfRange, its save still on its way: until it settles the height is being typed, so a remote
+   *  change holds (US-34 AC13). The next profile save, or a re-read, ends the hold as before. */
+  async function heightOnItsWay(view: RenderResult) {
+    refuse.gate = new Promise<void>(() => {}); // never lands: the saves after it go through
+    await heightOutOfRange(view);
+  }
+  /** Another writer changes the birth year: held behind the profile still being saved. */
   async function heldBirthYear(view: RenderResult) {
     await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }, getShownErase()));
     await settle(50);
@@ -1019,7 +1025,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it.each(OWN_SAVES.filter(([, , , endsHold]) => !endsHold))('US-34 AC4a: %s, a change held: one read, the held profile change still waits, then applies once when the profile is clean', async (_name, save, shows) => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     reads.count = 0;
     await save(view);
@@ -1041,7 +1047,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it.each(OWN_SAVES.filter(([, , , endsHold]) => endsHold))('US-34 AC4a, AC8 (H14): %s, a change held: the profile save it flushes first settles, refused, so the held change shows once; 400 stays', async (_name, save, shows) => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     reads.count = 0;
     await save(view);
@@ -1065,7 +1071,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC9 (H15): under a hold, an own save\'s read leaves the chat\'s context on the profile the page shows; only the corrected value moves', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     const shown = mirrorContext(); // the context the page's own record builds, before the other device's change
     expect(shown.birthYear).toBe(1980);
     await heldBirthYear(view);
@@ -1083,7 +1089,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC9 (H15): the hold ends: the mirror takes the applied record in that read, written once, and a later own save keeps it', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     await OWN_SAVES[1][1](view); // its values read lands under the hold
     await settle(50);
@@ -1114,7 +1120,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC10 (H16b): under a hold, an own save\'s read writes the medication and screening lists the page shows beside its profile; the hold\'s read writes the record\'s', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     const shown = mirrorContext();
     // Another device changes the birth year and adds a statin and a colonoscopy: all held behind the dirty profile.
     await anotherWriter(async () => {
@@ -1148,7 +1154,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     await saveMedication('statin', 'atorvastatin', 20, 'mg', getShownErase());
     await flushRoadmapStore();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     return view;
   }
@@ -1208,7 +1214,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     listSave.screening = new Promise<boolean>((r) => { answerLands = r; });
     fireEvent.change(q(view, '#colorectal-method')!, { target: { value: 'colonoscopy_10yr' } });
     await settle(300); // the answer's save is on its way, not landed
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     fireEvent.change(q(view, '#statin-dose')!, { target: { value: '40' } });
     await settle(300); // the dose's save lands
@@ -1228,7 +1234,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC9 (H15), US-16 AC2: under a hold, the mirror sends the sex the page shows; the proposal is checked against, and saved to, the profile on screen, as before', async () => {
     await recordWithLdl(); // female, 170 cm
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await anotherWriter(() => saveChangedMeasurements({ sex: 'male' }, { sex: 'female' }, getShownErase()));
     await settle(50);
     await OWN_SAVES[1][1](view); // an own save's read under the hold
@@ -1257,7 +1263,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC8 (H14): height 400 left, a remote birth year held; the height fixed and saved: the change shows once, the saved height kept', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     reads.count = 0;
     type(q(view, '#heightCm'), '171');
@@ -1274,7 +1280,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   it('US-34 AC8 (H14): height 400 left, a remote birth year held; the next save is refused again: the change shows once, and 450 stays with its error', async () => {
     await recordWithLdl();
     const view = await open();
-    await heightOutOfRange(view);
+    await heightOnItsWay(view);
     await heldBirthYear(view);
     reads.count = 0;
     type(q(view, '#heightCm'), '450');
@@ -1307,6 +1313,22 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     await settle(800);
     expect(field(view, 'heightCm')).toBe('175');
     expect(await heightOnDisk()).toBe(175);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect(reads.count).toBe(1);
+  });
+
+  // US-34 AC13 (H14 follow-up): a refused value is told apart from a half-typed one. Nothing typed is at risk.
+  it('US-34 AC13 (H14): height 400 refused and left; a remote birth year then shows at once, with no further edit, and 400 stays with its error', async () => {
+    await recordWithLdl();
+    const view = await open();
+    await heightOutOfRange(view);
+    reads.count = 0;
+    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }, getShownErase()));
+    await waitFor(() => expect(field(view, 'birthYear')).toBe('1981'), { timeout: 3000 });
+    await settle(800); // the re-read's form schedules one more save, refused again: it reads nothing more
+    expect(field(view, 'heightCm')).toBe('400');
+    expect(heightError(view)).toBe('true');
+    expect(await heightOnDisk()).toBe(170);
     expect(calls('remote_change_applied')).toHaveLength(1);
     expect(reads.count).toBe(1);
   });
