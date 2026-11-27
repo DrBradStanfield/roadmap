@@ -36,6 +36,7 @@ import { SyncControl } from './sync-control';
 import { dispatch, getSwitchFlow, resetSwitchFlow } from './switch-flow';
 import { bootSignIn, resetSignIn } from '../src/storage/sign-in-state';
 import { copyEmpty } from '../src/storage/drive-reconnect-check';
+import { FULL } from '../src/storage/local-storage-adapter';
 
 const BACKEND_KEY = 'health_roadmap_backend';
 const DRIVE_TOKENS = 'health_roadmap_gdrive_tokens';
@@ -169,7 +170,7 @@ describe('US-09 AC65: a Drive popup reconnect confirms the record file', () => {
     expect(reconnectButton().disabled).toBe(false);
   });
 
-  it('on a page that fell back to this browser, the record is saved here by its own device save, and nothing else runs', async () => {
+  it('on a page that fell back to this browser, the copy is the device store\'s own save (this browser\'s storage, nothing reaches Drive), and the only fetch is the lookup', async () => {
     seed({ device: fullRecord });
     page.kind = 'local';
     page.live = fullRecord;
@@ -181,6 +182,23 @@ describe('US-09 AC65: a Drive popup reconnect confirms the record file', () => {
     expect(toDevice.copy).not.toHaveBeenCalled();
     expect(fetchCalls).toHaveLength(1);
     expect(error()).toBe(CANNOT_OPEN);
+  });
+
+  it('a 404 whose copy into this browser fails for full storage: nothing kept, nothing sent, the storage-full sentence shown', async () => {
+    seed({ device: null });
+    page.live = fullRecord;
+    lookup = 'notFound';
+    toDevice.copy.mockRejectedValueOnce(new DOMException('full', 'QuotaExceededError'));
+    const before = storedState();
+    await reconnect();
+    expect(storedState()).toEqual(before);
+    expect(localStorage.getItem(DEVICE_FILE)).toBeNull();
+    expect(toDevice.flush).not.toHaveBeenCalled();
+    expect(lift).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+    expect(fetchCalls).toHaveLength(1);
+    expect(error()).toBe(FULL);
+    expect(reconnectButton().disabled).toBe(false);
   });
 
   it.each([
