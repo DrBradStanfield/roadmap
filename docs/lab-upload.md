@@ -216,7 +216,7 @@ The upload modal (`UploadModal.tsx`) is a 5-state machine: `'select' | 'processi
 
 ### Entry Point
 
-"Upload your lab results" button in the Blood Test Results header (`BloodTestTimeline.tsx`); the modal is titled "Upload Health Records". Off-cloud (`uploadDisabled={!isLoggedIn}`, no cloud connected) the button is disabled with a tooltip linking to login.
+"Upload your lab results" button in the Blood Test Results header (`BloodTestTimeline.tsx`); the modal is titled "Upload Health Records".
 
 ### Post-Save Behavior
 

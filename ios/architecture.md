@@ -1858,9 +1858,12 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   - `Onboarding/`: the new-user flow (D12, US-54). `OnboardingSteps` (which questions,
     resume, region units, Health's sex and birth month and year), `TypedAnswer` (a typed
     height or weight and its entry-only unit switch), `OnboardingFlow` (the flow's one named
-    state, below), `OnboardingView` and `OnboardingPage` (one screen's layout). The tour after it (US-57): `TourTips` (three TipKit tips, one
-    line each; `TourSetup` configures TipKit at launch and hides it under `--ui-testing`
-    unless `--show-tips`) and `CloudPrompt` (the one backup offer after the third own save).
+    state, below), `OnboardingView` and `OnboardingPage` (one screen's layout). The tour after it (US-57): `TourState` (the tour's one
+    state and its pure `transition`; `TourSight`, the facts My health's list reports), `TourTips`
+    (`TourGuide`, which runs it; the three tips, one line each, as the app's own popovers; the step kept
+    in TipKit's store; `TourSetup` hides the tour under `--ui-testing` unless `--show-tips`), `TourList`
+    (the list's side: on screen, at rest, its anchors, the scroll) and `CloudPrompt` (the one backup
+    offer after the third own save). Why: § The tour's one state, below.
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
     Promises; `EngineNatives.swift` is the bridge (D2); `PhoneFiles.swift` the phone's copy
     of the health record and pending marker the natives read and write; `EngineHTTP.swift` its network
@@ -2159,7 +2162,38 @@ by name in one place (`RecordEdit.labAddName`); an engine without the door lists
 own tests only. About you, units, alcohol, reminders, Apple Health and the record sit in a
 settings sheet behind the person button; its close lets a due backup offer show (US-57 AC8).
 The review prompt waits for a plan card on screen (US-25 AC10). The tour's three tips anchor on
-the tab in Brad's words (US-57, approved 2026-11-05). Clarity's screen is "My health", with two
+the tab in Brad's words (US-57, approved 2026-11-05).
+
+**The tour's one state (2026-11-27, US-57 AC12).** Tip 3 failed twice under timing patches (a
+late attach after a 700 ms sleep, then a second scroll after one), because TipKit decided when a
+tip showed: a `popoverTip` presents on its own when its rules turn true, and on iOS 27.2 one whose
+row is created after that never presents. My health's list creates the Blood tests row only when
+it scrolls near. Worse, TipKit's wrapper hid the heading's scroll id, so the scroll to it did
+nothing: on main it failed 10 of 10 (docs/gotchas.md). Now the app owns it.
+`TourState` (`notStarted | waiting(step) | bringing(step) | showing(step) | leaving(step, then) | finished`) changes
+only through its pure `transition`, with a table test. A due tip shows when the list reports, through
+`TourSight`, that its anchor is on screen and the list is at rest (`onScrollPhaseChange` for the
+person's and iOS's scrolls, iOS 18+; below that, never known). Off screen at rest, it scrolls the
+anchor in (`bringing`) and shows the tip once the anchor has arrived: it sits where the scroll puts
+it (top or middle), or the list can go no further that way, read from the scroll geometry
+(`onScrollGeometryChange`, iOS 18+). Three things were measured on iOS 27.2 first: the scroll phase
+does not report a scroll the app starts; `withAnimation`'s completion fires at once for a List (it
+looped); and an instant `scrollTo` into the lazy list lands short of a row not yet drawn, so only an
+animated scroll reaches Blood tests. No iOS 17 runtime was run: there the list reports neither the
+scroll phase nor its geometry, so a tip shows once its anchor is on screen, possibly while the
+person's own scroll still moves. A tip waits while anything else is presented in the window, read from
+the window. A step saved by an earlier build ends at the upgrade (`Tour.keptByThisBuild`, owner
+ruling); one this build saved resumes. "Where the scroll puts it" has 12 points of slack: the row ends 5
+points above the list's edge (section spacing). Below iOS 18 the anchor on screen counts as arrived.
+A tip also waits while the first-run cover slides away: a scroll asked for then did nothing. A scroll to the top from a tap by the clock, the person's own scroll or a redraw never
+loses a due tip. The next tip, and tip 3's
+upload, wait in `leaving` until the popover's view has gone, so two presentations never overlap. No
+timer decides anything. The popover is SwiftUI's own (`.popover`, compact adaptation `.popover`):
+a tap outside only dismisses it, as Apple's popovers do, and counts as closed. TipKit only keeps
+the step (`Tour.step`, the same parameter as before, so a phone mid-tour resumes), in the store that
+already has the demo record's folder and the UI tests' fresh start. Rejected: driving TipKit's
+`popoverTip` from the state (its presentation stays TipKit's, the part that failed), and a full-screen
+overlay (it would hide the row the tip explains and needs its own VoiceOver focus handling). Clarity's screen is "My health", with two
 new events, "Jump pill tapped" and "Blood test added" (D9, Brad 2026-11-05). Sleep and Fitness
 read Apple Health in their own view, so a live refresh never rebuilds the list.
 

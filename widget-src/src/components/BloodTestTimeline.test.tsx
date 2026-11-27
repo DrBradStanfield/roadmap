@@ -1062,3 +1062,29 @@ describe('US-07 AC5: a lipid cell shows its plain value, coloured by the plan\'s
     expect(cellOf('apob', 0.49)[1]).toBe('0.49');
   });
 });
+
+// US-12: the header's way into the upload. My data's table (MyDataTable.tsx),
+// the one page that draws this matrix, always passes onUploadClick; the
+// tests' own matrices pass none.
+describe('US-12: the Blood Test Results header\'s upload button', () => {
+  const actions = (onUploadClick?: () => void) => render(
+    <BloodTestTimeline bloodTestHistory={[]} unitSystem="si" unitOverrides={{}} onToggleFieldUnit={turnFrom('si')}
+      onSaveBatch={vi.fn()} isSaving={false} grading={{}} hasApiResponse onUploadClick={onUploadClick}/>,
+  ).container.querySelector('.bt-timeline-actions') as HTMLElement;
+  const NAME = 'Upload your lab results';
+
+  it('with onUploadClick, as My data\'s table passes it: one enabled button, and a click opens the upload', () => {
+    const onUploadClick = vi.fn();
+    const [button, ...more] = within(actions(onUploadClick)).getAllByRole('button') as HTMLButtonElement[];
+    expect(more).toEqual([]);
+    expect(button.textContent).toBe(NAME);
+    expect(button.className).toBe('btn-primary upload-lab-btn');
+    expect(button.disabled).toBe(false);
+    fireEvent.click(button);
+    expect(onUploadClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('with no onUploadClick: no upload button', () => {
+    expect(within(actions()).queryByRole('button', { name: NAME })).toBeNull();
+  });
+});

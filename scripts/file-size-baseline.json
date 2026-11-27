@@ -5,7 +5,7 @@
     "packages/health-core/src/mcp-tool-catalogue.ts": "data table: the published MCP tool and prompt text (mostly literals)"
   },
   "files": {
-    "tools/codex-review.mjs": 1470,
+    "tools/codex-review.mjs": 1397,
     "packages/health-core/src/suggestions.ts": 1132,
     "packages/health-core/src/record-edits.ts": 1029,
     "packages/health-core/src/mcp-import.ts": 914,

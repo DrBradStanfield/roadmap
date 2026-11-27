@@ -13,6 +13,7 @@ import type { PanelOnboarding } from '../hooks/useOnboarding';
 import { CommitTickButton } from './CommitTickButton';
 import { previousReference, WEIGHT_STILL_COUNTS_ID } from './WeightStillCounts';
 import { errorAria, type FormKit } from './form-kit';
+import { inPsaRow } from './ScreeningQuestions';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -20,6 +21,10 @@ interface FieldConfig {
 }
 
 export const WEIGHT_FIELD: FieldConfig = { field: 'weightKg', name: 'Weight' };
+
+/** A box the page moves the focus out of as the tab closes, since a closing
+ *  tab fires no blur: the PSA row (US-06 AC15) or the weight box (AC15a). */
+export const leftOnClose = (el: Element): boolean => inPsaRow(el) || el.id === WEIGHT_FIELD.field;
 
 /** Whether a field has different SI/conventional labels (i.e., a toggle is useful). */
 const hasUnitToggle = (field: string): boolean => {
