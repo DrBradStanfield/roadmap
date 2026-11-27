@@ -62,6 +62,8 @@ struct RootView: View {
         .background(WindowReader {
             window = $0
             analytics.start(in: $0, on: screenName)
+            // A due tip waits while anything else is presented in the window (US-57 AC12, review R2).
+            tour.presenting = { [weak window = $0] in TourGuide.presenting(over: window) }
         })
         .onChange(of: screenName, initial: true) { analytics.screen(screenName) }
         // Edit sheets pin the record they opened on (MyData/RecordPin.swift).

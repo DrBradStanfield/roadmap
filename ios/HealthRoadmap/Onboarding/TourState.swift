@@ -98,7 +98,7 @@ enum TourState: Equatable {
             return passed(due)
         case (.showing(let up), .closed(let step)) where step == up:
             return up.next == .done ? passed(up) : (.leaving(up, then: .nextTip), [.logged(up, skipped: false)])
-        case (.showing(let up), .acted(let step)) where step == up:
+        case (.showing(let up), .acted(let step)) where step == up && up == .bloodTests:
             return (.leaving(up, then: .labUpload), [.logged(up, skipped: false)])
         case (.showing(let up), .skipped(let step)) where step == up:
             return (.finished, [.logged(up, skipped: true), .tourEnded])
@@ -150,16 +150,30 @@ struct TourSight: Equatable {
     /// Each step's anchor, for steps this record can draw.
     var targets: [TourStep: TourTarget] = [:]
 
+    /// What prompted a look while the list brings an anchor in.
+    enum Moment {
+        /// Something moved (an anchor, the offset): only the anchor's arrival shows the tip.
+        case moved
+        /// The list came back (shown again, the cover gone, new anchors): arrival shows the tip, else scroll again.
+        case returned
+        /// The person's or iOS's own scroll ended: the tip shows if its anchor is on screen,
+        /// wherever it stopped, else the list scrolls again (review R1).
+        case stopped
+    }
+
     /// The event for the due `step`, or nil while there is nothing to decide. While the list is
-    /// bringing the anchor in, only its arrival shows the tip, and only the list coming to rest
-    /// elsewhere (`rested`: the person's or iOS's scroll ended) scrolls again.
-    func look(_ step: TourStep, bringing: Bool, rested: Bool) -> TourState.Event? {
+    /// bringing the anchor in, a tip never shows part-way through the tour's own scroll.
+    func look(_ step: TourStep, bringing: Bool, after moment: Moment) -> TourState.Event? {
         guard shown, !coverUp else { return nil }
         guard targets[step] != nil else { return .noAnchor(step) }
         guard !moving else { return nil }
         guard bringing else { return .looked(step, onScreen: onScreen(step)) }
         if arrived(step) { return .looked(step, onScreen: true) }
-        return rested ? .looked(step, onScreen: false) : nil
+        switch moment {
+        case .moved: return nil
+        case .returned: return .looked(step, onScreen: false)
+        case .stopped: return .looked(step, onScreen: onScreen(step))
+        }
     }
 
     /// Enough of `step`'s anchor shows to point at: all of it, or 44 points of a taller one.

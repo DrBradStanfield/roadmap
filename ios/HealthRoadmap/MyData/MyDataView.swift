@@ -212,7 +212,9 @@ struct MyDataView: View {
         .tourList(proxy: proxy, targets: Self.tourTargets(page), covered: sheetUp) { addingLabs = true }
     }
 
-    /// One of this screen's sheets or its alert is up: a due tip waits. A new sheet here joins this list.
+    /// One of this screen's sheets or its alert is up. Whether anything at all is presented the tour
+    /// reads from the window (`TourGuide.presenting`); this list only makes a closing sheet here a moment
+    /// to look again, as the window reports no change (review R2).
     private var sheetUp: Bool { entry != nil || showSync || showSettings || addingLabs || addingTest || refusal != nil }
 
     /// The scroll id of Weight & diabetes' first row, tour tip 1's anchor.

@@ -2179,7 +2179,11 @@ it (top or middle), or the list can go no further that way, read from the scroll
 (`onScrollGeometryChange`, iOS 18+). Three things were measured on iOS 27.2 first: the scroll phase
 does not report a scroll the app starts; `withAnimation`'s completion fires at once for a List (it
 looped); and an instant `scrollTo` into the lazy list lands short of a row not yet drawn, so only an
-animated scroll reaches Blood tests. "Where the scroll puts it" has 12 points of slack: the row ends 5
+animated scroll reaches Blood tests. No iOS 17 runtime was run: there the list reports neither the
+scroll phase nor its geometry, so a tip shows once its anchor is on screen, possibly while the
+person's own scroll still moves. A tip waits while anything else is presented in the window, read from
+the window. A step saved by an earlier build ends at the upgrade (`Tour.keptByThisBuild`, owner
+ruling); one this build saved resumes. "Where the scroll puts it" has 12 points of slack: the row ends 5
 points above the list's edge (section spacing). Below iOS 18 the anchor on screen counts as arrived.
 A tip also waits while the first-run cover slides away: a scroll asked for then did nothing. A scroll to the top from a tap by the clock, the person's own scroll or a redraw never
 loses a due tip. The next tip, and tip 3's

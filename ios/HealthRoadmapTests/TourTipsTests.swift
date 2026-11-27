@@ -17,6 +17,8 @@ final class TourTipsTests: XCTestCase {
         ("noAnchor 2", .noAnchor(.foundation)),
         ("closed 2", .closed(.foundation)),
         ("closed 3", .closed(.bloodTests)),
+        ("acted 1", .acted(.snapshot)),
+        ("acted 2", .acted(.foundation)),
         ("acted 3", .acted(.bloodTests)),
         ("skipped 2", .skipped(.foundation)),
         ("skipped 3", .skipped(.bloodTests)),
@@ -86,7 +88,7 @@ final class TourTipsTests: XCTestCase {
                 rows += 1
             }
         }
-        XCTAssertEqual(rows, 96)
+        XCTAssertEqual(rows, 112, "8 states by 14 events")
     }
 
     /// The whole walk, from onboarding's end to Done: each tip's close event once, then the tour's end.
@@ -128,19 +130,19 @@ final class TourTipsTests: XCTestCase {
 
     func testATipLooksOnlyWhenTheListIsOnScreenAndAtRest_AC2() {
         var sight = TourSight(shown: false, bounds: Self.screen, anchors: [.bloodTests: CGRect(x: 20, y: 80, width: 362, height: 44)], targets: Self.targets)
-        XCTAssertNil(sight.look(.bloodTests, bringing: false, rested: false), "another tab, a pushed page or a sheet: nothing yet")
+        XCTAssertNil(sight.look(.bloodTests, bringing: false, after: .moved), "another tab, a pushed page or a sheet: nothing yet")
         sight.shown = true
-        XCTAssertEqual(sight.look(.bloodTests, bringing: false, rested: false), .looked(.bloodTests, onScreen: true))
+        XCTAssertEqual(sight.look(.bloodTests, bringing: false, after: .moved), .looked(.bloodTests, onScreen: true))
         sight.coverUp = true
-        XCTAssertNil(sight.look(.bloodTests, bringing: false, rested: false), "the first-run cover still going: nothing yet")
+        XCTAssertNil(sight.look(.bloodTests, bringing: false, after: .moved), "the first-run cover still going: nothing yet")
         sight.coverUp = false
         sight.moving = true
-        XCTAssertNil(sight.look(.bloodTests, bringing: false, rested: false), "moving: wait for rest")
+        XCTAssertNil(sight.look(.bloodTests, bringing: false, after: .moved), "moving: wait for rest")
         sight.moving = false
         sight.anchors[.bloodTests] = nil
-        XCTAssertEqual(sight.look(.bloodTests, bringing: false, rested: false), .looked(.bloodTests, onScreen: false), "its row not drawn: scroll to it")
+        XCTAssertEqual(sight.look(.bloodTests, bringing: false, after: .moved), .looked(.bloodTests, onScreen: false), "its row not drawn: scroll to it")
         sight.targets[.foundation] = nil
-        XCTAssertEqual(sight.look(.foundation, bringing: false, rested: false), .noAnchor(.foundation), "no card for this record: the step passes (review R4)")
+        XCTAssertEqual(sight.look(.foundation, bringing: false, after: .moved), .noAnchor(.foundation), "no card for this record: the step passes (review R4)")
     }
 
     func testOnScreenMeansEnoughOfTheAnchorToPointAt_AC2() {
@@ -163,17 +165,17 @@ final class TourTipsTests: XCTestCase {
         var sight = TourSight(shown: true, bounds: Self.screen, targets: Self.targets)
         sight.scroll = TourScroll(offset: 1000, range: -62...3800)
         sight.anchors[.bloodTests] = CGRect(x: 20, y: 400, width: 362, height: 60)
-        XCTAssertNil(sight.look(.bloodTests, bringing: true, rested: false), "on screen but still on its way to the top")
-        XCTAssertEqual(sight.look(.bloodTests, bringing: false, rested: false), .looked(.bloodTests, onScreen: true),
+        XCTAssertNil(sight.look(.bloodTests, bringing: true, after: .moved), "on screen but still on its way to the top")
+        XCTAssertEqual(sight.look(.bloodTests, bringing: false, after: .moved), .looked(.bloodTests, onScreen: true),
                        "already on screen when it fell due: no scroll needed")
         sight.anchors[.bloodTests] = CGRect(x: 20, y: 57, width: 362, height: 60)
-        XCTAssertEqual(sight.look(.bloodTests, bringing: true, rested: false), .looked(.bloodTests, onScreen: true),
+        XCTAssertEqual(sight.look(.bloodTests, bringing: true, after: .moved), .looked(.bloodTests, onScreen: true),
                        "at the top, 5 points into the list's section spacing, as measured: arrived")
         sight.anchors[.bloodTests] = CGRect(x: 20, y: 90, width: 362, height: 60)
-        XCTAssertNil(sight.look(.bloodTests, bringing: true, rested: false), "28 points short: still on its way")
+        XCTAssertNil(sight.look(.bloodTests, bringing: true, after: .moved), "28 points short: still on its way")
         sight.anchors[.bloodTests] = CGRect(x: 20, y: 500, width: 362, height: 60)
         sight.scroll?.offset = 3800
-        XCTAssertEqual(sight.look(.bloodTests, bringing: true, rested: false), .looked(.bloodTests, onScreen: true),
+        XCTAssertEqual(sight.look(.bloodTests, bringing: true, after: .moved), .looked(.bloodTests, onScreen: true),
                        "near the end of the list it can rise no further: arrived")
         sight.anchors[.snapshot] = CGRect(x: 20, y: 250, width: 362, height: 60)
         sight.scroll?.offset = -62
@@ -182,8 +184,13 @@ final class TourTipsTests: XCTestCase {
         XCTAssertFalse(sight.arrived(.snapshot), "still moving down towards it")
         sight.anchors[.bloodTests] = CGRect(x: 20, y: 400, width: 362, height: 60)
         sight.scroll?.offset = 1000
-        XCTAssertEqual(sight.look(.bloodTests, bringing: true, rested: true), .looked(.bloodTests, onScreen: false),
-                       "the person's scroll stopped it short: scroll again")
+        XCTAssertEqual(sight.look(.bloodTests, bringing: true, after: .stopped), .looked(.bloodTests, onScreen: true),
+                       "the person's scroll stopped it short but on screen: the tip shows there, no scroll back (review R1)")
+        XCTAssertEqual(sight.look(.bloodTests, bringing: true, after: .returned), .looked(.bloodTests, onScreen: false),
+                       "the list came back with the scroll unfinished: scroll again")
+        sight.anchors[.bloodTests] = CGRect(x: 20, y: 900, width: 362, height: 60)
+        XCTAssertEqual(sight.look(.bloodTests, bringing: true, after: .stopped), .looked(.bloodTests, onScreen: false),
+                       "the person's scroll took it off screen: scroll again")
     }
 
     // MARK: The guide, from what the list reports
@@ -192,7 +199,7 @@ final class TourTipsTests: XCTestCase {
     private func makeGuide(at step: TourStep) -> (TourGuide, scrolls: () -> [String], kept: () -> [TourStep]) {
         var scrolls: [String] = []
         var kept: [TourStep] = []
-        let guide = TourGuide(step: step) { kept.append($0) }
+        let guide = TourGuide(step: step, keptHere: true) { kept.append($0) }
         guide.scroll = { scrolls.append($0.id) }
         guide.targets(Self.targets)
         guide.listBounds(Self.screen)
@@ -245,6 +252,22 @@ final class TourTipsTests: XCTestCase {
         XCTAssertEqual(scrolls(), [], "already on screen: no scroll")
     }
 
+    /// Review R2: a tip due while another sheet or alert is up in the window waits, never
+    /// presented behind it, and shows once it has gone and the list looks again.
+    @MainActor
+    func testADueTipWaitsForAnySheetInTheWindow_R2() {
+        let (guide, _, _) = makeGuide(at: .snapshot)
+        var sheetUp = true
+        guide.presenting = { sheetUp }
+        guide.anchor(.snapshot, at: CGRect(x: 20, y: 300, width: 362, height: 60))
+        guide.listShown(true)
+        XCTAssertEqual(guide.state, .waiting(.snapshot), "not behind the sheet")
+        sheetUp = false
+        guide.listShown(false)
+        guide.listShown(true)
+        XCTAssertEqual(guide.state, .showing(.snapshot), "the sheet gone: the tip shows")
+    }
+
     /// Next on tip 1: tip 2 waits for tip 1's popover to go, then for its card.
     @MainActor
     func testTheNextTipWaitsForThePopoverToGo_AC2() {
@@ -271,6 +294,18 @@ final class TourTipsTests: XCTestCase {
         guide.listShown(true)
         XCTAssertEqual(guide.state, .bringing(.bloodTests), "tip 3 is due, its heading being brought in")
         XCTAssertEqual(kept(), [.bloodTests])
+    }
+
+    /// AC11: every tip's card is as wide as the list allows, at most 440 points, whatever its
+    /// anchor row reports (tip 1's row reported its label's width at the largest text size).
+    @MainActor
+    func testATipCardTakesTheListsWidthNotItsRows_AC11() {
+        let (guide, _, _) = makeGuide(at: .snapshot)
+        XCTAssertEqual(guide.cardWidth, 402 - 32, "a phone: the list less the popover's margins")
+        guide.listBounds(CGRect(x: 0, y: 62, width: 820, height: 1000))
+        XCTAssertEqual(guide.cardWidth, 440, "an iPad or a wide window: at most 440")
+        guide.anchor(.snapshot, at: CGRect(x: 20, y: 300, width: 120, height: 60))
+        XCTAssertEqual(guide.cardWidth, 440, "a narrow anchor changes nothing")
     }
 
     /// AC3, AC7: Skip ends the tour from any tip; tip 3's action opens the upload once its popover has gone.
@@ -311,6 +346,33 @@ final class TourTipsTests: XCTestCase {
         XCTAssertTrue(guide.start())
         XCTAssertEqual(guide.state, .showing(.snapshot))
         XCTAssertEqual(scrolls(), [])
+    }
+
+    /// Owner ruling (review R6): a tip saved by an earlier build ends at the upgrade, once, and
+    /// shows nothing; a tour this build began and the app lost mid-way resumes at its tip.
+    @MainActor
+    func testAnEarlierBuildsTourEndsButThisBuildsResumes_R6() {
+        var kept: [TourStep] = []
+        let upgraded = TourGuide(step: .foundation, keptHere: false) { kept.append($0) }
+        XCTAssertEqual(upgraded.state, .finished, "never scrolled to a tip days after the update")
+        XCTAssertEqual(kept, [.done], "kept as done, so it never comes back")
+        let resumed = TourGuide(step: .foundation, keptHere: true) { kept.append($0) }
+        XCTAssertEqual(resumed.state, .waiting(.foundation), "this build's own tour resumes at its tip")
+        XCTAssertEqual(TourGuide(step: .notStarted, keptHere: false) { _ in }.state, .notStarted, "nothing saved: unchanged")
+        XCTAssertEqual(TourGuide(step: .done, keptHere: false) { _ in }.state, .finished)
+    }
+
+    /// Review R5: a hidden tour (`--ui-testing`, AC10) never starts, so it never sits due and the
+    /// rating prompt never waits on it.
+    @MainActor
+    func testAHiddenTourNeverStarts_R5() {
+        let (guide, _, kept) = makeGuide(at: .notStarted)
+        TourSetup.presents = false
+        defer { TourSetup.presents = true }
+        XCTAssertFalse(guide.start())
+        XCTAssertEqual(guide.state, .notStarted)
+        XCTAssertFalse(guide.state.isRunning)
+        XCTAssertEqual(kept(), [])
     }
 
     @MainActor

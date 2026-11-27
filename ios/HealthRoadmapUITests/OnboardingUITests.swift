@@ -315,12 +315,13 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertFalse(bloodTests.waitForExistence(timeout: 3), "tip 3 never shows again")
 
         // A tile's explainer is on its row's page, for good (US-57 AC5, US-73 AC9).
-        for _ in 0..<12 where !app.staticTexts["Weight & diabetes"].isHittable { app.swipeDown() }
+        // At the largest text size the page is several times longer: up to 30 swipes back.
+        for _ in 0..<30 where !app.staticTexts["Weight & diabetes"].isHittable { app.swipeDown() }
         let weight = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Weight,'")).firstMatch
         XCTAssertTrue(weight.waitForExistence(timeout: 5), "the weight row")
         weight.tap()
         let explainer = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'A healthy weight for your height and sex'")).firstMatch
-        for _ in 0..<6 where !explainer.exists { app.swipeUp() }
+        for _ in 0..<15 where !explainer.exists { app.swipeUp() }
         XCTAssertTrue(explainer.waitForExistence(timeout: 5), "ideal weight's what-it-is, on the weight page")
         snap(app, "tour tile explainer")
         app.navigationBars.buttons.firstMatch.tap()
@@ -339,7 +340,7 @@ final class OnboardingUITests: XCTestCase {
         let foundation = app.staticTexts[Self.tourLines[1]]
         let bloodTests = app.staticTexts[Self.tourLines[2]]
         XCTAssertTrue(snapshot.waitForExistence(timeout: 10))
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)).tap()
+        tapOutsideTheTip(app)
         XCTAssertTrue(snapshot.waitForNonExistence(timeout: 5))
         XCTAssertTrue(foundation.waitForExistence(timeout: 10), "a tap outside tip 1 moves on to tip 2")
         // Above any popover; the list scrolls to its top, then tip 3 brings Blood tests back into view.
@@ -537,11 +538,24 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5), "the settings sheet")
     }
 
-    /// Scrolls the screen until `element` can be tapped.
+    /// Taps the screen beside the tip's popover, never on it: below it when there is room,
+    /// else above it, clear of the status bar. At the largest text size the popover reaches
+    /// most of the way down, so a fixed point could land on it.
+    @MainActor
+    private func tapOutsideTheTip(_ app: XCUIApplication) {
+        let screen = app.windows.firstMatch.frame
+        let tip = app.popovers.firstMatch.frame
+        let below = (tip.maxY + screen.maxY - 90) / 2, above = (screen.minY + 70 + tip.minY) / 2
+        let y = screen.maxY - 90 - tip.maxY >= 60 ? below : above
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: screen.midX, dy: y)).tap()
+    }
+
+    /// Scrolls the screen until `element` can be tapped: up to 30 swipes, as the page is several
+    /// times longer at the largest text size.
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
         _ = element.waitForExistence(timeout: 5)
-        for _ in 0..<10 where !(element.exists && element.isHittable) { app.swipeUp() }
+        for _ in 0..<30 where !(element.exists && element.isHittable) { app.swipeUp() }
         return element.exists && element.isHittable
     }
 

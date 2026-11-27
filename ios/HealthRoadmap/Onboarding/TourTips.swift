@@ -7,8 +7,16 @@ import TipKit
 enum Tour {
     /// `TourStep`'s raw value.
     @Parameter static var step: Int = TourStep.notStarted.rawValue
+    /// Set when this build starts or moves the tour. A step saved without it is an earlier
+    /// build's (TipKit's own tour), which ends at upgrade rather than resuming (owner, review R6).
+    @Parameter static var keptByThisBuild: Bool = false
 
     static var current: TourStep { TourStep(rawValue: step) ?? .done }
+
+    static func keep(_ next: TourStep) {
+        step = next.rawValue
+        keptByThisBuild = true
+    }
 }
 
 /// Runs the tour (US-57): holds its one state, keeps its step, and turns what My health's
@@ -25,17 +33,37 @@ final class TourGuide {
     /// My health's doors: scroll the list to a step's anchor, and open the lab upload.
     @ObservationIgnored var scroll: ((TourTarget) -> Void)?
     @ObservationIgnored var openLabUpload: (() -> Void)?
+    /// A sheet, alert or cover is up in the window (RootView reads it, as its `quiet` does): a
+    /// due tip waits, so it is never presented behind one (review R2).
+    @ObservationIgnored var presenting: () -> Bool = { false }
+
+    /// Something other than a tour tip is presented over `window`, and not on its way out.
+    static func presenting(over window: UIWindow?) -> Bool {
+        guard let shown = window?.rootViewController?.presentedViewController else { return false }
+        return !shown.isBeingDismissed && shown.modalPresentationStyle != .popover
+    }
 
     /// Writes the step to keep; tests pass their own, as TipKit is never configured under them.
     @ObservationIgnored private let keep: (TourStep) -> Void
 
-    init(step: TourStep = Tour.current, keep: @escaping (TourStep) -> Void = { Tour.step = $0.rawValue }) {
-        state = TourState(step)
+    /// `keptHere`: this build saved the step. A tour an earlier build left at a tip ends here, once,
+    /// so a phone never scrolls to Blood tests days after the update (owner, review R6); one this
+    /// build began and the app lost mid-way resumes at its tip.
+    init(step: TourStep = Tour.current, keptHere: Bool = Tour.keptByThisBuild,
+         keep: @escaping (TourStep) -> Void = { Tour.keep($0) }) {
         self.keep = keep
+        if step.isTip, !keptHere {
+            state = .finished
+            keep(.done)
+        } else {
+            state = TourState(step)
+        }
     }
 
-    /// After onboarding finishes (AC1). True when this started the tour: once only.
+    /// After onboarding finishes (AC1). True when this started the tour: once only. A hidden
+    /// tour (`--ui-testing`, AC10) never starts, so it never sits due (review R5).
     func start() -> Bool {
+        guard TourSetup.presents else { return false }
         let before = state
         send(.started)
         return state != before
@@ -71,10 +99,10 @@ final class TourGuide {
         }
     }
 
-    /// Sends the due tip's event, if the list has one to give. `rested`: the person's or iOS's
-    /// scroll just ended. Hidden tips (AC10) never look.
-    private func look(rested: Bool = false) {
-        guard TourSetup.presents, let due, let event = sight.look(due.step, bringing: due.bringing, rested: rested) else { return }
+    /// Sends the due tip's event, if the list has one to give. Hidden tips (AC10) never look.
+    private func look(after moment: TourSight.Moment = .moved) {
+        guard TourSetup.presents, !presenting(), let due,
+              let event = sight.look(due.step, bringing: due.bringing, after: moment) else { return }
         send(event)
     }
 
@@ -83,24 +111,35 @@ final class TourGuide {
     func listShown(_ shown: Bool) {
         guard shown != sight.shown else { return }
         sight.shown = shown
-        look(rested: true)
+        look(after: .returned)
     }
 
     /// RootView's first-run cover appeared, or has gone.
     func coverUp(_ up: Bool) {
         guard up != sight.coverUp else { return }
         sight.coverUp = up
-        look(rested: true)
+        look(after: .returned)
     }
 
     /// The person or iOS scrolls the list, or stops: looks again once it comes to rest.
     func listMoving(_ moving: Bool) {
         guard moving != sight.moving else { return }
         sight.moving = moving
-        if !moving { look(rested: true) }
+        if !moving { look(after: .stopped) }
     }
 
-    func listBounds(_ bounds: CGRect) { changingSight { $0.bounds = bounds } }
+    func listBounds(_ bounds: CGRect) {
+        if bounds.width != listWidth { listWidth = bounds.width }
+        changingSight { $0.bounds = bounds }
+    }
+
+    /// My health's list width, which sizes every tip's card (`cardWidth`).
+    private(set) var listWidth: CGFloat = 0
+
+    /// A tip card's width: the list's, less the popover's margins, at most 440 points (an iPad
+    /// or a wide window). Never the anchor row's: at the largest text size the first row reports
+    /// its label's width, and tip 1 drew 280 points wide (measured).
+    var cardWidth: CGFloat { listWidth > 0 ? min(listWidth - 32, 440) : 360 }
 
     /// The list's offset or its limits changed (iOS 18+): a scroll moved it, or rows were
     /// measured. A tip being brought in looks for its arrival.
@@ -113,7 +152,7 @@ final class TourGuide {
     func targets(_ targets: [TourStep: TourTarget]) {
         guard targets != sight.targets else { return }
         sight.targets = targets
-        look(rested: true)
+        look(after: .returned)
     }
 
     /// Looks again when the due anchor comes on screen or leaves it while the list is at rest
@@ -179,7 +218,6 @@ extension View {
 private struct TourTipAnchor<T: TourTip>: ViewModifier {
     let rowTop: CGFloat
     @Environment(TourGuide.self) private var tour: TourGuide?
-    @State private var width: CGFloat = 0
 
     func body(content: Content) -> some View {
         let up = tour?.state == .showing(T.step)
@@ -191,10 +229,9 @@ private struct TourTipAnchor<T: TourTip>: ViewModifier {
                 let frame = $0.frame(in: .global)
                 return CGRect(x: frame.minX, y: frame.minY - rowTop, width: frame.width, height: frame.height + rowTop)
             } action: { tour?.anchor(T.step, at: $0.isNull ? nil : $0) }
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
             .onDisappear { tour?.anchor(T.step, at: nil) }
             .popover(isPresented: Binding(get: { up }, set: { if !$0 { tour?.send(.closed(T.step)) } }), arrowEdge: .top) {
-                TourTipCard(tip: T.self, width: min(max(width, 280), 440)) { tour?.send($0) }
+                TourTipCard(tip: T.self, width: tour?.cardWidth ?? 360) { tour?.send($0) }
                     // The popover has gone, however it went: the next tip, or the upload, may now show.
                     .onDisappear { tour?.send(.gone(T.step)) }
                     .presentationCompactAdaptation(.popover)
@@ -292,7 +329,7 @@ enum TourSetup {
     enum Mode: Equatable { case none, hidden, fresh, normal }
 
     /// False when `--ui-testing` hid the tour: it never scrolls the list or shows a tip.
-    @MainActor static private(set) var presents = true
+    @MainActor static var presents = true
 
     static func mode(environment: [String: String], arguments: [String]) -> Mode {
         if environment["XCTestConfigurationFilePath"] != nil { return .none }
