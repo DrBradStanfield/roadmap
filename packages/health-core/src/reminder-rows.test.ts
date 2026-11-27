@@ -13,7 +13,7 @@ import { buildErasedFile } from './erase';
 import { mergeFiles, pickNewerOptional } from './merge';
 import { migrateFile } from './migrate';
 import { stampIsNewer } from './record-time';
-import { mergeOptIn, rowsOf, shownOptIn } from './reminder-rows';
+import { beforeErase, mergeOptIn, rowsOf, shownOptIn } from './reminder-rows';
 import { createEmptyFile, createMeasurement, stableStringify, type FileReminderOptIn, type ReminderTokenRow, type RoadmapFile } from './roadmap-file';
 import { setReminderOptIn, setReminderRow } from './state-edits';
 
@@ -170,6 +170,53 @@ describe('US-17 AC19: what counts as a row', () => {
     const merged = merge(migrateFile(JSON.parse(JSON.stringify(free)), CTX), file(row('token-a', 'active', 0)));
     expect(merged.reminderOptIn?.token).toBe('token-a');
     expect(JSON.stringify(merged)).not.toContain('free text');
+  });
+});
+
+describe('US-17 AC19: at one epoch a nested row from before the erase time goes', () => {
+  const marker = (t: number): FileReminderOptIn => ({ ...row('token-a', 'cancelled', t), token: '', email: '' });
+  const erased = (optIn: FileReminderOptIn, erasedAt?: string): RoadmapFile => {
+    const f = file(optIn, 1);
+    return erasedAt ? { ...f, meta: { ...f.meta, erasedAt } } : f;
+  };
+
+  it('two erases from one epoch: the later erase wins and the earlier re-enrolment goes, in both orders', () => {
+    const erasedLater = erased(marker(2), '2026-05-03T10:00:00.001Z');
+    const reEnrolled = erased(row('token-c', 'active', 1), '2026-05-01T10:00:00.001Z');
+    for (const merged of [merge(erasedLater, reEnrolled), merge(reEnrolled, erasedLater)]) {
+      expect(merged.reminderOptIn).toEqual(marker(2));
+      expect(shownOptIn(merged)).toEqual(marker(2));
+      const bytes = JSON.stringify(merged);
+      expect(bytes).not.toContain('token-c');
+      expect(bytes).not.toContain('@example.test');
+    }
+  });
+
+  it('a marker at t1, X at t0 and Y at t2: every grouping gives Y with no X beneath it', () => {
+    const [m, x, y] = [erased(marker(1), T[1]), erased(row('token-x', 'active', 0)), erased(row('token-y', 'active', 2))];
+    const ends = [merge(merge(m, x), y), merge(m, merge(x, y)), merge(merge(m, y), x), merge(merge(x, y), m), merge(y, merge(x, m))];
+    for (const end of ends) {
+      expect(end.reminderOptIn).toEqual(row('token-y', 'active', 2));
+      expect(JSON.stringify(end)).not.toContain('token-x');
+    }
+  });
+
+  it('a re-enrolment stamped after the erase survives as the stored object', () => {
+    const erasedHere = erased(marker(0), '2026-05-01T10:00:00.001Z');
+    const reEnrolled = erased(row('token-c', 'active', 2), '2026-05-01T09:00:00.000Z');
+    for (const merged of [merge(erasedHere, reEnrolled), merge(reEnrolled, erasedHere)]) {
+      expect(merged.reminderOptIn).toEqual(row('token-c', 'active', 2));
+    }
+  });
+
+  it('pinned: a nested row stamped at the erase instant stays; one a millisecond before goes; no erase time, no floor', () => {
+    const top = erased(row('token-y', 'active', 2), T[1]);
+    const at = merge(top, erased(row('token-x', 'active', 1)));
+    expect(at.reminderOptIn?.tokens).toEqual([row('token-x', 'active', 1)]);
+    const before = merge(top, erased({ ...row('token-x', 'active', 1), updatedAt: '2026-05-02T09:59:59.999Z' }));
+    expect(before.reminderOptIn?.tokens).toBeUndefined();
+    const never = merge(erased(row('token-y', 'active', 2)), erased(row('token-x', 'active', 0)));
+    expect(never.reminderOptIn?.tokens).toEqual([row('token-x', 'active', 0)]);
   });
 });
 
@@ -346,15 +393,22 @@ function randomOptIn(r: () => number): FileReminderOptIn | undefined {
 function randomFile(r: () => number): RoadmapFile {
   const f = file(randomOptIn(r), Math.floor(r() * 3));
   const epoch = f.meta.eraseEpoch ?? 0;
-  return epoch > 0 ? { ...f, schemaVersion: 2, erasedRows: { fromEpoch: epoch, ids: [] } } : f;
+  if (epoch === 0) return f;
+  // An erase time at a row's instant, between rows, or after them all.
+  const erasedAt = [T[0], '2026-05-02T00:00:00.000Z', T[2]][Math.floor(r() * 3)];
+  return { ...f, schemaVersion: 2, erasedRows: { fromEpoch: epoch, ids: [] }, meta: { ...f.meta, erasedAt } };
 }
 const optKey = (f: RoadmapFile) => stableStringify([f.schemaVersion, f.reminderOptIn ?? null]);
 
 /** The expected token map, from the raw rows of the copies at the winning epoch: each token's newest row. */
-function expectedTokens(copies: RoadmapFile[]): Record<string, ReminderTokenRow> {
+function expectedTokens(copies: RoadmapFile[], storedToken?: string): Record<string, ReminderTokenRow> {
   const top = Math.max(...copies.map((f) => f.meta.eraseEpoch ?? 0));
+  const live = copies.filter((c) => (c.meta.eraseEpoch ?? 0) === top);
+  // Copies that meet at one epoch drop nested rows from before the latest erase time; one alone passes whole.
+  const floors = live.map((c) => c.meta.erasedAt).filter((at): at is string => at !== undefined).sort();
+  const floor = live.length > 1 ? floors[floors.length - 1] : undefined;
   const map: Record<string, ReminderTokenRow> = {};
-  for (const f of copies.filter((c) => (c.meta.eraseEpoch ?? 0) === top)) {
+  for (const f of live) {
     const o = f.reminderOptIn;
     for (const raw of o ? [o, ...(o.tokens ?? [])] : []) {
       if (typeof raw.token !== 'string' || raw.token === '') continue;
@@ -362,6 +416,7 @@ function expectedTokens(copies: RoadmapFile[]): Record<string, ReminderTokenRow>
       if (!map[r.token] || stampIsNewer(r, map[r.token])) map[r.token] = r;
     }
   }
+  for (const [token, r] of Object.entries(map)) if (token !== storedToken && beforeErase(r, floor)) delete map[token];
   return map;
 }
 const tokenMap = (f: RoadmapFile) => Object.fromEntries(rowsOf(f.reminderOptIn).map((r) => [r.token, r]));
@@ -388,7 +443,7 @@ describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStri
       // A copy the gate passed whole may be hand-written, its rows out of order;
       // once merged at its own epoch it is a fixed point.
       const settled = merge(left, left);
-      expect(key(settled.reminderOptIn), `idempotent ${seed}`).toBe(key(mergeOptIn(left.reminderOptIn, undefined)));
+      expect(key(settled.reminderOptIn), `idempotent ${seed}`).toBe(key(mergeOptIn(left.reminderOptIn, undefined, left.meta.erasedAt)));
       expect(optKey(merge(settled, settled)), `idempotent ${seed}`).toBe(optKey(settled));
       expect(optKey(merge(settled, a)), `absorbs ${seed}`).toBe(optKey(settled));
       // Every order of the three copies, either grouping, ends on one opt-in and one shown row.
@@ -424,7 +479,7 @@ describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStri
       const candidates = live.flatMap((o) => (o ? [own(o)!, ...rowsOf(o)] : []));
       const merged = copies.reduce((x, y) => merge(x, y));
       // Every token and its winning row, against the map built from the raw rows.
-      expect(tokenMap(merged), `tokens ${seed}`).toEqual(expectedTokens(copies));
+      expect(tokenMap(merged), `tokens ${seed}`).toEqual(expectedTokens(copies, merged.reminderOptIn?.token));
       if (candidates.length === 0) continue;
       const newest = candidates.reduce((x, y) => (stampIsNewer(y, x) ? y : x));
       // Only one copy at the top epoch passes through the gate untouched, as today.

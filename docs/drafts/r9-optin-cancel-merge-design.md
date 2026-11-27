@@ -50,6 +50,10 @@ newest of its own rows, so this equals `pickNewerOptional` over the two objects,
 all rows also keeps a hand-edited row newer than its object. `tokens` holds every row in `rows` except the
 stored object's own, sorted by token, written only when not empty. So a file with one real token (any erase
 marker superseded) is byte for byte what it is today. **Across an erase:** unchanged; the winner's object stands.
+**Erase floor (equal epoch, review ruling 27 Nov).** The merged file's erase time (`meta.erasedAt`, which already
+merges through `laterErase`) is a floor for nested rows only: a `tokens` row whose `updatedAt` instant is before it
+goes with the erase; one at the very instant stays; lamport plays no part; a file never erased has no floor. The
+stored object keeps the rule above. The check after a save applies the same floor, so a row it drops is not owed.
 
 **Two readers, two jobs:**
 - The **stored object** (newest row overall) drives the auto-enrol gate and the provider-switch path, as

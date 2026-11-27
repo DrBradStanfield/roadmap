@@ -8,7 +8,7 @@
  * runs on rows with `tokens` stripped, the content tie-break included.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
-import { mergeByKey, stampIsNewer } from './record-time';
+import { mergeByKey, stampIsNewer, timeOf } from './record-time';
 import type { FileReminderOptIn, ReminderTokenRow, RoadmapFile } from './roadmap-file';
 
 /** A row's own fields: its `tokens` key, if any, left out. */
@@ -18,6 +18,14 @@ export function ownRow<T extends object>(row: T): Omit<T, 'tokens'> {
 }
 
 const newer = (a: ReminderTokenRow, b: ReminderTokenRow) => (stampIsNewer(b, a) ? b : a);
+
+/** A row stamped before an erase time: its `updatedAt` instant against the
+ *  erase instant, lamport aside. A row at the erase's very instant stays, as
+ *  the gate keeps a row that shares the erase's millisecond; an unknown stamp
+ *  is before any erase. No erase time, no floor. */
+export function beforeErase(row: ReminderTokenRow, erasedAt: string | undefined): boolean {
+  return erasedAt !== undefined && timeOf(row.updatedAt) < timeOf(erasedAt);
+}
 
 /** The object's own row and every `tokens` row, one per token, the newest.
  *  A row whose token is empty or not a string (the erase's marker) is skipped. */
@@ -34,24 +42,28 @@ export function rowsOf(optIn: FileReminderOptIn | undefined): ReminderTokenRow[]
  * both objects' own rows (the erase marker included) and every row, which for
  * app-written copies is `pickNewerOptional` over the two objects, as before.
  * `tokens` holds every other token's row, sorted by token, and only when there
- * is one: a file with one real token is byte for byte what it was.
+ * is one: a file with one real token is byte for byte what it was. `erasedAt`,
+ * the merged file's erase time, is a floor for the nested rows only: one whose
+ * `updatedAt` instant is before it is gone with the erase (`beforeErase`).
  */
-export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileReminderOptIn | undefined): FileReminderOptIn | undefined {
+export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileReminderOptIn | undefined, erasedAt?: string): FileReminderOptIn | undefined {
   if (!local && !remote) return undefined;
   const rows = mergeByKey(rowsOf(local), rowsOf(remote), (row) => row.token);
   const stored = [local, remote].flatMap((o) => (o ? [ownRow(o)] : [])).concat(rows).reduce(newer);
-  const tokens = rows.filter((row) => row.token !== stored.token);
+  const tokens = rows.filter((row) => row.token !== stored.token && !beforeErase(row, erasedAt));
   return tokens.length > 0 ? { ...stored, tokens } : stored;
 }
 
 /** True when a re-read lost an opt-in row this save wrote: the stored object,
- *  or a row of `rowsOf`, has no row for its token as new in `theirs`. */
-export function optInBehind(ours: FileReminderOptIn | undefined, theirs: FileReminderOptIn | undefined): boolean {
+ *  or a row of `rowsOf`, has no row for its token as new in `theirs`. A nested
+ *  row before the re-read's erase time is not owed: the merge drops it too. */
+export function optInBehind(ours: FileReminderOptIn | undefined, theirs: FileReminderOptIn | undefined, erasedAt?: string): boolean {
   if (!ours) return false;
   const held = new Map(rowsOf(theirs).map((row) => [row.token, row]));
   // The stored object counts too, the erase marker included, which rowsOf skips.
   if (theirs && !held.has(theirs.token)) held.set(theirs.token, ownRow(theirs));
-  return [ownRow(ours), ...rowsOf(ours)].some((row) => {
+  const owed = rowsOf(ours).filter((row) => row.token === ours.token || !beforeErase(row, erasedAt));
+  return [ownRow(ours), ...owed].some((row) => {
     const match = held.get(row.token);
     return !match || stampIsNewer(row, match);
   });
