@@ -90,6 +90,35 @@ Read my health record.
   });
 });
 
+// US-38 AC7: a guide link goes only to a web or mail address, a site path or an
+// anchor, by the rule the master builder already uses (safeHref). A javascript:
+// link used to come out live, and would run on click.
+describe('build-guide-html.mjs — links (US-38 AC7)', () => {
+  const refused = [
+    'javascript:location=document.domain', 'JavaScript:location=1', 'data:text/html;base64,PHA+', 'vbscript:msgbox',
+    ' javascript:location=1', 'java\tscript:location=1', 'java\nscript:location=1', '\u0001javascript:location=1',
+    '&#106;avascript:location=1', '&#x6A;avascript:location=1', '//example.com/x', 'connect-chatgpt',
+  ];
+  const kept = [
+    ['https://example.com/a?b=1&c=2', 'https://example.com/a?b=1&amp;c=2'], ['http://example.com/', 'http://example.com/'],
+    ['mailto:someone@example.com', 'mailto:someone@example.com'], ['/blogs/guides/scratch#steps', '/blogs/guides/scratch#steps'],
+    ['#steps', '#steps'],
+  ];
+  const paragraphs = (urls: string[]) =>
+    build(FRONT_MATTER + urls.map((u, i) => `Case ${i}: [go](${u}).`).join('\n\n')).html.match(/<p>Case[\s\S]*?<\/p>/g) ?? [];
+
+  it('US-38 AC7: renders any other link as its plain text, so nothing runs on click', () => {
+    const out = paragraphs(refused);
+    expect(out).toHaveLength(refused.length);
+    out.forEach((p) => expect(p).not.toMatch(/<a\b|href/));
+    expect(out[0]).toBe('<p>Case 0: [go](javascript:location=document.domain).</p>');
+  });
+
+  it('US-38 AC7: keeps web, mail, site-path and anchor links exactly as before', () => {
+    expect(paragraphs(kept.map(([u]) => u))).toEqual(kept.map(([, href], i) => `<p>Case ${i}: <a href="${href}">go</a>.</p>`));
+  });
+});
+
 // US-38 AC6: a list in a guide is a list on the page. Without this the lines of
 // a list ran together into one paragraph of dashes on the live guides.
 describe('build-guide-html.mjs — lists', () => {

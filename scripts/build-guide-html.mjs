@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
+import { safeHref } from './build-master-html.mjs';
 
 const argv = process.argv.slice(2);
 const noScript = argv.includes('--no-script');
@@ -126,7 +127,8 @@ body = body.replace(/^\[diagram:([a-z0-9-]+)\]$/gm, (_, name) => {
 const inline = (s) =>
   esc(s.replace(/`([^`]+)`/g, (_, code) => hold(`<code>${esc(code)}</code>`)))
     .replace(/&quot;((?:(?!&quot;)[\s\S])+)&quot;/g, '“$1”')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    // A link that is not web, mail, a site path or an anchor (javascript:, data:) stays text.
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, text, url) => (safeHref(url) ? `<a href="${url}">${text}</a>` : m))
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
 // A block that starts with "- " or "1. " is a list: each such line starts an
