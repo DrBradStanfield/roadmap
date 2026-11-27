@@ -1,8 +1,8 @@
 /**
  * US-38 AC3a: a guide's front-matter title and description reach the Shopify
- * article and the page's JSON-LD as their YAML means them. publish-guides.mjs (the
- * title and summary it compares and would PUT) and build-guide-html.mjs (headline
- * and description) must agree.
+ * article and the page's JSON-LD the same way. publish-guides.mjs (the title and
+ * summary it compares and would PUT) and build-guide-html.mjs (headline and
+ * description) read them through one reader and must agree.
  *
  * publish-guides runs as a dry run only, from a scratch folder whose scripts/ and
  * tools/ link to the real ones, so its docs/guides/ holds only the synthetic
@@ -19,7 +19,7 @@ import { escapeHtml } from '../tools/escape-html.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// [front-matter value as written, the text YAML means]
+// [front-matter value as written, the text both readers give]
 const CASES: [string, string][] = [
   ['"The \\"local-first\\" guide"', 'The "local-first" guide'],
   ['"C:\\\\guides\\\\"', 'C:\\guides\\'],
@@ -29,52 +29,84 @@ const CASES: [string, string][] = [
   ["'Single \\\"quoted\\\"'", "'Single \\\"quoted\\\"'"],
   ['"Half quoted', '"Half quoted'],
   ['Say "hi"', 'Say "hi"'],
-  // Limits: a comment after a quoted value is not taken off, and no YAML escape but \" and \\ is undone.
+  // Limits: a comment after a value stays part of it, and no YAML escape but \" and \\ is undone.
   ['"Commented" # note', '"Commented" # note'],
   ['"Tab \\t and caf\\u00e9"', 'Tab \\t and caf\\u00e9'],
+  // Unquoted only when the first unescaped quote after the opening one ends the value.
+  ['"Commented" # say "hi"', '"Commented" # say "hi"'],
+  ['"Ends in \\"', '"Ends in \\"'],
 ];
 // The description is the same value, so both fields are read through the same rule.
 const guide = (value: string, slug: string) => `---\ntitle: ${value}\ndescription: ${value}\nslug: "${slug}"\n---\n\n# Synthetic\n\nBody text.\n`;
 
-let dir = '';
-const published = new Map<string, { title: string; summary: string }>();
+// [what the guide shows, its whole front matter and body, the title and description both readers give]
+const BLOCKS: [string, string, string, string | undefined][] = [
+  ['indented keys', '---\n  title: "Indented title"\n\tdescription: "Indented description"\nslug: "s"\n---\n\nBody text.\n', 'Indented title', 'Indented description'],
+  ['a body line that looks like metadata', '---\ntitle: "Body test"\nslug: "s"\n---\n\nBody text.\n\n---\ndescription: Not front matter\n---\n\nMore text.\n', 'Body test', undefined],
+  ['a key given twice', '---\ntitle: "First"\ntitle: "Last"\nslug: "s"\n---\n\nBody text.\n', 'Last', undefined],
+];
 
-beforeAll(() => {
-  dir = mkdtempSync(join(tmpdir(), 'guide-front-'));
+const dirs: string[] = [];
+const stub = () => join(dirs[0], 'fetch-stub.mjs');
+// A scratch repo holding only these guides, and its dry-run report.
+const dryRun = (guides: [string, string][]) => {
+  const dir = mkdtempSync(join(tmpdir(), 'guide-front-'));
+  dirs.push(dir);
   symlinkSync(join(ROOT, 'scripts'), join(dir, 'scripts'));
   symlinkSync(join(ROOT, 'tools'), join(dir, 'tools'));
   mkdirSync(join(dir, 'docs', 'guides'), { recursive: true });
-  CASES.forEach(([title], i) => writeFileSync(join(dir, 'docs', 'guides', `case-${i}.md`), guide(title, `case-${i}`)));
+  for (const [name, md] of guides) writeFileSync(join(dir, 'docs', 'guides', name), md);
   // Every article exists with an old title and summary, so the dry run prints what it would write.
-  const stub = join(dir, 'fetch-stub.mjs');
-  writeFileSync(stub, `globalThis.fetch = async (url) => {
+  if (dirs.length === 1) writeFileSync(stub(), `globalThis.fetch = async (url) => {
   const u = new URL(String(url));
   if (u.hostname !== 'fake-shop.example') throw new Error('blocked: ' + url);
   const body = u.pathname.endsWith('/blogs.json') ? { blogs: [{ id: 1, handle: 'guides' }] }
     : { articles: [{ id: 9, title: 'old', summary_html: '<p>old</p>', body_html: '<p>old</p>' }] };
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
 };\n`);
-  const run = spawnSync(process.execPath, ['--preserve-symlinks-main', '--import', pathToFileURL(stub).href, join(dir, 'scripts', 'publish-guides.mjs')], {
+  const run = spawnSync(process.execPath, ['--preserve-symlinks-main', '--import', pathToFileURL(stub()).href, join(dir, 'scripts', 'publish-guides.mjs')], {
     cwd: dir, encoding: 'utf8', timeout: 120_000,
     env: { PATH: process.env.PATH ?? '', SHOPIFY_EDU_SHOP: 'fake-shop.example', SHOPIFY_EDU_ACCESS_TOKEN: 'test-token-good' },
   });
+  return { dir, run };
+};
+
+const published = new Map<string, { title: string; summary: string }>();
+let casesDir = '';
+
+beforeAll(() => {
+  const { dir, run } = dryRun(CASES.map(([value], i) => [`case-${i}.md`, guide(value, `case-${i}`)]));
+  casesDir = dir;
   expect(run.status, run.stderr).toBe(0);
   for (const m of run.stdout.matchAll(/^(case-\d+)\.md -> [\s\S]*?^ {2}title rendered: (.*)$[\s\S]*?^ {2}summary rendered: (.*)$/gm)) {
     published.set(m[1], { title: JSON.parse(m[2]), summary: JSON.parse(m[3]) });
   }
 });
-afterAll(() => rmSync(dir, { recursive: true, force: true }));
+afterAll(() => dirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
 
-const jsonLd = (i: number) => {
-  const run = spawnSync(process.execPath, [join(ROOT, 'scripts', 'build-guide-html.mjs'), join(dir, 'docs', 'guides', `case-${i}.md`)], { encoding: 'utf8' });
+const jsonLd = (mdPath: string) => {
+  const run = spawnSync(process.execPath, [join(ROOT, 'scripts', 'build-guide-html.mjs'), mdPath], { encoding: 'utf8' });
   expect(run.status, run.stderr).toBe(0);
   return JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(run.stdout)![1]);
 };
 
-describe('US-38 AC3a: a front-matter title and description as YAML means them', () => {
-  it.each(CASES.map(([written, meant], i) => [i, written, meant] as const))('case %i: %s is published and in the JSON-LD as its text', (i, _written, meant) => {
+describe('US-38 AC3a: the text both readers give for a front-matter value', () => {
+  it.each(CASES.map(([written, given], i) => [i, written, given] as const))('case %i: for %s, the text both readers give is %s', (i, _written, given) => {
     // Soft, so a failure names each reader that got it wrong.
-    expect.soft(published.get(`case-${i}`), 'publish-guides dry run').toEqual({ title: meant, summary: `<p>${escapeHtml(meant)}</p>` });
-    expect.soft(jsonLd(i), 'build-guide-html JSON-LD').toMatchObject({ headline: meant, description: meant });
+    expect.soft(published.get(`case-${i}`), 'publish-guides dry run').toEqual({ title: given, summary: `<p>${escapeHtml(given)}</p>` });
+    expect.soft(jsonLd(join(casesDir, 'docs', 'guides', `case-${i}.md`)), 'build-guide-html JSON-LD').toMatchObject({ headline: given, description: given });
+  });
+});
+
+describe('US-38 AC3a: one front-matter block, read by both the same way', () => {
+  it.each(BLOCKS)('%s: both readers give the same title and description', (_shows, md, title, description) => {
+    const { dir, run } = dryRun([['case.md', md]]);
+    expect(run.status, run.stderr).toBe(0);
+    const line = (field: string) => new RegExp(`^ {2}${field} rendered: (.*)$`, 'm').exec(run.stdout)?.[1];
+    expect.soft(line('title'), 'publish-guides title').toBe(JSON.stringify(title));
+    expect.soft(line('summary'), 'publish-guides summary').toBe(description && JSON.stringify(`<p>${escapeHtml(description)}</p>`));
+    const ld = jsonLd(join(dir, 'docs', 'guides', 'case.md'));
+    expect.soft(ld.headline, 'build-guide-html headline').toBe(title);
+    expect.soft(ld.description, 'build-guide-html description').toBe(description);
   });
 });

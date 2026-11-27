@@ -17,7 +17,7 @@ import { execFileSync } from 'node:child_process';
 import { requireMergedCode } from '../tools/write-gate.mjs';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
 import { norm } from './guide-compare.mjs';
-import { unquote } from './guide-front-matter.mjs';
+import { frontMatter } from './guide-front-matter.mjs';
 
 const API = '2025-07';
 const publish = process.argv.includes('--publish');
@@ -82,20 +82,10 @@ const files = readdirSync(guidesDir).filter((f) => f.endsWith('.md') && f !== 'R
 let differing = 0;
 for (const file of files) {
   const mdPath = new URL(file, guidesDir).pathname;
-  // The front matter is read straight from the .md, the way the slug always
-  // was: the builder's stderr would need a new line AND a capture here, which
-  // is more code than one more regex.
-  const md = readFileSync(mdPath, 'utf8');
-  // Take the whole line, then unquote it. A one-character class would truncate
-  // `title: "The \"local-first\" guide"` at the first inner quote and publish half a title.
-  const front = (key) => {
-    const line = md.match(new RegExp(`^${key}:[ \\t]*(.*?)[ \\t]*$`, 'm'))?.[1];
-    return line ? unquote(line) : undefined;
-  };
-  const slug = front('slug');
-  const title = front('title');
+  // The front matter is read straight from the .md, by the reader the builder
+  // uses, so the article and the page take every value the same way.
+  const { slug, title, description } = frontMatter(readFileSync(mdPath, 'utf8')) ?? {};
   if (!slug || !title) throw new Error(`${file}: no slug or title in front matter`);
-  const description = front('description');
   // The builder escapes every character of prose it puts in the page; the summary
   // is prose too, so it is escaped the same way or an & in a description ships raw.
   const summary = description ? `<p>${esc(description)}</p>` : null;

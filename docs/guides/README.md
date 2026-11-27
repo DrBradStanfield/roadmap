@@ -18,13 +18,20 @@ Public how-to guides, published at drstanfield.com/blogs/guides. One `.md` file 
 
 ```yaml
 ---
-title: "..."                 # SEO title, aim <= 60 characters
-description: "..."           # meta description, one sentence, aim <= 155 characters
-slug: "..."                  # URL segment under /blogs/guides/
-updated: "2026-09-01"        # ISO date, bumped on every content change
-stories: ["US-29", "US-30"]  # the user stories this guide serves
+# SEO title, aim <= 60 characters
+title: "..."
+# meta description, one sentence, aim <= 155 characters
+description: "..."
+# URL segment under /blogs/guides/
+slug: "..."
+# ISO date, bumped on every content change
+updated: "2026-09-01"
+# the user stories this guide serves
+stories: ["US-29", "US-30"]
 ---
 ```
+
+Put each comment on its own line above its key, as here. `build-guide-html.mjs` and `publish-guides.mjs` read everything after a key's colon as its value, so a `# ...` written after a value becomes part of the title or description.
 
 `scripts/build-guide-html.mjs` only needs `title:` and `slug:` to run; it refuses a guide missing either. `description`, `updated` and `stories` are for the site and for us, not the build, but write them anyway: they are part of the contract above.
 
