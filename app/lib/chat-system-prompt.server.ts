@@ -111,7 +111,7 @@ function report(state: ChatDocsState): void {
   }
   if (state.kind === 'degraded') {
     for (const file of state.absent) {
-      console.error(`CHAT KNOWLEDGE MISSING: ${file} missing or empty; the chatbot answers without it`);
+      console.error(`CHAT KNOWLEDGE MISSING: ${file} missing or empty; what reads it runs without it or stays off`);
       Sentry.captureMessage(`Chat knowledge file missing: ${file}`, { level: 'error', tags: TAGS });
     }
   }

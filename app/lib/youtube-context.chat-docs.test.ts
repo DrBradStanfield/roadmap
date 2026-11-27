@@ -63,10 +63,13 @@ describe('US-15 AC82: the YouTube prompt template is a chat doc, read once with 
       const { captureMessage } = await fresh(true);
       const log = vi.spyOn(console, 'log').mockImplementation(() => {});
       const warn = vi.mocked(console.warn);
+      const error = vi.mocked(console.error);
       const { startYouTubeBot, stopYouTubeBot } = await import('./youtube-bot.server');
       startYouTubeBot();
       expect(log.mock.calls.some(([line]) => String(line).startsWith('YouTube bot started'))).toBe(false);
-      expect(warn.mock.calls.map(([line]) => line)).toContain('YouTube bot: chat-youtube-prompt.md missing — bot disabled');
+      // One fact, one log line: the docs load's, not a second one from the bot.
+      const lines = [...warn.mock.calls, ...error.mock.calls].map(([line]) => String(line)).filter((line) => line.includes('chat-youtube-prompt.md'));
+      expect(lines).toEqual([`CHAT KNOWLEDGE MISSING: ${PROMPT_FILE} missing or empty; what reads it runs without it or stays off`]);
       expect(captureMessage.mock.calls).toEqual([[`Chat knowledge file missing: ${PROMPT_FILE}`, { level: 'error', tags: { feature: 'chat', subsystem: 'system-prompt' } }]]);
       stopYouTubeBot();
     } finally {
