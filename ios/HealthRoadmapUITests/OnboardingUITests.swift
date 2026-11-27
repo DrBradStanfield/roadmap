@@ -148,6 +148,10 @@ final class OnboardingUITests: XCTestCase {
         }
         if let failure = declineInSheet(sheet) { XCTFail(failure) }
         app.activate()
+        // A tap meant for Apple's sheet that reached the app would answer the sex step for us
+        // (2026-11-27, docs/gotchas.md): fail here, at the cause, not later at a missing button.
+        XCTAssertFalse(app.pickerWheels.firstMatch.waitForExistence(timeout: 2),
+                       "the sex step is still unanswered: no tap meant for Apple's sheet reached the app")
         // The app slides back in from the switcher: the next tap (Female) waits until it is still (PR 2207).
         XCTAssertTrue(atRest(app.buttons["onboarding.female"], in: app), "the sex step comes to rest on screen")
     }
@@ -182,9 +186,15 @@ final class OnboardingUITests: XCTestCase {
             let screen = window.frame
             return frame.offsetBy(dx: screen.minX - box.minX, dy: screen.minY - box.minY)
         }
-        // From the sheet's own origin, the screen's: a window can close under the tap (Apple's OK).
-        let tap = { (spot: CGRect) in
+        // From the sheet's own origin, the screen's. A point tap lands on whatever is there, so it is
+        // made only while the sheet still shows `button` at that very spot, read again just before:
+        // once the sheet has gone, the same point is the app's sex step, and a tap there answered
+        // it for the test (2026-11-27, docs/gotchas.md). True when the tap was made.
+        let tap = { (button: XCUIElement, window: XCUIElement, spot: CGRect) -> Bool in
+            guard window.exists, button.exists, let now = onScreen(button, window),
+                  abs(now.midX - spot.midX) < 1, abs(now.midY - spot.midY) < 1 else { return false }
             sheet.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: spot.midX, dy: spot.midY)).tap()
+            return true
         }
         // Apple then says access can be turned on later; its OK, in a window of its own, closes the sheet.
         let ok = sheet.buttons["OK"].firstMatch
@@ -192,6 +202,9 @@ final class OnboardingUITests: XCTestCase {
         // A missing button is no sign the tap took (#999), so only Apple's OK ends the tries; a sheet
         // that closed without one leaves no window to search.
         for attempt in 1...2 where !ok.exists && window.exists {
+            // A sheet closing after the first tap still has its window for a moment: let it go
+            // before trying again, so the second tap never lands on the app beneath it.
+            if attempt == 2, window.waitForNonExistence(timeout: 3) { break }
             var spot = onScreen(dontAllow, window)
             for _ in 0..<12 where spot == nil && window.exists {
                 sheet.swipeUp()
@@ -201,7 +214,7 @@ final class OnboardingUITests: XCTestCase {
                 if attempt == 2 && window.exists { return "Apple's Health sheet has no Don't Allow" }
                 continue
             }
-            tap(spot)
+            guard tap(dontAllow, window, spot) else { continue }
             _ = ok.waitForExistence(timeout: 30)
         }
         // A sheet that closed without Apple's OK is done; one still up with no OK stayed up.
@@ -213,7 +226,8 @@ final class OnboardingUITests: XCTestCase {
             okSpot = onScreen(ok, okWindow)
         }
         guard let okSpot else { return closed("Apple's OK showed but never had a place on screen") }
-        tap(okSpot)
+        // OK gone already (the sheet closed itself): no tap, so nothing lands on the app.
+        _ = tap(ok, okWindow, okSpot)
         // The tap is not the proof: the sheet's windows must go.
         return closed("Apple's Health sheet stayed up after Don't Allow and OK")
     }
