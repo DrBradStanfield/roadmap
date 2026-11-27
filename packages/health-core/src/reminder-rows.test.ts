@@ -366,6 +366,17 @@ function expectedTokens(copies: RoadmapFile[]): Record<string, ReminderTokenRow>
 }
 const tokenMap = (f: RoadmapFile) => Object.fromEntries(rowsOf(f.reminderOptIn).map((r) => [r.token, r]));
 
+describe('US-17 AC19: a legacy erased copy (no erase list) and the version, a stated Limit', () => {
+  it('pinned: the opt-in agrees in every order; the version alone depends on which losers met first', () => {
+    const erased = file({ ...row('token-a', 'cancelled', 2), token: '', email: '' }, 1);
+    const [one, two] = [file(row('token-a', 'active', 0)), file(row('token-b', 'cancelled', 1))];
+    const losersFirst = merge(merge(one, two), erased);
+    const erasedFirst = merge(merge(erased, one), two);
+    expect(key(losersFirst.reminderOptIn)).toBe(key(erasedFirst.reminderOptIn));
+    expect([losersFirst.schemaVersion, erasedFirst.schemaVersion]).toEqual([2, 1]);
+  });
+});
+
 describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStringify)', () => {
   it('is commutative, associative and idempotent, in every order, over 3,000 triples', () => {
     for (let seed = 1; seed <= 3000; seed++) {
@@ -431,7 +442,24 @@ const oldMerge = (a: RoadmapFile, b: RoadmapFile): RoadmapFile => ({
   reminderOptIn: pickNewerOptional(a.reminderOptIn, b.reminderOptIn),
 });
 
+/** The previous singleton writer, copied here so part 2 can change the live one:
+ *  a fresh object, no list, one past the object it replaces. */
+function oldWrite(f: RoadmapFile, fields: Omit<ReminderTokenRow, 'updatedAt' | 'lamport'>, now: string): RoadmapFile {
+  const prior = f.reminderOptIn;
+  const updatedAt = prior && Date.parse(prior.updatedAt) > Date.parse(now) ? prior.updatedAt : now;
+  return { ...f, reminderOptIn: { ...fields, updatedAt, lamport: (prior?.lamport ?? 0) + 1 } };
+}
+
 describe('US-17 AC19: old and new merges mixed', () => {
+  it('pinned: an old write drops the list; a copy that still holds it brings the rows back, and none can once it is gone', () => {
+    const listed = file({ ...row('token-a', 'cancelled', 1), tokens: [row('token-b', 'active', 0)] });
+    const other = file({ ...row('token-a', 'cancelled', 1), tokens: [row('token-b', 'active', 0)] });
+    const dropped = oldWrite(listed, { status: 'active', token: 'token-c', email: 'token-c@example.test', provider: 'dropbox' }, '2026-05-04T10:00:00.000Z');
+    expect(dropped.reminderOptIn?.tokens).toBeUndefined();
+    expect(tokenMap(merge(dropped, other))).toEqual({ 'token-a': row('token-a', 'cancelled', 1), 'token-b': row('token-b', 'active', 0), 'token-c': own(dropped.reminderOptIn) });
+    expect(tokenMap(merge(dropped, file(row('token-a', 'cancelled', 1))))).toEqual({ 'token-a': row('token-a', 'cancelled', 1), 'token-c': own(dropped.reminderOptIn) });
+  });
+
   it('stores today\'s object after every merge, and converges once old merges stop', () => {
     for (let seed = 1; seed <= 1500; seed++) {
       const r = rng(seed);
@@ -444,9 +472,11 @@ describe('US-17 AC19: old and new merges mixed', () => {
       for (let step = 0; step < 8; step++) {
         const [i, j] = [pick(copies.length), pick(copies.length)];
         if (r() < 0.25) {
-          // An old web write: a fresh object, no list (state-edits.ts).
-          const at = `2026-05-0${4 + step}T10:00:00.000Z`;
-          copies[i] = setReminderOptIn(copies[i], { status: r() < 0.5 ? 'active' : 'cancelled', token: TOKENS[pick(3)], email: '', provider: 'dropbox' }, at);
+          // An old web write: a fresh object, no list, at a valid later time.
+          const at = new Date(Date.parse('2026-05-04T10:00:00.000Z') + step * 86_400_000).toISOString();
+          const status = r() < 0.5 ? 'active' : 'cancelled';
+          const token = TOKENS[pick(3)];
+          copies[i] = oldWrite(copies[i], { status, token, email: `${token}@example.test`, provider: 'dropbox' }, at);
           continue;
         }
         const today = pickNewerOptional(copies[i].reminderOptIn, copies[j].reminderOptIn);
