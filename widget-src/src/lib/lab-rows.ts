@@ -45,7 +45,7 @@ export function groupLabHistory<Row extends LabValueRow>(rows: Row[]): {
   const series: Record<string, { label: string; rows: Row[]; units: string[] }> = {};
   for (const row of rows) {
     const key = labSlotKey(row.metricName);
-    if (!series[key]) {
+    if (!Object.prototype.hasOwnProperty.call(series, key)) { // own keys only: a test may be named "constructor" (US-21 AC3d)
       series[key] = { label: labValueLabel(row.metricName), rows: [], units: [] };
     }
     series[key].rows.push(row);
