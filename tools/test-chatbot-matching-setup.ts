@@ -11,6 +11,7 @@ import type { BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadSurfaces, youtubeTurn } from './chatbot-surfaces';
 import { chatToolsFor } from '../packages/health-core/src/run-roadmap';
 import { estimateRunCost } from './harness-answers';
+import { positiveInt } from './search-knowledge';
 import { EMPTY_CHAT_CONTEXT, buildSystemBlocks, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
 import { PRODUCTS_BLOCK_FILES } from '../app/lib/chat-products-block';
@@ -28,12 +29,15 @@ if (path.resolve(process.cwd()) !== REPO_ROOT) { console.error(`Run from the rep
 const args = process.argv.slice(2);
 
 const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
-// A count flag is a whole number of 1 or more, or the run exits before any API call (US-15 AC24c).
+// A count flag given is digits only and 1 or more (search_knowledge's rule and message), or the
+// run exits before any API call (US-15 AC24c). An empty or missing value is refused, not defaulted.
 const countArg = (flag: string, defaultValue: string) => {
-  const n = Number(getArg(flag, defaultValue));
-  if (Number.isInteger(n) && n >= 1) return n;
-  console.error(`Error: ${flag} must be a whole number of 1 or more`);
-  process.exit(1);
+  try {
+    return positiveInt(flag, args.includes(flag) ? args[args.indexOf(flag) + 1] : defaultValue);
+  } catch (error) {
+    console.error(`Error: ${(error as Error).message}`);
+    process.exit(1);
+  }
 };
 
 export const runs = countArg('--runs', '3');

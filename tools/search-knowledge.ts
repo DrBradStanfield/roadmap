@@ -74,7 +74,7 @@ interface Args {
   json: boolean;
 }
 
-function positiveInt(flag: string, raw: string): number {
+export function positiveInt(flag: string, raw: string): number {
   if (!/^\d+$/.test(raw) || Number(raw) < 1) throw new Refusal(`${flag} must be a whole number of 1 or more`);
   return Number(raw);
 }

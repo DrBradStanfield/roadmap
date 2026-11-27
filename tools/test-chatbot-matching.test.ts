@@ -1242,8 +1242,8 @@ describe('test-chatbot-matching report and request shapes (synthetic fixtures)',
   });
 });
 
-// US-15 AC24c: a count flag (--runs, --concurrency, --answer-check-runs) that is not a whole number
-// of 1 or more exits before any API call. Before, `--concurrency x` (or `--concurrency --verbose`)
+// US-15 AC24c: a count flag (--runs, --concurrency, --answer-check-runs) that is not digits only and
+// 1 or more exits before any API call. Before, `--concurrency x` (or `--concurrency --verbose`)
 // paid for the warm-up call, then ran no case and exited 0 with "Total: 0".
 describe('test-chatbot-matching count flags (US-15 AC24c)', () => {
   const INDEX = [{ title: 'Pin A', handle: 'pin-a', url: 'https://example.com/a', type: 'article', summary: 'Synthetic summary A.' }];
@@ -1265,7 +1265,7 @@ describe('test-chatbot-matching count flags (US-15 AC24c)', () => {
     }
   }
 
-  it.each([1, 2])('--runs N --concurrency N runs the case and exits 0 (N = %i)', async (n) => {
+  it.each([1, 3])('--runs N --concurrency N runs the case and exits 0 (N = %i)', async (n) => {
     const r = await run(['--runs', String(n), '--concurrency', String(n)]);
     expect(r.out, r.err).toContain(`Runs each:   ${n}`);
     expect(r.out).toContain(`Concurrency: ${n}`);
@@ -1278,10 +1278,22 @@ describe('test-chatbot-matching count flags (US-15 AC24c)', () => {
   it.each([
     ['--concurrency', 'x'], ['--concurrency', '--verbose'], ['--concurrency', '0'], ['--concurrency', '1.5'],
     ['--runs', 'x'], ['--runs', '0'], ['--runs', '-1'], ['--answer-check-runs', 'x'], ['--answer-check-runs', '0'],
+    // Digits only, the rule search_knowledge uses: `Number` would read these as 10 and 16 runs.
+    ['--runs', '1e1'], ['--runs', '0x10'],
   ])('%s %s exits 1 naming the flag, with no API call', async (flag, value) => {
-    const r = await run([flag, value]);
+    refused(await run([flag, value]), flag);
+  });
+
+  // No value: an empty one, or the flag given last. Before, both took the default.
+  it.each([
+    ["--runs ''", '--runs', ['--runs', '']], ['--concurrency given last', '--concurrency', ['--concurrency']],
+  ])('%s exits 1 naming the flag, with no API call', async (_label, flag, flags) => {
+    refused(await run(flags as string[]), flag as string);
+  });
+
+  function refused(r: Awaited<ReturnType<typeof run>>, flag: string) {
     expect(r.status, r.out).toBe(1);
     expect(r.calls).toBe(0);
     expect(r.err).toContain(`Error: ${flag} must be a whole number of 1 or more`);
-  });
+  }
 });
