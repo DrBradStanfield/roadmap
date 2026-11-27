@@ -174,6 +174,21 @@ describe('US-17 AC19: what counts as a row', () => {
   });
 });
 
+describe('US-17 AC19: a file whose clocks are damaged recovers them from the rows too', () => {
+  it('a nested cancel newer than the stored object keeps its time, and beats a stale active copy', () => {
+    const f = file({ ...row('token-b', 'active', 0), tokens: [row('token-a', 'cancelled', 2)] });
+    const raw = JSON.parse(JSON.stringify(f));
+    raw.meta.updatedAt = 'not-a-date';
+    raw.meta.createdAt = 'not-a-date';
+    const read = migrateFile(raw, CTX);
+    expect(read.reminderOptIn?.tokens).toEqual([row('token-a', 'cancelled', 2)]);
+    const stale = file(row('token-a', 'active', 1));
+    for (const merged of [merge(read, stale), merge(stale, read)]) {
+      expect(rowsOf(merged.reminderOptIn).find((r) => r.token === 'token-a')).toEqual(row('token-a', 'cancelled', 2));
+    }
+  });
+});
+
 describe('US-17 AC19: a file with tokens rows is at least version 2', () => {
   it('the merge that first writes tokens lifts two version-1 files to 2, in either order', () => {
     const [a, b] = [file(row('token-a', 'active', 0)), file(row('token-b', 'active', 1))];
