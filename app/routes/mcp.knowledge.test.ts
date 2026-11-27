@@ -300,6 +300,10 @@ describe('US-41 AC8 — get_article: one entry, size-capped, sections on request
     expect(missing.content[0].text).toContain('Drug Interactions');
   });
 
+  it('refuses a section named only by stop words as not-found, not with some other section', () => {
+    expect(callKnowledgeTool('get_article', { handle: VITAMIN_D, section: 'the and of' })).toMatchObject({ isError: true, reason: 'not-found' });
+  });
+
   it('refuses an unknown or path-shaped handle without echoing it', async () => {
     const access = await connect();
     for (const handle of ['zebra-canary-handle', '../../etc/passwd', 'A'.repeat(300)]) {
@@ -437,6 +441,13 @@ describe('US-41 AC8 — a cut entry keeps every safety section (adversary R1)', 
     expect(cut).not.toContain('follow whole');
   });
 
+  it('with no safety section and many cut headings, keeps the body from its first character, inside the cap', () => {
+    const tail = Array.from({ length: 60 }, (_, i) => `## Dropped heading number ${i}\nx`).join('\n');
+    const cut = cutEntry(`## Start\n${'a'.repeat(6_000)}\n${tail}`, 5_000);
+    expect(cut.startsWith('## Start\naaa')).toBe(true);
+    expect(cut.length).toBeLessThanOrEqual(5_000);
+  });
+
   it('safety blocks that alone pass the budget are cut, and the note says so (F2)', () => {
     const body = `## Current view\n${'v'.repeat(5_000)}\n## 5. Safety\n${'s'.repeat(20_000)}`;
     const cut = cutEntry(body, 12_000);
@@ -471,5 +482,12 @@ describe('US-41 AC7 — url is the file\'s own link, never the index\'s (adversa
     const own = parseFrontmatter(readFileSync(`docs/blog/${article.handle}.md`, 'utf8'))!.url;
     expect(own).toMatch(/^https:\/\//);
     expect((callKnowledgeTool('get_article', { handle: article.handle }).structured as { url: string }).url).toBe(own);
+  });
+
+  it('an article\'s date is the day it was published, as YYYY-MM-DD', () => {
+    const article = loadBlogIndex().find((e) => (e.type ?? 'article') === 'article' && isServed(e) && e.publishedAt)!;
+    const { date } = callKnowledgeTool('get_article', { handle: article.handle }).structured as { date: string | null };
+    expect(date).toBe(article.publishedAt.slice(0, 10));
+    expect(date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
