@@ -240,8 +240,8 @@ export type EzetimibeValue = typeof EZETIMIBE_OPTIONS[number]['value'];
  */
 export const BEMPEDOIC_ACID_OPTIONS = [
   { value: 'not_yet', label: "Haven't tried yet" },
-  { value: 'bempedoic_acid', label: 'Nexletol (bempedoic acid 180mg)' },
-  { value: 'bempedoic_acid_ezetimibe', label: 'Nexlizet (bempedoic acid + ezetimibe)' },
+  { value: 'bempedoic_acid', label: 'Nexletol (Bempedoic acid 180mg)' },
+  { value: 'bempedoic_acid_ezetimibe', label: 'Nexlizet (Bempedoic acid + Ezetimibe)' },
   { value: 'none', label: 'Not taking' },
   { value: 'not_tolerated', label: 'Not tolerated' },
 ] as const;

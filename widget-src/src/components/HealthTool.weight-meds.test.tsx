@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * US-06 AC5: the form follows the plan. Its Weight & Diabetes Medications
+ * US-06 AC5: the form follows the plan. Its Weight & diabetes medications
  * section recommends a weight medication only when the plan's own trigger is
- * on, and it names the plan's reasons and BMI. Its Cholesterol Medications
+ * on, and it names the plan's reasons and BMI. Its Cholesterol medications
  * section, blood-pressure target and cascade steps read the plan's lipid
  * marker, age and step decisions. Brad ruled on 2026-09-25 that the form must
  * never recommend what the plan does not, and on 2026-09-26 that the form
@@ -47,7 +47,7 @@ const recommends = (bmi: string, reasons?: string) => (reasons
   : `At a BMI of ${bmi}, medications that support weight management and metabolic health are an option to discuss with your doctor.`);
 /** The plan's GLP-1 card text (US-06 AC6). */
 const glp1Card = (bmi: string, reasons: string) =>
-  `With a BMI of ${bmi} and ${reasons}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+  `With a BMI of ${bmi} and ${reasons}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
 
 interface GuestRecord {
   sex?: 'male';
@@ -131,8 +131,8 @@ function sectionIntro(container: HTMLElement, section: string): Promise<string> 
     return title.parentElement!.querySelector('.health-section-desc')!.textContent!;
   });
 }
-const weightMedsIntro = (container: HTMLElement) => sectionIntro(container, 'Weight & Diabetes Medications');
-const cholesterolIntro = (container: HTMLElement) => sectionIntro(container, 'Cholesterol Medications');
+const weightMedsIntro = (container: HTMLElement) => sectionIntro(container, 'Weight & diabetes medications');
+const cholesterolIntro = (container: HTMLElement) => sectionIntro(container, 'Cholesterol medications');
 /** The local mirror as the widget writes it: a saved weight row in
  *  `previousMeasurements`, which opens the vitals matrix at mount. */
 const SAVED_WEIGHT_MIRROR = JSON.stringify({
@@ -385,12 +385,12 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
 describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inhibitor, ezetimibe, bempedoic acid', () => {
   /** The cholesterol section's question labels, in page order. */
   const lipidQuestions = (container: HTMLElement) => waitFor(() => {
-    const title = Array.from(container.querySelectorAll('.health-section-title, .mh-group-label')).find((t) => t.textContent === 'Cholesterol Medications');
+    const title = Array.from(container.querySelectorAll('.health-section-title, .mh-group-label')).find((t) => t.textContent === 'Cholesterol medications');
     if (!title) throw new Error('the section is not on the page');
     return Array.from(title.parentElement!.querySelectorAll('label')).map((l) => l.textContent);
   });
   const lipidCards = (container: HTMLElement) => planTitles(container)
-    .filter((t) => /statin|Ezetimibe|bempedoic|PCSK9/.test(t));
+    .filter((t) => /statin|Ezetimibe|Bempedoic|PCSK9/.test(t));
 
   it('statin not tolerated: the PCSK9 inhibitor card, and its question straight after the statin', async () => {
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 }, meds: [['statin', 'not_tolerated']] });
@@ -403,7 +403,7 @@ describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inh
       sex: 'male', weight: 80, lipids: { ldl: 3 },
       meds: [['statin', 'not_tolerated'], ['pcsk9i', 'pcsk9i', 140], ['ezetimibe', 'ezetimibe', 10]],
     });
-    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Consider discussing bempedoic acid with your doctor']));
+    await waitFor(() => expect(lipidCards(view.container)).toEqual(['Consider discussing Bempedoic acid with your doctor']));
     expect(await lipidQuestions(view.container)).toEqual(['Statin', 'On a PCSK9 inhibitor?', 'On Ezetimibe 10mg?', 'Bempedoic acid']);
   });
 });
