@@ -201,20 +201,38 @@ copy in their own Dropbox or Google Drive. It shows once, waits for no sheet or 
 be up, and opens the Sync sheet once it has gone. Onboarding's last answer lands in the
 same turn as onboarding ends, so `RootView.finished` passes over it (review R1).
 
+**Since 2026-11-27 (US-57 AC12)** the tour is one state the app owns, not TipKit's. Tip 3
+had failed twice under timing patches (docs/gotchas.md). Now each tip waits until it is
+due, its anchor is on screen and the list is at rest; then it shows. If the list is moving it
+waits; if the anchor is off screen it scrolls it in and shows the tip once the anchor has
+arrived where the scroll puts it. A
+tap by the clock that scrolls to the top, the person's own scroll, a redraw: the tip still
+shows. The next tip waits until the last popover has gone. Words, counters, buttons and the
+Clarity events are unchanged. A tap outside a tip only dismisses it, as with any popover:
+the row or button under the tap does not also act.
+
 ### Code
 
-- `Onboarding/TourTips.swift`: the three tips, the tour's step (one TipKit parameter),
-  `TourStep` (the pure order: close moves on, skip ends), the `TourTip` protocol (each
-  tip's step, line, counter and Next or Done), the `tourTip` modifier the anchors use and `tourStep(_:hasNoAnchor:)`
-  for a screen that cannot draw one (both send the fixed Clarity events), `TourTipStyle`
-  (its view leaving counts as closed; the Skip tour, counter, Next row in `TourControls`,
-  stacked at accessibility sizes; scrolls at large sizes; `AccentButtonStyle` from
-  Colors.swift), and `TourSetup` (`Tips.configure` at launch; `--ui-testing` hides the
-  tips, `--ui-testing --show-tips` starts them fresh).
-- Anchors: `SummaryTiles` (the grid, tip 1), `PlanView` (the first Foundation card,
-  tip 2; its Next calls `showMyData`), `MyDataView` (the Blood tests header, tip 3; it
-  scrolls the header into view once tip 3 is due). `RootView.finished` (the cover's
-  `finish` effect, App/FirstRun.swift) starts the tour.
+- `Onboarding/TourState.swift`: `TourStep` (the kept step), `TourState` (`notStarted |
+  waiting | bringing | showing | leaving | finished`, changed only by its pure `transition`, which also
+  names the effects: scroll, the fixed Clarity events, the upload, the tour's end) and
+  `TourSight` (what the list reports: on screen, at rest, its visible rect, each anchor's
+  frame, the anchors this record draws).
+- `Onboarding/TourTips.swift`: `Tour.step` (the step kept in TipKit's store, the parameter
+  the TipKit tour used, so a phone mid-tour resumes), `TourGuide` (runs the state; RootView
+  owns it), the `TourTip` protocol and the three tips (line, counter, Next or Done), the
+  `tourTip` modifier the anchors use (it reports the anchor's frame and shows SwiftUI's own
+  popover while its step shows), `TourTipCard` and `TourControls` (the look; scrolls and
+  stacks at accessibility sizes; `AccentButtonStyle` from Colors.swift), and `TourSetup`
+  (`--ui-testing` hides the tour, `--ui-testing --show-tips` starts it fresh).
+- `Onboarding/TourList.swift`: `tourList`, on My health's list: on screen or not (its tab,
+  a pushed page, a sheet), moving or at rest (`onScrollPhaseChange`, iOS 18+), the visible
+  rect, the scroll geometry the tour reads a scroll's end from, and the scroll it asks for (animated:
+  an instant jump into the lazy list lands short of a row not yet drawn).
+- Anchors: `MyDataView+Sections` (the waist row, tip 1; the first Weight & diabetes card,
+  tip 2), `TopicHeading` (Blood tests, tip 3). `MyDataView.tourTargets` names each anchor's
+  scroll id; a record without one passes that step (review R4). `RootView.finished` (the
+  cover's `finish` effect, App/FirstRun.swift) starts the tour.
 - `Plan/TileExplainerSheet.swift`: a tile's line above its existing evidence. It
   replaced `SummaryTiles`' `TileEvidenceSheet`.
 - `Onboarding/CloudPrompt.swift`: the third-save rule and `CloudPromptView`. Not named
