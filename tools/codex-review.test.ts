@@ -225,11 +225,11 @@ describe('US-40 AC3 (CR2) — process environment and tool flags', () => {
 });
 
 /** A git on PATH that runs `snippet` (sh) once, at the snapshot's `git archive`: between the probe and the review (US-40 AC19). */
-function archiveShim(snippet: string) {
+function archiveShim(snippet: string, cmd = 'archive') {
   const shimDir = mkdtempSync(join(tmpdir(), 'git-swap-'));
   const realGit = sh(tmpdir(), 'command -v git').trim();
   const mark = join(shimDir, 'done');
-  writeFileSync(join(shimDir, 'git'), `#!/bin/sh\ncase " $* " in *" archive "*) [ -e ${JSON.stringify(mark)} ] || { touch ${JSON.stringify(mark)}; ${snippet} ; } ;; esac\nexec ${JSON.stringify(realGit)} "$@"\n`);
+  writeFileSync(join(shimDir, 'git'), `#!/bin/sh\ncase " $* " in *" ${cmd} "*) [ -e ${JSON.stringify(mark)} ] || { touch ${JSON.stringify(mark)}; ${snippet} ; } ;; esac\nexec ${JSON.stringify(realGit)} "$@"\n`);
   chmodSync(join(shimDir, 'git'), 0o755);
   return shimDir;
 }
@@ -2739,36 +2739,80 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     const kinds = f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l).args.includes('exec') ? 'exec' : 'probe');
     expect(kinds).not.toContain('exec');
   });
-  it('Codex R3-R5 on PR 2222c: the probe judges give PASS only on positive evidence (synthetic events, no model call)', async () => {
-    const { judgeShell, judgeSearch, judgeLogin } = await import('./codex-review-probe.mjs');
+  it('Codex R3-R6 on PR 2222c and d: the probe judges give PASS only on positive evidence tied to the exact action (synthetic events, no model call)', async () => {
+    const { judgeShell, judgeSearch, judgeLogin, REQUESTED_CURL } = await import('./codex-review-probe.mjs');
     const ev = (item: object) => ({ type: 'item.completed', item });
     const res = (items: object[], extra: object = {}) => ({ status: 0, events: items.map(ev), answer: '', text: '', ...extra });
-    const curl = (exit_code: number) => ({ type: 'command_execution', command: "bash -lc 'curl -sS https://example.com/'", exit_code });
+    const sh = (command: string, exit_code: number) => ({ type: 'command_execution', command: `/bin/zsh -lc ${JSON.stringify(command)}`, exit_code });
+    const curl = (exit_code: number) => sh(REQUESTED_CURL, exit_code);
+    expect(REQUESTED_CURL).toBe('curl -sS -m 15 -o /dev/null https://example.com/');
     expect(judgeShell(6, res([curl(6)]))[0]).toBe('INCONCLUSIVE'); // control failed: offline
     expect(judgeShell(0, res([]))[0]).toBe('INCONCLUSIVE'); // curl never ran
     expect(judgeShell(0, res([curl(0)]))[0]).toBe('FAIL');
     for (const code of [60, 35, 127]) expect(judgeShell(0, res([curl(code)]))[0]).toBe('INCONCLUSIVE'); // TLS, handshake, missing curl
     expect(judgeShell(0, res([curl(6)]))[0]).toBe('PASS');
     expect(judgeShell(0, res([curl(7)]))[0]).toBe('PASS');
+    expect(judgeShell(0, res([sh('curl -sS -m 15 -o /dev/null https://no-such-host.invalid/', 6)]))[0]).toBe('INCONCLUSIVE'); // Codex R6 (d): another target
+    expect(judgeShell(0, res([sh(`${REQUESTED_CURL}; true`, 0)]))[0]).toBe('INCONCLUSIVE'); // a compound command
+    expect(judgeShell(0, res([sh(`cd /tmp && ${REQUESTED_CURL}`, 6)]))[0]).toBe('INCONCLUSIVE');
     const url = 'https://example.com/?codex-review-probe=abcd1234';
-    const open = { type: 'web_search', action: { type: 'open_page', url } };
-    expect(judgeSearch(res([], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE'); // no tool call: the answer alone is not evidence
-    expect(judgeSearch(res([{ type: 'web_search', action: { type: 'search', query: 'doi' } }], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE');
-    expect(judgeSearch(res([open], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('PASS');
-    expect(judgeSearch(res([open], { answer: 'Example Domain' }), url, 'cached')[0]).toBe('FAIL');
-    expect(judgeSearch(res([open], { answer: 'nothing' }), url, 'cached')[0]).toBe('INCONCLUSIVE');
-    expect(judgeSearch(res([open], { answer: 'Example Domain' }), url, 'live')[0]).toBe('PASS');
-    expect(judgeSearch(res([], { answer: 'Example Domain' }), url, 'live')[0]).toBe('INCONCLUSIVE');
-    const keyed = { stdout: 'Logged in using an API key - test-***', stderr: '' };
+    const open = (outcome?: string, at = url) => ({ type: 'web_search', action: { type: 'open_page', url: at }, ...(outcome === undefined ? {} : { result: outcome }) });
+    expect(judgeSearch(res([], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE'); // no tool call
+    expect(judgeSearch(res([{ type: 'web_search', action: { type: 'search', query: url } }], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE'); // the URL in a query is not an open
+    expect(judgeSearch(res([open('Cache miss', `${url}x`)]), url, 'cached')[0]).toBe('INCONCLUSIVE'); // another URL
+    expect(judgeSearch(res([open()], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE'); // Codex R4 (d): the outcome must belong to the open, not the answer
+    expect(judgeSearch(res([open('Cache miss')]), url, 'cached')[0]).toBe('PASS');
+    expect(judgeSearch(res([open('Example Domain')]), url, 'cached')[0]).toBe('FAIL');
+    expect(judgeSearch(res([open('Example Domain')]), url, 'live')[0]).toBe('PASS');
+    expect(judgeSearch(res([open()], { answer: 'Example Domain' }), url, 'live')[0]).toBe('INCONCLUSIVE');
+    const keyed = { status: 0, stdout: 'Logged in using an API key - test-***', stderr: '' };
     const refusal = (text: string, status = 1) => ({ status, events: [], answer: '', text });
-    expect(judgeLogin({ stdout: 'Not logged in', stderr: '' }, refusal('forced_login_method is chatgpt'))[0]).toBe('INCONCLUSIVE'); // the key was never read
+    const mismatch = 'Error: API key login is not allowed: forced_login_method requires ChatGPT';
+    expect(judgeLogin({ status: 0, stdout: 'Not logged in', stderr: '' }, refusal(mismatch))[0]).toBe('INCONCLUSIVE'); // the key was never read
+    expect(judgeLogin({ status: 1, stdout: '', stderr: 'could not read the API key from auth.json' }, refusal(mismatch))[0]).toBe('INCONCLUSIVE'); // Codex R5 (d): a failed control
+    expect(judgeLogin(keyed, refusal('Error: unknown variant `chatgpt` for key forced_login_method; failed to load configuration'))[0]).toBe('INCONCLUSIVE'); // a configuration error
     expect(judgeLogin(keyed, refusal('Not logged in'))[0]).toBe('INCONCLUSIVE'); // generic
+    expect(judgeLogin(keyed, refusal('Please log in with ChatGPT'))[0]).toBe('INCONCLUSIVE'); // names ChatGPT, but no mismatch with the API key
     expect(judgeLogin(keyed, refusal('error: 401 Unauthorized'))[0]).toBe('FAIL');
     expect(judgeLogin(keyed, refusal('ok', 0))[0]).toBe('FAIL');
-    expect(judgeLogin(keyed, refusal('API key login is not allowed: forced_login_method is chatgpt'))[0]).toBe('PASS');
+    expect(judgeLogin(keyed, refusal(mismatch))[0]).toBe('PASS');
     // every line counts turn.started events (zero: no model turn began); the verdict does not change with it
-    expect(judgeLogin(keyed, refusal('Not logged in'))).toEqual(['INCONCLUSIVE', 'exec exited 1 without a login-method message (a generic refusal is not enough); 0 turn.started event(s)']);
+    expect(judgeLogin(keyed, refusal('Not logged in'))).toEqual(['INCONCLUSIVE', 'exec exited 1 without an explicit API-key versus ChatGPT login mismatch (a generic refusal is not enough); 0 turn.started event(s)']);
     expect(judgeLogin(keyed, { ...refusal('Not logged in'), events: [{ type: 'thread.started' }, { type: 'turn.started' }] })[1]).toMatch(/; 1 turn\.started event\(s\)$/);
+  });
+  it('Codex R1 on PR 2222d: a file replaced while it is hashed never yields the old identity', async () => {
+    const { binaryId } = await import('./codex-review-bin.mjs');
+    const d = realpathSync(mkdtempSync(join(tmpdir(), 'cr-hash-')));
+    const p = join(d, 'codex');
+    writeFileSync(p, '#!/bin/sh\necho one\n'); chmodSync(p, 0o755);
+    const before = binaryId(p);
+    expect(before).toMatch(/^\d+:\d+:/);
+    expect(binaryId(p)).toBe(before);
+    const during = binaryId(p, { afterRead: () => { writeFileSync(`${p}.n`, '#!/bin/sh\necho two\n'); chmodSync(`${p}.n`, 0o755); renameSync(`${p}.n`, p); } });
+    expect(during).not.toBe(before);
+    expect(during).not.toBe(binaryId(p)); // a sentinel, never equal to any later identity
+    chmodSync(p, 0o775);
+    expect(binaryId(p)).toBeNull(); // Codex R2 (d): the opened file must still be an executable that only its owner can write
+  });
+  it('Codex R2 on PR 2222d: a permission change after selection and before the first probe stops the run before any codex call', () => {
+    writeFileSync(join(repo, 'a.txt'), 'perm before probe\n');
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(`chmod 775 "${f.bin}"`, 'read-tree')}:${process.env.PATH}` }) });
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('E_CODEX_CHANGED');
+    expect(existsSync(join(f.dir, 'calls.jsonl'))).toBe(false);
+  });
+  it('Codex R3 on PR 2222d: under a test policy, a binary change stops the run with no re-probe', () => {
+    writeFileSync(join(repo, 'a.txt'), 'policy swap\n');
+    const f = fake({ output: CLEAN });
+    const pol = join(fakeDir, 'links.json');
+    writeFileSync(pol, JSON.stringify({ repos: {}, links: [] }));
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ VITEST: 'true', CODEX_REVIEW_TEST_LINK_POLICY: pol, PATH: `${archiveShim(swapIn(f.bin))}:${process.env.PATH}` }) });
+    expect(r.stderr).toContain('TEST link policy in use');
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('E_CODEX_CHANGED');
+    expect(r.stdout).toContain('test policy');
+    expect(callKinds(f)).toEqual(['version', 'features', 'features']);
   });
   it('Codex R7 on PR 2222: a wrong scratch record stops the run before any codex call, the version probe included', () => {
     writeFileSync(join(repo, 'a.txt'), 'wrong record\n');

@@ -34,44 +34,58 @@ import { chooseCodex, configArgs, launchArgs, launchEnv, probeCodex } from "./co
 
 const done = (r, type) => r.events.filter((e) => e.type === "item.completed" && e.item?.type === type).map((e) => e.item);
 
+/** The one command check a asks the sandboxed shell to run; the judge accepts exactly this, nothing compound or retargeted. */
+export const REQUESTED_CURL = "curl -sS -m 15 -o /dev/null https://example.com/";
+/** A shell event's command without its `sh -lc '...'` wrapper (the form the CLI records), trimmed. */
+const innerCommand = (c) => { const m = /^(?:\S*\/)?(?:ba|z)?sh\s+-l?c\s+(['"])([\s\S]*)\1$/.exec(c.trim()); return (m ? m[2] : c).trim(); };
+
 /** Check a. `control` is the script's own curl exit code (outside the sandbox); `r` the exec result. */
 export function judgeShell(control, r) {
   if (control !== 0) return ["INCONCLUSIVE", `the control curl outside the sandbox exited ${control}: the machine may be offline`];
-  const curls = done(r, "command_execution").filter((c) => /curl/.test(c.command ?? "") && typeof c.exit_code === "number");
-  if (!curls.length) return ["INCONCLUSIVE", `the sandboxed curl never ran (exec exit ${r.status})`];
-  if (curls.some((c) => c.exit_code === 0)) return ["FAIL", "a sandboxed curl to example.com exited 0: the shell reached the network"];
+  const shells = done(r, "command_execution").filter((c) => typeof c.exit_code === "number");
+  const curls = shells.filter((c) => innerCommand(c.command ?? "") === REQUESTED_CURL);
+  if (!curls.length) return ["INCONCLUSIVE", shells.length ? `${shells.length} shell command(s) ran, none exactly the requested curl to example.com` : `the sandboxed curl never ran (exec exit ${r.status})`];
+  if (curls.some((c) => c.exit_code === 0)) return ["FAIL", "the requested sandboxed curl to example.com exited 0: the shell reached the network"];
   const codes = curls.map((c) => c.exit_code);
-  return codes.every((c) => c === 6 || c === 7) ? ["PASS", `sandboxed curl exit code(s) ${codes.join(", ")} (could not resolve or connect); the control reached the site`]
-    : ["INCONCLUSIVE", `sandboxed curl exit code(s) ${codes.join(", ")}: not a resolve or connect denial`];
-}
-
-/** Check b, for one mode. `url` is the nonce URL the prompt named. */
-export function judgeSearch(r, url, web) {
-  const searches = done(r, "web_search");
-  const page = /Example Domain/i.test(r.answer);
-  if (!searches.length) return ["INCONCLUSIVE", "no web_search event at all: the model never used the search tool"];
-  const opens = searches.filter((s) => JSON.stringify(s).includes(url));
-  if (!opens.length) return ["INCONCLUSIVE", `${searches.length} web_search event(s), none for the nonce URL`];
-  const missInEvent = opens.some((s) => /cache miss/i.test(JSON.stringify(s))), miss = missInEvent || /cache miss/i.test(r.answer);
-  if (web === "live") return page ? ["PASS", "control: live mode opened the nonce URL and returned the page"] : ["INCONCLUSIVE", "control: live mode opened the nonce URL but no page came back"];
-  if (page) return ["FAIL", "the nonce URL's page came back: it was fetched live"];
-  return miss ? ["PASS", `the nonce URL was opened and a cache miss was reported (${missInEvent ? "in the event" : "in the model's answer"})`] : ["INCONCLUSIVE", "the nonce URL was opened, with neither a cache miss nor the page"];
+  return codes.every((c) => c === 6 || c === 7) ? ["PASS", `the requested sandboxed curl exited ${codes.join(", ")} (could not resolve or connect); the control reached the same site`]
+    : ["INCONCLUSIVE", `the requested sandboxed curl exited ${codes.join(", ")}: not a resolve or connect denial`];
 }
 
 /**
- * Check c. `status` is `login status` on the isolated store; `r` the exec result. Every line also counts the event stream's
- * `turn.started` events: zero means no model turn began, which is the evidence available short of the refusal text (it
- * does not prove no request left: an auth exchange could precede a turn). The verdict rules are unchanged by the count.
+ * Check b, for one mode. `url` is the nonce URL the prompt named. Only a completed open whose URL is exactly that URL
+ * counts, and only an outcome recorded on THAT event (the model's answer is never evidence).
+ */
+export function judgeSearch(r, url, web) {
+  const searches = done(r, "web_search");
+  if (!searches.length) return ["INCONCLUSIVE", "no web_search event at all: the model never used the search tool"];
+  const opens = searches.filter((s) => /^open/.test(s.action?.type ?? "") && s.action?.url === url);
+  if (!opens.length) return ["INCONCLUSIVE", `${searches.length} web_search event(s), no completed open of exactly the nonce URL`];
+  const outcome = opens.map((s) => JSON.stringify(s).split(JSON.stringify(url).slice(1, -1)).join("")).join("\n");
+  const page = /Example Domain/i.test(outcome), miss = /cache miss/i.test(outcome);
+  if (!page && !miss) return ["INCONCLUSIVE", `the nonce URL was opened (${web}), but the event records no outcome: neither a cache miss nor the page`];
+  if (web === "live") return page ? ["PASS", "control: live mode opened the nonce URL and its event holds the page"] : ["INCONCLUSIVE", "control: live mode opened the nonce URL and its event records a cache miss"];
+  return page ? ["FAIL", "the cached-mode open of the nonce URL holds the page: it was fetched live"] : ["PASS", "the cached-mode open of the nonce URL records a cache miss"];
+}
+
+const CONFIG_ERROR = /unknown (field|variant|variable|key)|invalid (value|type)|failed to (load|parse)|unrecognized|error loading config|bootstrap configuration/i;
+/** A line naming both the API key and the ChatGPT login (or forced_login_method) with a refusal word: an explicit method mismatch. */
+const MISMATCH = /^(?=.*\bapi[ _-]?key\b)(?=.*(chatgpt|forced_login_method))(?=.*(not (allowed|permitted|supported)|disallowed|requires?|only|mismatch)).*$/im;
+
+/**
+ * Check c. `status` is `login status` on the isolated store ({ status, stdout, stderr }); `r` the exec result. PASS needs
+ * the control to exit 0 and say it is logged in with an API key, AND exec to refuse with an explicit API-key versus
+ * ChatGPT-login mismatch; a configuration error or any other failure is INCONCLUSIVE. Every line also counts the event
+ * stream's `turn.started` events: zero means no model turn began (not proof that no request left).
  */
 export function judgeLogin(status, r) {
   const turns = `${r.events.filter((e) => e.type === "turn.started").length} turn.started event(s)`;
-  if (!status || !/api key/i.test(`${status.stdout}${status.stderr}`)) return ["INCONCLUSIVE", `the control did not show the CLI reading the stored API key; ${turns}`];
+  if (!status || status.status !== 0 || !/logged in using an api key/i.test(`${status.stdout}`)) return ["INCONCLUSIVE", `the control did not exit 0 reporting an API-key login from the isolated store; ${turns}`];
   const tried = r.text.match(/401|unauthori[sz]ed|incorrect api key|invalid_api_key|invalid api key/i)?.[0];
-  const specific = r.text.match(/forced_login_method|login method|requires? (a )?chatgpt (login|account|sign[- ]in)|api key (auth(entication)?|login) is not (allowed|permitted)/i)?.[0];
   if (r.status === 0) return ["FAIL", `exec completed with only a fake API key stored; ${turns}`];
   if (tried) return ["FAIL", `exec tried API-key auth (matched "${tried.toLowerCase()}"); ${turns}`];
-  if (specific) return ["PASS", `the control read the stored key; exec refused for the login method (exit ${r.status}, matched "${specific.toLowerCase()}"); ${turns}`];
-  return ["INCONCLUSIVE", `exec exited ${r.status ?? r.signal} without a login-method message (a generic refusal is not enough); ${turns}`];
+  if (CONFIG_ERROR.test(r.text)) return ["INCONCLUSIVE", `exec exited ${r.status ?? r.signal} with a configuration error, not a login decision; ${turns}`];
+  if (MISMATCH.test(r.text)) return ["PASS", `the control read the stored key; exec refused with an explicit API-key versus ChatGPT login mismatch (exit ${r.status}); ${turns}`];
+  return ["INCONCLUSIVE", `exec exited ${r.status ?? r.signal} without an explicit API-key versus ChatGPT login mismatch (a generic refusal is not enough); ${turns}`];
 }
 
 const main = () => {
@@ -99,8 +113,8 @@ const main = () => {
   };
   try {
     if (only.includes("a")) {
-      const control = DRY ? null : spawnSync("curl", ["-sS", "-m", "15", "-o", "/dev/null", "https://example.com/"], { timeout: 30_000 }).status;
-      const r = run("a", "Run exactly this one shell command and nothing else: curl -sS -m 15 -o /dev/null https://example.com/\nThen set answer to its exit code.");
+      const control = DRY ? null : spawnSync("curl", REQUESTED_CURL.split(" ").slice(1), { timeout: 30_000 }).status;
+      const r = run("a", `Run exactly this one shell command and nothing else: ${REQUESTED_CURL}\nThen set answer to its exit code.`);
       if (r) say("a shell network", judgeShell(control, r));
     }
     if (only.includes("b")) {

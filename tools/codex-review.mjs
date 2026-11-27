@@ -1335,7 +1335,7 @@ valueChecked = true;
 if (secretValues.skipped.length) console.error(`codex-review: ${secretValues.skipped.length} unchanged base binary file(s) over ${SKIP_BINARY_OVER >> 20} MB not searched for credential values: ${secretValues.skipped.join(", ")}`);
 // All above is synchronous, so a signal during it is only queued: each yield runs its handler (exit 130) before the next codex call.
 await new Promise(setImmediate);
-if ((probe = recheckCodex(CODEX, probe, env, CONFIG_ARGS, (m) => console.error(`codex-review: ${m}`))).stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); // Codex R5
+if ((probe = recheckCodex(CODEX, probe, env, CONFIG_ARGS, (m) => console.error(`codex-review: ${m}`), { reprobe: !TEST_LINK_POLICY && !TEST_INCLUDE_POLICY })).stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); // Codex R5
 console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, codex ${JSON.stringify(CODEX)} (${probe.version}), author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : ""}, timeout ${TIMEOUT_MS / 60000} min`);
 await new Promise(setImmediate); // Codex R6: a cancel during that check runs its handler before the prompt is sent
 const started = Date.now();

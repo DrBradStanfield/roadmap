@@ -1,7 +1,7 @@
 // The codex binary tools/codex-review.mjs launches, and what it learns from it before the snapshot (US-40 AC19).
 // Side-effect free until called, so the tests pass their own candidates; no test hook sits in the wrapper.
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { accessSync, closeSync, constants, fstatSync, mkdtempSync, openSync, readdirSync, readSync, realpathSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, isAbsolute, join, resolve } from "node:path";
@@ -47,13 +47,23 @@ export function chooseCodex(given) {
 }
 
 const REFUSED = "it must be an executable file that neither group nor others can write";
-/** What the file IS (Codex R5): device, inode, mode, size, mtime and a sha256 of its bytes (0.6 s for the 300 MB app binary, 2026-11-27). */
-export function binaryId(p) {
+/**
+ * What the file IS (Codex R5): device, inode, mode, size, mtime and a sha256 of its bytes (0.6 s for the 300 MB app binary,
+ * 2026-11-27), read through one descriptor. null when it cannot be read, or the opened file is not an executable regular
+ * file that only its owner can write (Codex R2, PR 2222d). When the path no longer names that same file after the read
+ * (a fresh stat differs, or the path is not canonical: replaced or relinked while hashed; Codex R1, PR 2222d), a one-off
+ * sentinel that equals no other identity. `afterRead` is a test hook between the read and that stat.
+ */
+export function binaryId(p, { afterRead } = {}) {
   try {
     const fd = openSync(p, "r"), hash = createHash("sha256"), buf = Buffer.alloc(1 << 20);
     try {
       const s = fstatSync(fd, { bigint: true });
+      if (!s.isFile() || (s.mode & 0o022n) || !(s.mode & 0o111n)) return null;
       for (let n; (n = readSync(fd, buf, 0, buf.length, null)) > 0;) hash.update(buf.subarray(0, n));
+      afterRead?.();
+      const now = statSync(p, { bigint: true });
+      if (real(p) !== p || ["dev", "ino", "mode", "size", "mtimeNs"].some((k) => now[k] !== s[k])) return `changed:${randomUUID()}`;
       return `${s.dev}:${s.ino}:${s.mode}:${s.size}:${s.mtimeNs}:${hash.digest("hex")}`;
     } finally { closeSync(fd); }
   } catch { return null; }
@@ -71,7 +81,7 @@ export function probeCodex(bin, env, configArgs) {
   const home = mkdtempSync(join(tmpdir(), "cr-codex-home-"));
   const run = (a) => execFileSync(bin, [...configArgs, ...a], { encoding: "utf8", env: { ...env, CODEX_HOME: home }, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 4 << 20 });
   const id = binaryId(bin);
-  if (!id) { rmSync(home, { recursive: true, force: true }); return { version: "version unknown", stop: "E_CODEX_CHANGED: the codex binary could not be read" }; }
+  if (!id) { rmSync(home, { recursive: true, force: true }); return { version: "version unknown", stop: `E_CODEX_CHANGED: the codex binary could not be read, or ${REFUSED}` }; }
   try {
     let version = "version unknown";
     try { version = run(["--version"]).trim().split("\n")[0] || version; } catch { /* reported as unknown */ }
@@ -93,13 +103,17 @@ export function probeCodex(bin, env, configArgs) {
   } finally { rmSync(home, { recursive: true, force: true }); }
 }
 
-/** Just before the review launches (Codex R5): the same file as probed, or one fresh probe of the new one; a second change stops the run. */
-export function recheckCodex(bin, probe, env, configArgs, say) {
+/**
+ * Just before the review launches (Codex R5): the same file as probed, or one fresh probe of the new one; a second change
+ * stops the run. With `reprobe: false` (a test policy shaped the snapshot; Codex R3, PR 2222d) any change stops it.
+ */
+export function recheckCodex(bin, probe, env, configArgs, say, { reprobe = true } = {}) {
   if (!isExecutableFile(bin)) return { ...probe, stop: `E_CODEX_CHANGED: the codex binary changed after its probe and ${REFUSED}` }; // Codex R1: before any re-probe
   if (binaryId(bin) === probe.id) return probe;
+  if (!reprobe) return { ...probe, stop: "E_CODEX_CHANGED: the codex binary changed after its probe, and a test policy shaped this snapshot, so it is not probed again" };
   say("codex binary changed after its probe; probing it again");
   const again = probeCodex(bin, env, configArgs);
-  return again.stop || (isExecutableFile(bin) && binaryId(bin) === again.id) ? again : { ...again, stop: "E_CODEX_CHANGED: the codex binary changed again after a second probe" };
+  return again.stop || binaryId(bin) === again.id ? again : { ...again, stop: "E_CODEX_CHANGED: the codex binary changed again after a second probe" };
 }
 
 /** The review's argument list, as the wrapper launches it (AC3, AC14, AC19); the probe script builds the same. */
