@@ -25,9 +25,9 @@ export function feedbackTransition(state: FeedbackMode, event: FeedbackEvent): F
   return { kind: event.type === 'sendOk' ? 'sent' : 'failed' };
 }
 
-/** US-19 AC3a: the thank-you takes the focus the form left on the page itself, never focus held somewhere else. */
+/** US-19 AC3a: the thank-you takes the focus the form left on the page, never focus held elsewhere, and never scrolls. */
 function takeDroppedFocus(el: HTMLElement) {
-  if (document.activeElement === document.body) el.focus();
+  if (document.activeElement === document.body) el.focus({ preventScroll: true });
 }
 
 interface FeedbackFormProps {

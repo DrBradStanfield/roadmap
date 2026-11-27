@@ -17,7 +17,7 @@ beforeEach(() => {
   window.requestAnimationFrame = ((cb: FrameRequestCallback) => { cb(0); return 0; }) as typeof requestAnimationFrame;
   Element.prototype.scrollIntoView = vi.fn();
 });
-afterEach(() => cleanup());
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 const FAILED = 'Failed to send. Please try again.';
 const THANKS = 'Thank you for your feedback!';
@@ -73,5 +73,17 @@ describe('US-19 AC3a: the outcome of a send is announced', () => {
     await act(async () => { answer(true); });
     expect(screen.getByRole('status').textContent).toBe(THANKS);
     expect(document.activeElement).toBe(elsewhere);
+  });
+
+  it('the thank-you takes the focus without scrolling the page', async () => {
+    // A person who presses Send and scrolls away leaves the focus on the page; the thank-you must not pull them back.
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    sendFeedback.mockResolvedValue(true);
+    render(<FeedbackForm initialExpanded />);
+    await send();
+    const thanks = screen.getByRole('status');
+    expect(document.activeElement).toBe(thanks);
+    const thanksCalls = focus.mock.contexts.flatMap((el, i) => (el === thanks ? [focus.mock.calls[i]] : []));
+    expect(thanksCalls).toEqual([[{ preventScroll: true }]]);
   });
 });
