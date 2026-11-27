@@ -128,11 +128,18 @@ and pages each answer rests on, mark guesses "Guess:", and rank where the
 brief asks. It prints `## Codex answer (...)` with the review's status and
 web-access lines, then the summary and the Markdown answer; `--out` holds
 `mode: "brief"`, `summary` and `answer` (`findings` is always `[]`). Exit 0
-answered, 3 incomplete (`answer` is `null`); never 2. Refused with
-`--commit`, `--range`, `--loop`, `--record`, `--record-file`, `--subject`
-and `--baseline`. Its web search is the review's: cached by default, with
-queries held to public identifiers and claims in its own words, so it cannot
-research a market freely; `--live` opens pages under the existing rules.
+answered, 3 incomplete; `answer` is `null` on any incomplete, including one
+the model declares itself (only its summary is kept). Refused with
+`--commit`, `--range`, `--loop`, `--record`, `--record-file`, `--subject`,
+`--baseline` and `--message`, and an empty or whitespace-only brief is
+refused too. Its web search is the review's: cached by default, with queries
+held to public identifiers and claims in its own words, so it cannot
+research a market freely; the prompt adds that nothing from the brief or the
+context, not even a paraphrase of a plan, number or strategy, goes into a
+query or a URL. Use `--live` with `--brief` only when we wrote the brief and
+every context file ourselves (the same limit as "our own changes"); never
+when the context holds third-party pages, which could steer the model into
+carrying what it reads out in a URL.
 
 **Pick the subject** (US-40 AC15, Brad 2026-10-05: "Codex reviewed the wrong
 file last time"). The default run reviews whatever the working tree holds.

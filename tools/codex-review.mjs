@@ -198,11 +198,11 @@
 //     pinned subject root, privateDeny, the byte budget, the value and shape scan, drift), and the snapshot, the
 //     final checks and the launch are the same code. `--context` files and folders are its evidence. Only the prompt
 //     (tools/codex-review-prompt.mjs, where both modes share the web-search and untrusted-text rules) and the output
-//     contract differ: the schema is {status, target, summary, answer} (tools/codex-review-verdict.mjs), printed as
-//     Markdown under the review's header, and --out holds `mode: "brief"`, `answer` and the usual metadata, with
-//     `findings` always [] so --out keeps one report shape. Exit 0 complete, 3 incomplete, never 2. `--live` follows
-//     the existing rules. Refused, as usage errors: a second --brief, and --brief with --commit, --range, --loop,
-//     --record, --record-file, --subject or --baseline;
+//     contract differ: {status, target, summary, answer} (tools/codex-review-verdict.mjs), printed as Markdown under the
+//     review's header; --out holds `mode: "brief"`, `answer` (null on ANY incomplete, the model's own too), the usual
+//     metadata, and `findings` always [] (one --out shape). No REVIEW_PATCH.diff or REVIEW_COMMITS.txt. Exit 0 or 3,
+//     never 2. `--live` under the existing rules. Usage errors: a second, empty or whitespace-only brief; --brief with
+//     --commit, --range, --loop, --record, --record-file, --subject, --baseline or --message;
 //   * the result is validated field by field; a nonzero exit, timeout, or
 //     malformed output is INCOMPLETE, never clean (CR4);
 //   * `--record` serves a LOCAL copy of the designated scratch record through
@@ -307,9 +307,8 @@ const LIVE_EXPECTED_HOSTS = new Set(["github.com", "docs.github.com", "api.githu
 if (WEB_ACCESS === "live" && (RECORD || has("--record-file") || LOOP)) usage("--live is refused with --record, --record-file and --loop: a URL the reviewer writes can carry out what it reads, so never with health data in reach or a loop's change");
 /** --brief (US-40 AC19, Brad 2026-11-27): the model ANSWERS one brief, with --context as its evidence. The brief takes a subject's place (`--baseline none`), so every path rule, check and the launch are --subject's. */
 const BRIEF_ARGS = many("--brief"), BRIEF = BRIEF_ARGS.length > 0, SUBJECT_FLAG = BRIEF ? "--brief" : "--subject";
-if (BRIEF_ARGS.length > 1) usage("--brief takes one brief per run");
-const BRIEF_REFUSED = BRIEF ? ["--commit", "--range", "--loop", "--record", "--record-file", "--subject", "--baseline"].filter(has) : [];
-if (BRIEF_REFUSED.length) usage(`--brief is refused with ${BRIEF_REFUSED.join(", ")}: a brief is one file in the working tree, answered with --context as its evidence; never a commit, a range, a loop's change, a review subject or a health record`);
+const BRIEF_REFUSED = BRIEF ? ["--commit", "--range", "--loop", "--record", "--record-file", "--subject", "--baseline", "--message"].filter(has) : [];
+if (BRIEF_ARGS.length > 1 || BRIEF_REFUSED.length) usage(BRIEF_ARGS.length > 1 ? "--brief takes one brief per run" : `--brief is refused with ${BRIEF_REFUSED.join(", ")}: a brief is one file in the working tree, answered with --context as its evidence; never a commit, a range, a loop's change, a review subject, a commit message or a health record`);
 /**
  * The ONLY record the reviewer may read: the scratch account's, identified by
  * the record's own creation stamp (merge keeps the minimum, so it is stable
@@ -610,6 +609,7 @@ const SUBJECTS = SUBJECT_ARGS.map(({ given, baseline: b }) => {
 if (new Set(SUBJECTS.map((s) => s.rel)).size < SUBJECTS.length) usage("--subject: the same file is named twice");
 for (const s of SUBJECTS) {
   pinnedOrTracked(s.abs, s.rel, (why) => usage(`${SUBJECT_FLAG} ${JSON.stringify(s.given)}: ${why}`));
+  if (BRIEF && !(() => { try { return readRegular(s.abs, BUDGET.bytes).toString("utf8").trim(); } catch { return "unread"; } })()) usage(`--brief ${JSON.stringify(s.given)}: is empty or holds only whitespace, so there is nothing to answer`); // AC19; a read error is left to the real, budgeted read
   if (s.baseline) pinnedOrTracked(s.baseline.abs, s.baseline.rel, (why) => usage(`--baseline ${JSON.stringify(s.baselineGiven)}: ${why}`));
 }
 const subjectRels = new Set(SUBJECTS.map((s) => s.rel));
@@ -1156,8 +1156,8 @@ const baselineCopies = subjectBaselines.map((bytes, i) => {
   writeFileSync(p, bytes, { flag: "wx", mode: 0o444 });
   return p;
 });
-const patchPath = artifact("REVIEW_PATCH.diff", patch);
-artifact("REVIEW_COMMITS.txt", messages);
+const patchPath = BRIEF ? null : artifact("REVIEW_PATCH.diff", patch); // AC19: no review framing for a brief; its bytes sit in src/, which the final scan covers
+if (!BRIEF) artifact("REVIEW_COMMITS.txt", messages);
 // The controlling contract and repo rules come from BASE, not the candidate (CR3).
 const baseContract = showAtBase("docs/review-format.md");
 if (baseContract === null) { finish(incomplete("E_NO_CONTRACT: docs/review-format.md is absent at the base revision; no trusted contract to apply"), "0.0"); }
@@ -1387,7 +1387,7 @@ finish(review, elapsedMin, { drift, recordAccess, webSearches, webSearchDomains,
 // --- 5. Report, print, exit ---------------------------------------------------
 function finish(review, elapsedMin, extra = {}) {
   const { drift = null, recordAccess = RECORD ? "not_attempted" : "not_requested", webSearches = 0, webSearchDomains = [], webSearchesWithoutProvenance = 0, unexpectedHosts = [], unresolvedOpens = 0 } = extra;
-  const report = { ...review, ...(BRIEF ? { mode: "brief", answer: review.answer ?? null } : {}), model: MODEL, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_access: WEB_ACCESS, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, unexpected_hosts: unexpectedHosts, unresolved_opens: unresolvedOpens, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted, context_uncommitted: contextUncommitted, private_withheld: privateWithheld.size };
+  const report = { ...review, ...(BRIEF ? { mode: "brief", answer: review.status === "complete" ? review.answer ?? null : null } : {}), model: MODEL, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_access: WEB_ACCESS, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, unexpected_hosts: unexpectedHosts, unresolved_opens: unresolvedOpens, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted, context_uncommitted: contextUncommitted, private_withheld: privateWithheld.size };
   writeOut(report); // a failed write says so and exits 1; the exit handler still cleans up
   const blocking = report.findings.filter((f) => f.blocks_merge);
   console.log(`## Codex ${BRIEF ? "answer" : "review"} (${MODEL}) — ${label}, snapshot ${snapshotId}, ${elapsedMin} min`);
@@ -1403,6 +1403,6 @@ function finish(review, elapsedMin, extra = {}) {
   if (!BRIEF && !report.findings.length && report.status === "complete") console.log("No findings.");
   if (OUT) console.log(`\nJSON: ${OUT}`);
   keep = keep || report.status !== "complete";
-  if (work && keep && !purge && valueChecked) console.error(`work dir kept at ${work} (events.jsonl and stderr.log hold metadata only; --include copies${SUBJECT_MODE ? ", --context copies and subject-baselines/" : ""} are deleted at exit${SUBJECT_MODE ? `; the subject file(s) stay in src/ and REVIEW_PATCH.diff still shows each baseline's changed lines as "-" lines: they are the reviewed change, kept like any reviewed diff` : ""})`);
+  if (work && keep && !purge && valueChecked) console.error(`work dir kept at ${work} (events.jsonl and stderr.log hold metadata only; --include copies${SUBJECT_MODE ? ", --context copies and subject-baselines/" : ""} are deleted at exit${BRIEF ? "; the brief stays in src/" : SUBJECT_MODE ? `; the subject file(s) stay in src/ and REVIEW_PATCH.diff still shows each baseline's changed lines as "-" lines: they are the reviewed change, kept like any reviewed diff` : ""})`);
   process.exit(report.status !== "complete" ? 3 : blocking.length ? 2 : 0);
 }

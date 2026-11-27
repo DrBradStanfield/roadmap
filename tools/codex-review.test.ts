@@ -2457,6 +2457,8 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
       expect(tree).toContain(`${RESEARCH}/study-notes.md`);
       expect(tree).not.toContain('docs/other-session/plan.md');
       expect(readFileSync(join(g.to, 'base-review-format.md'), 'utf8')).toBe('BASE CONTRACT: review everything.\n'); // the base contract is still staged (E_NO_CONTRACT unchanged)
+      // adversary R4: no review framing beside the snapshot (the review run above has both)
+      expect([existsSync(join(g.to, 'REVIEW_PATCH.diff')), existsSync(join(g.to, 'REVIEW_COMMITS.txt'))]).toEqual([false, false]);
     });
     it('--live is allowed under the existing rules: web_search="live", still --sandbox read-only', () => {
       const { r, f, report } = runB(briefRepo(), ['--brief', BRIEF, '--live']);
@@ -2484,6 +2486,12 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
       expect(prompt).not.toContain('ADVERSARIAL REVIEWER');
       expect(prompt).not.toContain('Number findings');
       expect(prompt).not.toContain('Rank three ways'); // the brief's text is read from the snapshot, never pasted into the prompt
+      // adversary R2: a brief-only privacy rule for queries and URLs; the review prompt does not carry it
+      const PRIVATE_RULE = 'The brief and the context are private: never put their content, or a paraphrase of a plan, a number or a strategy in them, into a search query or a URL. Search only for public identifiers and public facts.';
+      expect(prompt).toContain(PRIVATE_RULE);
+      const review = run(briefRepo(), ['--subject', V4]);
+      expect(review.r.status).toBe(0);
+      expect(review.f.read('stdin.txt')).not.toContain('are private');
     });
     it('output: the Markdown answer under the review\'s header (model, snapshot, duration, web access), and --out holds the answer and metadata', () => {
       const { r, report } = runB(briefRepo(), ['--brief', BRIEF]);
@@ -2513,6 +2521,15 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
         expect([report().mode, report().answer]).toEqual(['brief', null]);
       }
     });
+    it('Codex R1: a valid reply the model itself marks incomplete keeps its summary, but its partial answer is never printed or saved', () => {
+      const partial = { status: 'incomplete', target: 'FILLED', summary: 'Question 2 needs sales data the context lacks.', answer: '## 1. What is dumb\nPARTIAL-MARKER-7701.' };
+      const { r, report } = runB(briefRepo(), ['--brief', BRIEF], { output: partial });
+      expect(r.status).toBe(3);
+      expect(r.stdout).toContain('**Status:** incomplete');
+      expect(r.stdout).toContain('Question 2 needs sales data the context lacks.');
+      expect(r.stdout + JSON.stringify(report())).not.toContain('PARTIAL-MARKER-7701');
+      expect([report().status, report().summary, report().answer, report().mode]).toEqual(['incomplete', partial.summary, null, 'brief']);
+    });
     it('a Codex failure is incomplete (exit 3), never an answer: a nonzero exit, no output, non-JSON', () => {
       const dir = briefRepo();
       for (const [cfg, code] of [[{ output: ANSWER, exit: 19 }, 'E_EXIT_19'], [{}, 'E_NO_OUTPUT'], [{ output: 'Here is my answer' }, 'E_SCHEMA: not JSON']] as const) {
@@ -2523,13 +2540,18 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
         expect([report().status, report().mode, report().answer]).toEqual(['incomplete', 'brief', null]);
       }
     });
-    it('is refused, as a usage error before anything starts, with --commit, --range, --loop, --record, --record-file, --subject, --baseline, or a second --brief', () => {
+    it('is refused, as a usage error before anything starts, with --commit, --range, --loop, --record, --record-file, --subject, --baseline, --message, a second --brief, or an empty one', () => {
       const dir = briefRepo();
-      for (const extra of [['--commit', 'HEAD'], ['--range', 'HEAD~1..HEAD'], ['--loop'], ['--record'], ['--record-file', scratchFile], ['--subject', V4], ['--baseline', V3], ['--baseline', 'none']]) {
+      for (const extra of [['--commit', 'HEAD'], ['--range', 'HEAD~1..HEAD'], ['--loop'], ['--record'], ['--record-file', scratchFile], ['--subject', V4], ['--baseline', V3], ['--baseline', 'none'], ['--message', 'a commit message']]) {
         refused(dir, ['--brief', BRIEF, ...extra], `--brief is refused with ${extra[0]}:`);
         refused(dir, [...extra, '--brief', BRIEF], `--brief is refused with ${extra[0]}:`); // the order on the line does not matter
       }
       refused(dir, ['--brief', BRIEF, '--brief', 'tracked.md'], '--brief takes one brief per run');
+      // adversary R4: nothing to answer is a usage error, not a run
+      for (const body of ['', ' \n\t\n']) {
+        writeFileSync(join(dir, 'output', '38 end-of-obesity', 'empty.md'), body);
+        refused(dir, ['--brief', 'output/38 end-of-obesity/empty.md'], 'is empty or holds only whitespace, so there is nothing to answer');
+      }
     });
     it('the --subject path rules hold for the brief: untracked outside a pinned root, a private-data path, a credential-named path, outside the checkout, a folder', () => {
       const dir = briefRepo();
