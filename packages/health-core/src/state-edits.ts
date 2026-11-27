@@ -26,7 +26,7 @@ import { screeningRange } from './mappings';
 import { laterStamp, stampFields } from './merge';
 import { commaQuestion, parseLocalisedNumber } from './parseNumber';
 import { newId, stampUpdatedAt } from './record-edits';
-import { mergeOptIn } from './reminder-rows';
+import { mergeOptIn, ownRow } from './reminder-rows';
 import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, ReminderTokenRow, RoadmapFile, RoadmapProfile } from './roadmap-file';
 
 export interface StateEditResult {
@@ -167,5 +167,6 @@ export function setReminderRow(file: RoadmapFile, fields: Omit<ReminderTokenRow,
   const clocks = optIn ? [optIn, ...(optIn.tokens ?? [])] : [];
   const updatedAt = clocks.reduce((at, row) => laterStamp(at, row.updatedAt), now);
   const lamport = Math.max(0, ...clocks.map((row) => row.lamport ?? 0)) + 1;
-  return stampUpdatedAt({ ...file, reminderOptIn: mergeOptIn(optIn, { ...fields, updatedAt, lamport }) }, now);
+  // Only the row given: a caller that spread a read opt-in cannot bring in its list.
+  return stampUpdatedAt({ ...file, reminderOptIn: mergeOptIn(optIn, { ...ownRow(fields), updatedAt, lamport }) }, now);
 }

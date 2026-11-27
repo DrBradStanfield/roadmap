@@ -331,6 +331,14 @@ describe('US-17 AC19: setReminderRow writes the stored object', () => {
     expect(shownOptIn(after)).toEqual(row('token-b', 'active', 0));
   });
 
+  it('writes only the row it is given: a spread opt-in cannot bring in its list', () => {
+    const f = file(row('token-a', 'active', 0));
+    const spread = { status: 'cancelled', token: 'token-b', email: 'token-b@example.test', provider: 'dropbox', tokens: [row('token-z', 'active', 1)] } as unknown as ReminderTokenRow;
+    const after = setReminderRow(f, spread, NOW);
+    expect(rowsOf(after.reminderOptIn).map((r) => r.token)).toEqual(['token-a', 'token-b']);
+    expect(JSON.stringify(after)).not.toContain('token-z');
+  });
+
   it('until part 2 the live writer, setReminderOptIn, still replaces the opt-in whole, as today', () => {
     const f = file({ ...row('token-b', 'cancelled', 1), tokens: [row('token-a', 'active', 0)] });
     const after = setReminderOptIn(f, { status: 'active', token: 'token-c', email: 'token-c@example.test', provider: 'dropbox' }, NOW);
