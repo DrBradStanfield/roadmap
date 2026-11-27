@@ -114,12 +114,11 @@ jobs:
       # incident — docs/loops/sentry-fix/2026-08-14.md). Each project tsconfig
       # was burned down to zero errors when its gate landed, so any error here
       # is NEW. The server uses source declarations, independent of dist/.
-      - run: npx tsc --noEmit -p widget-src/tsconfig.json
-      - run: npx tsc --noEmit -p packages/health-core/tsconfig.json
-      - run: npm run typecheck:server
-      # The iPhone engine bundle (ios/engine), which esbuild builds without a
-      # type check and which ships over the air. Clean when this gate landed.
-      - run: npm run typecheck:engine
+      # typecheck:all (package.json) is the one list, shared with deploy.yml:
+      # widget-src, health-core, the server, and the iPhone engine bundle
+      # (ios/engine), which esbuild builds without a type check and which ships
+      # over the air.
+      - run: npm run typecheck:all
 
       - run: npm run build
       - run: npm run build:widget
