@@ -665,7 +665,9 @@ export function mergeFiles(
       // the pruned copy wears the winner's meta, so the loser's own clock
       // would otherwise be dropped here (the never-rewind guard above).
       const next = { ...opts, now: updatedAt };
-      return localWins ? mergeFiles(winner, kept, next) : mergeFiles(kept, winner, next);
+      const rescued = localWins ? mergeFiles(winner, kept, next) : mergeFiles(kept, winner, next);
+      // The winner's opt-in stands whole, as when nothing is rescued (US-17 AC19).
+      return { ...rescued, reminderOptIn: winner.reminderOptIn };
     }
     return {
       ...winner,

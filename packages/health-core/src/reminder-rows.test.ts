@@ -14,7 +14,7 @@ import { mergeFiles, pickNewerOptional } from './merge';
 import { migrateFile } from './migrate';
 import { stampIsNewer } from './record-time';
 import { mergeOptIn, rowsOf, shownOptIn } from './reminder-rows';
-import { createEmptyFile, stableStringify, type FileReminderOptIn, type ReminderTokenRow, type RoadmapFile } from './roadmap-file';
+import { createEmptyFile, createMeasurement, stableStringify, type FileReminderOptIn, type ReminderTokenRow, type RoadmapFile } from './roadmap-file';
 import { setReminderOptIn, setReminderRow } from './state-edits';
 
 const CTX = { deviceId: 'dev_rows', now: '2026-05-09T12:00:00.000Z' };
@@ -171,6 +171,22 @@ describe('US-17 AC19: what counts as a row', () => {
     const merged = merge(migrateFile(JSON.parse(JSON.stringify(free)), CTX), file(row('token-a', 'active', 0)));
     expect(merged.reminderOptIn?.token).toBe('token-a');
     expect(JSON.stringify(merged)).not.toContain('free text');
+  });
+});
+
+describe('US-17 AC19: across the erase gate the winner\'s opt-in passes whole', () => {
+  it('as when it keeps none, whether or not the gate rescues a row, in either order', () => {
+    // An unsettled winner: its list holds a row newer than its object.
+    const winner = file({ ...row('token-a', 'active', 0), tokens: [row('token-b', 'active', 2)] }, 1);
+    winner.meta.erasedAt = '2026-05-01T00:00:00.000Z';
+    const loser = file(row('token-c', 'active', 1));
+    const bare = merge(winner, loser);
+    expect(key(bare.reminderOptIn)).toBe(key(winner.reminderOptIn));
+    loser.measurements.push(createMeasurement({ id: 'm-rescued', metricType: 'weight', value: 70, recordedAt: '2026-05-02', createdAt: '2026-05-02T08:00:00.000Z', source: 'manual' }));
+    for (const merged of [merge(winner, loser), merge(loser, winner)]) {
+      expect(merged.measurements.map((m) => m.id)).toEqual(['m-rescued']);
+      expect(key(merged.reminderOptIn)).toBe(key(winner.reminderOptIn));
+    }
   });
 });
 
