@@ -1,6 +1,6 @@
 // Generated from ios/engine/contract.ts by `npx tsx ios/scripts/gen-contract.ts`. Never edit it:
 // ios/engine/contract-drift.test.ts fails when it differs from what the contract generates.
-// contractHash: 5f429de07fb672b2
+// contractHash: 99ec9f06dbf9251d
 
 import Foundation
 import JavaScriptCore
@@ -206,6 +206,11 @@ extension HealthEngine {
     /// `labSearchJson`: answers at once; nil from an engine without it.
     func doorLabSearchJson(text: String) throws -> String? {
         try optionalCall("labSearchJson", [text])
+    }
+
+    /// `bpSysAdvance`: answers at once; nil from an engine without it.
+    func doorBpSysAdvance(systolic: String, diastolic: String) throws -> String? {
+        try optionalCall("bpSysAdvance", [systolic, diastolic])
     }
 
     /// `documentOriginal`: answers a Promise; nil from an engine without it.

@@ -1906,7 +1906,12 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     Charts, scrubbing, the VoiceOver chart descriptor, the medication markers and their
     list, `MedicationMarkerList`), `ChartRange` (which ranges to
     offer), `MetricEntrySheet` (picks `BloodPressureSheet` or `ValueEntrySheet`) and
-    `FeetInchesSheet`.
+    `FeetInchesSheet`. `SystolicAdvance` is the blood pressure sheet's move from systolic to
+    diastolic (US-02 AC12, root fix R30): one state (idle, asking, pausing) and a pure
+    `transition`; the rule is health-core's `bpSysAdvance`, asked of the engine for each systolic
+    typed through the optional door of that name (bridge id unchanged), never copied into Swift.
+    The sheet runs what the state asks for in `.task(id:)`, so a newer state cancels the question
+    or the pause. Only the 800 ms pause is a Swift constant (the web's `useAutoAdvance`).
   - `Reminders/`: on-device reminders (D7). `PhoneReminders` is the engine's answer,
     `ReminderScheduler` keeps the pending notifications equal to it behind
     `NotificationScheduling` (a fake in the tests), `ReminderTaps` sends a tap to My plan,

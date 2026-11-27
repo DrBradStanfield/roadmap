@@ -227,3 +227,7 @@ which waits for Brad's look.
 - **R2, R22, R28** done, as recorded above.
 - **R29** built (US-52 AC17, lead C24): the iPhone's conversation read is one `ChatThreadRead` state; a failed read
   says so in the web's words and keeps Send locked. Swift tests written, not yet run in the simulator.
+- **R30** iPhone half built (US-02 AC12, lead H73; draft PR 2203, held): the rule moved to health-core `bp-advance.ts`,
+  the sheet asks it through the optional door `bpSysAdvance` and holds its move as one `SystolicAdvance` state.
+  Swift tests written, not run. Web half left: `ValuePage.tsx` and `useBpPair.ts` still check the diastolic
+  themselves and could pass it to `bpSysAdvance` instead; `ValuePage.tsx` waits on held PR 2146.

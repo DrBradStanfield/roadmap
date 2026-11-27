@@ -225,6 +225,12 @@ actor HealthEngine {
         return try JSONDecoder().decode([LabSearchMatch].self, from: Data(json.utf8))
     }
 
+    /// Whether a typed systolic moves the focus on (US-02 AC12, the optional door
+    /// `bpSysAdvance`); nil from an engine without the door, or a word it does not know: no move.
+    func bpSysAdvance(systolic: String, diastolic: String) throws -> SystolicAdvance.Word? {
+        try doorBpSysAdvance(systolic: systolic, diastolic: diastolic).flatMap(SystolicAdvance.Word.init(rawValue:))
+    }
+
     /// A listed document's original from the open cloud, by the document's id (US-73 AC12,
     /// `documentOriginal`); nil from an engine without that door. Throws when no cloud is open,
     /// the record names no original, or the cloud cannot give it.
