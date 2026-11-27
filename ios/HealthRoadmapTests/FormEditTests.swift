@@ -31,7 +31,7 @@ final class FormEditTests: XCTestCase {
         let start = try man60(engine)
         let data = try engine.blocking { [now] in try $0.myData(recordJSON: start, now: now, deviceId: "test") }
         XCTAssertEqual(data.screenings.first?.groups.map(\.id), ["colorectal", "lung", "prostate"])
-        XCTAssertEqual(data.medications.map(\.title), ["Cholesterol Medications"])
+        XCTAssertEqual(data.medications.map(\.title), ["Cholesterol medications"])
         guard case .choice(let key, let label, let hint, let options, _) = data.medications[0].groups[0].fields[0] else { return XCTFail("statin is a choice") }
         XCTAssertEqual(key, "statin")
         XCTAssertEqual(label, "Statin")
