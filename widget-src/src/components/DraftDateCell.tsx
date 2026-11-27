@@ -1,8 +1,7 @@
 // Compact "DD Mon / 'YY" button + calendar icon that opens the native date
 // picker.
 
-import { useRef, useState, type ChangeEvent } from 'react';
-import { flushSync } from 'react-dom';
+import { useRef } from 'react';
 import { localDay } from '@roadmap/health-core/merge';
 import { MONTHS_SHORT } from '../lib/constants';
 import { DAY_CONTROL_TEXT } from '@roadmap/health-core/upload-text';
@@ -32,22 +31,8 @@ export interface DraftDateCellProps {
   disabled?: boolean;
 }
 
-/** A day typed by keyboard (US-03 AC1a): Chrome sends a change per key, so while the input has the focus it keeps
- *  its own text (a refused value put back under the caret sends the next keys to another day). The day typed is handed on,
- *  flushed, when the focus leaves, as a Tab out of the matrix saves on the next focus (US-03 AC5); a pick with no focus, at once. */
-function useTypedDay(shown: string, onChange: (date: string) => void) {
-  const [typing, setTyping] = useState<{ from: string; text: string } | null>(null);
-  return {
-    value: typing?.text ?? shown,
-    onFocus: () => setTyping({ from: shown, text: shown }),
-    onChange: (e: ChangeEvent<HTMLInputElement>) => { if (typing) setTyping({ ...typing, text: e.target.value }); else onChange(e.target.value); },
-    onBlur: () => { if (typing && typing.text !== typing.from) flushSync(() => onChange(typing.text)); setTyping(null); },
-  };
-}
-
 export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel, label, className, title, picked, disabled }: DraftDateCellProps) {
   const ref = useRef<HTMLInputElement | null>(null);
-  const held = useTypedDay(needsDay ? '' : picked ?? date, onChange);
   const d = new Date(date + 'T00:00');
   const day = d.getDate();
   const mon = MONTH_LABELS[d.getMonth()];
@@ -71,7 +56,8 @@ export function DraftDateCell({ date, onChange, needsDay, placeholder, ariaLabel
           <line x1="11" y1="2" x2="11" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
         </svg>
       </div>
-      <input ref={ref} type="date" {...held} disabled={disabled}
+      <input ref={ref} type="date" value={needsDay ? '' : picked ?? date} disabled={disabled}
+             onChange={e => onChange(e.target.value)}
              className="bt-date-hidden-icon"
              max={localDay(new Date())}
              aria-label={ariaLabel ?? 'Choose date'}/>

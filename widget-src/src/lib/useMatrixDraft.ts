@@ -9,7 +9,7 @@
 import { useEffect, useState } from 'react';
 import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
-import { validDay } from '@roadmap/health-core/record-edits';
+import { DAY_NOT_HAPPENED } from '@roadmap/health-core/lab-series';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
 import { DRAFTS_CLEARED_EVENT, ownLogOffHasBegun, pageOnChosenRecord, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
@@ -52,6 +52,12 @@ const holdsText = (state: MatrixDraft<string>) => holdsAny(state.draft.values) |
 const isDay = (day: unknown): day is string => typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day);
 const isObject = (v: unknown): v is object => !!v && typeof v === 'object';
 const dayOf = (state: MatrixDraft<string>) => state.draft.date ?? localDay(new Date());
+/** A day after the device's own: the New column saves nothing under it (US-03 AC1a). */
+const notYet = (day: string) => day > localDay(new Date());
+const savable = <K extends string>(day: string, values: Typed<K>): Typed<K> => (notYet(day) ? {} : values);
+/** Why a commit refused a cell's value, until it is typed into again; a typed New cell under a day not yet come, that (AC1a). */
+const refusalOf = (column: string | null, day: string, typed: unknown, meta: CellMeta | undefined) =>
+  (column === null && typed && notYet(day) ? DAY_NOT_HAPPENED : meta?.refused ?? null);
 
 /** The draft this device kept, or null. The storage is untrusted: anything
  *  not shaped like a draft is ignored. */
@@ -166,6 +172,8 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
 
   return {
     draft: { date, values },
+    /** The New column's cells a commit may save: none while its day has not happened (US-03 AC1a). */
+    savable: savable(date, values),
     backfills: state.backfills,
     /** Any typed text kept, valid or not, restored or displaced: what the
      *  phone's "Unsaved values" cue reports (US-62 AC11). */
@@ -177,11 +185,10 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
       unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), byHand: byHand ? PAGE : undefined,
     }))),
     /** The day the user picked. Anything else is never taken: iOS's Reset
-     *  hands back '', and a day that has not happened is the add-a-value
-     *  rule's refusal (`validDay`, US-03 AC1a); the column keeps its day. Another day is another
+     *  hands back '', and the column keeps its day. Another day is another
      *  slot: the cells typed in the column expect what the page shows there. */
     setDate: (day: string) => {
-      if (validDay(day, { now: new Date().toISOString() }) !== day) return;
+      if (!isDay(day)) return;
       setState((s) => {
         const meta = { ...s.meta };
         if (day !== dayOf(s)) {
@@ -234,8 +241,8 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
         : set(acc, cell, '', (was) => was ?? {})), s);
       return holdsAny(next.draft.values) ? next : { ...next, draft: { values: next.draft.values } };
     }),
-    /** Why the cell's value was refused, until it is typed into again. */
-    refusal: (cell: CellRef<K>) => metaOf(cell)?.refused ?? null,
+    /** Why the cell's value was refused (`refusalOf`). */
+    refusal: (cell: CellRef<K>) => refusalOf(cell[0], date, values[cell[1]], metaOf(cell)),
   };
 }
 
