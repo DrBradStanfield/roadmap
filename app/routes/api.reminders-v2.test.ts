@@ -152,6 +152,20 @@ describe('limits fire before any write and before the plan-ready send', () => {
     expect(sendPlanReadyEmail).not.toHaveBeenCalled();
   });
 
+  it('US-17 AC8a: four optins on gmail.com and one on googlemail.com use up the day for both spellings', async () => {
+    const optin = (email: string) => action({ request: post({ op: 'optin', provider: 'typed', email, schedule: SCHEDULE }) } as never);
+    for (let i = 0; i < 4; i++) expect((await optin('optin.inbox@gmail.com')).status).toBe(200);
+    expect((await optin('optin.inbox@googlemail.com')).status).toBe(200);
+    // Only the count is shared: the row and the email keep the googlemail.com address.
+    expect(enrolByEmail).toHaveBeenLastCalledWith('optin.inbox@googlemail.com', 'typed', SCHEDULE);
+    expect(sendPlanReadyEmail).toHaveBeenLastCalledWith('optin.inbox@googlemail.com', 'cloud', expect.anything());
+
+    expect((await optin('optin.inbox@googlemail.com')).status).toBe(429);
+    expect((await optin('optin.inbox@gmail.com')).status).toBe(429);
+    expect(enrolByEmail).toHaveBeenCalledTimes(5);
+    expect(sendPlanReadyEmail).toHaveBeenCalledTimes(5);
+  });
+
   it('per IP: a burst from one address is 429 before any write', async () => {
     const ip = '203.0.113.7';
     let blocked = false;
