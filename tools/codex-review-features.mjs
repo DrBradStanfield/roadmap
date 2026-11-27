@@ -18,7 +18,8 @@ export const DISABLE_IF_LISTED = [
   "browser_annotation_api",
   // 0.172.0 turned this on by default (stable; openai/codex #62366, "Enable lazy startup for stdio MCP servers by default"):
   // a stdio MCP server with a cached tool list starts on its first tool call. Off, the --record server starts with the
-  // session, as on 0.163.0 and 0.171.0-alpha.13.2, where the wrapper was checked (2026-11-27).
+  // session, as on 0.163.0 and 0.171.0-alpha.13.2, where the wrapper was checked (2026-11-27). On 0.172.0 that is a
+  // reading of the source at rust-v0.172.0 (core/src/session/mcp_runtime.rs); no exec run on 0.172.0 has been made yet.
   "mcp_lazy_stdio_startup",
 ];
 
@@ -88,7 +89,8 @@ export const INERT = {
  * model's worktree tools are built in the TUI only (tui/src/managed_worktree_tools.rs), exec makes a worktree only for its
  * own --worktree flag, which the wrapper never passes and which refuses --ignore-user-config and --ephemeral
  * (exec/src/lib.rs); a realtime voice session starts only on a client's RealtimeConversationStart request, which the exec
- * crate never sends (no "realtime" anywhere in codex-rs/exec at that tag).
+ * crate never sends (no "realtime" anywhere in codex-rs/exec at that tag). All of this is a reading of the source at
+ * rust-v0.172.0; no exec run on 0.172.0 has been made yet.
  */
 const STUCK = [{ version: "codex-cli 0.171.0-alpha.13.2", stage: "removed" }, { version: "codex-cli 0.172.0", stage: "removed" }];
 export const CANNOT_DISABLE = { realtime_conversation: STUCK, worktrees: STUCK };
