@@ -26,7 +26,7 @@ import { screeningRange } from './mappings';
 import { laterStamp, stampFields } from './merge';
 import { commaQuestion, parseLocalisedNumber } from './parseNumber';
 import { newId, stampUpdatedAt } from './record-edits';
-import { mergeOptIn, ownRow } from './reminder-rows';
+import { mergeOptIn } from './reminder-rows';
 import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, ReminderTokenRow, RoadmapFile, RoadmapProfile } from './roadmap-file';
 
 export interface StateEditResult {
@@ -148,12 +148,12 @@ export function setScreening(file: RoadmapFile, screeningKey: string, value: str
 }
 
 /**
- * Set the reminders opt-in (US-17), status flips included: one token's row,
- * through `setReminderRow`, so every other token's row stays (US-17 AC19). A
- * `tokens` list the caller spread in from the stored object is not the row.
+ * Set or replace the reminders opt-in singleton (US-17), status flips
+ * included: lamport one past the copy it replaces, so the last write wins.
  */
 export function setReminderOptIn(file: RoadmapFile, fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, now: string): RoadmapFile {
-  return setReminderRow(file, ownRow(fields), now);
+  const reminderOptIn = { ...fields, updatedAt: laterStamp(now, file.reminderOptIn?.updatedAt), lamport: (file.reminderOptIn?.lamport ?? 0) + 1 };
+  return stampUpdatedAt({ ...file, reminderOptIn }, now);
 }
 
 /**

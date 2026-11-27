@@ -266,15 +266,10 @@ describe('US-17 AC19: setReminderRow writes the stored object', () => {
     expect(shownOptIn(after)).toEqual(row('token-b', 'active', 0));
   });
 
-  it('the live writer, setReminderOptIn, keeps every row: Turn on with a new token', () => {
+  it('until part 2 the live writer, setReminderOptIn, still replaces the opt-in whole, as today', () => {
     const f = file({ ...row('token-b', 'cancelled', 1), tokens: [row('token-a', 'active', 0)] });
     const after = setReminderOptIn(f, { status: 'active', token: 'token-c', email: 'token-c@example.test', provider: 'dropbox' }, NOW);
-    expect(own(after.reminderOptIn)).toEqual({ status: 'active', token: 'token-c', email: 'token-c@example.test', provider: 'dropbox', updatedAt: NOW, lamport: 2 });
-    expect(rowsOf(after.reminderOptIn)).toEqual([row('token-a', 'active', 0), row('token-b', 'cancelled', 1), own(after.reminderOptIn)]);
-    // A Turn off that spreads the stored object, list and all, writes one row and keeps the rest.
-    const off = setReminderOptIn(after, { ...after.reminderOptIn!, status: 'cancelled' }, NOW);
-    expect(own(off.reminderOptIn)).toMatchObject({ status: 'cancelled', token: 'token-c', lamport: 3 });
-    expect(off.reminderOptIn?.tokens).toEqual([row('token-a', 'active', 0), row('token-b', 'cancelled', 1)]);
+    expect(after.reminderOptIn).toEqual({ status: 'active', token: 'token-c', email: 'token-c@example.test', provider: 'dropbox', updatedAt: NOW, lamport: 2 });
   });
 
   it('on a file with no rows, stamps as setReminderOptIn does', () => {
