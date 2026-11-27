@@ -1021,6 +1021,30 @@ describe('US-02 AC11: feet and inches keep what is typed', () => {
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await waitFor(() => expect([feet.value, inchesBox(view).value]).toEqual(['5', '3']), { timeout: 3000 });
   });
+
+  // US-02 AC11b: the boxes stop skipping the height they typed once another height replaced it.
+  it('US-02 AC11b: another device sets 5 ft 7 in, then back to the 5 ft 10 in typed here: the boxes show each, and typing after it stays as typed', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    key(inchesBox(view), '1');
+    key(inchesBox(view), '0');
+    await wait(900); // the profile's 500 ms save
+    const typed = (await recordOnDisk()).profile.heightCm;
+    const fromElsewhere = async (heightCm: number | undefined, was: number | undefined) => {
+      await saveChangedMeasurements({ heightCm }, { heightCm: was }, getShownErase()); // another device
+      await flushRoadmapStore();
+      await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    };
+    await fromElsewhere(170.18, typed); // 5 ft 7 in
+    await waitFor(() => expect([feet.value, inchesBox(view).value]).toEqual(['5', '7']), { timeout: 3000 });
+    await fromElsewhere(typed, 170.18); // back to 5 ft 10 in
+    await waitFor(() => expect([feet.value, inchesBox(view).value]).toEqual(['5', '10']), { timeout: 3000 });
+    type(inchesBox(view), ''); // AC11 still holds for the boxes' own edits: no "0" written back
+    expect([feet.value, inchesBox(view).value]).toEqual(['5', '']);
+    key(inchesBox(view), '1');
+    expect([feet.value, inchesBox(view).value]).toEqual(['5', '1']);
+  });
 });
 
 describe('US-02 AC5: an out-of-range value stays in its field, its error shown, and is never written', () => {
