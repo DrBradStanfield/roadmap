@@ -9,7 +9,8 @@ an engine release, so it cannot land on CI alone.
 
 ## Ranked
 
-Where each fix stands, checked 2026-11-27 against `main` at 908d2ae45, each PR's state and the code. Read this
+Where each fix stands, checked 2026-11-27 against `main` at 908d2ae45, each PR's state and the code; rows R9, R13,
+R19 and R24 rechecked later that day at 4f1a995d0. Read this
 table first; the numbered list under it is the 25 Nov triage and the dated sections are history. States: done,
 part done, open (can start), held (built, PR open with `hold`), blocked (waits on a decision or another PR).
 `tools/untangle-ledger.test.ts` fails when a fix in the list has no row here.
@@ -25,21 +26,21 @@ part done, open (can start), held (built, PR open with `hold`), blocked (waits o
 | R7 | iPhone keeps the landed record's erase epoch apart from its drawing | open | leads H113, H130, H200; iPhone erase series, one at a time | none | |
 | R8 | The unsent erase is one persisted owed state | open | leads H119, H120 (H121 waits on words); iPhone erase series | none | |
 | R12 | Clear pending reminder notifications after an erase | open | lead S68, design note first; iPhone erase series | none | |
-| R9 | Opt-in merge: a cancel beats an opt-in only for its own token | open | lead H115: design note with a convergence proof first | none | orchestrator's call (merge) |
-| R13 | One record-apply hold state | held | H14's follow-up built: an out-of-range value, refused or half-typed, holds no remote change (US-34 AC13, the form alone) | 2084, 2110, 2113, 2117, 2119 merged; 2218 held | PR 2218 |
+| R9 | Opt-in merge: a cancel beats an opt-in only for its own token | held | the build, per-token rows ("option B", owner 27 Nov): health-core in PR 2221 (draft), web in PR 2230; design note done | 2215, 2220 merged; 2221, 2230 held | PRs 2221, 2230 |
+| R13 | One record-apply hold state | done | nothing (H14's follow-up, US-34 AC13: the form alone decides) | 2084, 2110, 2113, 2117, 2119, 2218 | |
 | R14 | A malformed Observation date is refused or flagged | done | nothing (lead H35) | 2181 | |
 | R22 | Value page Add fields read-only while saving | done | nothing (lead H301, US-03 AC2b) | 2060 | |
 | R10 | Delete all my data and Log off from every failure screen | part done | H122 (design first, iPhone erase series); H123a, the iPhone's cannot-start screen (decided, after App Store review) | 2158 (H123, the web crash screen) | H123a: App Store review |
 | R16 | The phone reads its constants and rules from the engine | open | M1 M2 M3 M4 M5 M7 M9 M11 M14 M16 U14, several PRs; new engine doors share contract files with held PRs 2203 and 2204 | none | |
 | R11 | After a remote erase the questions cover waits on one sheets-closed state | open | leads S16, S65, S71; iPhone erase series; PR 2209 edits `RootView.swift` and `MyDataView.swift` | none | |
 | R15 | Chat history open is one state that retries | held | lead A2's two lines and marker | 1643, 2078 merged; 2151 held | PR 2151 |
-| R19 | Reminders toggle is one union; the switch hold one state | part done | the switch hold only (lead A4); toggle done (H116, US-17 AC18) | 2058 | R1 (owner: hold union built after R1, behaviour kept) |
+| R19 | Reminders toggle is one union; the switch hold one state | blocked | the switch hold only (lead A4); toggle done (H116, US-17 AC18) | 2058 | R1 (owner: order R1, then R9, then the hold union, behaviour kept) |
 | R21 | One page-hide path | done | nothing (lead H92) | 2095, 2097 | |
 | R20 | A save failure is reported once per cause and grant | part done | the iPhone half: `ios/engine/cloud.ts` host reads `repeat` (lead A25) | 2130 | |
 | R23 | Upload ticks and save-all stops from one engine rule | done | closed, superseded by the shared upload engine (U12 keeps a test gap) | 1913, 1972 | |
 | R17 | Phone allow-list from the adapters; one file-kinds rule | part done | M12 not started; M13 built | 2204 held | M12: PR 2099; M13: PR 2204 |
 | R33 | Security track | blocked | leads C14, C19 | none | the orchestrator |
-| R24 | Chat docs load as one state | held | lead T38's YouTube half (US-15 AC82) | 2124, 2184, 2187 merged; 2210 held | PR 2210 |
+| R24 | Chat docs load as one state | done | nothing (lead T38's YouTube half, US-15 AC82) | 2124, 2184, 2187, 2210 | |
 | R26 | Hosted MCP import commit gets the permanent-write pause | done | nothing (lead H58) | 2126 | |
 | R18 | A stopped web page names its real cause | done | nothing (leads C30, A12, C29, C32) | 2122, 2154 | |
 | R25 | Lab batch poll answers error | done | closed: PR 1846 removed the poll; no code needed (lead C18) | 1846, 2121 | |
@@ -59,15 +60,12 @@ many files. The iPhone erase fixes (R6 phone, R7, R8, R12, R11, R10's H122) shar
 
 1. **R6 phone half** (H134, M6, M8 phone, S57d): `ios/engine/cloud-adapters.ts`, `ios/engine/shim.ts`,
    `EngineNatives.swift`, `OAuthClient.swift`, `EraseText.swift`. Simulator: yes; engine release.
-2. **R9** design note only (H115): `packages/health-core/src/merge.ts` when built. Simulator: no for the note;
-   engine release when built. The orchestrator's call.
-3. **R13** follow-up (H14): built, held in PR 2218 (US-34 AC13).
-4. **R20 iPhone half** (A25): `ios/engine/cloud.ts`. Engine tests; engine release; shares `cloud.ts` with the
+2. **R20 iPhone half** (A25): `ios/engine/cloud.ts`. Engine tests; engine release; shares `cloud.ts` with the
    iPhone erase series.
-5. **R27** remainder: `ios/HealthRoadmap/Health/AppleHealthSync.swift`. Simulator: yes. May close with no code.
+3. **R27** remainder: `ios/HealthRoadmap/Health/AppleHealthSync.swift`. Simulator: yes. May close with no code.
 
 Not independent today: R4 (files held PR 2155 edits), R16 (engine contract files in PRs 2203, 2204), R11
-(PR 2209), R1, R3, R17, R19, R32, R33 (blocked above).
+(PR 2209), R9 (held in PRs 2221, 2230), R1, R3, R17, R19, R32, R33 (blocked above).
 
 ### The 25 Nov triage
 
@@ -220,3 +218,10 @@ which waits for Brad's look.
   `cleanupSkippedRows` deletes by age; the RPC is no longer called), and H49, the lifecycle as one union
   (PR 2087, `app/lib/youtube-bot-lifecycle.ts` with its table test). The unused RPC stays in
   `supabase/rls-policies.sql` until it is dropped live.
+- **R13** done: PR 2218 merged (lead H14, US-34 AC13). An out-of-range profile value holds no remote change; the
+  form alone decides, and the refused phase is gone.
+- **R24** done: PR 2210 merged (lead T38's YouTube half, US-15 AC82).
+- **R9** design settled by the owner: per-token rows, "option B" (design note PRs 2215 and 2220, merged). The
+  build is held: PR 2221 (health-core, draft) and PR 2230 (web). Not merged; nothing of it is live.
+- **R19** blocked by R1: the owner's order is R1, then R9, then the switch hold union.
+- **R2, R22, R28** done, as recorded above.

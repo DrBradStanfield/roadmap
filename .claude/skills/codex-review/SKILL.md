@@ -23,6 +23,8 @@ to run himself, under the contract's Tier 3 restrictions.
 for design notes and plans before code; clinical logic; merge, FHIR and record
 shape; erase and privacy paths; security surfaces; guards and agent contracts.
 Everything else runs the default, gpt-6.2-sol. Both at high reasoning effort.
+The lessons on review rounds (when to stop patching, partial fixes, test fakes,
+three-dot ranges) live in docs/review-format.md § Lessons on review rounds.
 `--model <id>` names any other model, and `--deep --model` is a usage error.
 The wrapper launches the ChatGPT app's own CLI when it is installed (the
 Homebrew `codex` 0.163 refuses both 6.2 models on a ChatGPT login) and prints

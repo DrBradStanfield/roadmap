@@ -200,6 +200,14 @@ every 2 to 3 days, and whenever Apple answers on a build. It is:
 engine-path PR that is review-ready within about an hour merges first, and one iPhone suite, one Deploy and one
 signing cover both. Never merge an engine-path PR while a release waits at signing.
 
+**When an engine release is skipped** (2026-11-27). Engine release starts only after a Deploy run that ended
+success, so a red Deploy, even one whose deploy went live, releases nothing (its run shows as skipped). Its
+verify step also refuses when main's engine inputs moved after the Deploy's commit: `packages/health-core`,
+`ios/engine`, `ios/scripts`, the Xcode project file, `package.json`, `package-lock.json`, `.npmrc` and
+`tsconfig*` files (`.github/workflows/engine-release.yml`, "main moved since this Deploy"). In both cases run a
+fresh Deploy, so the server and the engine ship from the same main. Read each job's conclusion
+(`gh run view <id> --json jobs`) before reporting a release.
+
 **One Deploy per batch, at the checkpoint, never one per fix.** Auto-ship still deploys each merge it makes
 itself, so a held checkpoint Deploy does not hold auto-ship's.
 
@@ -259,7 +267,10 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    it merged.
 3. **Build the batch from PRs that pass the batching test** in `.claude/skills/untangle/SKILL.md` (every other PR is reviewed and merged on its own gate).
    `sh tools/worktree-new.sh batch-<date>-<n>`, write a list file (`<pr> <full reviewed head sha>` per line),
-   run `node tools/merge-batch.mjs <list-file>` in the worktree. To drop a rejected PR, keep the list file and
+   run `node tools/merge-batch.mjs <list-file>` in the worktree. The tool merges into the git checkout of the
+   process's current directory (`git rev-parse --show-toplevel`), whatever folder the list file sits in. So an
+   agent that builds a batch is spawned with its own isolated worktree as its working directory, and runs the
+   tool there (2026-11-27). To drop a rejected PR, keep the list file and
    rebuild on a fresh worktree: `node tools/merge-batch.mjs <list-file> --skip <pr>[,<pr>...]`. It stops
    (exit 1) on a skipped number not in the list, on skipping every PR, and on a kept PR that shares a commit
    with a skipped one that main lacks (built on its head or a middle commit: skip both, or neither); a skipped
@@ -304,6 +315,10 @@ deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run
 - Never use secret-shaped test values (keys, tokens, PATs, a `key = 'x1y2…'` line); assemble any such
   fixture at run time.
 - Run its own adversarial pass against docs/review-format.md before opening.
+
+**While an iPhone build is being cut** (2026-11-27), contributor PRs that touch `ios/` or an engine path wait:
+none merges, alone or in a batch, until the build is uploaded. Why: the build must carry exactly what was
+checked on the simulator.
 
 ## What enforces it
 
