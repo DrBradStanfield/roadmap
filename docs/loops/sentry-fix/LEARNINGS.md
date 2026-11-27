@@ -39,7 +39,7 @@
 - `[gotcha][sentry-api]` 2026-08-12 — Issues-list `count` is LIFETIME and
   `statsPeriod` shapes only `stats` (''/24h/14d): rank by summing buckets,
   test newness by `lastSeen` vs the ledger. Corrected 11-03: `/issues/<id>/events/`
-  returns every event (up to 100 a page): read them all, not just `latest`.
+  pages (`full=true`: 10 a page; 11-27): follow Link rel=next to the end, not just `latest`.
 - `[noise][server]` 2026-08-12 — youtube-bot `logTickError` (handled=yes,
   tag `feature=youtube-bot`) relays upstream Google failures as the exception
   value: OAuth 500s, Cloudflare HTML pages, and (confirmed again 2026-09-08) a
