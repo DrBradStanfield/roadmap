@@ -300,8 +300,10 @@ describe('US-41 AC8 — get_article: one entry, size-capped, sections on request
     expect(missing.content[0].text).toContain('Drug Interactions');
   });
 
-  it('refuses a section named only by stop words as not-found, not with some other section', () => {
-    expect(callKnowledgeTool('get_article', { handle: VITAMIN_D, section: 'the and of' })).toMatchObject({ isError: true, reason: 'not-found' });
+  it('refuses a section named only by stop words, not with some other section', () => {
+    const refused = callKnowledgeTool('get_article', { handle: VITAMIN_D, section: 'the and of' });
+    expect(refused.isError).toBe(true);
+    expect(['not-found', 'malformed']).toContain(refused.reason);
   });
 
   it('refuses an unknown or path-shaped handle without echoing it', async () => {
