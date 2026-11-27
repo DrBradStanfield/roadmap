@@ -39,12 +39,15 @@ const VERIFIED_CACHED = 'codex-cli 0.159.0-alpha.12.1';
 /** Real `features list` output (empty CODEX_HOME), 2026-11-27: the ChatGPT app's CLI and the Homebrew one (US-40 AC19). */
 const FEATURES_0171 = resolve(__dirname, 'fixtures', 'codex-features-0.171.txt');
 const FEATURES_0163 = resolve(__dirname, 'fixtures', 'codex-features-0.163.txt');
+/** The npm CLI, codex-cli 0.172.0 (2026-11-27, same capture): the discovery listing, and the listing under the wrapper's own --disable and -c flags. */
+const FEATURES_0172 = resolve(__dirname, 'fixtures', 'codex-features-0.172.txt');
+const FEATURES_0172_AFTER = resolve(__dirname, 'fixtures', 'codex-features-0.172-after.txt');
 /**
  * A fake codex: logs every call to calls.jsonl; answers `--version` and `features list` (applying --disable, refusing an
  * unknown name with exit 1, as the real CLI does); for `exec`, records argv, env and stdin, emits configured JSONL,
  * writes the -o file and exits as told.
  */
-function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop'; version?: string; versionExit?: number; login?: 'chatgpt' | 'api' | 'none'; loginV2?: 'chatgpt' | 'api'; extraEnabledV2?: string[] }) {
+function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; afterFeatures?: string; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop'; version?: string; versionExit?: number; login?: 'chatgpt' | 'api' | 'none'; loginV2?: 'chatgpt' | 'api'; extraEnabledV2?: string[] }) {
   const dir = mkdtempSync(join(tmpdir(), 'fake-codex-'));
   writeFileSync(join(dir, 'config.json'), JSON.stringify({ exit: 0, events: [], stderr: '', features: FEATURES_0171, extraEnabled: [], version: VERIFIED_CACHED, versionExit: 0, ...config }));
   const bin = join(dir, 'codex');
@@ -82,6 +85,8 @@ if (all.at(-2) === 'features' && all.at(-1) === 'list') {
   const off = all.flatMap((a, i) => (a === '--disable' ? [all[i + 1]] : []));
   const unknown = off.find((n) => !names.includes(n));
   if (unknown) { emit(2, 'Error: Unknown feature flag: ' + unknown + '\\n'); process.exit(1); }
+  // afterFeatures: a real listing taken under the wrapper's flags, emitted as is (a feature that stays on after --disable stays on).
+  if (check && cfg.afterFeatures) { emit(1, fs.readFileSync(cfg.afterFeatures, 'utf8')); process.exit(0); }
   if (check && cfg.checkList === 'malformed') lines = lines.concat(['shiny_new_tool  stable  true  (new)']);
   if (check && cfg.checkList === 'duplicate') lines = lines.concat([lines[0]]);
   if (check && cfg.checkList === 'drop') lines = lines.slice(1);
@@ -263,7 +268,9 @@ const OFF_0171 = [...ALWAYS_OFF, 'multi_agent_v2', 'multi_agent_v2_dynamic_tools
   'wake_on_agent_messages', 'defer_mailbox_preemption', 'enable_fanout', 'collaboration_modes', 'guardian_native_multi_agent_history',
   'external_agent_memory_import', 'use_agent_identity', 'browser_use_external', 'browser_use_full_cdp_access', 'in_app_browser', 'in_app_local_automation',
   'hooks', 'daemon_auto_start', 'remote_plugin', 'plugin_sharing', 'skill_mcp_dependency_install', 'tool_suggest', 'goals', 'guardian_approval', 'worktrees',
-  'in_app_chat', 'in_app_dictation', 'in_app_updates', 'in_app_voice', 'realtime_conversation', 'browser_annotation_api'];
+  'in_app_chat', 'in_app_dictation', 'in_app_updates', 'in_app_voice', 'realtime_conversation', 'browser_annotation_api', 'mcp_lazy_stdio_startup'];
+/** 0.172.0 lists the same names to disable as 0.171.0-alpha.13.2 (it adds only two features that are off). */
+const OFF_0172 = OFF_0171;
 const OFF_0163 = [...ALWAYS_OFF, 'multi_agent_v2', 'multi_agent_v2_dynamic_tools', 'multi_agent_mode', 'agent_message_board',
   'subagent_default_context_limits', 'send_async_message', 'send_message_to_user_async', 'defer_mailbox_preemption', 'enable_fanout',
   'collaboration_modes', 'external_agent_memory_import', 'use_agent_identity', 'browser_use_external', 'browser_use_full_cdp_access', 'in_app_browser', 'in_app_local_automation',
@@ -271,7 +278,7 @@ const OFF_0163 = [...ALWAYS_OFF, 'multi_agent_v2', 'multi_agent_v2_dynamic_tools
   'in_app_chat', 'in_app_dictation', 'in_app_updates', 'in_app_voice', 'realtime_conversation', 'browser_annotation_api'];
 
 describe('US-40 AC14 — hosted, index-only web search; the shell stays offline (Brad, 2026-10-03)', () => {
-  it.each([['0.171', FEATURES_0171, OFF_0171], ['0.163', FEATURES_0163, OFF_0163]])('passes web_search="cached" and nothing that opens live fetches or sandbox network; every --disable stays (codex %s feature list)', (_v, features, off) => {
+  it.each([['0.172', FEATURES_0172, OFF_0172], ['0.171', FEATURES_0171, OFF_0171], ['0.163', FEATURES_0163, OFF_0163]])('passes web_search="cached" and nothing that opens live fetches or sandbox network; every --disable stays (codex %s feature list)', (_v, features, off) => {
     writeFileSync(join(repo, 'a.txt'), 'ac14 change\n'); // an uncommitted change to review, whatever ran before
     const f = fake({ output: CLEAN, features });
     expect(runWrapper(f.bin).status).toBe(0);
@@ -2805,7 +2812,7 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(after171.filter((x: { name: string; enabled: boolean }) => ['worktrees', 'realtime_conversation'].includes(x.name) && x.enabled)).toHaveLength(2);
     expect(unjudged(after171, 'codex-cli 0.171.0-alpha.13.2')).toEqual([]);
     expect(unjudged(after163, 'codex-cli 0.163.0')).toEqual([]);
-    expect(unjudged(after171, 'codex-cli 0.172.0')).toEqual(['realtime_conversation', 'worktrees']); // another version: refused
+    expect(unjudged(after171, 'codex-cli 0.173.0')).toEqual(['realtime_conversation', 'worktrees']); // another version: refused
     const stableStuck = after171.map((x: { name: string }) => (x.name === 'worktrees' ? { ...x, stage: 'stable' } : x));
     expect(unjudged(stableStuck, 'codex-cli 0.171.0-alpha.13.2')).toEqual(['worktrees']); // another stage: refused
     expect(parseFeatures('apps  stable  true\nnew_tool  stable  true  (beta)\n').error).toBe('row 2 is not "<name> <stage> true|false"');
@@ -2816,6 +2823,45 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(parseFeatures('a  under development  false\nb  experimental  true\nc  deprecated  true\n').features).toHaveLength(3);
     const restored = after171.map((x: { name: string }) => (x.name === 'sqlite' ? { ...x, stage: 'stable' } : x)); // Codex R7 on PR 2222c
     expect(unjudged(restored, 'codex-cli 0.171.0-alpha.13.2')).toEqual(['sqlite']);
+  });
+  it('codex-cli 0.172.0 (2026-11-27): mcp_lazy_stdio_startup is disabled, and the stuck removed pair holds on that version only', async () => {
+    const { parseFeatures, unjudged, disableArgs } = await import('./codex-review-features.mjs');
+    const first = parseFeatures(readFileSync(FEATURES_0172, 'utf8')).features;
+    const after = parseFeatures(readFileSync(FEATURES_0172_AFTER, 'utf8')).features;
+    const row = (l: { name: string; stage: string; enabled: boolean }[], n: string) => l.find((x) => x.name === n);
+    // The real listings: lazy MCP startup is stable and on until --disable turns it off; the removed pair stays on.
+    expect(row(first, 'mcp_lazy_stdio_startup')).toEqual({ name: 'mcp_lazy_stdio_startup', stage: 'stable', enabled: true });
+    expect(row(after, 'mcp_lazy_stdio_startup')).toEqual({ name: 'mcp_lazy_stdio_startup', stage: 'stable', enabled: false });
+    for (const n of ['realtime_conversation', 'worktrees']) expect(row(after, n)).toEqual({ name: n, stage: 'removed', enabled: true });
+    expect(disableArgs(first.map((x: { name: string }) => x.name))).toContain('mcp_lazy_stdio_startup');
+    expect(unjudged(after, 'codex-cli 0.172.0')).toEqual([]);
+    const lazyOn = after.map((x: { name: string }) => (x.name === 'mcp_lazy_stdio_startup' ? { ...x, enabled: true } : x));
+    expect(unjudged(lazyOn, 'codex-cli 0.172.0')).toEqual(['mcp_lazy_stdio_startup']); // left on, it is refused: a stable feature no one judged inert
+    expect(unjudged(after, 'codex-cli 0.172.1')).toEqual(['realtime_conversation', 'worktrees']); // the next build is judged afresh
+    expect(unjudged(after, 'codex-cli 0.172.0-alpha.1')).toEqual(['realtime_conversation', 'worktrees']);
+    const stable = after.map((x: { name: string }) => (x.name === 'realtime_conversation' ? { ...x, stage: 'stable' } : x));
+    expect(unjudged(stable, 'codex-cli 0.172.0')).toEqual(['realtime_conversation']); // another stage: refused
+  });
+  it('codex-cli 0.172.0 (2026-11-27): with its real listings the run starts, search disabled; any other version stops at E_UNKNOWN_FEATURES', () => {
+    writeFileSync(join(repo, 'a.txt'), '0.172 probe\n');
+    const f = fake({ output: CLEAN, version: 'codex-cli 0.172.0', features: FEATURES_0172, afterFeatures: FEATURES_0172_AFTER });
+    const r = runWrapper(f.bin);
+    expect(r.status).toBe(0);
+    expect(callKinds(f)).toEqual(['version', 'features', 'features', 'login', 'exec']);
+    const argv: string[] = JSON.parse(f.read('argv.json'));
+    expect(argv.flatMap((a, i) => (a === '--disable' ? [argv[i + 1]] : []))).toEqual(OFF_0172);
+    expect(argv.filter((a) => /^web_search=/.test(a))).toEqual(['web_search="disabled"']); // 0.172.0 is not CACHED_VERIFIED
+    writeFileSync(join(repo, 'a.txt'), '0.172 probe, live\n');
+    const live = fake({ output: CLEAN, version: 'codex-cli 0.172.0', features: FEATURES_0172, afterFeatures: FEATURES_0172_AFTER });
+    expect(runWrapper(live.bin, ['--live']).status).toBe(0);
+    const liveArgv: string[] = JSON.parse(live.read('argv.json'));
+    expect(liveArgv.filter((a) => /^web_search=/.test(a))).toEqual(['web_search="live"']);
+    writeFileSync(join(repo, 'a.txt'), '0.172 listings, other version\n');
+    const g = fake({ output: CLEAN, version: 'codex-cli 0.173.0', features: FEATURES_0172, afterFeatures: FEATURES_0172_AFTER });
+    const stop = runWrapper(g.bin);
+    expect(stop.status).toBe(3);
+    expect(stop.stdout).toContain('E_UNKNOWN_FEATURES: codex enables feature(s) no one has judged (realtime_conversation, worktrees)');
+    expect(existsSync(join(g.dir, 'argv.json'))).toBe(false);
   });
   it('Codex R3 on PR 2222: a failed probe reports its stage and exit code only; the CLI stderr reaches no output', () => {
     writeFileSync(join(repo, 'a.txt'), 'probe stderr\n');
