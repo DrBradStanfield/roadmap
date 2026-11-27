@@ -81,3 +81,14 @@ describe('metformin cites the Diabetes Prevention Program trial (US-07 AC1)', ()
     expect(e.reason).toContain('reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more');
   });
 });
+
+// US-07 AC20 (Brad 2026-11-28): Bagatin 2018 (Eur J Dermatol 28(3):343-350) reports a similar
+// safety profile for adapalene 0.3% and tretinoin 0.05%, not better tolerability.
+describe('retinoid reason says what the cited trial found (US-07 AC20)', () => {
+  it('skin-retinoid claims a similar safety profile, not better tolerability, citing Bagatin 2018', () => {
+    const e = SUGGESTION_EVIDENCE['skin-retinoid'];
+    expect(e.reason).toContain('A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile.');
+    expect(e.reason).not.toContain('better tolerability');
+    expect(e.references.map(r => r.url)).toContain('https://doi.org/10.1684/ejd.2018.3320');
+  });
+});
