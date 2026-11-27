@@ -126,7 +126,8 @@ struct DocumentPage: View {
     /// read (its task cancelled): nothing is written (review R2).
     static func fetch(_ original: MyData.Document.Original, in folder: URL = originals,
                       read: () async -> RecordStore.Original) async -> Opened? {
-        guard let name = previewName(original) else {
+        // The engine decides (US-14 AC14); an older engine sends no name, and nothing opens.
+        guard let name = original.previewName else {
             return .problem("This kind of file cannot be shown on the iPhone. Open it from your cloud storage.")
         }
         let result = await read()
@@ -153,29 +154,6 @@ struct DocumentPage: View {
 
     /// The web's words for an original that would not load (DocumentLightbox).
     static let couldNotLoad = "Could not load the original file from your cloud storage."
-
-    /// The web's passive kinds, each extension's one type (file-kinds.ts VIEWABLE_TYPES, US-14 AC3):
-    /// only these open, never an SVG or a web page, which can carry script.
-    static let viewableTypes: [String: String] = [
-        "pdf": "application/pdf", "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "heic": "image/heic",
-    ]
-
-    /// The name Quick Look reads the original under, or nil when it may not open. As the web's
-    /// viewableType: the extension must be a passive kind, and a stated type must be exactly its
-    /// type, or none, or application/octet-stream ("image/jpg" does not pass). A name with no
-    /// extension takes its type's (review R4).
-    static func previewName(_ original: MyData.Document.Original) -> String? {
-        let file = (original.name as NSString).lastPathComponent
-        let stated = original.mimeType.split(separator: ";").first.map { $0.trimmingCharacters(in: .whitespaces).lowercased() } ?? ""
-        var ext = (file as NSString).pathExtension.lowercased()
-        var name = file
-        if ext.isEmpty, let own = viewableTypes.filter({ $0.value == stated }).keys.sorted().first {
-            ext = own
-            name = "\(file.isEmpty ? "document" : file).\(own)"
-        }
-        guard let type = viewableTypes[ext], stated == type || stated.isEmpty || stated == "application/octet-stream" else { return nil }
-        return name
-    }
 
     /// Where the copies Quick Look reads live, each in a folder of its own.
     nonisolated static var originals: URL { FileManager.default.temporaryDirectory.appending(path: "originals", directoryHint: .isDirectory) }

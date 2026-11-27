@@ -29,7 +29,7 @@ final class DocumentsTests: XCTestCase {
         ]).documents?.value)
         XCTAssertEqual(shelf.scans.map(\.id), ["scan"])
         XCTAssertEqual(shelf.others.map(\.id), ["new", "old"])
-        XCTAssertEqual(shelf.scans[0].original, MyData.Document.Original(name: "2026-05-01 Chest X-ray.jpg", mimeType: "image/jpeg"))
+        XCTAssertEqual(shelf.scans[0].original, MyData.Document.Original(name: "2026-05-01 Chest X-ray.jpg", mimeType: "image/jpeg", previewName: "2026-05-01 Chest X-ray.jpg"))
         XCTAssertNil(shelf.others[0].original)
         XCTAssertEqual(shelf.others[0].typeLabel, "Clinic Letter")
         XCTAssertEqual(shelf.others[0].content, "# Letter")
@@ -106,36 +106,60 @@ final class DocumentsTests: XCTestCase {
         XCTAssertTrue(text.runs.allSatisfy { $0.link == nil })
     }
 
-    /// Only the web's passive kinds open in Quick Look (file-kinds.ts VIEWABLE_TYPES, US-14 AC3): by
-    /// the extension, a stated type agreeing; a name with none takes its type's (review R4).
-    func testOnlyTheWebsPassiveKindsOpenInQuickLook_US73_AC12() {
-        let name = { (file: String, type: String) in DocumentPage.previewName(MyData.Document.Original(name: file, mimeType: type)) }
-        XCTAssertEqual(name("2026-09-14 Letter.pdf", "application/pdf"), "2026-09-14 Letter.pdf")
-        XCTAssertEqual(name("2026-05-01 Chest X-ray.jpg", "image/jpeg"), "2026-05-01 Chest X-ray.jpg")
-        XCTAssertEqual(name("Scan.HEIC", ""), "Scan.HEIC")
-        XCTAssertEqual(name("Scan", "image/png"), "Scan.png")
-        XCTAssertEqual(name("Letter.pdf", "application/octet-stream"), "Letter.pdf")
-        XCTAssertNil(name("Diagram.svg", "image/svg+xml"))
-        XCTAssertNil(name("Letter.html", "text/html"))
-        XCTAssertNil(name("Notes.txt", "text/plain"))
-        XCTAssertNil(name("Notes.docx", ""))
-        XCTAssertNil(name("Letter", ""))
-        // A passive name over a stated type that is not its own does not open.
-        XCTAssertNil(name("Letter.pdf", "text/html"))
-        // Only the canonical type passes, as the web's viewableType: aliases are refused.
-        XCTAssertNil(name("Scan.jpg", "image/jpg"))
-        XCTAssertNil(name("Scan.jpeg", "image/pjpeg"))
-        XCTAssertNil(name("Letter.pdf", "application/x-pdf"))
-        XCTAssertNil(name("Scan", "image/jpg"))
-        XCTAssertEqual(name("Scan.JPG", "Image/JPEG; charset=binary"), "Scan.JPG")
-        XCTAssertEqual(name("Scan", "image/jpeg"), "Scan.jpeg")
+    /// US-14 AC14: the engine decides what opens in Quick Look, by health-core's one rule (the
+    /// web's too): the extension decides, with none the stored type does, and only a passive kind
+    /// opens. Swift keeps no table of its own.
+    func testOneRuleDecidesWhatPreviews_US14_AC14() throws {
+        let cases: [(file: String, type: String, preview: String?)] = [
+            ("2026-09-14 Letter.pdf", "application/pdf", "2026-09-14 Letter.pdf"),
+            ("2026-05-01 Chest X-ray.jpg", "image/jpeg", "2026-05-01 Chest X-ray.jpg"),
+            ("Scan.HEIC", "", "Scan.HEIC"),
+            ("Scan", "image/png", "Scan.png"),
+            ("Letter.pdf", "application/octet-stream", "Letter.pdf"),
+            ("Diagram.svg", "image/svg+xml", nil),
+            ("Letter.html", "text/html", nil),
+            ("Notes.txt", "text/plain", nil),
+            ("Notes.docx", "", nil),
+            ("Letter", "", nil),
+            ("Page", "text/html", nil),
+            // A passive name over a stated type that is not its own does not open, nor the reverse.
+            ("Letter.pdf", "text/html", nil),
+            ("Diagram.svg", "image/png", nil),
+            // Only the canonical type passes: aliases are refused.
+            ("Scan.jpg", "image/jpg", nil),
+            ("Scan.jpeg", "image/pjpeg", nil),
+            ("Letter.pdf", "application/x-pdf", nil),
+            ("Scan", "image/jpg", nil),
+            ("Scan.JPG", "Image/JPEG; charset=binary", "Scan.JPG"),
+            ("Scan", "image/jpeg", "Scan.jpeg"),
+        ]
+        let shelf = try XCTUnwrap(screen(cases.enumerated().map { index, item in
+            Self.document("doc-\(index)", date: String(format: "2026-01-%02d", 28 - index), fileRef: "Other documents/\(item.file)", mimeType: item.type)
+        }).documents?.value)
+        XCTAssertEqual(shelf.others.count, cases.count)
+        for (index, item) in cases.enumerated() {
+            let original = try XCTUnwrap(shelf.others.first { $0.id == "doc-\(index)" }?.original)
+            XCTAssertEqual(original.previewName, item.preview, "\(item.file) stored as \(item.type)")
+        }
+    }
+
+    /// US-14 AC14: an engine before the rule sends no preview name, and the page opens nothing:
+    /// stricter than the rule, never looser. The original is not even read.
+    func testAnOlderEngineOpensNoOriginal_US14_AC14() async {
+        var read = false
+        let outcome = await DocumentPage.fetch(MyData.Document.Original(name: "Letter.pdf", mimeType: "application/pdf")) {
+            read = true
+            return .file(Data("%PDF".utf8))
+        }
+        XCTAssertEqual(outcome, .problem("This kind of file cannot be shown on the iPhone. Open it from your cloud storage."))
+        XCTAssertFalse(read)
     }
 
     /// Review R2: leaving the page while the original is read writes nothing.
     func testLeavingDuringTheReadWritesNothing_US73_AC12() async throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "Originals \(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
-        let original = MyData.Document.Original(name: "Letter.pdf", mimeType: "application/pdf")
+        let original = MyData.Document.Original(name: "Letter.pdf", mimeType: "application/pdf", previewName: "Letter.pdf")
         let read = Task { @MainActor in
             await DocumentPage.fetch(original, in: folder) {
                 try? await Task.sleep(for: .seconds(2))
@@ -183,7 +207,7 @@ final class DocumentsTests: XCTestCase {
         XCTAssertEqual(failed("The cloud record is not open."), .unreachable, "an older engine's plain words")
         XCTAssertEqual(RecordStore.failure(CancellationError()), .unreachable)
 
-        let original = MyData.Document.Original(name: "Letter.pdf", mimeType: "application/pdf")
+        let original = MyData.Document.Original(name: "Letter.pdf", mimeType: "application/pdf", previewName: "Letter.pdf")
         let said = { (failure: RecordStore.Failure) async in await DocumentPage.fetch(original) { .failed(failure) } }
         let signIn = await said(.signIn)
         XCTAssertEqual(signIn, .problem("Your cloud storage needs you to sign in again. Sign in from Sync, then try again."))

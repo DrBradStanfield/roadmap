@@ -7,7 +7,7 @@
  * to below the 50th, Above Average the 50th to below the 80th, High the 80th and above.
  * Each band includes its lower bound. Ages 20 to 89, by the table's decades.
  *
- * The table only: the iPhone app's engine serves the person's row on My data (`vo2Bands`,
+ * The table only: the iPhone app's engine serves the person's row on My health (`vo2Bands`,
  * ios/engine/my-data.ts), and the app applies its cut-points to a value (Vo2MaxBands.swift).
  */
 
