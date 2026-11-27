@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Local adversarial reviewer on a different model (Codex, gpt-6.1-sol by
-// default). Contract: docs/review-format.md. Advisory only: it never edits,
+// Local adversarial reviewer on a different model (Codex, gpt-6.2-sol by
+// default, gpt-6.2-astra under --deep: US-40 AC19). Contract: docs/review-format.md. Advisory only: it never edits,
 // commits, merges, or gates anything.
 //
 // Isolation, as far as this CLI allows (Codex review CR1–CR6, 2026-09-19,
@@ -206,7 +206,7 @@
 //   node tools/codex-review.mjs                 # uncommitted work vs HEAD
 //   node tools/codex-review.mjs --commit <sha>  # one commit
 //   node tools/codex-review.mjs --range A..B    # a range (e.g. main..HEAD)
-//   options: --model <id> --timeout-min <n> --out <json> --keep --codex <bin>
+//   options: --model <id> | --deep (gpt-6.2-astra) --timeout-min <n> --out <json> --keep --codex <bin>
 //            --message "<text>"  (uncommitted: the commit message you intend)
 //            --loop    the change was authored by an autonomous loop: the
 //                      contract's Tier 3 restrictions apply (US-40 AC10)
@@ -241,6 +241,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { fileURLToPath } from "node:url";
 import { externalSources, headBlob, LINK_POLICY, materialiseLinks } from "./codex-review-links.mjs";
 import { claimOut, stopReason, writeOut } from "./codex-review-out.mjs";
+import { codexVersion, findCodex } from "./codex-review-bin.mjs";
 import { eventMetadata, exitOneOutcome, searchDomains } from "./codex-review-events.mjs";
 import { includeHash, includeWalk, isHealthRecord, isInstructionName, readRegular } from "./codex-review-include.mjs";
 import { isSecretName, isSecretPath, SECRET_EXCLUDES } from "./codex-review-names.mjs";
@@ -263,23 +264,20 @@ if (outRefused) usage(outRefused);
 
 const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
 const git = (a, o = {}) => execFileSync("git", a, { cwd: ROOT, encoding: "utf8", maxBuffer: 256 << 20, ...o });
-const CODEX = opt("--codex") ?? process.env.CODEX_BIN ?? findCodex();
-function findCodex() {
-  try { execFileSync("sh", ["-c", "command -v codex"], { stdio: "ignore" }); return "codex"; } catch { /* not on PATH */ }
-  try {
-    return execFileSync("sh", ["-c", "ls -d ~/.vscode/extensions/openai.chatgpt-*/bin/macos-*/codex 2>/dev/null | sort | tail -1"], { encoding: "utf8" }).trim() || null;
-  } catch { return null; }
-}
+const CODEX = opt("--codex") ?? process.env.CODEX_BIN ?? findCodex(); // AC19: the ChatGPT app's CLI first (tools/codex-review-bin.mjs)
 if (!CODEX) usage("codex binary not found: pass --codex <path> or set CODEX_BIN");
-
-const MODEL = opt("--model", "gpt-6.1-sol");
+// A bare flag only: the VALUE of an option that takes one ("--message --live") is data, never the opt-in (Codex R1).
+const VALUE_OPTIONS = ["--codex", "--commit", "--range", "--message", "--model", "--out", "--timeout-min", "--record-file", "--include", "--include-limit-mb", "--subject", "--baseline", "--context"];
+const bare = (flag) => args.some((a, i) => a === flag && !VALUE_OPTIONS.includes(args[i - 1]));
+/** AC19 (Brad 2026-11-27): gpt-6.2-sol by default; --deep picks gpt-6.2-astra for design notes and the high-risk classes. */
+const DEEP = bare("--deep");
+if (DEEP && has("--model")) usage("--deep is refused with --model: --deep picks gpt-6.2-astra, --model names the model itself");
+const MODEL = opt("--model", DEEP ? "gpt-6.2-astra" : "gpt-6.2-sol");
 const TIMEOUT_MS = Number(opt("--timeout-min", "25")) * 60_000;
 const RECORD = has("--record");
 const LOOP = has("--loop");
 /** AC14 amendment (Brad 2026-10-14): live web pages for our own changes; the default stays OpenAI's cached index. */
-// A bare "--live" only: the VALUE of an option that takes one ("--message --live") is data, never the opt-in (Codex R1).
-const VALUE_OPTIONS = ["--codex", "--commit", "--range", "--message", "--model", "--out", "--timeout-min", "--record-file", "--include", "--include-limit-mb", "--subject", "--baseline", "--context"];
-const WEB_ACCESS = args.some((a, i) => a === "--live" && !VALUE_OPTIONS.includes(args[i - 1])) ? "live" : "cached";
+const WEB_ACCESS = bare("--live") ? "live" : "cached";
 /**
  * Under --live, the sites a reviewer is expected to OPEN (exact hostnames). Codex cannot be held to a list:
  * `tools.web_search.allowed_domains` did not stop `open_page` on codex-cli 0.162 (probe, 2026-10-14). So any other
@@ -1289,7 +1287,7 @@ const codexArgs = [
   "--disable", "plugins", "--disable", "memories", "--disable", "skill_search", "--disable", "multi_agent",
   // Hosted search (AC14): "cached" (index only) by default, "live" under --live; never "indexed", never --search; the shell's sandbox network stays off.
   "-c", `web_search="${WEB_ACCESS}"`, "-c", 'shell_environment_policy.inherit="core"', "-c", 'model_reasoning_effort="high"',
-  "-c", "project_doc_max_bytes=0", "-c", "project_doc_fallback_filenames=[]",
+  "-c", "project_doc_max_bytes=0", "-c", "project_doc_fallback_filenames=[]", "-c", 'forced_login_method="chatgpt"', // AC19: the ChatGPT login only, never an API key
   "--model", MODEL, ...RECORD_ARGS,
   "-C", src, "--output-schema", schemaPath, "-o", outPath, "--color", "never", "-",
 ];
@@ -1346,7 +1344,7 @@ guard("final credential check", () => {
 });
 valueChecked = true;
 if (secretValues.skipped.length) console.error(`codex-review: ${secretValues.skipped.length} unchanged base binary file(s) over ${SKIP_BINARY_OVER >> 20} MB not searched for credential values: ${secretValues.skipped.join(", ")}`);
-console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : ""}, timeout ${TIMEOUT_MS / 60000} min`);
+console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, codex ${JSON.stringify(CODEX)} (${codexVersion(CODEX, env)}), author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : ""}, timeout ${TIMEOUT_MS / 60000} min`);
 // Everything above is synchronous, so a signal that arrived during it has only been queued: one turn of the event loop
 // runs its handler (exit 130, the work dir deleted) before Codex can be spawned.
 await new Promise(setImmediate);
@@ -1462,7 +1460,7 @@ finish(review, elapsedMin, { drift, recordAccess, webSearches, webSearchDomains,
 // --- 5. Report, print, exit ---------------------------------------------------
 function finish(review, elapsedMin, extra = {}) {
   const { drift = null, recordAccess = RECORD ? "not_attempted" : "not_requested", webSearches = 0, webSearchDomains = [], webSearchesWithoutProvenance = 0, unexpectedHosts = [], unresolvedOpens = 0 } = extra;
-  const report = { ...review, model: MODEL, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_access: WEB_ACCESS, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, unexpected_hosts: unexpectedHosts, unresolved_opens: unresolvedOpens, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted, context_uncommitted: contextUncommitted, private_withheld: privateWithheld.size };
+  const report = { ...review, model: MODEL, deep: DEEP, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_access: WEB_ACCESS, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, unexpected_hosts: unexpectedHosts, unresolved_opens: unresolvedOpens, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted, context_uncommitted: contextUncommitted, private_withheld: privateWithheld.size };
   writeOut(report); // a failed write says so and exits 1; the exit handler still cleans up
   const blocking = report.findings.filter((f) => f.blocks_merge);
   console.log(`## Codex review (${MODEL}) — ${label}, snapshot ${snapshotId}, ${elapsedMin} min`);

@@ -37,6 +37,7 @@ function fake(config: { output?: unknown; exit?: number; events?: string[]; stde
   const bin = join(dir, 'codex');
   writeFileSync(bin, `#!/usr/bin/env node
 const fs = require('fs'); const path = require('path');
+if (process.argv[2] === '--version') { console.log('codex-cli 0.0.0-fake'); process.exit(0); }
 const dir = ${JSON.stringify(dir)};
 const cfg = JSON.parse(fs.readFileSync(path.join(dir, 'config.json'), 'utf8'));
 const argv = process.argv.slice(2);
@@ -226,8 +227,8 @@ describe('US-40 AC14 — hosted, index-only web search; the shell stays offline 
       '--disable', 'apps', '--disable', 'image_generation', '--disable', 'browser_use', '--disable', 'computer_use',
       '--disable', 'plugins', '--disable', 'memories', '--disable', 'skill_search', '--disable', 'multi_agent',
       '-c', 'web_search="cached"', '-c', 'shell_environment_policy.inherit="core"', '-c', 'model_reasoning_effort="high"',
-      '-c', 'project_doc_max_bytes=0', '-c', 'project_doc_fallback_filenames=[]',
-      '--model', 'gpt-6.1-sol',
+      '-c', 'project_doc_max_bytes=0', '-c', 'project_doc_fallback_filenames=[]', '-c', 'forced_login_method="chatgpt"',
+      '--model', 'gpt-6.2-sol',
       '-C', '<work>', '--output-schema', '<work>', '-o', '<work>', '--color', 'never', '-',
     ]);
     // the prompt tells the reviewer what the tool is and what never goes in a query
@@ -2419,18 +2420,89 @@ describe('US-40 AC15 — --subject reviews exact files, never whatever else the 
 });
 
 describe('Codex finding on c6790d5c — the default model', () => {
-  it('passes --model gpt-6.1-sol when --model is omitted, and the given model otherwise', () => {
+  it('passes --model gpt-6.2-sol when --model is omitted (US-40 AC19, 2026-11-27), and the given model otherwise', () => {
     writeFileSync(join(repo, 'a.txt'), 'model check\n');
     const f = fake({ output: CLEAN });
     expect(runWrapper(f.bin).status).toBe(0);
     const argv: string[] = JSON.parse(f.read('argv.json'));
     expect(argv.filter((a) => a === '--model')).toHaveLength(1);
-    expect(argv[argv.indexOf('--model') + 1]).toBe('gpt-6.1-sol');
-    expect(JSON.parse(readFileSync(outJson, 'utf8')).model).toBe('gpt-6.1-sol');
+    expect(argv[argv.indexOf('--model') + 1]).toBe('gpt-6.2-sol');
+    expect(JSON.parse(readFileSync(outJson, 'utf8'))).toMatchObject({ model: 'gpt-6.2-sol', deep: false });
     const g = fake({ output: CLEAN });
     expect(runWrapper(g.bin, ['--model', 'some-other-model']).status).toBe(0);
     const argv2: string[] = JSON.parse(g.read('argv.json'));
     expect(argv2[argv2.indexOf('--model') + 1]).toBe('some-other-model');
+    expect(JSON.parse(readFileSync(outJson, 'utf8'))).toMatchObject({ model: 'some-other-model', deep: false });
+  });
+});
+
+describe('US-40 AC19 — --deep, the binary it launches, and the subscription login (Brad, 2026-11-27)', () => {
+  it('--deep passes gpt-6.2-astra, and the report, header and pre-flight line say so, with the binary and its version', () => {
+    writeFileSync(join(repo, 'a.txt'), 'deep check\n');
+    const f = fake({ output: CLEAN });
+    const r = runWrapper(f.bin, ['--deep']);
+    expect(r.status).toBe(0);
+    const argv: string[] = JSON.parse(f.read('argv.json'));
+    expect(argv.filter((a) => a === '--model')).toHaveLength(1);
+    expect(argv[argv.indexOf('--model') + 1]).toBe('gpt-6.2-astra');
+    expect(argv).not.toContain('--deep');
+    expect(JSON.parse(readFileSync(outJson, 'utf8'))).toMatchObject({ model: 'gpt-6.2-astra', deep: true });
+    expect(r.stderr).toContain('model gpt-6.2-astra');
+    expect(r.stdout).toContain('## Codex review (gpt-6.2-astra)');
+    expect(r.stderr).toContain(`codex ${JSON.stringify(f.bin)} (codex-cli 0.0.0-fake)`); // the pre-flight line names the binary and its --version
+  });
+  it('--deep as the value of another option is data, not the setting', () => {
+    writeFileSync(join(repo, 'a.txt'), 'deep as data\n');
+    const f = fake({ output: CLEAN });
+    expect(runWrapper(f.bin, ['--message', '--deep']).status).toBe(0);
+    const argv: string[] = JSON.parse(f.read('argv.json'));
+    expect(argv[argv.indexOf('--model') + 1]).toBe('gpt-6.2-sol');
+  });
+  it('--deep with --model is a usage error, and codex never starts', () => {
+    writeFileSync(join(repo, 'a.txt'), 'deep and model\n');
+    for (const extra of [['--deep', '--model', 'some-other-model'], ['--model', 'some-other-model', '--deep']]) {
+      const f = fake({ output: CLEAN });
+      const r = runWrapper(f.bin, extra);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toContain('--deep is refused with --model');
+      expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+    }
+  });
+  it('forces the ChatGPT login and passes no API-key variable to the child', () => {
+    writeFileSync(join(repo, 'a.txt'), 'login check\n');
+    const f = fake({ output: CLEAN });
+    const keys = { OPENAI_API_KEY: 'test-token-good', CODEX_API_KEY: 'test-token-good', OPENAI_BASE_URL: 'http://127.0.0.1:9' };
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv(keys) });
+    expect(r.status).toBe(0);
+    const env = JSON.parse(f.read('env.json'));
+    for (const k of Object.keys(keys)) expect(env[k]).toBeUndefined();
+    expect(Object.keys(env).filter((k) => /API_KEY|OPENAI/i.test(k))).toEqual([]);
+    const argv: string[] = JSON.parse(f.read('argv.json'));
+    expect(argv.filter((a) => /forced_login_method/.test(a))).toEqual(['forced_login_method="chatgpt"']);
+    expect(argv[argv.indexOf('forced_login_method="chatgpt"') - 1]).toBe('-c');
+  });
+  it('CLAUDE.md, the skill and the story name the same two models and --deep', () => {
+    const read = (p: string) => readFileSync(resolve(__dirname, '..', p), 'utf8');
+    const story = loadStories().split('### US-40')[1].split('### US-4')[0];
+    for (const text of [read('CLAUDE.md'), read('.claude/skills/codex-review/SKILL.md'), story]) {
+      for (const name of ['gpt-6.2-sol', 'gpt-6.2-astra', '--deep']) expect(text).toContain(name);
+    }
+    for (const text of [read('CLAUDE.md'), read('.claude/skills/codex-review/SKILL.md')]) expect(text).not.toContain('gpt-6.1-sol');
+  });
+  it('prefers the ChatGPT app binary when it is an executable file, else falls back to the old lookup', async () => {
+    const { findCodex, CHATGPT_APP_CODEX } = await import('./codex-review-bin.mjs');
+    expect(CHATGPT_APP_CODEX).toBe('/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex');
+    const d = mkdtempSync(join(tmpdir(), 'cr-bin-'));
+    const app = join(d, 'codex');
+    writeFileSync(app, '#!/bin/sh\n');
+    chmodSync(app, 0o755);
+    expect(findCodex(app)).toBe(app);
+    // not executable, a folder, or missing: the old order (PATH codex, then the VS Code copy, else null)
+    chmodSync(app, 0o644);
+    const fallback = findCodex(join(d, 'missing'));
+    expect(fallback).not.toBe(app);
+    expect(findCodex(app)).toBe(fallback);
+    expect(findCodex(d)).toBe(fallback);
   });
 });
 
