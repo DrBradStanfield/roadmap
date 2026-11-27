@@ -24,7 +24,7 @@
 //     still lets the model READ the whole disk and run code; that is this
 //     CLI's floor. Shell commands have NO network (a probe's `curl` to doi.org
 //     failed, exit 6, could not resolve host);
-//   * web search is `web_search="cached"` by default (US-40 AC14, Brad 2026-10-03: the
+//   * web search is `web_search="cached"` on a verified build, else "disabled" (US-40 AC14, AC19; 2026-10-03: the
 //     reviewer could not check a study citation offline). It is OpenAI's
 //     HOSTED Responses `web_search` tool, sent with `external_web_access:
 //     false`: it runs on OpenAI's side, reads only OpenAI's search index and
@@ -208,7 +208,7 @@
 //            --message "<text>"  (uncommitted: the commit message you intend)
 //            --loop    the change was authored by an autonomous loop: the
 //                      contract's Tier 3 restrictions apply (US-40 AC10)
-//            --live    live web pages instead of OpenAI's cached index (US-40 AC14,
+//            --live    live web pages instead of cached or disabled search (US-40 AC14,
 //                      2026-10-14); our own changes only, never an outside PR;
 //                      refused with --record, --record-file and --loop
 //            --record  READ access (read_record, get_plan) to a local copy of
@@ -269,7 +269,7 @@ const MODEL = opt("--model", DEEP ? "gpt-6.2-astra" : "gpt-6.2-sol");
 const TIMEOUT_MS = Number(opt("--timeout-min", "25")) * 60_000;
 const RECORD = has("--record");
 const LOOP = has("--loop");
-/** AC14 amendment (Brad 2026-10-14): live web pages for our own changes; the default stays OpenAI's cached index. */
+/** AC14 amendment (Brad 2026-10-14): live web pages for our own changes; else cached on a verified build, disabled elsewhere (AC19). */
 let WEB_ACCESS = has("--live") ? "live" : "cached"; // the request; after the probe, "disabled" on a build where cached-only is unverified (AC19)
 /**
  * Under --live, the sites a reviewer is expected to OPEN (exact hostnames). Codex cannot be held to a list:

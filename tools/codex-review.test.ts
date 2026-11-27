@@ -585,7 +585,7 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
     const f = fake({ output: CLEAN });
     // 1 block = 512 bytes: the oversized copy is the first write the wrapper makes.
     // --commit: the patch comes from git pipes, so the record copy is the first FILE write the limit can hit.
-    const r = spawnSync('bash', ['-c', `ulimit -f 1; exec node ${JSON.stringify(WRAPPER)} --codex ${JSON.stringify(f.bin)} --commit HEAD --record --keep --record-file ${JSON.stringify(file)}`], { cwd: repo, encoding: 'utf8' });
+    const r = spawnSync('bash', ['-c', `ulimit -f 1; exec node ${JSON.stringify(WRAPPER)} --codex ${JSON.stringify(f.bin)} --commit HEAD --record --keep --record-file ${JSON.stringify(file)}`], { cwd: repo, encoding: 'utf8', env: childEnv() });
     expect(r.stdout).toContain('E_COPY_FAILED');
     // E_COPY_FAILED proves the run reached the copy; a stop before the value check keeps no work dir at all.
     const fresh = readdirSync(tmpdir()).filter((d) => d.startsWith('codex-review-') && !before.has(d));
@@ -2968,7 +2968,9 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     for (const text of [read('CLAUDE.md'), read('.claude/skills/codex-review/SKILL.md'), story]) {
       for (const name of ['gpt-6.2-sol', 'gpt-6.2-astra', '--deep']) expect(text).toContain(name);
     }
-    for (const text of [read('CLAUDE.md'), read('.claude/skills/codex-review/SKILL.md')]) expect(text).not.toContain('gpt-6.1-sol');
+    expect(read('CLAUDE.md')).not.toContain('gpt-6.1-sol');
+    expect(read('.claude/skills/codex-review/SKILL.md').match(/gpt-6\.1-sol/g)).toEqual(['gpt-6.1-sol']); // only the app-update fallback, `--model gpt-6.1-sol`
+    expect(read('.claude/skills/codex-review/SKILL.md')).toContain('--codex /opt/homebrew/bin/codex --model gpt-6.1-sol');
   });
   it('prefers the ChatGPT app binary when it is an executable file, else falls back to the old lookup', async () => {
     const { findCodex, CHATGPT_APP_CODEX } = await import('./codex-review-bin.mjs');

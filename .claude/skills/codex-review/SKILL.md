@@ -40,7 +40,9 @@ binary's `features list`, turns off every sub-agent, browser and automation
 feature it lists, and stops with `E_UNKNOWN_FEATURES` (incomplete) if any
 other feature is enabled that is not judged in `tools/codex-review-features.mjs`.
 That is what an updated ChatGPT app looks like: judge each named feature (or
-disable it) in that file, in its own PR; never bypass the check.
+disable it) in that file, in its own PR; never bypass the check. The stop on an app update is intended. Until the
+features file is updated, the fallback is `--codex /opt/homebrew/bin/codex --model gpt-6.1-sol` (the older CLI and
+model, with search disabled).
 
 **How many, and when to start it.** Several Codex runs may go at once (Brad,
 2026-11-10: "You can run multiple codex agents"), at most two on this Mac.
