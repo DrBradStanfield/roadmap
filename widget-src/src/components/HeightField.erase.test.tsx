@@ -82,6 +82,17 @@ it('US-02 AC11a: a height typed in this tab is emptied by the erase too, and the
   expect(boxes(c)).toEqual(['5', '10']);
 });
 
+it('US-02 AC11a: both boxes emptied by hand, then the height they last held arrives from elsewhere and shows', () => {
+  const { container: c } = render(<Panel start={{}} unitSystem="conventional"/>);
+  typeInto(box(c, 'heightFeet'), '5');
+  expect(sent.at(-1)).toBeCloseTo(152.4, 1);
+  fireEvent.change(box(c, 'heightFeet'), { target: { value: '' } });
+  expect(sent.at(-1)).toBeUndefined();
+
+  act(() => replaceForm({ heightCm: 152.4 })); // 5 ft 0 in, as another device saved it
+  expect(boxes(c)).toEqual(['5', '0']);
+});
+
 it('US-02 AC11 unchanged: emptying both boxes by hand leaves them empty, and a 0 or inches typed alone stay as typed', () => {
   const { container: c } = render(<Panel start={{ heightCm: 177.8 }} unitSystem="conventional"/>);
   fireEvent.change(box(c, 'heightFeet'), { target: { value: '' } });
