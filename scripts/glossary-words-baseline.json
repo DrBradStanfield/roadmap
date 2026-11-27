@@ -1,28 +1,17 @@
 {
   "G3-wipe": {},
   "G13-cloud-provider": {
-    "docs/guides/command-line.md": 2,
-    "docs/guides/connect-chatgpt.md": 2,
-    "docs/guides/connect-claude-desktop.md": 2,
-    "docs/guides/getting-started.md": 2,
-    "packages/health-core/src/file-adapter.ts": 1,
-    "widget-src/src/lib/erase-copy.ts": 1
+    "packages/health-core/src/file-adapter.ts": 1
   },
   "G13-cloud-account": {
-    "docs/guides/chatgpt-app.md": 1,
-    "docs/guides/find-your-record.md": 1,
-    "docs/guides/where-your-data-lives.md": 1,
-    "widget-src/src/lib/erase-copy.ts": 1,
     "widget-src/standalone/reminders-control.tsx": 2,
     "widget-src/standalone/reminders.ts": 2
   },
   "G21-ios-app": {
     "CLAUDE.md": 1,
-    "docs/architecture-v2/teardown-rejected-gotchas.md": 1,
     "docs/decisions-for-brad.md": 1,
     "docs/gotchas.md": 4,
-    "health_roadmap_algorithm.md": 1,
-    "ios/architecture.md": 1
+    "health_roadmap_algorithm.md": 1
   },
   "G21-native-app": {},
   "G25-healthkit": {}
