@@ -100,7 +100,7 @@ describe('US-19 AC3: a send that ends after the form closed changes nothing', ()
     const utils = render(<FeedbackForm initialExpanded onClose={onClose} />);
     fill(utils);
     await act(async () => { fireEvent.click(utils.getByRole('button', { name: 'Send' })); });
-    expect(utils.getByText(THANKS)).toBeTruthy();
+    expect(utils.getByText(THANKS, { selector: '.feedback-success' })).toBeTruthy();
     act(() => { vi.advanceTimersByTime(2999); });
     expect(onClose).not.toHaveBeenCalled();
     act(() => { vi.advanceTimersByTime(1); });
@@ -116,7 +116,7 @@ describe('US-19 AC3: a send that ends after the form closed changes nothing', ()
     const utils = render(<FeedbackForm initialExpanded onClose={onClose} />);
     fill(utils);
     await act(async () => { fireEvent.click(utils.getByRole('button', { name: 'Send' })); });
-    expect(utils.getByText(THANKS)).toBeTruthy();
+    expect(utils.getByText(THANKS, { selector: '.feedback-success' })).toBeTruthy();
     utils.unmount();
     act(() => { vi.advanceTimersByTime(3000); });
     expect(onClose).not.toHaveBeenCalled();
@@ -129,7 +129,7 @@ describe('US-19 AC3: a send that ends after the form closed changes nothing', ()
     await act(async () => { fireEvent.click(utils.getByRole('button', { name: 'Send' })); });
     expect(utils.getByText('Failed to send. Please try again.')).toBeTruthy();
     await act(async () => { fireEvent.click(utils.getByRole('button', { name: 'Send' })); });
-    expect(utils.getByText(THANKS)).toBeTruthy();
+    expect(utils.getByText(THANKS, { selector: '.feedback-success' })).toBeTruthy();
     expect(sendFeedback).toHaveBeenCalledTimes(2);
   });
 });

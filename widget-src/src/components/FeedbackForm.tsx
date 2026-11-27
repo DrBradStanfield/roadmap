@@ -25,9 +25,16 @@ export function feedbackTransition(state: FeedbackMode, event: FeedbackEvent): F
   return { kind: event.type === 'sendOk' ? 'sent' : 'failed' };
 }
 
+const THANKS = 'Thank you for your feedback!';
+
 /** US-19 AC3a: the thank-you takes the focus the form left on the page, never focus held elsewhere, and never scrolls. */
 function takeDroppedFocus(el: HTMLElement) {
   if (document.activeElement === document.body) el.focus({ preventScroll: true });
+}
+
+/** US-19 AC3a: one status region, mounted empty before any send and filled only when a send succeeds. */
+function SentRegion({ sent }: { sent: boolean }) {
+  return <p className="hr-sr-only" role="status">{sent ? THANKS : ''}</p>;
 }
 
 interface FeedbackFormProps {
@@ -88,7 +95,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
   return (
     <div className="feedback-section" id={initialExpanded ? undefined : 'health-feedback'}>
       {mode.kind === 'sent' ? (
-        <p ref={thanksRef} className="feedback-success" role="status" tabIndex={-1}>Thank you for your feedback!</p>
+        <p ref={thanksRef} className="feedback-success" tabIndex={-1}>{THANKS}</p>
       ) : !formShown ? (
         <div className="feedback-links">
           <button
@@ -170,6 +177,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
           )}
         </form>
       )}
+      <SentRegion sent={mode.kind === 'sent'} />
     </div>
   );
 }
