@@ -7,7 +7,7 @@
  * tabs (AC17c, AC17d) until a reload, while it still sent to them.
  * Node's BroadcastChannel stands in for the browser's; synthetic messages only.
  */
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 const NAME = 'hr_chat_sync';
 const fromOther = { instanceId: 'other-tab', type: 'thread-new', payload: {}, ts: 1 } as const;
@@ -116,5 +116,22 @@ describe('US-15 AC17f: cross-tab chat sync after a leave that does not happen', 
     other.post();
     await settle();
     expect(heard).toEqual([fromOther]);
+  });
+});
+
+// The box's text, as typed here or put back after a failed send (US-15 AC57), shows in the other tabs.
+describe('US-15 AC57: the text in this tab\'s chat box reaches other tabs', () => {
+  it('the latest text arrives once its frame runs, and so does the next keystroke\'s', async () => {
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(0), 0));
+    onTestFinished(() => { vi.unstubAllGlobals(); });
+    const { postInputSync } = await freshSync();
+    const other = otherTab();
+    postInputSync('this-tab', 'h');
+    postInputSync('this-tab', 'he');
+    await settle();
+    expect(other.heard.at(-1)).toMatchObject({ instanceId: 'this-tab', type: 'input', payload: { text: 'he' } });
+    postInputSync('this-tab', 'hel');
+    await settle();
+    expect(other.heard.at(-1)).toMatchObject({ instanceId: 'this-tab', type: 'input', payload: { text: 'hel' } });
   });
 });

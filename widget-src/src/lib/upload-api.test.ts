@@ -113,6 +113,10 @@ describe('US-12 AC10: the quota preflight says why it refused', () => {
     stubFetch(() => jsonResponse({ error: 'x' }, 503));
     expect(await checkLabImportQuota()).toEqual({ allowed: true, remaining: 0 });
   });
+  it('no answer at all (the request throws) lets the upload proceed too', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    expect((await checkLabImportQuota()).allowed).toBe(true);
+  });
   it('a 200 that allows passes the remaining count through', async () => {
     stubFetch(() => jsonResponse({ allowed: true, remaining: 12 }));
     expect(await checkLabImportQuota()).toEqual({ allowed: true, remaining: 12 });
