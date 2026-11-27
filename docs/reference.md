@@ -106,7 +106,7 @@ Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed.
 | `api.lab-import-v2.ts` | app-proxy HMAC, 200 files/day/IP (= the upload cap), `machineFiles` $-cap | extracts values from browser-extracted page text or page images (Claude Haiku 5.5, `extractOrClassify`); stores nothing |
 | `api.app.v1.*` (`app-routes.server.ts`) | App Attest (no HMAC: the iPhone app has none), per-key/IP/machine caps, 503 on the brand surface (US-52, ios/architecture.md D8) | attest challenge + register; chat (the widget's turn, nothing stored); lab-import (one file, proposed values, nothing stored) |
 | `api.measurements.ts` | app-proxy HMAC | Klaviyo guest email capture ONLY (`{ klaviyoCapture: { email } }`, 5/day/email); v1 CRUD torn down, no deletion endpoint |
-| `api.feedback.ts` | app-proxy HMAC, honeypot, 3/hour/IP | feedback form to email |
+| `api.feedback.ts` | app-proxy HMAC, 3/hour/IP | feedback form to email |
 | `api.events.ts` | app-proxy HMAC, rate-limited (20/min/visitor, bot-filtered) | product-events sink |
 | `api.google-token.ts` | CORS allow-list, rate limit, no HMAC | stateless Google OAuth code/refresh to token exchange (GET is 405) |
 | `api.reminders-v2.ts` · `reminders-v2.unsubscribe.tsx` | CORS allow-list + hashed-IP/email rate limits, Google ID token or browser-read email (never a cloud token) · capability token | reminder opt-in/update/cancel · one-click unsubscribe page |
@@ -252,7 +252,7 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. Once ope
 - `GET api/lab-import-v2` quota preflight · `POST api/lab-import-v2` extract from page text or page images sent by the browser (pdf.js runs client-side; Claude Haiku 5.5 server-side; returns values, stores nothing; 200 files/day/IP + per-machine cap; one file per request, no batch path since 2026-11-15).
 **iPhone app (direct to the edu Fly app, App Attest, US-52):** `POST api/app/v1/attest/challenge` · `POST api/app/v1/attest/register` · `POST api/app/v1/chat` (the widget's NDJSON turn) · `POST api/app/v1/lab-import` (one file) · `POST api/app/v1/lab-read` (one file, same gate; NDJSON once the counter is spent, the last line holding `/lab-import`'s status and body, US-52 AC7e). Every request after registration carries `X-App-Attest-Key` + `X-App-Attest-Assertion`; table `app_attest_keys` (the App Attest section of `supabase/rls-policies.sql`).
 - `POST api/measurements`: `{ klaviyoCapture: { email } }` only (guest report-email capture, 5/day/email).
-- `POST api/feedback` (honeypot, 3/hour/IP) · `POST api/events` (product events, bot-filtered, 20/min/visitor).
+- `POST api/feedback` (3/hour/IP) · `POST api/events` (product events, bot-filtered, 20/min/visitor).
 
 **Cross-origin (CORS allow-list, no HMAC; localhost never approved):**
 - `POST api/google-token`: stateless Google OAuth code/refresh to token exchange (GET returns 405).

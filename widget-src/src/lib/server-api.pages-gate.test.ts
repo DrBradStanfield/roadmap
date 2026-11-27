@@ -31,14 +31,14 @@ describe('sendFeedback', () => {
   it('reports failure without fetching on the Pages build', async () => {
     const fetchMock = stubFetch();
     const { sendFeedback } = await loadApi(false);
-    await expect(sendFeedback('a@b.com', 'hi', '')).resolves.toBe(false);
+    await expect(sendFeedback('a@b.com', 'hi')).resolves.toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('POSTs to the app proxy on the Shopify surface', async () => {
     const fetchMock = stubFetch();
     const { sendFeedback } = await loadApi(true);
-    await expect(sendFeedback('a@b.com', 'hi', '')).resolves.toBe(true);
+    await expect(sendFeedback('a@b.com', 'hi')).resolves.toBe(true);
     expect(fetchMock.mock.calls[0][0]).toBe('/apps/health-tool-1/api/feedback');
   });
 });

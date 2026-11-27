@@ -50,7 +50,6 @@ export async function parseJsonResponse<T>(response: Response): Promise<T | null
 export async function sendFeedback(
   email: string,
   message: string,
-  website: string,
 ): Promise<boolean> {
   if (!SHOPIFY_SURFACE) return false;
   return apiCall(
@@ -58,7 +57,7 @@ export async function sendFeedback(
       const response = await fetch(`${PROXY_PATH}/api/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, message, website }),
+        body: JSON.stringify({ email, message }),
       });
       if (!response.ok) return false;
       const result = await parseJsonResponse<{ success: boolean }>(response);

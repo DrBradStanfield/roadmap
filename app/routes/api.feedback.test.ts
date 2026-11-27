@@ -87,19 +87,15 @@ describe('api.feedback counts the request before it can fail', () => {
   });
 });
 
-describe('api.feedback honeypot', () => {
-  it('a filled honeypot is rejected by the schema, not silently accepted', async () => {
+describe('US-19 AC2a: the schema has no website key', () => {
+  it('a body that still carries website (an older widget, a script) is sent like any other', async () => {
     const res = await submit(proxied('198.51.100.10', '6.6.6.1'), {
-      email: 'bot@example.com',
-      message: 'spam',
-      website: 'http://spam.example',
+      email: 'older.widget@example.test',
+      message: 'hello',
+      website: 'http://filled.example',
     });
-    expect(res.status).toBe(400);
-    expect(sendFeedbackEmail).not.toHaveBeenCalledWith(
-      'bot@example.com',
-      expect.anything(),
-      expect.anything(),
-    );
+    expect(res.status).toBe(200);
+    expect(sendFeedbackEmail).toHaveBeenLastCalledWith('older.widget@example.test', 'hello', null);
   });
 });
 
