@@ -190,10 +190,11 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
   } as T;
 }
 
-/** A nested opt-in row worth keeping: a token of 1-256 characters, a known
- *  status, a string address and a provider the app writes (US-17 AC19). */
+/** A nested opt-in row worth keeping: a non-empty token (as the object's has
+ *  no maximum), a known status, a string address and a provider the app
+ *  writes (US-17 AC19). */
 function isTokenRow(row: unknown): row is Record<string, unknown> {
-  return isObject(row) && typeof row.token === 'string' && row.token.length >= 1 && row.token.length <= 256
+  return isObject(row) && typeof row.token === 'string' && row.token !== ''
     && (row.status === 'active' || row.status === 'cancelled') && typeof row.email === 'string'
     && (REMINDER_PROVIDERS as readonly unknown[]).includes(row.provider);
 }

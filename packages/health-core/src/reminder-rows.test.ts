@@ -144,7 +144,6 @@ describe('US-17 AC19: what counts as a row', () => {
       tokens: [
         { ...row('token-b', 'active', 0), updatedAt: '2099-01-01T00:00:00.000Z', lamport: -3 },
         { ...row('x', 'active', 0), token: '' },
-        { ...row('x', 'active', 0), token: 'x'.repeat(257) },
         { ...row('x', 'active', 0), email: { address: 'x@example.test' } },
         { ...row('x', 'active', 0), status: 'paused' },
         { ...row('x', 'active', 0), provider: 3 },
@@ -152,7 +151,7 @@ describe('US-17 AC19: what counts as a row', () => {
         'not a row',
         { ...row('token-c', 'cancelled', 0), tokens: [row('token-d', 'active', 0)] },
         unstamped,
-        { ...row('token-f', 'active', 0), token: 'f'.repeat(256) },
+        { ...row('token-f', 'active', 0), token: 'f'.repeat(300) },
       ],
     } as unknown as FileReminderOptIn);
     f.meta.updatedAt = T[2];
@@ -161,7 +160,7 @@ describe('US-17 AC19: what counts as a row', () => {
       { ...row('token-b', 'active', 0), updatedAt: T[2], lamport: 0 },
       row('token-c', 'cancelled', 0),
       { ...unstamped, updatedAt: '' },
-      { ...row('token-f', 'active', 0), token: 'f'.repeat(256) },
+      { ...row('token-f', 'active', 0), token: 'f'.repeat(300) },
     ]);
     const empty = file({ ...row('token-a', 'active', 0), tokens: [{ ...row('x', 'active', 0), token: '' }] });
     expect(migrateFile(JSON.parse(JSON.stringify(empty)), CTX).reminderOptIn).not.toHaveProperty('tokens');
@@ -171,6 +170,16 @@ describe('US-17 AC19: what counts as a row', () => {
     const merged = merge(migrateFile(JSON.parse(JSON.stringify(free)), CTX), file(row('token-a', 'active', 0)));
     expect(merged.reminderOptIn?.token).toBe('token-a');
     expect(JSON.stringify(merged)).not.toContain('free text');
+  });
+});
+
+describe('US-17 AC19: a top row the schema accepts stays a row once nested', () => {
+  it('a long token moved into the list by a merge survives migrate', () => {
+    const long = { ...row('token-a', 'active', 0), token: 'a'.repeat(300) };
+    const merged = merge(file(long), file(row('token-b', 'active', 1)));
+    expect(merged.reminderOptIn?.tokens).toEqual([long]);
+    merged.meta.updatedAt = T[2];
+    expect(migrateFile(JSON.parse(JSON.stringify(merged)), CTX).reminderOptIn?.tokens).toEqual([long]);
   });
 });
 
@@ -240,7 +249,7 @@ describe('US-17 AC19: the published schema describes the rows (US-29)', () => {
     const merged = merge(file(row('token-a', 'active', 0)), file(row('token-b', 'cancelled', 1)));
     expect(valid(merged)).toBe(true);
     expect(valid({ ...merged, schemaVersion: 1 })).toBe(false);
-    for (const bad of [{ token: '' }, { token: 'x'.repeat(257) }, { status: 'paused' }, { email: { a: 1 } }, { provider: 3 }, { provider: 'free text' }]) {
+    for (const bad of [{ token: '' }, { status: 'paused' }, { email: { a: 1 } }, { provider: 3 }, { provider: 'free text' }]) {
       const opt = { ...merged.reminderOptIn!, tokens: [{ ...merged.reminderOptIn!.tokens![0], ...bad }] };
       expect(valid({ ...merged, reminderOptIn: opt }), JSON.stringify(bad)).toBe(false);
     }
