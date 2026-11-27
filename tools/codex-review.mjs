@@ -241,7 +241,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { fileURLToPath } from "node:url";
 import { externalSources, headBlob, LINK_POLICY, materialiseLinks } from "./codex-review-links.mjs";
 import { claimOut, stopReason, writeOut } from "./codex-review-out.mjs";
-import { codexVersion, findCodex } from "./codex-review-bin.mjs";
+import { configArgs, findCodex, launchEnv, probeCodex, resolveBin } from "./codex-review-bin.mjs";
 import { eventMetadata, exitOneOutcome, searchDomains } from "./codex-review-events.mjs";
 import { includeHash, includeWalk, isHealthRecord, isInstructionName, readRegular } from "./codex-review-include.mjs";
 import { isSecretName, isSecretPath, SECRET_EXCLUDES } from "./codex-review-names.mjs";
@@ -250,12 +250,14 @@ import { COPY_SHAPES, isEnvPath, isPathValue, isPublic, isSecretKey, MIN_SECRET_
 import { ALLOWED_TOOLS, isFetch, payloadOk, pick, plainHost, READ_TOOLS, schema, urlHost, validate } from "./codex-review-verdict.mjs";
 
 const args = process.argv.slice(2);
-const opt = (name, dflt) => { const i = args.indexOf(name); return i === -1 ? dflt : args[i + 1]; };
-const has = (name) => args.includes(name);
+const VALUE_OPTIONS = ["--codex", "--commit", "--range", "--message", "--model", "--out", "--timeout-min", "--record-file", "--include", "--include-limit-mb", "--subject", "--baseline", "--context"]; // an option's VALUE is data, never a flag ("--message --live"; Codex R1, AC19)
+const at = (name) => args.findIndex((a, i) => a === name && !VALUE_OPTIONS.includes(args[i - 1]));
+const opt = (name, dflt) => { const i = at(name); return i === -1 ? dflt : args[i + 1]; };
+const has = (name) => at(name) !== -1;
 const DEFAULT_RECORD = join(process.env.HOME ?? "", ".codex-review", "scratch-record.json");
 const usage = (why) => { console.error(`codex-review: ${why}`); stopReason(`E_USAGE: ${why}`); process.exit(1); };
 /** Every value of a repeatable flag, in order ("" for a flag with nothing after it). */
-const many = (name) => args.flatMap((a, i) => (a === name ? [args[i + 1] ?? ""] : []));
+const many = (name) => args.flatMap((a, i) => (a === name && !VALUE_OPTIONS.includes(args[i - 1]) ? [args[i + 1] ?? ""] : []));
 const OUT = opt("--out"); // US-40 AC18: claimed before anything else can stop the run (tools/codex-review-out.mjs)
 // What the run reads: --include and the record (the default too, under --record) through links; --subject, --context and a --baseline other than none at resolve(given), as checkoutPath reads them. A --record-file without --record is named, never read.
 const READ_INPUTS = many("--include").concat(has("--record") ? [opt("--record-file", DEFAULT_RECORD)] : []).filter(Boolean), LEXICAL = [...many("--subject"), ...many("--baseline").filter((p) => p !== "none"), ...many("--context")].filter(Boolean);
@@ -264,20 +266,17 @@ if (outRefused) usage(outRefused);
 
 const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
 const git = (a, o = {}) => execFileSync("git", a, { cwd: ROOT, encoding: "utf8", maxBuffer: 256 << 20, ...o });
-const CODEX = opt("--codex") ?? process.env.CODEX_BIN ?? findCodex(); // AC19: the ChatGPT app's CLI first (tools/codex-review-bin.mjs)
+const CODEX = (opt("--codex") ?? process.env.CODEX_BIN) ? resolveBin(opt("--codex") ?? process.env.CODEX_BIN) : findCodex(); // AC19: one absolute path for every call; none given, the ChatGPT app's CLI first
 if (!CODEX) usage("codex binary not found: pass --codex <path> or set CODEX_BIN");
-// A bare flag only: the VALUE of an option that takes one ("--message --live") is data, never the opt-in (Codex R1).
-const VALUE_OPTIONS = ["--codex", "--commit", "--range", "--message", "--model", "--out", "--timeout-min", "--record-file", "--include", "--include-limit-mb", "--subject", "--baseline", "--context"];
-const bare = (flag) => args.some((a, i) => a === flag && !VALUE_OPTIONS.includes(args[i - 1]));
-/** AC19 (Brad 2026-11-27): gpt-6.2-sol by default; --deep picks gpt-6.2-astra for design notes and the high-risk classes. */
-const DEEP = bare("--deep");
+const DEEP = has("--deep"); // AC19 (Brad 2026-11-27): gpt-6.2-sol by default; gpt-6.2-astra for design notes and the high-risk classes
+if (has("--model") && !/^[^-]/.test(opt("--model") ?? "")) usage("--model needs a model id after it");
 if (DEEP && has("--model")) usage("--deep is refused with --model: --deep picks gpt-6.2-astra, --model names the model itself");
 const MODEL = opt("--model", DEEP ? "gpt-6.2-astra" : "gpt-6.2-sol");
 const TIMEOUT_MS = Number(opt("--timeout-min", "25")) * 60_000;
 const RECORD = has("--record");
 const LOOP = has("--loop");
 /** AC14 amendment (Brad 2026-10-14): live web pages for our own changes; the default stays OpenAI's cached index. */
-const WEB_ACCESS = bare("--live") ? "live" : "cached";
+const WEB_ACCESS = has("--live") ? "live" : "cached";
 /**
  * Under --live, the sites a reviewer is expected to OPEN (exact hostnames). Codex cannot be held to a list:
  * `tools.web_search.allowed_domains` did not stop `open_page` on codex-cli 0.162 (probe, 2026-10-14). So any other
@@ -329,7 +328,7 @@ let recordCopy = null;
 let symlinks = [];
 let linksMaterialised = [], linksRefused = [];
 let keep = has("--keep");
-let work = null, snapshotId = "(not built)", instructionEdits = [], files = [], secretFiles = [], label = "(not built)", base = "", contractRev = "", included = [], includeRoots = [], subjects = [], context = [], excludedUncommitted = null, contextUncommitted = []; // declared here: an early stop reports them
+let work = null, snapshotId = "(not built)", instructionEdits = [], files = [], secretFiles = [], label = "(not built)", base = "", contractRev = "", included = [], includeRoots = [], subjects = [], context = [], excludedUncommitted = null, contextUncommitted = [], probe = {}; // declared here: an early stop reports them
 /** Every private-data path withheld this run (base tree, the change, --context: US-40 AC15), counted on stderr, in the prompt and the report. */
 const privateWithheld = new Set();
 let purge = false; // a work dir that may hold a credential is never kept
@@ -992,6 +991,12 @@ function collectCredentialValues(root = ROOT, name = null, extra = []) {
 }
 const namesOf = (vals) => [...new Set([...vals].flatMap((v) => [...credValues.get(v).names]))].sort();
 
+// --- 1c. What the binary can do (AC19), before the snapshot; the yield first, so a queued signal stops the run before any codex call.
+await new Promise(setImmediate);
+const env = launchEnv(process.env), CONFIG_ARGS = configArgs(WEB_ACCESS); // the CR2 allow-list; the -c settings, the forced ChatGPT login among them
+probe = probeCodex(CODEX, env, CONFIG_ARGS);
+if (probe.stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); // E_FEATURES_UNREADABLE or E_UNKNOWN_FEATURES: fail closed
+
 // --- 2. Immutable snapshot: source in work/src, artifacts beside it (CR1) ---
 // Prune earlier runs' leftovers first: each work dir holds a ~2 GB snapshot, and a kept (incomplete) run or a
 // SIGKILL'd one never reaches the exit handler. 4,098 of them filled the disk by 2026-10-20 (196 GB).
@@ -1283,17 +1288,12 @@ const RECORD_ARGS = RECORD
 const codexArgs = [
   "exec", "--ignore-user-config", "--strict-config", "--json", "--ephemeral", "--skip-git-repo-check",
   "--sandbox", "read-only",
-  "--disable", "apps", "--disable", "image_generation", "--disable", "browser_use", "--disable", "computer_use",
-  "--disable", "plugins", "--disable", "memories", "--disable", "skill_search", "--disable", "multi_agent",
+  ...probe.disable, // AC3's eight, plus every sub-agent, browser and automation feature this binary lists (AC19)
   // Hosted search (AC14): "cached" (index only) by default, "live" under --live; never "indexed", never --search; the shell's sandbox network stays off.
-  "-c", `web_search="${WEB_ACCESS}"`, "-c", 'shell_environment_policy.inherit="core"', "-c", 'model_reasoning_effort="high"',
-  "-c", "project_doc_max_bytes=0", "-c", "project_doc_fallback_filenames=[]", "-c", 'forced_login_method="chatgpt"', // AC19: the ChatGPT login only, never an API key
+  ...CONFIG_ARGS,
   "--model", MODEL, ...RECORD_ARGS,
   "-C", src, "--output-schema", schemaPath, "-o", outPath, "--color", "never", "-",
 ];
-// Minimal environment (CR2): nothing from the parent beyond what the CLI needs to find itself and its auth.
-const env = Object.fromEntries(["PATH", "HOME", "TMPDIR", "LANG", "CODEX_HOME"].filter((k) => process.env[k]).map((k) => [k, process.env[k]]));
-env.CI = "1";
 // Last check before anything leaves this machine (US-40 AC11): no credential
 // file anywhere in the work dir, and none named in the patch. Fail closed.
 guard("final credential check", () => {
@@ -1344,7 +1344,7 @@ guard("final credential check", () => {
 });
 valueChecked = true;
 if (secretValues.skipped.length) console.error(`codex-review: ${secretValues.skipped.length} unchanged base binary file(s) over ${SKIP_BINARY_OVER >> 20} MB not searched for credential values: ${secretValues.skipped.join(", ")}`);
-console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, codex ${JSON.stringify(CODEX)} (${codexVersion(CODEX, env)}), author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : ""}, timeout ${TIMEOUT_MS / 60000} min`);
+console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, codex ${JSON.stringify(CODEX)} (${probe.version}), author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : ""}, timeout ${TIMEOUT_MS / 60000} min`);
 // Everything above is synchronous, so a signal that arrived during it has only been queued: one turn of the event loop
 // runs its handler (exit 130, the work dir deleted) before Codex can be spawned.
 await new Promise(setImmediate);
@@ -1460,7 +1460,7 @@ finish(review, elapsedMin, { drift, recordAccess, webSearches, webSearchDomains,
 // --- 5. Report, print, exit ---------------------------------------------------
 function finish(review, elapsedMin, extra = {}) {
   const { drift = null, recordAccess = RECORD ? "not_attempted" : "not_requested", webSearches = 0, webSearchDomains = [], webSearchesWithoutProvenance = 0, unexpectedHosts = [], unresolvedOpens = 0 } = extra;
-  const report = { ...review, model: MODEL, deep: DEEP, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_access: WEB_ACCESS, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, unexpected_hosts: unexpectedHosts, unresolved_opens: unresolvedOpens, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted, context_uncommitted: contextUncommitted, private_withheld: privateWithheld.size };
+  const report = { ...review, model: MODEL, deep: DEEP, codex_bin: CODEX, codex_version: probe.version ?? null, author: LOOP ? "loop" : "session", label, base, files: files.length, secret_files_excluded: secretFiles, secret_values: secretValues, elapsed_min: Number(elapsedMin), drift, record_access: recordAccess, web_access: WEB_ACCESS, web_searches: webSearches, web_search_domains: webSearchDomains, web_searches_without_provenance: webSearchesWithoutProvenance, unexpected_hosts: unexpectedHosts, unresolved_opens: unresolvedOpens, instruction_edits: instructionEdits, symlinks_removed: symlinks?.length ?? 0, symlinks_materialised: linksMaterialised, included, link_policy: TEST_LINK_POLICY ? "test" : "default", include_policy: TEST_INCLUDE_POLICY ? "test" : "default", include_roots: includeRoots, subjects, context, excluded_uncommitted: excludedUncommitted, context_uncommitted: contextUncommitted, private_withheld: privateWithheld.size };
   writeOut(report); // a failed write says so and exits 1; the exit handler still cleans up
   const blocking = report.findings.filter((f) => f.blocks_merge);
   console.log(`## Codex review (${MODEL}) — ${label}, snapshot ${snapshotId}, ${elapsedMin} min`);

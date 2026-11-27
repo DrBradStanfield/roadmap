@@ -27,7 +27,12 @@ Everything else runs the default, gpt-6.2-sol. Both at high reasoning effort.
 The wrapper launches the ChatGPT app's own CLI when it is installed (the
 Homebrew `codex` 0.163 refuses gpt-6.2-astra on a ChatGPT login), forces the
 ChatGPT login, and prints the binary and its version on the pre-flight line;
-`--codex <bin>` or `CODEX_BIN` overrides it.
+`--codex <bin>` or `CODEX_BIN` overrides it. Before the snapshot it reads the
+binary's `features list`, turns off every sub-agent, browser and automation
+feature it lists, and stops with `E_UNKNOWN_FEATURES` (incomplete) if any
+other feature is enabled that is not judged in `tools/codex-review-features.mjs`.
+That is what an updated ChatGPT app looks like: judge each named feature (or
+disable it) in that file, in its own PR; never bypass the check.
 
 **How many, and when to start it.** Several Codex runs may go at once (Brad,
 2026-11-10: "You can run multiple codex agents"), at most two on this Mac.
