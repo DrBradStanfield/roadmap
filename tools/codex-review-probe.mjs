@@ -58,15 +58,20 @@ export function judgeSearch(r, url, web) {
   return miss ? ["PASS", `the nonce URL was opened and a cache miss was reported (${missInEvent ? "in the event" : "in the model's answer"})`] : ["INCONCLUSIVE", "the nonce URL was opened, with neither a cache miss nor the page"];
 }
 
-/** Check c. `status` is `login status` on the isolated store; `r` the exec result. */
+/**
+ * Check c. `status` is `login status` on the isolated store; `r` the exec result. Every line also counts the event stream's
+ * `turn.started` events: zero means no model turn began, which is the evidence available short of the refusal text (it
+ * does not prove no request left: an auth exchange could precede a turn). The verdict rules are unchanged by the count.
+ */
 export function judgeLogin(status, r) {
-  if (!status || !/api key/i.test(`${status.stdout}${status.stderr}`)) return ["INCONCLUSIVE", "the control did not show the CLI reading the stored API key"];
+  const turns = `${r.events.filter((e) => e.type === "turn.started").length} turn.started event(s)`;
+  if (!status || !/api key/i.test(`${status.stdout}${status.stderr}`)) return ["INCONCLUSIVE", `the control did not show the CLI reading the stored API key; ${turns}`];
   const tried = r.text.match(/401|unauthori[sz]ed|incorrect api key|invalid_api_key|invalid api key/i)?.[0];
   const specific = r.text.match(/forced_login_method|login method|requires? (a )?chatgpt (login|account|sign[- ]in)|api key (auth(entication)?|login) is not (allowed|permitted)/i)?.[0];
-  if (r.status === 0) return ["FAIL", "exec completed with only a fake API key stored"];
-  if (tried) return ["FAIL", `exec tried API-key auth (matched "${tried.toLowerCase()}")`];
-  if (specific) return ["PASS", `the control read the stored key; exec refused for the login method (exit ${r.status}, matched "${specific.toLowerCase()}")`];
-  return ["INCONCLUSIVE", `exec exited ${r.status ?? r.signal} without a login-method message (a generic refusal is not enough)`];
+  if (r.status === 0) return ["FAIL", `exec completed with only a fake API key stored; ${turns}`];
+  if (tried) return ["FAIL", `exec tried API-key auth (matched "${tried.toLowerCase()}"); ${turns}`];
+  if (specific) return ["PASS", `the control read the stored key; exec refused for the login method (exit ${r.status}, matched "${specific.toLowerCase()}"); ${turns}`];
+  return ["INCONCLUSIVE", `exec exited ${r.status ?? r.signal} without a login-method message (a generic refusal is not enough); ${turns}`];
 }
 
 const main = () => {

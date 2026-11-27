@@ -2766,6 +2766,9 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(judgeLogin(keyed, refusal('error: 401 Unauthorized'))[0]).toBe('FAIL');
     expect(judgeLogin(keyed, refusal('ok', 0))[0]).toBe('FAIL');
     expect(judgeLogin(keyed, refusal('API key login is not allowed: forced_login_method is chatgpt'))[0]).toBe('PASS');
+    // every line counts turn.started events (zero: no model turn began); the verdict does not change with it
+    expect(judgeLogin(keyed, refusal('Not logged in'))).toEqual(['INCONCLUSIVE', 'exec exited 1 without a login-method message (a generic refusal is not enough); 0 turn.started event(s)']);
+    expect(judgeLogin(keyed, { ...refusal('Not logged in'), events: [{ type: 'thread.started' }, { type: 'turn.started' }] })[1]).toMatch(/; 1 turn\.started event\(s\)$/);
   });
   it('Codex R7 on PR 2222: a wrong scratch record stops the run before any codex call, the version probe included', () => {
     writeFileSync(join(repo, 'a.txt'), 'wrong record\n');
