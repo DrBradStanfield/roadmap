@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The new-user flow (US-54, design ios/onboarding.md): Apple Health, then one
-/// question per screen (sex, birth month and year, height, weight), then My plan.
+/// question per screen (sex, birth month and year, height, weight), then My health.
 /// Every answer is written through the engine's own edits as the person goes,
 /// so quitting keeps it and the next launch resumes (AC7).
 struct OnboardingView: View {
