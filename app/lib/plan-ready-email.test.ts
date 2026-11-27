@@ -181,6 +181,15 @@ describe('reminder email carries the full calendar (US-23 AC3) and typed promine
     expect(html).toContain(unsubscribeUrl);
   });
 
+  it('lists the calendar by date, whatever order the schedule is stored in', () => {
+    const html = buildReminderV2EmailHtml(due, unsubscribeUrl, { fullSchedule: [
+      { label: 'Zeta late', dueAt: '2027-09-01' }, { label: 'Alpha early', dueAt: '2026-12-01' }, { label: 'Mid item', dueAt: '2027-03-01' },
+    ] });
+    const at = ['Alpha early', 'Mid item', 'Zeta late'].map((label) => html.indexOf(label));
+    expect(at[0]).toBeGreaterThan(-1);
+    expect(at).toEqual([...at].sort((a, b) => a - b));
+  });
+
   it('without options omits the calendar section only', () => {
     const html = buildReminderV2EmailHtml(due, unsubscribeUrl);
     expect(html).not.toContain('Your full check-up calendar');

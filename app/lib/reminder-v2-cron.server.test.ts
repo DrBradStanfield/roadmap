@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { ReminderV2Optin } from './reminder-v2.server';
 
 // US-28 AC2 at the caller: a lock-acquire REJECTION leaves the day unmarked
 // so the machine retries on the next hourly tick; a 'closed' answer (the day
@@ -365,6 +366,21 @@ describe('reminder v2 cron tick — US-28 AC3: a failed pass leaves the day open
     const before = sendMock.mock.calls.length;
     await cron.processV2Reminders('2026-08-29', held);
     expect(sendMock).toHaveBeenCalledTimes(before);
+  });
+});
+
+// US-23 AC6b: "today" is the day what is due is measured against, so an
+// item due today goes in today's pass, not tomorrow's.
+describe('reminder v2 cron — US-23 AC6b: an item is due on its own due date', () => {
+  const optin: ReminderV2Optin = {
+    id: 'o1', email: 'synthetic@example.com', provider: 'typed', token: 't', created_at: '2026-01-01T00:00:00Z',
+    schedule: [{ category: 'blood_test_lipids', label: 'Lipid panel', dueAt: '2026-12-01' }], last_sent: {},
+  };
+
+  it('is not due the day before, and is due that day', async () => {
+    const { dueItemsFor } = await import('./reminder-v2-cron.server');
+    expect(dueItemsFor(optin, '2026-11-30').due).toEqual([]);
+    expect(dueItemsFor(optin, '2026-12-01').due).toEqual(optin.schedule);
   });
 });
 
