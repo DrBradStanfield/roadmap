@@ -124,6 +124,28 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     expect(top('blood pressure 150/95')).toEqual(top('blood pressure'));
   });
 
+  it('a shorter entry with the same match ranks above a longer one (BM25 length normalisation)', () => {
+    const index = buildIndex([
+      { handle: 'l', title: 'Magnesium', summary: 'magnesium anxiety cramps migraine heart rhythm muscle bones' },
+      { handle: 's', title: 'Magnesium', summary: 'magnesium cramps' },
+    ]);
+    expect(search(index, 'magnesium', 8).map((h) => h.handle)).toEqual(['s', 'l']);
+  });
+
+  it('finds the other form of a word, and does not cut a short word into another', () => {
+    const index = buildIndex([
+      { handle: 'one', title: 'Lie to your doctor' },
+      { handle: 'two', title: 'Ringing in the ears' },
+      { handle: 'three', title: 'How to treat it' },
+      { handle: 'four', title: 'GOS prebiotics' },
+    ]);
+    const handles = (q: string) => search(index, q, 8).map((h) => h.handle);
+    expect(handles('lies')).toEqual(['one']);
+    expect(handles('ring')).toEqual(['two']);
+    expect(handles('treated')).toEqual(['three']);
+    expect(handles('going')).toEqual([]);
+  });
+
   it('indexes every entry in docs/blog/index.json', () => {
     const entries = loadBlogIndex();
     expect(entries.length).toBeGreaterThanOrEqual(300);
@@ -198,6 +220,11 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
     expect(bestSection(body, 'iron side effects constipation', 1000)).toBe('## Side effects\n\nConstipation and nausea are common side effects.');
     expect(bestSection(body, 'iron side effects constipation', 10)).toBe('## Side ef');
     expect(bestSection(body, 'zebra', 13)).toBe('# Iron\n\nIntro');
+  });
+
+  it('a one-word query gets the section that holds the word, not the body start', () => {
+    const body = '## Intro\nGeneral words here.\n## Dosing\nTake magnesium at night.';
+    expect(bestSection(body, 'magnesium', 500)).toBe('## Dosing\nTake magnesium at night.');
   });
 
   it('adds the best-matching section under the default cap, frontmatter stripped', () => {
