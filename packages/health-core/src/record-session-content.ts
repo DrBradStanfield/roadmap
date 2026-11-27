@@ -30,6 +30,11 @@ export function visibleContentOf(file: RoadmapFile): string {
   // change to them alone is nothing a person sees (US-09 AC23). The erase
   // itself is: it drops the chat's banners (US-16 AC2a).
   const { meta: _clocks, erasedRows: _list, schemaVersion: _version, ...rest } = file;
+  // The opt-in's other tokens' rows are bookkeeping no screen shows yet (US-17 AC19).
+  if (rest.reminderOptIn) {
+    const { tokens: _rows, ...shown } = rest.reminderOptIn;
+    rest.reminderOptIn = shown;
+  }
   const seen: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(rest)) {
     seen[key] = Array.isArray(value) ? value.map((row) => stableStringify(row, CLOCK_KEYS)).sort() : value;

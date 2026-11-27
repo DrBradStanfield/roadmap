@@ -32,7 +32,7 @@ const { RecordSession } = await import('./record-session');
 const NOW = '2026-10-21T12:00:00.000Z';
 let tick = Date.parse(NOW);
 
-function host(cloud: MemoryCloud, deviceId: string, writes: string[]): RecordHost {
+function host(cloud: MemoryCloud, deviceId: string, writes: string[], announced: unknown[] = []): RecordHost {
   const store = new MemoryAdapter(cloud);
   const write = store.write.bind(store);
   store.write = (...args: Parameters<MemoryAdapter['write']>) => { writes.push(deviceId); return write(...args); };
@@ -42,7 +42,7 @@ function host(cloud: MemoryCloud, deviceId: string, writes: string[]): RecordHos
     deviceId: () => deviceId,
     clock: { now: () => (tick += 60_000) },
     timers: { set: () => 0, clear: () => {} },
-    remoteChanged: () => {},
+    remoteChanged: (change: unknown) => { announced.push(change); },
     failureCause: () => 'x',
     report: () => {},
     tier: 'cloud',
@@ -60,6 +60,23 @@ const row = (token: string, status: 'active' | 'cancelled', updatedAt: string): 
   ({ status, token, email: `${token}@example.test`, provider: 'dropbox', updatedAt, lamport: 1 });
 
 const stored = (cloud: MemoryCloud): RoadmapFile => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+
+describe('US-17 AC19: a change to the hidden rows alone is taken in, never announced', () => {
+  it('a re-read that adds a nested row adopts it and tells the page nothing', async () => {
+    const cloud = new MemoryCloud();
+    const start = createEmptyFile({ deviceId: 'seed', now: NOW });
+    start.reminderOptIn = row('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(start), version: 1 });
+    const announced: unknown[] = [];
+    const session = await RecordSession.open(host(cloud, 'new-device', [], announced));
+    const listed = { ...start, schemaVersion: 2, reminderOptIn: { ...start.reminderOptIn, tokens: [row('token-b', 'active', '2026-10-21T10:00:00.000Z')] } };
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(listed), version: 2 });
+
+    await session.refreshFromRemote('pressed');
+    expect(session.file.reminderOptIn?.tokens).toEqual(listed.reminderOptIn.tokens);
+    expect(announced).toEqual([]);
+  });
+});
 
 describe('US-17 AC19: an old and a new device on one record settle', () => {
   it('re-reads on both sides write nothing, whichever copy the cloud holds', async () => {
