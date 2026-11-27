@@ -144,8 +144,15 @@ describe('US-23 AC2 — the quiet period, every lane', () => {
 describe('the per-email rate-limit key (never the stored address)', () => {
   it('folds case, +tags and Gmail dots into one bucket', () => {
     expect(emailLimiterKey('User+promo@Gmail.com')).toBe('user@gmail.com');
-    expect(emailLimiterKey('u.s.e.r@googlemail.com')).toBe('user@googlemail.com');
+    expect(emailLimiterKey('u.s.e.r@googlemail.com')).toBe('user@gmail.com'); // US-17 AC8a
     expect(emailLimiterKey('first.last+x@example.com')).toBe('first.last@example.com'); // dots matter elsewhere
+  });
+
+  it('US-17 AC8a: the googlemail.com spelling of an inbox shares the gmail.com key', () => {
+    expect(emailLimiterKey('U.S.E.R+x@GoogleMail.com')).toBe(emailLimiterKey('user@gmail.com'));
+    expect(emailLimiterKey('user@googlemail.com')).toBe('user@gmail.com');
+    expect(emailLimiterKey('u.ser@mail.googlemail.com')).toBe('u.ser@mail.googlemail.com'); // only the exact domain
+    expect(emailLimiterKey('u.ser@googlemail.co')).toBe('u.ser@googlemail.co');
   });
 });
 
