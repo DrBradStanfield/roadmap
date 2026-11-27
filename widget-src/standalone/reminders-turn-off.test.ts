@@ -187,6 +187,21 @@ describe('US-17 AC19: Turn off cancels every token, in one edit', () => {
     expect(trackProductEvent).not.toHaveBeenCalled(); // one cancel posted, no row written
   });
 
+  it('a tab leaving (keepalive) sends every cancel at once, before any answer', async () => {
+    file.reminderOptIn = optIn(row('token-a', 'active', 2), row('token-b', 'active', 1));
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    server(async (token) => {
+      if (token === 'token-a') await held; // the closing page never hears this one
+      return 200;
+    });
+    const leaving = cancelReminders({ keepalive: true, count: false });
+    await vi.waitFor(() => expect(posts.map((p) => p.token)).toEqual(['token-a', 'token-b']));
+    release();
+    await leaving;
+    expect(statusOf()).toEqual({ 'token-a': 'cancelled', 'token-b': 'cancelled' });
+  });
+
   it('a refused write cancels on the server but writes nothing and counts nothing', async () => {
     file.reminderOptIn = row('token-a', 'active', 1);
     refuseWrite.next = true;
