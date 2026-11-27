@@ -23,8 +23,13 @@ const newer = (a: ReminderTokenRow, b: ReminderTokenRow) => (stampIsNewer(b, a) 
  *  erase instant, lamport aside. A row at the erase's very instant stays, as
  *  the gate keeps a row that shares the erase's millisecond; an unknown stamp
  *  is before any erase. No erase time, no floor. */
-export function beforeErase(row: ReminderTokenRow, erasedAt: string | undefined): boolean {
+function beforeErase(row: ReminderTokenRow, erasedAt: string | undefined): boolean {
   return erasedAt !== undefined && timeOf(row.updatedAt) < timeOf(erasedAt);
+}
+
+/** The rows kept nested under a stored object: every other token's, less any before the erase. */
+function keptNested(rows: ReminderTokenRow[], storedToken: unknown, erasedAt: string | undefined): ReminderTokenRow[] {
+  return rows.filter((row) => row.token !== storedToken && !beforeErase(row, erasedAt));
 }
 
 /** The object's own row and every `tokens` row, one per token, the newest.
@@ -51,7 +56,7 @@ export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileRem
   const rows = mergeByKey(rowsOf(local), rowsOf(remote), (row) => row.token);
   // Remote first: an exact tie keeps the remote object, as `pickNewerOptional` did.
   const stored = [remote, local].flatMap((o) => (o ? [ownRow(o)] : [])).concat(rows).reduce(newer);
-  const tokens = rows.filter((row) => row.token !== stored.token && !beforeErase(row, erasedAt));
+  const tokens = keptNested(rows, stored.token, erasedAt);
   return tokens.length > 0 ? { ...stored, tokens } : stored;
 }
 
@@ -65,8 +70,7 @@ export function optInBehind(ours: FileReminderOptIn | undefined, theirs: FileRem
   const held = new Map(rowsOf(theirs).map((row) => [row.token, row]));
   // The stored object counts too, the erase marker included, which rowsOf skips.
   if (theirs && !held.has(keyOf(theirs.token))) held.set(keyOf(theirs.token), ownRow(theirs));
-  const owed = rowsOf(ours).filter((row) => row.token === ours.token || !beforeErase(row, erasedAt));
-  return [ownRow(ours), ...owed].some((row) => {
+  return [ownRow(ours), ...keptNested(rowsOf(ours), ours.token, erasedAt)].some((row) => {
     const match = held.get(keyOf(row.token));
     return !match || stampIsNewer(row, match);
   });

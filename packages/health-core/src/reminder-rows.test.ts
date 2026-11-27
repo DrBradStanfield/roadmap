@@ -13,7 +13,7 @@ import { buildErasedFile } from './erase';
 import { mergeFiles, pickNewerOptional } from './merge';
 import { migrateFile } from './migrate';
 import { stampIsNewer } from './record-time';
-import { beforeErase, mergeOptIn, rowsOf, shownOptIn } from './reminder-rows';
+import { mergeOptIn, rowsOf, shownOptIn } from './reminder-rows';
 import { createEmptyFile, createMeasurement, stableStringify, type FileReminderOptIn, type ReminderTokenRow, type RoadmapFile } from './roadmap-file';
 import { setReminderOptIn, setReminderRow } from './state-edits';
 
@@ -425,7 +425,7 @@ function expectedTokens(copies: RoadmapFile[], storedToken?: string): Record<str
       if (!map[r.token] || stampIsNewer(r, map[r.token])) map[r.token] = r;
     }
   }
-  for (const [token, r] of Object.entries(map)) if (token !== storedToken && beforeErase(r, floor)) delete map[token];
+  for (const [token, r] of Object.entries(map)) if (token !== storedToken && floor !== undefined && Date.parse(r.updatedAt) < Date.parse(floor)) delete map[token];
   return map;
 }
 const tokenMap = (f: RoadmapFile) => Object.fromEntries(rowsOf(f.reminderOptIn).map((r) => [r.token, r]));
