@@ -123,7 +123,7 @@ describe('US-61 AC2-AC3: engine output never carries a product or a US variant, 
     const base = US_SUPPLEMENT_DESCRIPTIONS['supplement-micronutrient-base']!;
     expect(base).not.toMatch(/WHO|dementia/);
     expect(base).toContain('COSMOS');
-    expect(base).toContain('warfarin');
+    expect(base).toContain('Warfarin');
     expect(card('supplement-micronutrient-base').description.startsWith(base.split(' If you take')[0])).toBe(true);
     expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']!).toBe('One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training. Whether it suits you is worth discussing with your doctor or pharmacist.');
     expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin']!).toBe('Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density. Whether it suits you is worth discussing with your doctor or pharmacist.');

@@ -334,7 +334,7 @@ One disagreement. Codex says defer the cloud auto-review to keep variables separ
 - `docs/review-format.md`: the shared contract, 97 lines.
 - `tools/codex-review.mjs`: the bounded wrapper. Targets uncommitted work, a commit, a range, or exact files (`--subject`, since 2026-10-05; see the last section). Structured JSON via `--output-schema`; exit 0 clean, 2 blocking, 3 incomplete.
 - `.claude/skills/codex-review/SKILL.md`: how Claude invokes it and responds to findings.
-- Model: `gpt-6.1-sol` at high reasoning effort, per Brad (2026-10-02; was `gpt-6-astra`).
+- Model: `gpt-6.1-sol` at high reasoning effort, per Brad (2026-10-02; was `gpt-6-astra`) (default until 2026-11-27; see US-40 AC19).
 
 Not built, by design: any change to `.github/workflows/**` or `auto-ship.yml` (Brad-only), the reciprocal Codex-authors path, and the cloud auto-review toggle (a Brad click in the Codex web app).
 
@@ -890,3 +890,48 @@ content); an instruction file as a subject, at any
 depth, is reviewed and flagged. Subject, baseline and context bytes go
 through the same credential value and shape scan as everything else. Not with
 `--commit`, `--range` or `--loop`.
+
+## Answering a brief: `--brief` (2026-11-27, US-40 AC20)
+
+Brad chose this mode on 2026-11-27, after two briefs of open business
+questions ("what are we doing that is dumb, how do we win first-time
+customers") went in with `--subject`. Each time, Codex critiqued the brief's
+wording instead of answering it. `--subject` is a review, so that is what it
+does. `--brief` asks for an answer:
+
+```bash
+node ~/Documents/roadmap/tools/codex-review.mjs \
+  --brief "codex-drafts/first-customers-brief.md" \
+  --context "codex-drafts/first-customers-evidence" \
+  --out "$SCRATCH/codex-answer.json"
+```
+
+- The brief takes a subject's place, as a new file (`--baseline none`). It
+  follows every `--subject` rule above: tracked, or untracked under a pinned
+  `subjectRoots` root; never on `privateDeny`; the shared byte budget; the
+  credential value and shape scan; drift. The snapshot, the final checks and
+  the Codex launch are the same code, with the same sandbox and flags.
+- `--context` files and folders are the evidence. `--include`, `--model`,
+  `--timeout-min`, `--out` and `--keep` work as in a review.
+- Only the prompt and the output differ. The prompt (`tools/codex-review-prompt.mjs`,
+  beside the review prompt, sharing its web-search and untrusted-text rules)
+  says the brief is questions to answer, not a document to critique. The model
+  answers each question in order, names the files and pages each answer rests
+  on, marks guesses "Guess:", and ranks where the brief asks. One rule is for
+  briefs only: nothing from the brief or the context, not even a paraphrase of
+  a plan, number or strategy, goes into a search query or a URL.
+- Output: `## Codex answer (<model>) — brief "<path>", snapshot <id>, <n> min`,
+  with the review's status, web-access and unexpected-site lines, then the
+  summary and the Markdown answer. `--out` holds `mode: "brief"`, `summary`,
+  `answer` and the usual metadata; `findings` is always `[]`. Exit 0 answered,
+  3 incomplete, never 2. `answer` is `null` on any incomplete, including one
+  the model declares itself, whose summary is kept.
+- The work dir gets no `REVIEW_PATCH.diff` or `REVIEW_COMMITS.txt`: those
+  frame a review.
+- Refused, as usage errors: a second `--brief`, an empty or whitespace-only
+  brief, and `--brief` with `--commit`, `--range`, `--loop`, `--record`,
+  `--record-file`, `--subject`, `--baseline` or `--message`.
+- `--live` follows the existing rules, and only for a brief and context we
+  wrote ourselves (the same limit as "our own changes"). Never use it when the
+  context holds third-party pages: they could steer the model into carrying
+  what it reads out in a URL.

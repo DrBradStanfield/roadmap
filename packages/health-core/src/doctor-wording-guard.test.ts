@@ -56,6 +56,7 @@ const MEDS: MedicationInputs[] = [
   {},
   { statin: { drug: 'none', dose: null }, glp1: { drug: 'none', dose: null } },
   { statin: { drug: 'atorvastatin', dose: null }, ezetimibe: 'yes', glp1: { drug: 'semaglutide_injection', dose: null } },
+  { statin: { drug: 'atorvastatin', dose: 10 }, ezetimibe: 'not_yet' },
   { statin: { drug: 'atorvastatin', dose: 10 }, ezetimibe: 'yes', glp1: { drug: 'semaglutide_injection', dose: 0.25 } },
   { statin: { drug: 'simvastatin', dose: 40 }, ezetimibe: 'yes', glp1: { drug: 'dulaglutide', dose: 4.5 } },
   { statin: { drug: 'rosuvastatin', dose: 40 }, ezetimibe: 'yes', glp1: { drug: 'tirzepatide', dose: 15 }, glp1Escalation: 'not_tolerated' },
@@ -122,9 +123,10 @@ function shownText(): Shown {
   return out;
 }
 
-describe('US-07 AC17: doctor-discussion wording guard', () => {
-  const shown = shownText();
+/** One sweep, read by both guards below. */
+const shown = shownText();
 
+describe('US-07 AC17: doctor-discussion wording guard', () => {
   it('walks the medicine cards, the overlay and the Lp(a) checklist (the guard is not vacuous)', () => {
     expect(shown.titles).toContain('Consider discussing a statin with your doctor');
     expect(shown.text).toContain(MEDICATION_TEXT.glp1Hint);
@@ -187,5 +189,47 @@ describe('US-07 AC17: doctor-discussion wording guard', () => {
 
   it('no tile shows a condition word', () => {
     expect(shown.tileWords.filter((w) => BANNED_TILE_WORDS.includes(w))).toEqual([]);
+  });
+});
+
+// US-07 AC19 (Brad 2026-11-27, "Capitals everywhere. Every medicine name gets a capital, in titles and
+// sentences."): a specific medicine's name starts with a capital wherever the engine shows it, and no
+// sentence carries the "(listed first)" note. Drug classes ("a statin", "SGLT2 inhibitors") are not names.
+// The scan reads every title, card text, reason, tile, form title, intro, label, hint and option label
+// and every metric guide the sweep above reaches, plus every "why" reason in the evidence tables.
+const MEDICINE_NAMES = [
+  'tirzepatide', 'semaglutide', 'dulaglutide', 'liraglutide', 'exenatide',
+  'atorvastatin', 'rosuvastatin', 'simvastatin', 'pravastatin', 'pitavastatin', 'lovastatin', 'fluvastatin',
+  'ezetimibe', 'bempedoic acid', 'evolocumab', 'alirocumab', 'inclisiran',
+  'empagliflozin', 'dapagliflozin', 'canagliflozin', 'ertugliflozin', 'metformin', 'orlistat',
+  'warfarin', 'finasteride', 'dutasteride', 'tretinoin', 'adapalene',
+];
+/** A medicine name in lower case anywhere: after a space, a digit, a bracket, a slash, a colon or a dash. */
+const LOWER_CASE_NAME = new RegExp(`(?<![A-Za-z_])(?:${MEDICINE_NAMES.join('|')})(?![A-Za-z_])`);
+
+describe('US-07 AC19: medicine names start with a capital', () => {
+  const optionLabels = (meds: MedicationInputs) => {
+    const basis = { lipidMarker: null, weightMedTrigger: { on: true, reasons: [] }, bmi: 30, hasLipidInput: true, hasWeightInput: true, unitFor: () => 'si' as const };
+    return medicationForm(meds, basis).flatMap((s) => s.groups.flatMap((g) => g.fields))
+      .flatMap((f) => ('options' in f ? f.options.map((o) => o.label) : []));
+  };
+  const reasons = Object.values({ ...SUGGESTION_EVIDENCE, ...STAT_CARD_EVIDENCE }).map((e) => e.reason);
+  const all = [...shown.text, ...reasons, ...MEDS.flatMap(optionLabels)];
+
+  it('walks the text that names a medicine (the scan is not vacuous)', () => {
+    const joined = all.join('\n');
+    for (const phrase of [
+      'consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep.',
+      'Consider discussing Bempedoic acid with your doctor',
+      'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide',
+      'Discuss adding Ezetimibe 10mg with your doctor.',
+      "You're at or near the maximum dose of Simvastatin.",
+      'Dulaglutide (Trulicity)',
+    ]) expect(joined).toContain(phrase);
+  });
+
+  it('no shown text carries "(listed first)" or a medicine name in lower case', () => {
+    expect(all.filter((t) => t.includes('(listed first)'))).toEqual([]);
+    expect([...new Set(all.filter((t) => LOWER_CASE_NAME.test(t)))]).toEqual([]);
   });
 });

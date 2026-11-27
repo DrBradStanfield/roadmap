@@ -156,7 +156,7 @@ export function useLongitudinalSave({
       return toSave.length ? finish(toSave, write(toSave)) : Promise.resolve(new Map());
     }
     const save = async (): Promise<Refused> => {
-      // Keep the profile and saved measurements consistent across the debounce.
+      // Keep the profile and saved values consistent across the debounce.
       await flushPendingProfileSave(erase);
       const toSave = tasks ?? fromForm();
       return toSave.length ? finish(toSave, write(toSave)) : new Map();

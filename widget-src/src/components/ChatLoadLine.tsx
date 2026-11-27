@@ -1,7 +1,7 @@
 /** This tab's request is open for a chat no longer on screen (PR 1359 R3). */
 export const WAITING_LINE = 'Waiting for your other reply…';
 /** An erase emptied the chat while its request is still open (PR 1359 R3, Fable 2026-11-12). */
-export const ORPHANED_LINE = 'Your chat was erased. You can ask again in a moment.';
+export const ORPHANED_LINE = 'Your chat was deleted. You can ask again in a moment.';
 
 /**
  * Words beside a locked Send, each derived from the chat's state: the shown

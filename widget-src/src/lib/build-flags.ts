@@ -5,8 +5,8 @@
  * & build flags".
  *
  * LOCAL_FIRST — true on BOTH local-first builds (Shopify v2 + GitHub Pages):
- * the user's plan lives client-side (their own cloud), so "logged in" is
- * storage UX only, chat sends the plan as context, and legacy login-sync
+ * the user's plan lives client-side (their own cloud), so "connected" is
+ * storage UX only, chat sends the plan as context, and legacy sign-in sync
  * server calls are neutralized.
  *
  * SHOPIFY_SURFACE — true ONLY on the drstanfield.com (Shopify) v2 build,

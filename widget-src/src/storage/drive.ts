@@ -55,7 +55,7 @@ const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const FOLDER_NAME = DRIVE_FOLDER_NAME;
 
 /** Presence of this object IS the "connected" flag. */
-interface Stored {
+export interface Stored {
   /** LEGACY single-file slot (pre-named-files) — folded into `fileIds` at
    *  construction; kept only so old stored configs still parse. */
   fileId?: string;

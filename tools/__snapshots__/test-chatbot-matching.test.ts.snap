@@ -1193,8 +1193,7 @@ exports[`test-chatbot-matching report and request shapes (synthetic fixtures) > 
   },
   "wrongCwd": {
     "calls": [],
-    "err": "YouTube bot: chat-youtube-prompt.md not found — bot will not start
-Run from the repo root (<ROOT>): the article loader reads from the working directory.
+    "err": "Run from the repo root (<ROOT>): the article loader reads from the working directory.
 ",
     "out": "",
     "status": 1,
