@@ -11,7 +11,7 @@ import { SchemaTooNewError } from './migrate';
 import type { SyncStorage } from './record-host';
 import type { RecordSession } from './record-session';
 import { ROADMAP_DOC } from './roadmap-doc';
-import { rowsOf } from './reminder-rows';
+import { mergeOptIn, rowsOf } from './reminder-rows';
 import { CURRENT_SCHEMA_VERSION, stableStringify, type FileReminderOptIn, type RoadmapFile } from './roadmap-file';
 import { afterWrite, mayHaveLanded } from './write-refusal';
 
@@ -45,11 +45,11 @@ export interface EraseSteps {
   teardown?: () => Promise<void>;
   /** The chat history to tombstone; null when there is none. */
   chat?: () => Promise<{ eraseAll(): Promise<void> } | null>;
-  /** Told at the swap, before the erased copy replaces this one, every opt-in
-   *  the erase read: this copy's own as the erase began, the stored record's,
-   *  the device copy's, and this copy's after every merge taken in since (US-11
-   *  AC15). For the caller's teardown, which cancels each active row's token. */
-  swapping?: (read: FileReminderOptIn[]) => void;
+  /** Told at the swap, before the erased copy replaces this one, the erase's
+   *  observed set: every opt-in row it saw from its start, in any copy or merge
+   *  taken in, the newest per token (`RecordSession.eraseSeen`, US-11 AC15).
+   *  For the caller's teardown, which cancels each active row's token. */
+  swapping?: (observed: FileReminderOptIn | undefined) => void;
   /** Told once the erase's write is done, landed or not, the opt-in of the
    *  copy that took it, as read back (the cloud's check, or the device copy's
    *  merge); undefined when none was read. Only the teardown's choice of which
@@ -71,9 +71,10 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
   const refusal = s.cloudUnreachable ? ERASE_UNREACHABLE : host.ownsOffFileData?.() === false ? ERASE_STALE_TAB
     : s.saveMode === 'erasing' ? ERASE_BUSY : null;
   if (refusal) return { success: false, error: refusal };
-  // This copy's opt-in as the erase begins, before any await: a merge taken in
-  // while the erase reads can replace it (US-11 AC15).
-  const ownOptIn = s.current.reminderOptIn;
+  // The observed set begins with this copy's opt-in, before any await; every
+  // copy read and every merge taken in joins it until the swap (US-11 AC15, I1).
+  const seen = { optIn: s.current.reminderOptIn };
+  s.eraseSeen = seen;
   // On this device, the revision of the bytes read: an unreadable record is
   // replaced only at it, so another tab's repair is never written over (AC9).
   const revision = host.sync?.revision(ROADMAP_FILE_NAME) ?? null;
@@ -103,6 +104,7 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
       : await host.mirror.adapter.read(ROADMAP_FILE_NAME)
         .then(({ body }) => (body == null ? null : ROADMAP_DOC.migrate(body, s.ctx())))
         .catch(() => null);
+    seen.optIn = [stored, device].reduce((acc, file) => mergeOptIn(acc, file?.reminderOptIn), seen.optIn);
     // The caller's step reads the opt-in from this copy, to cancel its server row. Another device,
     // or another tab whose save failed, may have opted in since this copy was read: when the merge
     // of every copy read (epoch first, then the newer stamp) keeps any ACTIVE row, give it to this
@@ -126,13 +128,14 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
     // From here every failure comes back as a refusal, never a rejection: the
     // caller's step has run, and its page must leave its deleting state.
     s.saveWarning = undefined;
-    swapping?.([ownOptIn, stored?.reminderOptIn, device?.reminderOptIn, s.current.reminderOptIn].filter((o): o is FileReminderOptIn => o !== undefined));
-    // The opt-in held as the erase began counts too: a merge taken in since may hold none (review R2).
-    try { s.current = buildErasedFile({ stored, own: s.current, device, began: ownOptIn, ctx: s.ctx() }); } catch (e) { return { success: false, error: (e as Error).message }; }
+    swapping?.(seen.optIn);
+    // Any decision observed turns reminders off in the erased file (I2).
+    try { s.current = buildErasedFile({ stored, own: s.current, device, observed: seen.optIn, ctx: s.ctx() }); } catch (e) { return { success: false, error: (e as Error).message }; }
     s.clearedFor = s.eraseIdentity; // an erase made here owes no clear: its own follows the write, or the page's
     s.dispatch({ type: 'eraseSwapped' });
   } finally {
     s.dispatch({ type: 'eraseAborted' }); // a no-op in the swap's turn: only an erase stopped short gives its save back
+    s.eraseSeen = null; // observed until the swap, or until the erase stopped short
   }
   // Once the flush lands the record IS erased: a later cleanup failure is a
   // warning, so the caller still clears its screen and mirror (US-11 AC3b).

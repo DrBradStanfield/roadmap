@@ -10,6 +10,7 @@
 import { ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { clearOwed, eraseIdentityOf } from './erase-identity';
 import { mergeFiles } from './merge';
+import { mergeOptIn } from './reminder-rows';
 import { SchemaTooNewError } from './migrate';
 import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, reportSaveFailure, tellSaveStatus, type DeviceMirror, type SaveReportKey, type RecordHost, type RemoteChange, type SaveTold, type SyncStorage } from './record-host';
 import { contentOf, visibleContentOf } from './record-session-content';
@@ -56,6 +57,7 @@ export class RecordSession {
   /** @internal The erase epoch and opt-in of the copy this session's last write landed in, as read back
    *  (the cloud's check, or the device copy's merge). Only an erase's teardown reads it (US-11 AC15). */
   landedOptIn: { epoch: number; optIn: RoadmapFile['reminderOptIn'] } | undefined;
+  /** @internal An erase's observed opt-in rows, from its start to its swap (I1, record-session-erase.ts); else null. */ eraseSeen: { optIn: RoadmapFile['reminderOptIn'] } | null = null;
   /** The save mode (lead A1), changed only by `dispatch`; below, the debounce
    *  handle, and `running`, the claim set and cleared with the saving mode. */
   private mode: SaveState = SAVE_START;
@@ -358,7 +360,7 @@ export class RecordSession {
     // merge, and a clear that throws never leaves the pre-erase copy nor
     // hides the erase from the page (US-11 AC7).
     this.current = merged;
-    this.host.adopted?.();
+    if (this.eraseSeen) this.eraseSeen.optIn = mergeOptIn(this.eraseSeen.optIn, merged.reminderOptIn);
     this.settleClear();
     // Nor a full pre-erase copy of the record on this device (US-06 AC13).
     if (erasedElsewhere && this.host.tier === 'cloud' && !unsaved(this.mode)) this.releaseErasedCopy(this.host.mirror);

@@ -110,11 +110,6 @@ export const askedUnder = getShownErase;
 export function stillShown(asked: string): boolean {
   return asked === getEraseIdentity() && asked === getShownErase() && !store?.refuses(asked);
 }
-/** Whether this tab's erase runs, from its confirm to the end of its write
- *  (the session's erasing mode, which refuses a write at any erase). */
-export function eraseRunsHere(): boolean {
-  return !!store && store.refuses(store.eraseIdentity);
-}
 /** After an erase: clear this device's off-file health data by the record
  *  session's one rule, which spares the originals of documents that outlive
  *  the erase (US-11 AC6). The page never clears stored originals itself. The
@@ -366,8 +361,8 @@ export async function readDocumentFile(fileRef: string): Promise<Blob | null> {
  * inside the erase, before the swap, and returns the step that sends it
  * (commit), run only once the erase stands (US-11 AC4c).
  */
-/** `read`: every opt-in the erase read up to its swap; `landed`: the opt-in of the copy that took its write, as read back (US-11 AC15). */
-export type EraseSeen = { read: FileReminderOptIn[]; landed: FileReminderOptIn | undefined };
+/** `observed`: the erase's observed set, every opt-in row it saw up to its swap; `landed`: the opt-in of the copy that took its write, as read back (US-11 AC15). */
+export type EraseSeen = { observed: FileReminderOptIn | undefined; landed: FileReminderOptIn | undefined };
 type EraseCommit = (seen: EraseSeen) => Promise<void>;
 let preEraseHook: (() => Promise<EraseCommit | null>) | null = null;
 export function setPreEraseHook(fn: () => Promise<EraseCommit | null>): void {
@@ -397,13 +392,13 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
   };
   const prepare = preEraseHook;
   let commit = null as EraseCommit | null;
-  // Every opt-in the erase read, handed over at its swap (US-11 AC15); memory only.
-  const seen: EraseSeen = { read: [], landed: undefined };
+  // The erase's observed set and the copy that took its write, handed over by the erase (US-11 AC15); memory only.
+  const seen: EraseSeen = { observed: undefined, landed: undefined };
   const before = store.eraseIdentity;
   const { chatErased, ...result } = await store.deleteAllData({
     teardown: prepare ? async () => { commit = await prepare(); } : undefined,
     chat,
-    swapping: (optIns) => { seen.read = optIns; },
+    swapping: (observed) => { seen.observed = observed; },
     landed: (optIn) => { seen.landed = optIn; },
   });
   // The erased copy stands, landed or held for a retry (useErase's signal): only

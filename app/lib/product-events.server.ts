@@ -5,6 +5,7 @@ import * as z from '../../packages/health-core/src/zod';
 // same reason chat.server.ts / email.server.ts import health-core this way.
 import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEMENTS, isLabKeyWord, LPA_CHECK_ANSWERS, isLabUnitWord, MEASURES, LAB_UNIT_BLANK, MCP_IMPORT_FILE_BUCKETS, MCP_OAUTH_DETAILS, MEASUREMENT_REFUSAL_REASONS, MEASUREMENT_REFUSALS_WITH_METRIC, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_KNOWLEDGE_TOOL_NAMES, MCP_TOOL_NAMES, ONBOARDING_STEPS, PRODUCT_EVENT_NAMES, REMOTE_CHANGE_BACKENDS, SERVER_ONLY_EVENT_NAMES, SIGNIN_PLACEMENTS, TOOL_DEVICES, UPLOAD_LABS_PLACEMENTS, UPLOAD_OUTCOME_KEYS, UPLOAD_OUTCOME_MAX, UPLOAD_REVIEW_FLAGS, UPLOAD_REVIEW_KEYS, type McpOAuthDetail, type McpOAuthReason, type McpRefusalReason, type ProductEventName, type UploadOutcomeKey, type UploadReviewKey } from '../../packages/health-core/src/product-events';
 import { LPA_UNITS } from '../../packages/health-core/src/units';
+import { REMINDER_PROVIDERS } from '../../packages/health-core/src/roadmap-file';
 import { SAVE_RETRY_OUTCOMES, SAVE_RETRY_TRIGGERS } from '../../packages/health-core/src/save-retry-words';
 import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-products';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
@@ -175,6 +176,7 @@ const EVENT_REQUIRED_KEY: Partial<Record<string, string | readonly string[]>> = 
   measurement_added: 'measure', // US-07 AC11
   save_retry: ['trigger', 'outcome'], // US-09 AC30: how it started and how it ended
   upload_review: 'saved', // US-13 AC13: a review that ended neither way counts nothing
+  reminder_cancel_many: ['provider', 'count'], // US-17 AC19
 };
 
 /** Events whose metadata is ONLY their own keys: a shared key such as
@@ -248,6 +250,11 @@ function checkEventKeys(
   // A metric beside an out-of-range refusal would say this visitor's value is past a bound.
   if (metadata.metric !== undefined && !(MEASUREMENT_REFUSALS_WITH_METRIC as readonly unknown[]).includes(metadata.refusal)) {
     ctx.addIssue({ code: 'custom', path: ['metadata', 'metric'], message: 'key is not one this event may carry' });
+  }
+  // US-17 AC19: more than one cancel posted, by a provider the reminders write.
+  if (event.eventName === 'reminder_cancel_many') {
+    if (!(typeof metadata.count === 'number' && metadata.count >= 2)) ctx.addIssue({ code: 'custom', path: ['metadata', 'count'], message: 'count is not one this event may carry' });
+    if (!(REMINDER_PROVIDERS as readonly unknown[]).includes(metadata.provider)) ctx.addIssue({ code: 'custom', path: ['metadata', 'provider'], message: 'provider is not one this event may carry' });
   }
   // `unit` is any lab spelling on `lab_unit_refused`; here, only an Lp(a) unit.
   if (event.eventName === 'lpa_unit_selected' && metadata.unit !== undefined && !(LPA_UNITS as readonly unknown[]).includes(metadata.unit)) {

@@ -4,9 +4,9 @@
  * the write and the cleanup are the caller's. The web widget's RoadmapStore
  * calls it, and so will the iPhone app, so both erase by one rule.
  */
-import { mergeErasedRows, pickNewerOptional, rowRootIds, stampInstant } from './merge';
+import { mergeErasedRows, rowRootIds, stampInstant } from './merge';
 import { migrateFile } from './migrate';
-import { ownRow } from './reminder-rows';
+import { mergeOptIn } from './reminder-rows';
 import { recordSchemaVersion, type RoadmapFile } from './roadmap-file';
 import type { SyncContext } from './sync-manager';
 
@@ -19,12 +19,12 @@ export interface EraseInputs {
   /** On a cloud, the device copy where failed saves wait; null when there is
    *  none or it could not be read into a record. */
   device: RoadmapFile | null;
-  /** The opt-in this copy held as the erase began, before any merge it took in meanwhile. */
-  began?: RoadmapFile['reminderOptIn'];
+  /** The erase's observed set: every opt-in row it saw, in any copy or merge, from its start (US-11 AC15). */
+  observed?: RoadmapFile['reminderOptIn'];
   ctx: SyncContext;
 }
 
-export function buildErasedFile({ stored, own, device, began, ctx }: EraseInputs): RoadmapFile {
+export function buildErasedFile({ stored, own, device, observed, ctx }: EraseInputs): RoadmapFile {
   // Bump the erase epoch so the empty file BEATS the merge — persist goes
   // through read-merge-write, whose never-lose-data semantics would otherwise
   // resurrect every record from the stored copy (and any other device's).
@@ -59,11 +59,10 @@ export function buildErasedFile({ stored, own, device, began, ctx }: EraseInputs
   // device saved after this copy was read sits only in the stored record or
   // the device file (US-11 AC4). Any of them turns reminders off; the newest
   // stamp only picks which provider the cancelled opt-in names.
-  // Each object's own row, its other tokens' list left out of the tie-break (US-17 AC19).
-  const priorProvider = [stored?.reminderOptIn, device?.reminderOptIn, began].reduce(
-    (newest, optIn) => pickNewerOptional(newest, optIn && ownRow(optIn)),
-    own.reminderOptIn && ownRow(own.reminderOptIn),
-  )?.provider ?? null;
+  // One rule (US-11 AC15, I2): the marker is written if and only if any
+  // decision was seen, in a copy read or in the erase's observed set; it names
+  // the newest row's provider.
+  const priorProvider = [own, stored, device].reduce((seen, file) => mergeOptIn(seen, file?.reminderOptIn), observed)?.provider ?? null;
   // WHEN, beside WHICH: read only by a copy that missed an earlier erase
   // that listed nothing (US-09 AC20, AC23). Floored 1 ms past the last
   // write this eraser has seen, so a slow clock here cannot let through a

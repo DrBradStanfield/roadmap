@@ -209,6 +209,17 @@ describe('US-17 AC19: Turn off cancels every token, in one edit', () => {
     expect(trackProductEvent.mock.calls.map(([name]) => name)).toEqual(['reminder_optout']); // one cancel posted
   });
 
+  it('a tab leaving (keepalive) decides from the rows standing as its requests leave (I3)', async () => {
+    file.reminderOptIn = optIn(row('token-a', 'active', 2), row('token-b', 'active', 1));
+    server();
+    const leaving = cancelReminders({ keepalive: true, count: false });
+    // Taken in after the read, before the requests leave: token-b re-enrolled.
+    file = setReminderRow(file, { status: 'active', token: 'token-b', email: 'token-b@example.test', provider: 'github' }, '2026-11-27T11:00:00.000Z');
+    await leaving;
+    expect(posts.map((p) => p.token)).toEqual(['token-a']);
+    expect(statusOf()).toEqual({ 'token-a': 'cancelled', 'token-b': 'active' });
+  });
+
   it('a tab leaving (keepalive) sends every cancel at once, before any answer', async () => {
     file.reminderOptIn = optIn(row('token-a', 'active', 2), row('token-b', 'active', 1));
     let release!: () => void;

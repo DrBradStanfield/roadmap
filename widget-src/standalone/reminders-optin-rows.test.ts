@@ -148,13 +148,14 @@ describe('US-11 AC15: an erase cancels every active row of every copy it reads',
     expect(t.cancels()).toEqual([B]);
   });
 
-  it('a token cancelled in the working copy and active in the device copy is cancelled exactly once (review E1)', async () => {
+  // I1: the observed set keeps the newest row per token; a newer cancelled row means the token is already off.
+  it('a token cancelled in the working copy and older-active in the device copy is not cancelled again (review E1, I1)', async () => {
     const t = await setUp(row(A, 'cancelled', 2));
     const device = createEmptyFile({ deviceId: 'dev_tab', now: T(1) });
     device.reminderOptIn = row(A, 'active', 1);
     localStorage.setItem('health_roadmap_file_v2', JSON.stringify(device));
     expect((await t.data.deleteUserData()).success).toBe(true);
-    expect(t.cancels()).toEqual([A]);
+    expect(t.cancels()).toEqual([]);
   });
 
   it.each([['carrying its own erase marker', true], ['holding no opt-in at all (review R2)', false]] as const)('a merge taken in while the erase first reads, %s, which drops this copy\'s active token, still leaves it cancelled and reminders off (review E2)', async (_case, marker) => {
@@ -277,6 +278,47 @@ describe('US-11 AC15: an erase cancels every active row of every copy it reads',
     await t.data.deleteUserData();
     expect(t.data.getEraseIdentity()).not.toBe(before); // held: the device copy carries the erase
     expect(t.cancels()).toEqual([]);
+  });
+
+  it('a token active in the device copy and newer than this copy cancelled row is cancelled once (I1)', async () => {
+    const t = await setUp(row(A, 'cancelled', 1));
+    const device = createEmptyFile({ deviceId: 'dev_tab', now: T(1) });
+    device.reminderOptIn = row(A, 'active', 2);
+    localStorage.setItem('health_roadmap_file_v2', JSON.stringify(device));
+    expect((await t.data.deleteUserData()).success).toBe(true);
+    expect(t.cancels()).toEqual([A]);
+  });
+
+  // I2: the erased file turns reminders off if and only if the erase observed any decision.
+  it('an opt-in taken in during the chat erase, then dropped by a higher-epoch record, still leaves reminders off and is cancelled (review R1, I2)', async () => {
+    const t = await setUp();
+    const { ChatSession } = await import('@roadmap/health-core/chat-session');
+    const session = (t.page() as unknown as { session: { refreshFromRemote(reason: string): Promise<boolean> } }).session;
+    const eraseChat = ChatSession.prototype.eraseAll;
+    vi.spyOn(ChatSession.prototype, 'eraseAll').mockImplementation(async function (this: import('@roadmap/health-core/chat-session').ChatSession) {
+      t.cloudWrites(row(C, 'active', 1)); // another device turns reminders on
+      expect(await session.refreshFromRemote('pressed')).toBe(true);
+      // then a third device, which never saw it, erases
+      t.cloudWrites(undefined, (f) => { f.meta.eraseEpoch = 1; f.meta.erasedAt = T(5); f.schemaVersion = 2; f.erasedRows = { fromEpoch: 1, ids: [] }; });
+      expect(await session.refreshFromRemote('pressed')).toBe(true);
+      expect(t.data.getReminderOptIn()).toBeUndefined();
+      return eraseChat.call(this);
+    });
+    expect((await t.data.deleteUserData()).success).toBe(true);
+    expect(t.cancels()).toEqual([C]);
+    const stored = JSON.parse(t.cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
+    expect(stored.reminderOptIn).toMatchObject({ status: 'cancelled', token: '', email: '', provider: 'dropbox' });
+    t.posts.length = 0;
+    await t.reminders.autoEnrolReminders('dropbox');
+    expect(t.posts).toEqual([]);
+  });
+
+  it('a Drive row whose token sorts after an older Dropbox row: the Drive cancel carries the proof (review R2)', async () => {
+    const drive = 'test-token-z';
+    const t = await setUp(nest(row(drive, 'active', 2, { provider: 'google-drive' }), row(A, 'active', 1)));
+    t.proof.mockResolvedValue('test-proof-good');
+    expect((await t.data.deleteUserData()).success).toBe(true);
+    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: A }, { op: 'cancel', token: drive, idToken: 'test-proof-good' }]);
   });
 
   it('a nested active token present only in the cloud copy is cancelled', async () => {

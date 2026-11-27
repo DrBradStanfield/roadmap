@@ -58,7 +58,7 @@ export { ROADMAP_DOC };
 
 /** The pending-mirror marker (US-09 AC4) is the web host's; re-exported for
  *  the modules that import it from the store. */
-export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, SAVE_STATUS_EVENT, REMOTE_CHANGED_EVENT, RECORD_ADOPTED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
+export { PENDING_MIRROR_KEY, SYNC_PENDING_EVENT, SAVE_STATUS_EVENT, REMOTE_CHANGED_EVENT, markSyncPending, beginRoadmapLogOff, isSyncPending } from './web-record-host';
 /** Defined in health-core's record session, which makes the erase. */
 export { ERASE_UNREACHABLE } from '@roadmap/health-core/record-session';
 

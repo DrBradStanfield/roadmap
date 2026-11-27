@@ -39,7 +39,8 @@ describe('parseProductEvent', () => {
       const metadata = eventName.startsWith('us_product_') ? { metadata: { product: 'sleep' } }
         : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } }
         : eventName === 'save_retry' ? { metadata: { trigger: 'online', outcome: 'landed' } } // US-09 AC30: needs its trigger
-        : eventName === 'upload_review' ? { metadata: { saved: 1 } } : {}; // US-13 AC13: needs how it ended
+        : eventName === 'upload_review' ? { metadata: { saved: 1 } } // US-13 AC13: needs how it ended
+        : eventName === 'reminder_cancel_many' ? { metadata: { provider: 'dropbox', count: 2 } } : {}; // US-17 AC19: needs both
       expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,
         visitorId: VISITOR,
@@ -137,9 +138,11 @@ describe('parseProductEvent', () => {
   it('takes reminder_cancel_many with a provider and a count and nothing else (US-17 AC19)', () => {
     expect(parseProductEvent({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { provider: 'dropbox', count: 3 } }))
       .toEqual({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { provider: 'dropbox', count: 3 } });
-    expect(parseProductEvent({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { count: 2 } }))
-      .toEqual({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { count: 2 } });
     expect(parseProductEvent({ eventName: 'reminder_cancel_many', visitorId: VISITOR, metadata: { provider: 'dropbox', count: 3, key: 'ldl' } })).toBeNull();
+    // Review R4: a count of at least two, and a provider the reminders write.
+    for (const metadata of [undefined, { provider: 'dropbox' }, { provider: 'dropbox', count: 1 }, { provider: 'webdav', count: 2 }, { count: 2 }]) {
+      expect(parseProductEvent({ eventName: 'reminder_cancel_many', visitorId: VISITOR, ...(metadata ? { metadata } : {}) })).toBeNull();
+    }
   });
 
   it('takes cloud_connect_cancelled with a provider and nothing else (US-09 AC22)', () => {

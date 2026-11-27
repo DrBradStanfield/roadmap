@@ -218,10 +218,6 @@ interface HostBase {
    *  `erase`: the erase identity it moved the record to, when it carried
    *  another writer's erase; null for any other change. */
   remoteChanged(change: RemoteChange): void;
-  /** A merge was taken in as the working copy, whether or not anything a
-   *  person would see changed: an erase's teardown reads every one (US-11
-   *  AC15). Leave it out when nothing listens. */
-  adopted?(): void;
   /** The save status a status line shows changed, or whether a retry of a
    *  failed save will come (`retry`, US-09 AC30); told once per change, once
    *  the session holds it. Leave it out when nothing shows it. */

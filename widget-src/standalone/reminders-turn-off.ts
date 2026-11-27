@@ -134,9 +134,14 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
     // answer the closing page may never get.
     if (!stillShown(erase)) stopped();
     else {
-      posted = read.length;
-      const answers = await Promise.all(read.map((row) => send(row.token, row.provider).then((failure) => ({ type: 'answered' as const, token: row.token, failure }))));
-      state = answers.reduce(turnOffTransition, state as TurnOff);
+      // I3: decided now, from the rows standing, and every request leaves in this task.
+      const now = getReminderOptIn();
+      const sending = read.filter((row) => unchangedSince(row, now));
+      const changed = read.filter((row) => !sending.includes(row));
+      state = changed.reduce((at, row) => turnOffTransition(at, { type: 'skipped', token: row.token }), state as TurnOff);
+      posted = sending.length;
+      const answers = await Promise.all(sending.map((row) => send(row.token, row.provider).then((failure) => ({ type: 'answered' as const, token: row.token, failure }))));
+      state = answers.reduce(turnOffTransition, state);
     }
   } else {
     for (const row of read) {

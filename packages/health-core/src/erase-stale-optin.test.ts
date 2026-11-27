@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { buildErasedFile } from './erase';
 import { mergeFiles } from './merge';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
+import { rowsOf } from './reminder-rows';
 import { RecordSession } from './record-session';
 import type { RecordHost } from './record-host';
 import { ROADMAP_FILE_NAME } from './adapter';
@@ -125,7 +126,7 @@ describe('RecordSession.deleteAllData: the teardown sees the stored opt-in (US-1
 
   // US-11 AC15: the swap hands the caller every copy's opt-in, so this copy's own active row, which
   // the higher epoch's merge drops, still reaches the teardown (was the AC4a residual).
-  it('the swap is told every opt-in read: this copy\'s own, the stored record\'s, and the working copy\'s', async () => {
+  it('the swap is told the observed set: every row of this copy, the stored record and the merges taken in (I1)', async () => {
     const cloud = new MemoryCloud();
     const session = await RecordSession.open(host(cloud));
     session.edit((file) => { file.reminderOptIn = { ...active(9, 'dropbox'), token: 'stale' }; }, session.shownErase);
@@ -138,10 +139,10 @@ describe('RecordSession.deleteAllData: the teardown sees the stored opt-in (US-1
     let told: string[] = [];
     await session.deleteAllData({
       teardown: async () => { order.push('teardown'); },
-      swapping: (read) => { order.push('swap'); told = read.map((o) => o.token); },
+      swapping: (observed) => { order.push('swap'); told = rowsOf(observed).map((r) => r.token); },
     });
     expect(order).toEqual(['teardown', 'swap']);
-    expect(told).toEqual(['stale', 'fresh', 'fresh']);
+    expect(told).toEqual(['fresh', 'stale']);
   });
 
   for (const [label, theirs] of [

@@ -59,8 +59,6 @@ export const SAVE_STATUS_EVENT = 'hr:save-status-changed';
  * which imports the store, and the cycle would be real.
  */
 export const REMOTE_CHANGED_EVENT = 'hr:remote-changed';
-/** Every merge the working copy takes in, announced or not; no detail (US-11 AC15). */
-export const RECORD_ADOPTED_EVENT = 'hr:record-adopted';
 
 export function notify(name: string, detail?: unknown): void {
   try {
@@ -146,7 +144,6 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       clear: (handle: unknown) => clearTimeout(handle as ReturnType<typeof setTimeout>),
     },
     remoteChanged: (change: RemoteChange) => notify(REMOTE_CHANGED_EVENT, change),
-    adopted: () => notify(RECORD_ADOPTED_EVENT),
     saveStatusChanged: (status: SaveStatus) => notify(SAVE_STATUS_EVENT, status),
     saveRetried: (retry: SaveRetry) => trackProductEvent('save_retry', { trigger: retry.trigger, outcome: retry.outcome }), // US-09 AC30
     failureCause: storageFailureClass,

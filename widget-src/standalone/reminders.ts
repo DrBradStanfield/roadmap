@@ -29,7 +29,6 @@
 import {
   computeCurrentReminderSchedule,
   flushRoadmapStore,
-  getEraseIdentity,
   getReminderOptIn,
   getShownErase,
   isKnownMinorNow,
@@ -203,7 +202,8 @@ export async function optInToReminders(
   const superseded = silent && !sameOptIn(now, silent.from);
   // A token the file already holds active, in any row, is theirs: never
   // cancelled, and its switch marker stays (adversary R1).
-  const held = rowsOf(now).some((row) => row.status === 'active' && row.token === reply.token);
+  const holdsActive = (optIn: FileReminderOptIn | undefined) => rowsOf(optIn).some((row) => row.status === 'active' && row.token === reply.token);
+  const held = holdsActive(now);
   const retired = silent?.retired && silent.retired.token !== reply.token ? [{ ...silent.retired, status: 'cancelled' as const }] : [];
   // The record can also refuse the token: it was erased under the page (US-16
   // AC2a). That erase is a decision made meanwhile too, so the row goes.
@@ -212,7 +212,11 @@ export async function optInToReminders(
     // the file now: no switch marker outlives it (US-11 AC4).
     if (!held && (!superseded || now?.status !== 'active')) safeRemoveItem(SWITCH_CANCELLED_KEY);
     if (!held) {
-      const cancel = await postCancel(reply.token, await cancelProofFor(backend));
+      const proof = await cancelProofFor(backend);
+      // I3: decided after the proof, from the rows standing now: a token the tab took in active
+      // meanwhile (a verified re-enrolment keeps its token) is consent, never cancelled.
+      if (holdsActive(getReminderOptIn())) throw new Error('Reminder enrolment superseded by a decision made meanwhile.');
+      const cancel = await postCancel(reply.token, proof);
       // The status code only (CLAUDE.md telemetry rule): this row has no token anywhere now.
       if (!cancel.ok) {
         const refused = new Error(`Superseded reminder row cancel failed (${cancel.status}).`);
@@ -297,10 +301,13 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       // opt-in, so the next visit on the new cloud tries the cancel again.
       // An earlier visit's cancel of this token already landed: a refused retry
       // proves nothing about the row, so that marker stays.
+      const proof = await cancelProofFor(optIn.provider);
+      // I3: decided after the proof, from the opt-in standing now: a change made meanwhile stands.
+      if (!sameOptIn(getReminderOptIn(), optIn)) return;
       const cancelledBefore = safeGetItem(SWITCH_CANCELLED_KEY) === optIn.token;
       switchHoldsOldToken = true;
       safeSetItem(SWITCH_CANCELLED_KEY, optIn.token);
-      const res = await postCancel(optIn.token, await cancelProofFor(optIn.provider));
+      const res = await postCancel(optIn.token, proof);
       if (!res.ok) {
         switchHoldsOldToken = cancelledBefore; // otherwise the old row is still live: pushes may carry on
         if (!cancelledBefore) safeRemoveItem(SWITCH_CANCELLED_KEY);
@@ -347,39 +354,42 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
  * keepalive and the proof in hand, so it stays a delete. A refused cancel is
  * reported by its status alone; no retry, the token is gone.
  *
- * Until the swap a re-read can still merge in another device's Turn on, so
- * every distinct active token seen while this tab's erase runs is cancelled
- * too, bare (a tombstone stops the emails); only the first carries the proof
- * (US-11 AC4c, lead S59b; the state: reminders-erase-cancel.ts). Tokens and
- * proof stay in memory only, for the erase's span.
+ * What the erase saw is the record session's observed set (I1), handed to the
+ * commit at the swap: every row seen in any copy or merge from the erase's
+ * start, so a token merged in while the prepare waits on the proof or the chat
+ * erase is cancelled too. The commit decides from the freshest rows, in one
+ * synchronous step, and sends every cancel at once (I3). A Drive row's cancel
+ * carries the proof, whatever the token order; another provider's goes bare, a
+ * tombstone that stops the emails (state: reminders-erase-cancel.ts). The proof
+ * stays in memory only, for the erase's span.
  *
  * Not counted as an opt-out: they erased everything, they didn't judge
  * reminders. Registered as a hook by the standalone entry, because `src/`
  * (where the store lives) must never import `standalone/`.
  */
 export async function cancelRemindersForErase(): Promise<(seen?: EraseSeen) => Promise<void>> {
-  stepEraseCancel({ type: 'prepared', at: getEraseIdentity() });
+  stepEraseCancel({ type: 'prepared' });
   try {
-    const rows = rowsOf(getReminderOptIn());
-    stepEraseCancel({ type: 'read', rows });
-    // The first active token carries the Drive proof; the rest go bare (US-11 AC15).
-    const first = rows.find((row) => row.status === 'active');
-    if (first) stepEraseCancel({ type: 'proved', token: first.token, idToken: await cancelProofFor(first.provider) });
+    // A Drive row here gets the proof, fetched before the swap so the commit leaves at once (review R2).
+    const drive = rowsOf(getReminderOptIn()).some((row) => row.status === 'active' && row.provider === 'google-drive');
+    stepEraseCancel({ type: 'proved', proof: drive ? await cancelProofFor('google-drive') : null });
   } catch {
     stepEraseCancel({ type: 'failed' }); // what failed may quote the token or proof: nothing of it is kept
   }
-  // `seen.read`: every opt-in the erase read, up to its swap; `seen.landed`: the copy that took its write (US-11 AC15).
-  return async ({ read, landed }: EraseSeen = { read: [], landed: undefined }) => {
+  // `seen.observed`: the erase's observed set; `seen.landed`: the copy that took its write (US-11 AC15).
+  return async ({ observed, landed }: EraseSeen = { observed: undefined, landed: undefined }) => {
     // An erase leaves no reminder token on the device, not even a cancelled one.
     safeRemoveItem(SWITCH_CANCELLED_KEY);
-    stepEraseCancel({ type: 'read', rows: read.flatMap(rowsOf) });
     const held = eraseCancelState();
     stepEraseCancel({ type: 'committed' });
-    // Every cancel leaves at once, keepalive, so a tab closed after the first still sends the rest
-    // (review R3); past the route's per-address rate the rest are refused and reported (US-11 AC15).
-    // A token still active where the erase stands, the copy that took the write or this one, is spared.
-    const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(toCancel(held, [landed, getReminderOptIn()]).map(
-      ({ token, idToken }) => postCancel(token, idToken, true).then((res) => (res.ok ? null : String(res.status)), () => 'unsent'),
+    // I3: decided here, from the rows standing now, and every cancel leaves in this task, keepalive,
+    // so a tab closed after the first still sent the rest; past the route's per-address rate the
+    // rest are refused and reported (US-11 AC15).
+    const rows = held.kind === 'ready' ? toCancel(observed, [landed, getReminderOptIn()]) : [];
+    const proof = held.kind === 'ready' ? held.proof : null;
+    const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(rows.map(
+      (row) => postCancel(row.token, row.provider === 'google-drive' ? proof : null, true)
+        .then((res) => (res.ok ? null : String(res.status)), () => 'unsent'),
     ));
     for (const status of failed) {
       if (status) Sentry.captureException(new Error(`Reminder row delete failed (${status}).`), { tags: { area: 'reminders', op: 'erase-cancel' } });
