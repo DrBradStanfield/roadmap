@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
+import { safeHref } from './build-master-html.mjs';
 
 const argv = process.argv.slice(2);
 const noScript = argv.includes('--no-script');
@@ -55,13 +56,13 @@ const held = [];
 const hold = (html) => `@@T${NONCE}${held.push(html) - 1}@@`;
 
 // A block-level fragment alone in a paragraph loses the paragraph — a <div> or
-// a <pre> is not a phrase, but a lone code span still wants one. Anything the
-// builder did not park is prose: put it back verbatim.
+// a <pre> is not a phrase, but a lone code span or refused link text still
+// wants one. Anything the builder did not park is prose: put it back verbatim.
 const restore = (html) =>
   html.replace(new RegExp(`<p>@@T${NONCE}(\\d+)@@</p>|@@T${NONCE}(\\d+)@@`, 'g'), (match, alone, inline) => {
     const fragment = held[alone ?? inline];
     if (fragment === undefined) return match;
-    return alone !== undefined && fragment.startsWith('<code') ? `<p>${fragment}</p>` : fragment;
+    return alone !== undefined && /^(?:<code|[^<])/.test(fragment) ? `<p>${fragment}</p>` : fragment;
   });
 
 let body = md.slice(md.indexOf('\n---\n', 4) + 5);
@@ -123,10 +124,16 @@ body = body.replace(/^\[diagram:([a-z0-9-]+)\]$/gm, (_, name) => {
 // Code spans come out first, for the same reason: a quote inside `--out "x"`
 // is a literal, not prose, and the smart-quote pass would curl it. The pass runs
 // on escaped text, so a straight quote reads &quot; there.
+// A link that is not web, mail, a site path or an anchor (javascript:, data:)
+// stays its markdown text: it is held, escaped, before every pass below, so its
+// label is not formatted. A code span is matched alongside and left alone, so a
+// link written inside one stays code. The later check catches a link that only
+// forms once a code span is parked.
 const inline = (s) =>
-  esc(s.replace(/`([^`]+)`/g, (_, code) => hold(`<code>${esc(code)}</code>`)))
+  esc(s.replace(/`[^`]+`|\[[^\]]+\]\(([^)]+)\)/g, (m, url) => (url === undefined || safeHref(url) ? m : hold(esc(m))))
+    .replace(/`([^`]+)`/g, (_, code) => hold(`<code>${esc(code)}</code>`)))
     .replace(/&quot;((?:(?!&quot;)[\s\S])+)&quot;/g, '“$1”')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, text, url) => (safeHref(url) ? `<a href="${url}">${text}</a>` : m))
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
 // A block that starts with "- " or "1. " is a list: each such line starts an
