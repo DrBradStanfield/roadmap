@@ -120,7 +120,11 @@ export class SyncManager<T extends SyncedFile> {
    * Persist `local`, merging in any concurrent remote changes. Returns the
    * merged file actually written (the new source of truth for this device).
    */
-  async save(local: T, signal?: AbortSignal): Promise<SaveResult<T>> {
+  async save(input: T, signal?: AbortSignal): Promise<SaveResult<T>> {
+    // What the next attempt merges from: the input, or after a lost write the
+    // state that attempt tried to write, so what its read taught it is kept;
+    // the merge's erase gate still decides against a newer erase (US-17 AC19).
+    let local = input;
     let lastError: unknown;
     let mayHaveWritten = false;
     // The adapter's note on a landed write, kept for a failure that follows it.
@@ -138,7 +142,7 @@ export class SyncManager<T extends SyncedFile> {
           return { file: merged, version: newVersion, attempts: attempt, ...(warning ? { warning } : {}) };
         } catch (error) {
           lastError = error;
-          if (error instanceof LostUpdateError) mayHaveWritten = true;
+          if (error instanceof LostUpdateError) { mayHaveWritten = true; local = merged; }
           // A write that threw may still have landed (a lost answer, a 5xx): its adapter says so in
           // its outcome; one it did not name is marked, never rewrapped, so its words stay (lead S57).
           else afterWrite(error);

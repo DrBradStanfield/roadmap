@@ -400,6 +400,34 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     expect(drive.body.meta.eraseEpoch).toBe((base.meta.eraseEpoch ?? 0) + 1);
   });
 
+  it('a row this save learned only from its first read is kept when the retry merges again', async () => {
+    const plain = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
+    const base = withOptIn({ ...plain, tokens: [optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z')] });
+    const drive = new ControlledDrive(base, false); drive.install();
+    // An older writer replaces the upload once with the object alone.
+    drive.clobberWith = withOptIn(plain);
+    drive.clobberAhead = true;
+    drive.clobberOnce = true;
+    // This device never saw token B: its copy holds the object alone, plus an edit.
+    const saved = await manager('a').save(stampProfile(withOptIn(plain), { heightCm: 181 }, NOW));
+    expect(saved.attempts).toBe(1);
+    expect(saved.file.reminderOptIn?.tokens?.map((r) => r.token)).toEqual(['token-b']);
+    expect(drive.body.reminderOptIn?.tokens?.map((r) => r.token)).toEqual(['token-b']);
+    expect(drive.body.profile.heightCm).toBe(181);
+  });
+
+  it('the same mechanism keeps a profile field this save learned only from its first read', async () => {
+    const base = stampProfile(seeded(), { birthYear: 1981 }, '2026-10-21T11:00:00.000Z');
+    const drive = new ControlledDrive(base, false); drive.install();
+    drive.clobberWith = seeded();
+    drive.clobberAhead = true;
+    drive.clobberOnce = true;
+    const saved = await manager('a').save(stampProfile(seeded(), { heightCm: 181 }, NOW));
+    expect(saved.attempts).toBe(1);
+    expect(drive.body.profile.birthYear).toBe(1981);
+    expect(drive.body.profile.heightCm).toBe(181);
+  });
+
   it('an old-code writer that drops the list in the window costs one retry, then the save settles', async () => {
     const base = withOptIn(optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z'));
     const drive = new ControlledDrive(base, true); drive.install();
