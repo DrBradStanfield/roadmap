@@ -142,10 +142,7 @@ describe('ci.yml jobs (US-64 AC12)', () => {
       'npm run rebuild-index',
       'npx audit-ci@',
       '/tmp/gitleaks dir .',
-      'npx tsc --noEmit -p widget-src/tsconfig.json',
-      'npx tsc --noEmit -p packages/health-core/tsconfig.json',
-      'npm run typecheck:server',
-      'npm run typecheck:engine',
+      'npm run typecheck:all',
       'npm run build\n',
       'npm run build:widget',
       'scripts/build-user-stories-html.ts --check-against "${BASE}"',
@@ -154,6 +151,45 @@ describe('ci.yml jobs (US-64 AC12)', () => {
     }
     expect(checks).toContain('BASE: ${{ github.event.pull_request.base.sha || github.event.before }}');
     expect(checks).not.toContain('test:all');
+  });
+});
+
+/**
+ * CI tidy (Brad 2026-11-26, docs/decisions-for-brad.md "One workflow PR for CI tidying"): CI and Deploy share
+ * one typecheck list, and the Pages smoke is a file in tools/, not a script written inline in deploy.yml.
+ */
+describe('one typecheck list and the Pages smoke file (CI tidy, 2026-11-26)', () => {
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  const deploy = readFileSync(join(ROOT, '.github/workflows/deploy.yml'), 'utf8')
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('#'))
+    .join('\n');
+
+  it('typecheck:all runs the four projects CI and Deploy each listed before', () => {
+    expect(pkg.scripts['typecheck:all'].split(' && ')).toEqual([
+      'tsc --noEmit -p widget-src/tsconfig.json',
+      'tsc --noEmit -p packages/health-core/tsconfig.json',
+      'npm run typecheck:server',
+      'npm run typecheck:engine',
+    ]);
+  });
+
+  it('ci.yml and deploy.yml both run typecheck:all and no tsc project of their own', () => {
+    expect(job('checks')).toContain('- run: npm run typecheck:all\n');
+    expect(deploy).toContain('run: npm run typecheck:all\n');
+    for (const text of [ci, deploy]) {
+      expect(text).not.toMatch(/tsc --noEmit|npm run typecheck:(server|engine)/);
+    }
+  });
+
+  it('deploy.yml runs the Pages smoke from tools/pages-smoke.mjs, with no inline script', () => {
+    const smoke = deploy.slice(deploy.indexOf('\n  pages-smoke:\n'), deploy.indexOf('\n  deploy:\n'));
+    expect(smoke).toContain('run: node tools/pages-smoke.mjs\n');
+    expect(deploy).not.toMatch(/<<'?EOF|playwright'|webkit\.launch/);
+    const tool = readFileSync(join(ROOT, 'tools/pages-smoke.mjs'), 'utf8');
+    expect(tool).toContain("await page.goto('https://drbradstanfield.github.io/roadmap/'");
+    expect(tool).toContain("await page.waitForSelector('#health-tool-root'");
+    expect(tool).toContain("page.on('pageerror'");
   });
 });
 

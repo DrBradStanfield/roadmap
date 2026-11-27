@@ -234,26 +234,7 @@ jobs:
           done
           exit 1
       - name: WebKit smoke — Pages app boots clean
-        # NOTE: the script must live INSIDE the workspace — Node resolves
-        # 'playwright' relative to the script's path, so /tmp can't see
-        # node_modules (first-run failure, 2026-08-10).
-        run: |
-          cat > ./pages-smoke.tmp.mjs <<'EOF'
-          import { webkit, devices } from 'playwright'
-          const browser = await webkit.launch()
-          const page = await browser.newPage({ ...devices['iPhone 13'] })
-          const errors = []
-          page.on('pageerror', e => errors.push(String(e)))
-          await page.goto('https://drbradstanfield.github.io/roadmap/', { waitUntil: 'networkidle', timeout: 60000 })
-          await page.waitForSelector('#health-tool-root', { timeout: 30000 })
-          const mounted = await page.evaluate(() =>
-            (document.querySelector('#health-tool-root')?.children.length ?? 0) > 0)
-          await browser.close()
-          if (!mounted) { console.error('Widget did not mount on Pages'); process.exit(1) }
-          if (errors.length) { console.error('Page errors:', errors); process.exit(1) }
-          console.log('Pages smoke OK — widget mounted, no page errors.')
-          EOF
-          node ./pages-smoke.tmp.mjs
+        run: node tools/pages-smoke.mjs
 
   deploy:
     needs: [gate, pages-smoke]
@@ -295,11 +276,7 @@ jobs:
         run: npm run test:all
 
       - name: Typecheck (widget-src + health-core + server + iPhone engine)
-        run: |
-          npx tsc --noEmit -p widget-src/tsconfig.json
-          npx tsc --noEmit -p packages/health-core/tsconfig.json
-          npm run typecheck:server
-          npm run typecheck:engine
+        run: npm run typecheck:all
 
       - name: Build widget bundles (main v2 + upload + side bundles)
         run: |
