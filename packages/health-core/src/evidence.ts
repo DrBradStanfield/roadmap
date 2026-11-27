@@ -615,7 +615,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'skin-retinoid': {
-    reason: 'Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.',
+    reason: 'Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.',
     guidelines: [],
     references: [
       { label: 'Bagatin 2018 – Adapalene vs tretinoin for photoaging (Eur J Dermatol)', url: 'https://doi.org/10.1684/ejd.2018.3320' },
