@@ -83,6 +83,9 @@ export const CANNOT_DISABLE = {
   worktrees: { version: "codex-cli 0.171.0-alpha.13.2", stage: "removed" },
 };
 
+/** INERT entries whose only reason is the `removed` stage (Codex R7): judged at that stage alone. */
+const REMOVED_ONLY = new Set(["item_ids", "resize_all_images", "sqlite", "steer", "terminal_resize_reflow", "tool_search_always_defer_mcp_tools", "tui_app_server"]);
+
 /** The child's whole environment (CR2): only what the CLI needs to find itself and its login; never an API-key variable. */
 export const launchEnv = (parent) => ({ ...Object.fromEntries(["PATH", "HOME", "TMPDIR", "LANG", "CODEX_HOME"].filter((k) => parent[k]).map((k) => [k, parent[k]])), CI: "1" });
 
@@ -99,7 +102,7 @@ export function parseFeatures(text) {
   const rows = text.split("\n").map((l) => l.trim()).filter(Boolean);
   const features = [];
   for (const [i, row] of rows.entries()) {
-    const m = /^([a-z0-9_.]+)\s+([a-z][a-z ]*?)\s+(true|false)$/.exec(row);
+    const m = /^([a-z0-9_.]+)\s+(under development|stable|experimental|deprecated|removed)\s+(true|false)$/.exec(row); // the stages both fixtures use
     if (!m) return { error: `row ${i + 1} is not "<name> <stage> true|false"` };
     features.push({ name: m[1], stage: m[2], enabled: m[3] === "true" });
   }
@@ -111,6 +114,9 @@ export function parseFeatures(text) {
 /** The --disable arguments for a binary that lists `names`. */
 export const disableArgs = (names) => [...DISABLE_ALWAYS, ...DISABLE_IF_LISTED.filter((n) => names.includes(n))].flatMap((n) => ["--disable", n]);
 
-/** Enabled features no one has judged, sorted; a CANNOT_DISABLE entry counts as judged only on its own version and stage. */
-export const unjudged = (features, version) => features.filter((f) => f.enabled && !Object.hasOwn(INERT, f.name)
+/**
+ * Enabled features no one has judged, sorted. An entry judged inert only because its stage is `removed` holds only at that
+ * stage (Codex R7); a CANNOT_DISABLE entry only on its own version and stage.
+ */
+export const unjudged = (features, version) => features.filter((f) => f.enabled && !(Object.hasOwn(INERT, f.name) && (!REMOVED_ONLY.has(f.name) || f.stage === "removed"))
   && !(Object.hasOwn(CANNOT_DISABLE, f.name) && CANNOT_DISABLE[f.name].version === version && CANNOT_DISABLE[f.name].stage === f.stage)).map((f) => f.name).sort();

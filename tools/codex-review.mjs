@@ -258,6 +258,7 @@ const OUT = opt("--out"); // US-40 AC18: claimed before anything else can stop t
 const READ_INPUTS = many("--include").concat(has("--record") ? [opt("--record-file", DEFAULT_RECORD)] : []).filter(Boolean), LEXICAL = [...many("--subject"), ...many("--baseline").filter((p) => p !== "none"), ...many("--context")].filter(Boolean);
 const outRefused = OUT ? claimOut(OUT, READ_INPUTS.concat(many("--record-file").filter(Boolean)), READ_INPUTS, LEXICAL) : null;
 if (outRefused) usage(outRefused);
+for (const o of ["--codex", "--model"]) if (many(o).length > 1) usage(`${o} is given more than once`); // Codex R9: no occurrence goes unchecked
 
 const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
 const git = (a, o = {}) => execFileSync("git", a, { cwd: ROOT, encoding: "utf8", maxBuffer: 256 << 20, ...o });
@@ -1332,12 +1333,11 @@ guard("final credential check", () => {
 });
 valueChecked = true;
 if (secretValues.skipped.length) console.error(`codex-review: ${secretValues.skipped.length} unchanged base binary file(s) over ${SKIP_BINARY_OVER >> 20} MB not searched for credential values: ${secretValues.skipped.join(", ")}`);
-console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, codex ${JSON.stringify(CODEX)} (${probe.version}), author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : ""}, timeout ${TIMEOUT_MS / 60000} min`);
-// Everything above is synchronous, so a signal that arrived during it has only been queued: one turn of the event loop
-// runs its handler (exit 130, the work dir deleted) before Codex can be spawned.
+// All above is synchronous, so a signal during it is only queued: each yield runs its handler (exit 130) before the next codex call.
 await new Promise(setImmediate);
-probe = recheckCodex(CODEX, probe, env, CONFIG_ARGS, (m) => console.error(`codex-review: ${m}`)); // Codex R5: the probed file, or one fresh probe
-if (probe.stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0");
+if ((probe = recheckCodex(CODEX, probe, env, CONFIG_ARGS, (m) => console.error(`codex-review: ${m}`))).stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); // Codex R5
+console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length} files), model ${MODEL}, codex ${JSON.stringify(CODEX)} (${probe.version}), author ${LOOP ? "loop" : "session"}${RECORD ? ", live record (read-only)" : ""}${WEB_ACCESS === "live" ? ", live web (opened sites outside the expected list are reported)" : ""}, timeout ${TIMEOUT_MS / 60000} min`);
+await new Promise(setImmediate); // Codex R6: a cancel during that check runs its handler before the prompt is sent
 const started = Date.now();
 const run = await new Promise((resolve) => {
   let stdout = "", stderr = "";

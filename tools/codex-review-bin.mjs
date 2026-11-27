@@ -43,17 +43,18 @@ export function chooseCodex(given) {
   if (given === "") return { error: "--codex and CODEX_BIN need a path or name when given" };
   const bin = given ? resolveBin(given) : findCodex();
   if (!bin) return { error: "codex binary not found: pass --codex <path> or set CODEX_BIN" };
-  return isExecutableFile(bin) ? { bin } : { error: `codex binary ${JSON.stringify(bin)} is refused: it must be an executable file that neither group nor others can write` };
+  return isExecutableFile(bin) ? { bin } : { error: `codex binary ${JSON.stringify(bin)} is refused: ${REFUSED}` };
 }
 
-/** What the file IS (Codex R5): device, inode, size, mtime and a sha256 of its bytes (0.6 s for the 300 MB app binary, 2026-11-27). */
+const REFUSED = "it must be an executable file that neither group nor others can write";
+/** What the file IS (Codex R5): device, inode, mode, size, mtime and a sha256 of its bytes (0.6 s for the 300 MB app binary, 2026-11-27). */
 export function binaryId(p) {
   try {
     const fd = openSync(p, "r"), hash = createHash("sha256"), buf = Buffer.alloc(1 << 20);
     try {
       const s = fstatSync(fd, { bigint: true });
       for (let n; (n = readSync(fd, buf, 0, buf.length, null)) > 0;) hash.update(buf.subarray(0, n));
-      return `${s.dev}:${s.ino}:${s.size}:${s.mtimeNs}:${hash.digest("hex")}`;
+      return `${s.dev}:${s.ino}:${s.mode}:${s.size}:${s.mtimeNs}:${hash.digest("hex")}`;
     } finally { closeSync(fd); }
   } catch { return null; }
 }
@@ -94,10 +95,11 @@ export function probeCodex(bin, env, configArgs) {
 
 /** Just before the review launches (Codex R5): the same file as probed, or one fresh probe of the new one; a second change stops the run. */
 export function recheckCodex(bin, probe, env, configArgs, say) {
+  if (!isExecutableFile(bin)) return { ...probe, stop: `E_CODEX_CHANGED: the codex binary changed after its probe and ${REFUSED}` }; // Codex R1: before any re-probe
   if (binaryId(bin) === probe.id) return probe;
   say("codex binary changed after its probe; probing it again");
   const again = probeCodex(bin, env, configArgs);
-  return again.stop || binaryId(bin) === again.id ? again : { ...again, stop: "E_CODEX_CHANGED: the codex binary changed again after a second probe" };
+  return again.stop || (isExecutableFile(bin) && binaryId(bin) === again.id) ? again : { ...again, stop: "E_CODEX_CHANGED: the codex binary changed again after a second probe" };
 }
 
 /** The review's argument list, as the wrapper launches it (AC3, AC14, AC19); the probe script builds the same. */

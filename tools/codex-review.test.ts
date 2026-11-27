@@ -50,7 +50,8 @@ const all = process.argv.slice(2);
 try { fs.appendFileSync(path.join(dir, 'calls.jsonl'), JSON.stringify({ bin: process.argv[1], args: all, codexHome: process.env.CODEX_HOME || null }) + '\\n'); } catch { /* a ulimit -f case: the log is the tests' own, the probe must still answer */ }
 if (all.includes('--version')) {
   if (fs.existsSync(path.join(dir, 'armed'))) { const me = process.argv[1], t = me + '.n'; fs.writeFileSync(t, fs.readFileSync(me, 'utf8') + '// replaced\\n'); fs.chmodSync(t, 0o755); fs.renameSync(t, me); }
-  console.log('codex-cli 0.0.0-fake'); process.exit(0);
+  if (fs.existsSync(path.join(dir, 'slow'))) { fs.rmSync(path.join(dir, 'slow')); fs.writeFileSync(path.join(dir, 'reached'), ''); require('child_process').execSync('sleep 2'); }
+  console.log(fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n') ? 'codex-cli 0.0.0-fake-v2' : 'codex-cli 0.0.0-fake'); process.exit(0);
 }
 if (all.at(-2) === 'features' && all.at(-1) === 'list') {
   if (cfg.failFeatures) { process.stderr.write(cfg.failFeatures.stderr); process.exit(cfg.failFeatures.code); }
@@ -222,6 +223,18 @@ describe('US-40 AC3 (CR2) — process environment and tool flags', () => {
     expect(r.stdout).toContain('E_TOOL_BOUNDARY');
   });
 });
+
+/** A git on PATH that runs `snippet` (sh) once, at the snapshot's `git archive`: between the probe and the review (US-40 AC19). */
+function archiveShim(snippet: string) {
+  const shimDir = mkdtempSync(join(tmpdir(), 'git-swap-'));
+  const realGit = sh(tmpdir(), 'command -v git').trim();
+  const mark = join(shimDir, 'done');
+  writeFileSync(join(shimDir, 'git'), `#!/bin/sh\ncase " $* " in *" archive "*) [ -e ${JSON.stringify(mark)} ] || { touch ${JSON.stringify(mark)}; ${snippet} ; } ;; esac\nexec ${JSON.stringify(realGit)} "$@"\n`);
+  chmodSync(join(shimDir, 'git'), 0o755);
+  return shimDir;
+}
+const swapIn = (bin: string, mode = '755') => `cp "${bin}" "${bin}.n"; echo '// v2' >> "${bin}.n"; chmod ${mode} "${bin}.n"; mv "${bin}.n" "${bin}"`;
+const callKinds = (f: { read: (n: string) => string }) => f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l).args).map((a: string[]) => (a.includes('--version') ? 'version' : a.at(-1) === 'list' ? 'features' : 'exec'));
 
 /** The --disable list per real binary (US-40 AC19, 2026-11-27): AC3's eight, then every sub-agent, agent-messaging, browser and automation feature that binary lists, then the ones a review has no use for. */
 const ALWAYS_OFF = ['apps', 'image_generation', 'browser_use', 'computer_use', 'plugins', 'memories', 'skill_search', 'multi_agent'];
@@ -2600,6 +2613,11 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(parseFeatures('apps  stable  true\nnew_tool  stable  true  (beta)\n').error).toBe('row 2 is not "<name> <stage> true|false"');
     expect(parseFeatures('apps  stable  true\napps  stable  false\n').error).toBe('a feature is listed twice');
     expect(parseFeatures('\n\n').error).toBe('no rows');
+    expect(parseFeatures('new_tool  stable  true  false\n').error).toBe('row 1 is not "<name> <stage> true|false"'); // Codex R2 on PR 2222c: an extra boolean column
+    expect(parseFeatures('new_tool  beta  true\n').error).toBe('row 1 is not "<name> <stage> true|false"'); // a stage outside the fixtures' vocabulary
+    expect(parseFeatures('a  under development  false\nb  experimental  true\nc  deprecated  true\n').features).toHaveLength(3);
+    const restored = after171.map((x: { name: string }) => (x.name === 'sqlite' ? { ...x, stage: 'stable' } : x)); // Codex R7 on PR 2222c
+    expect(unjudged(restored, 'codex-cli 0.171.0-alpha.13.2')).toEqual(['sqlite']);
   });
   it('Codex R3 on PR 2222: a failed probe reports its stage and exit code only; the CLI stderr reaches no output', () => {
     writeFileSync(join(repo, 'a.txt'), 'probe stderr\n');
@@ -2658,27 +2676,53 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
       expect(JSON.parse(readFileSync(outJson, 'utf8'))).toMatchObject({ link_policy: 'default', codex_bin: realpathSync(join(outside, 'codex')) });
     } finally { rmSync(outside, { recursive: true, force: true }); }
   });
-  it('Codex R5 on PR 2222: a binary replaced between the probe and the review is probed again; replaced again, the run stops', () => {
-    const shim = (arm: string) => {
-      const shimDir = mkdtempSync(join(tmpdir(), 'git-swap-'));
-      const realGit = sh(tmpdir(), 'command -v git').trim();
-      const mark = join(shimDir, 'done');
-      writeFileSync(join(shimDir, 'git'), `#!/bin/sh\ncase " $* " in *" archive "*) [ -e ${JSON.stringify(mark)} ] || { touch ${JSON.stringify(mark)}; B=${JSON.stringify(arm.split('|')[0])}; cp "$B" "$B.n"; echo '// v2' >> "$B.n"; chmod 755 "$B.n"; mv "$B.n" "$B"; ${arm.includes('|') ? `touch ${JSON.stringify(arm.split('|')[1])};` : ''} } ;; esac\nexec ${JSON.stringify(realGit)} "$@"\n`);
-      chmodSync(join(shimDir, 'git'), 0o755);
-      return shimDir;
-    };
+  it('Codex R5 and R8 on PR 2222: a binary replaced between the probe and the review is probed again, and the launch line and report name the replacement; replaced again, the run stops', () => {
     writeFileSync(join(repo, 'a.txt'), 'swap once\n');
     const f = fake({ output: CLEAN });
-    const once = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${shim(f.bin)}:${process.env.PATH}` }) });
+    const once = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(swapIn(f.bin))}:${process.env.PATH}` }) });
     expect(once.status).toBe(0);
     expect(once.stderr).toContain('codex binary changed after its probe; probing it again');
-    const kinds = f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l).args).map((a: string[]) => (a.includes('--version') ? 'version' : a.at(-1) === 'list' ? 'features' : 'exec'));
-    expect(kinds).toEqual(['version', 'features', 'features', 'version', 'features', 'features', 'exec']);
+    expect(callKinds(f)).toEqual(['version', 'features', 'features', 'version', 'features', 'features', 'exec']);
+    expect(once.stderr).toContain('(codex-cli 0.0.0-fake-v2), author');
+    expect(once.stderr).not.toContain('(codex-cli 0.0.0-fake), author');
+    expect(JSON.parse(readFileSync(outJson, 'utf8')).codex_version).toBe('codex-cli 0.0.0-fake-v2');
     const g = fake({ output: CLEAN });
-    const twice = spawnSync('node', [WRAPPER, '--codex', g.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${shim(`${g.bin}|${join(g.dir, 'armed')}`)}:${process.env.PATH}` }) });
+    const twice = spawnSync('node', [WRAPPER, '--codex', g.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(`${swapIn(g.bin)}; touch "${join(g.dir, 'armed')}"`)}:${process.env.PATH}` }) });
     expect(twice.status).toBe(3);
     expect(twice.stdout).toContain('E_CODEX_CHANGED');
     expect(existsSync(join(g.dir, 'argv.json'))).toBe(false);
+  });
+  it('Codex R1 on PR 2222c: a permission-only change, or a writable replacement, is refused before any further call', () => {
+    writeFileSync(join(repo, 'a.txt'), 'perm change\n');
+    for (const snippet of [(b: string) => `chmod 775 "${b}"`, (b: string) => swapIn(b, '777')]) {
+      const f = fake({ output: CLEAN });
+      const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(snippet(f.bin))}:${process.env.PATH}` }) });
+      expect(r.status).toBe(3);
+      expect(r.stdout).toContain('E_CODEX_CHANGED');
+      expect(r.stdout).toContain('neither group nor others can write');
+      expect(callKinds(f)).toEqual(['version', 'features', 'features']);
+    }
+  });
+  it('Codex R6 on PR 2222c: a cancel during the final re-probe stops the run (130) before the review starts', async () => {
+    writeFileSync(join(repo, 'a.txt'), 'cancel in reprobe\n');
+    const f = fake({ output: CLEAN });
+    const child = spawn('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, env: childEnv({ PATH: `${archiveShim(`${swapIn(f.bin)}; touch "${join(f.dir, 'slow')}"`)}:${process.env.PATH}` }), stdio: 'ignore' });
+    while (!existsSync(join(f.dir, 'reached'))) await new Promise((r) => setTimeout(r, 20));
+    child.kill('SIGINT');
+    const code = await new Promise((r) => child.on('close', (c, sig) => r(c ?? sig)));
+    await new Promise((r) => setTimeout(r, 500));
+    expect(code).toBe(130);
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+  });
+  it('Codex R9 on PR 2222c: --model or --codex given twice is a usage error before any codex call', () => {
+    writeFileSync(join(repo, 'a.txt'), 'twice\n');
+    const f = fake({ output: CLEAN });
+    for (const extra of [['--model', 'first', '--model'], ['--model', 'first', '--model', 'second'], ['--codex', f.bin]]) {
+      const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson, ...extra], { cwd: repo, encoding: 'utf8', env: childEnv() });
+      expect([extra.join(' '), r.status]).toEqual([extra.join(' '), 1]);
+      expect(r.stderr).toMatch(/--(model|codex) is given more than once/);
+    }
+    expect(existsSync(join(f.dir, 'calls.jsonl'))).toBe(false);
   });
   it('Codex R9 on PR 2222: the live probe script, in --dry-run, builds the wrapper launch arguments and makes no exec call', () => {
     const f = fake({ output: CLEAN });
@@ -2694,6 +2738,34 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(c).toContain('cli_auth_credentials_store="file"');
     const kinds = f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l).args.includes('exec') ? 'exec' : 'probe');
     expect(kinds).not.toContain('exec');
+  });
+  it('Codex R3-R5 on PR 2222c: the probe judges give PASS only on positive evidence (synthetic events, no model call)', async () => {
+    const { judgeShell, judgeSearch, judgeLogin } = await import('./codex-review-probe.mjs');
+    const ev = (item: object) => ({ type: 'item.completed', item });
+    const res = (items: object[], extra: object = {}) => ({ status: 0, events: items.map(ev), answer: '', text: '', ...extra });
+    const curl = (exit_code: number) => ({ type: 'command_execution', command: "bash -lc 'curl -sS https://example.com/'", exit_code });
+    expect(judgeShell(6, res([curl(6)]))[0]).toBe('INCONCLUSIVE'); // control failed: offline
+    expect(judgeShell(0, res([]))[0]).toBe('INCONCLUSIVE'); // curl never ran
+    expect(judgeShell(0, res([curl(0)]))[0]).toBe('FAIL');
+    for (const code of [60, 35, 127]) expect(judgeShell(0, res([curl(code)]))[0]).toBe('INCONCLUSIVE'); // TLS, handshake, missing curl
+    expect(judgeShell(0, res([curl(6)]))[0]).toBe('PASS');
+    expect(judgeShell(0, res([curl(7)]))[0]).toBe('PASS');
+    const url = 'https://example.com/?codex-review-probe=abcd1234';
+    const open = { type: 'web_search', action: { type: 'open_page', url } };
+    expect(judgeSearch(res([], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE'); // no tool call: the answer alone is not evidence
+    expect(judgeSearch(res([{ type: 'web_search', action: { type: 'search', query: 'doi' } }], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE');
+    expect(judgeSearch(res([open], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('PASS');
+    expect(judgeSearch(res([open], { answer: 'Example Domain' }), url, 'cached')[0]).toBe('FAIL');
+    expect(judgeSearch(res([open], { answer: 'nothing' }), url, 'cached')[0]).toBe('INCONCLUSIVE');
+    expect(judgeSearch(res([open], { answer: 'Example Domain' }), url, 'live')[0]).toBe('PASS');
+    expect(judgeSearch(res([], { answer: 'Example Domain' }), url, 'live')[0]).toBe('INCONCLUSIVE');
+    const keyed = { stdout: 'Logged in using an API key - test-***', stderr: '' };
+    const refusal = (text: string, status = 1) => ({ status, events: [], answer: '', text });
+    expect(judgeLogin({ stdout: 'Not logged in', stderr: '' }, refusal('forced_login_method is chatgpt'))[0]).toBe('INCONCLUSIVE'); // the key was never read
+    expect(judgeLogin(keyed, refusal('Not logged in'))[0]).toBe('INCONCLUSIVE'); // generic
+    expect(judgeLogin(keyed, refusal('error: 401 Unauthorized'))[0]).toBe('FAIL');
+    expect(judgeLogin(keyed, refusal('ok', 0))[0]).toBe('FAIL');
+    expect(judgeLogin(keyed, refusal('API key login is not allowed: forced_login_method is chatgpt'))[0]).toBe('PASS');
   });
   it('Codex R7 on PR 2222: a wrong scratch record stops the run before any codex call, the version probe included', () => {
     writeFileSync(join(repo, 'a.txt'), 'wrong record\n');
