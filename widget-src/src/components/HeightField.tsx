@@ -33,8 +33,8 @@ export function useHeightPair(heightCm: number | undefined, unitSystem: UnitSyst
       const { feet, inches } = cmToFeetInches(heightCm);
       setHeightFeet(String(feet));
       setHeightInches(String(inches));
-    } else if (unitSystem === 'si') {
-      // Clear feet/inches when switching to SI
+    } else if (unitSystem === 'si' || heightCm === undefined) {
+      // Empty feet/inches when switching to SI, or once the form holds no height (an erase): typed again, it saves (US-02 AC11a)
       typedHeightCm.current = undefined;
       setHeightFeet('');
       setHeightInches('');

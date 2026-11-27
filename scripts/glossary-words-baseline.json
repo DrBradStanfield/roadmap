@@ -1,0 +1,18 @@
+{
+  "G3-wipe": {},
+  "G13-cloud-provider": {
+    "packages/health-core/src/file-adapter.ts": 1
+  },
+  "G13-cloud-account": {
+    "widget-src/standalone/reminders-control.tsx": 2,
+    "widget-src/standalone/reminders.ts": 2
+  },
+  "G21-ios-app": {
+    "CLAUDE.md": 1,
+    "docs/decisions-for-brad.md": 1,
+    "docs/gotchas.md": 4,
+    "health_roadmap_algorithm.md": 1
+  },
+  "G21-native-app": {},
+  "G25-healthkit": {}
+}

@@ -1,22 +1,21 @@
 import SwiftUI
-import TipKit
 
 /// A My health heading (US-73): a row in the list's own flow, so the pills can scroll to it by
 /// `anchor`; any controls at its trailing end ("Upload labs", US-73 AC14). When the title and the
 /// controls do not fit on one line the controls go under it, and at the largest sizes a one-word
-/// title shrinks to one line, so no word breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26). `tip`: tour tip 3's action, when the
-/// tip shows on this heading (US-57 AC7). Split out of MyDataView.swift (US-64 AC23), so the
+/// title shrinks to one line, so no word breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26). `tourTip`: tour tip 3
+/// shows on this heading (US-57 AC7). Split out of MyDataView.swift (US-64 AC23), so the
 /// Documents headings share it (US-73 AC12).
 struct TopicHeading<Controls: View>: View {
     let title: SectionTitle
     let anchor: String
-    var tip: (@MainActor () -> Void)?
+    let tourTip: Bool
     let controls: Controls
 
-    init(_ title: SectionTitle, anchor: String, tip: (@MainActor () -> Void)? = nil, @ViewBuilder controls: () -> Controls) {
+    init(_ title: SectionTitle, anchor: String, tourTip: Bool = false, @ViewBuilder controls: () -> Controls) {
         self.title = title
         self.anchor = anchor
-        self.tip = tip
+        self.tourTip = tourTip
         self.controls = controls()
     }
 
@@ -42,12 +41,18 @@ struct TopicHeading<Controls: View>: View {
             .font(.body)
             .frame(maxWidth: .infinity, alignment: .leading)
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 20, leading: 4, bottom: 0, trailing: 4))
-            .id(anchor)
-            if let tip { row.tourTip(BloodTestsTip(), action: tip) } else { row }
+            .listRowInsets(EdgeInsets(top: Self.rowTop, leading: 4, bottom: 0, trailing: 4))
+            // The scroll id outermost, over the tip's modifiers, so no wrapper can hide it from the
+            // list: under TipKit's popoverTip it did, and scrolls to it did nothing (docs/gotchas.md
+            // 2026-11-27, second entry).
+            Group { if tourTip { row.tourTip(BloodTestsTip(), rowTop: Self.rowTop) } else { row } }
+                .id(anchor)
         }
         .listSectionSpacing(.compact)
     }
+
+    /// The room above a heading, in its row: the tour counts it as the heading's (`tourTip`).
+    static var rowTop: CGFloat { 20 }
 }
 
 extension TopicHeading where Controls == EmptyView {

@@ -42,6 +42,22 @@ function validate(r) {
 function pick(r) {
   return { status: r.status, target: r.target, summary: r.summary, findings: r.findings.map((f) => Object.fromEntries(FINDING_KEYS.map((k) => [k, f[k]]))) };
 }
+// --brief (US-40 AC20): an answer, not findings. The same rules: declared fields only, diagnostics name positions, never text.
+const BRIEF_KEYS = ["status", "target", "summary", "answer"];
+const briefSchema = {
+  type: "object", additionalProperties: false, required: BRIEF_KEYS,
+  properties: { status: { type: "string", enum: ["complete", "incomplete"] }, target: { type: "string" }, summary: { type: "string" }, answer: { type: "string" } },
+};
+function validateBrief(r) {
+  if (typeof r !== "object" || r === null || Array.isArray(r)) return "not an object";
+  if (Object.keys(r).some((k) => !BRIEF_KEYS.includes(k))) return "undeclared top-level field";
+  if (!["complete", "incomplete"].includes(r.status)) return "status";
+  for (const k of ["target", "summary", "answer"]) if (typeof r[k] !== "string") return k;
+  if (r.status === "complete" && !r.answer.trim()) return "answer is empty";
+  return null;
+}
+/** Only the declared fields. `findings` stays an empty list, so --out keeps one report shape (tools/codex-review-out.mjs). */
+function pickBrief(r) { return { status: r.status, target: r.target, summary: r.summary, findings: [], answer: r.answer }; }
 // Strict: the authority must be a bare host (and port) that the WHATWG parser agrees on, so "https://github.com\\@evil"
 // (github.com to Node, evil to an RFC parser) or any userinfo, space or escape there is unresolved, never "expected".
 const urlHost = (u) => {
@@ -57,4 +73,4 @@ const nonEmptyObject = (v) => v && typeof v === "object" && !Array.isArray(v) &&
 const nonEmptyBlock = (b) => b && typeof b === "object" && (b.type === "text" ? typeof b.text === "string" && b.text.trim().length > 0 : Object.keys(b).length > 1);
 // The exec event stream spells it structured_content; the MCP payload inside spells it structuredContent. Both strings are in the 0.154 binary.
 const payloadOk = (r) => r && r.isError !== true && ((Array.isArray(r.content) && r.content.some(nonEmptyBlock)) || nonEmptyObject(r.structured_content ?? r.structuredContent));
-export { ALLOWED_TOOLS, isFetch, payloadOk, pick, plainHost, READ_TOOLS, schema, urlHost, validate };
+export { ALLOWED_TOOLS, briefSchema, isFetch, payloadOk, pick, pickBrief, plainHost, READ_TOOLS, schema, urlHost, validate, validateBrief };

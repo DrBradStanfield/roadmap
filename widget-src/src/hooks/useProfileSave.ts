@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import type { HealthInputs } from '@roadmap/health-core/types';
 import type { UnitSystem } from '@roadmap/health-core/units';
-import { PREFILL_FIELDS, hasUnsavedProfileEdits } from '@roadmap/health-core/mappings';
-import { birthRefusedMessage } from '@roadmap/health-core/validation';
+import { PREFILL_FIELDS } from '@roadmap/health-core/mappings';
+import { birthRefusedMessage, inputRangeFault } from '@roadmap/health-core/validation';
+import type { ProfileForm } from '../lib/remote-replay';
 import { getBackendKind, getShownErase, saveChangedMeasurements } from '../lib/roadmap-data';
 import { healthWritesAllowed } from '../lib/storage';
 import { writeMirror } from '../lib/chat-mirror';
@@ -32,7 +33,8 @@ function copyField<K extends keyof HealthInputs>(to: Partial<HealthInputs>, from
  *   (unless typed over since) and says why in `birthRefused` until the next
  *   birth edit.
  *
- * A remote change that arrived while the form was dirty is held by the relay
+ * A remote change that arrived while the form held an edit is held by the relay
+ * (an out-of-range value is none: it rides through, `profileForm`, AC13)
  * and released (`onSettled`) when the next save settles (US-34 AC4, AC8):
  * landed, a value refused, or nothing left to save. An out-of-range value
  * still in the form rides through the re-read with its error (useRecordApply).
@@ -48,8 +50,8 @@ export interface ProfileSave {
   markSaved: (inputs: Partial<HealthInputs>) => void;
   /** A copy of the record's profile as last read or saved: the profile the page shows as saved (US-34 AC9). */
   savedProfile: () => Partial<HealthInputs>;
-  /** The form holds a profile edit the record does not (US-34 AC4). */
-  profileDirty: () => boolean;
+  /** The form against the record: holding an edit a re-read would replace, or free of one (US-34 AC4, AC13). */
+  profileForm: () => ProfileForm;
   birthRefused: string | null;
   clearBirthRefused: () => void;
 }
@@ -131,8 +133,12 @@ export function useProfileSave(args: {
 
   const markSaved = useCallback((record: Partial<HealthInputs>) => { saved.current = { ...record }; }, []);
   const savedProfile = useCallback(() => ({ ...saved.current }), []);
-  const profileDirty = useCallback(() => hasUnsavedProfileEdits(inputsRef.current, saved.current), [inputsRef]);
+  const profileForm = useCallback((): ProfileForm => {
+    const form = inputsRef.current;
+    // A value the store refuses rides through a re-read with its error (useRecordApply); any other unsaved value would not.
+    return PREFILL_FIELDS.every(f => form[f] === saved.current[f] || inputRangeFault(f, form[f])) ? 'free' : 'typing';
+  }, [inputsRef]);
   const clearBirthRefused = useCallback(() => setBirthRefused(null), []);
 
-  return { flushProfile, profileTimer, markSaved, savedProfile, profileDirty, birthRefused, clearBirthRefused };
+  return { flushProfile, profileTimer, markSaved, savedProfile, profileForm, birthRefused, clearBirthRefused };
 }

@@ -90,6 +90,7 @@ describe('.dockerignore covers the .gitignore data patterns', () => {
       'docs/chatbot/answer-bank.md',
       'app/lib/chat-router-prompt.md', // US-15 AC80: optional chat docs
       'app/lib/chat-classifier-prompt.md', // US-15 AC81
+      'app/lib/chat-youtube-prompt.md', // US-15 AC82
       'docs/blog/index.json',
       'health_roadmap_algorithm.md',
       'instrument.server.mjs',

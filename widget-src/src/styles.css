@@ -1769,51 +1769,6 @@
   flex-shrink: 0;
 }
 
-.upload-lab-btn--disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: var(--color-gray-light);
-}
-
-.upload-lab-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.upload-lab-tooltip {
-  display: none;
-  position: absolute;
-  top: 100%;
-  /* Anchor on the right so the tooltip grows leftward into the card
-     instead of overflowing the card's right edge (which is clipped by
-     `.section-card--bt { overflow: hidden }`). */
-  right: 0;
-  z-index: 20;
-  background: #fff;
-  border: 1px solid var(--color-gray-border);
-  border-radius: 8px;
-  padding: 12px;
-  width: 260px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  font-size: 13px;
-  color: var(--color-gray-dark);
-}
-
-.upload-lab-wrapper:hover .upload-lab-tooltip,
-.upload-lab-wrapper:focus-within .upload-lab-tooltip {
-  display: block;
-}
-
-.upload-lab-tooltip p {
-  margin: 0 0 8px;
-}
-
-.upload-lab-tooltip-link {
-  color: var(--color-brand-text);
-  text-decoration: none;
-  font-weight: 500;
-}
-
 /* ---------------------------------------------------------------------------
    Upload Modal
    --------------------------------------------------------------------------- */
@@ -4779,15 +4734,11 @@
 }
 
 /* US-20 AC6: on a phone, what scrolls into view stops clear of the bottom tab
-   bar, and pop-overs open above it (the bar is z-index 20). After the base
-   rules, so these win. */
+   bar. After the base rules, so these win. */
 @media (max-width: 768px) {
   .feedback-form,
   .bt-move-panel {
     scroll-margin-bottom: 60px;
-  }
-  .upload-lab-tooltip {
-    z-index: 21;
   }
 }
 
