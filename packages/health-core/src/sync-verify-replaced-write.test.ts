@@ -357,6 +357,18 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
   const optInRow = (token: string, status: 'active' | 'cancelled', updatedAt: string): FileReminderOptIn =>
     ({ status, token, email: `${token}@example.test`, provider: 'dropbox', updatedAt, lamport: 1 });
   const withOptIn = (optIn: FileReminderOptIn): RoadmapFile => ({ ...seeded(), reminderOptIn: optIn });
+  /** A conditional store holding `first`, where `racer` lands once between a save's read and its upload. */
+  const racedOnce = (cloud: MemoryCloud, first: RoadmapFile, racer: RoadmapFile): MemoryAdapter => {
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(first), version: 1 });
+    const store = new MemoryAdapter(cloud);
+    const write = store.write.bind(store);
+    let raced = false;
+    store.write = async (...args: Parameters<MemoryAdapter['write']>) => {
+      if (!raced) { raced = true; cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(racer), version: 2 }); }
+      return write(...args);
+    };
+    return store;
+  };
   // The old rule for the opt-in: the newer object whole, its list with it.
   const oldDoc = { ...ROADMAP_DOC, merge: (l: RoadmapFile, b: RoadmapFile, ctx: { deviceId: string; now: string }) =>
     ({ ...ROADMAP_DOC.merge(l, b, ctx), reminderOptIn: pickNewerOptional(l.reminderOptIn, b.reminderOptIn) }) };
@@ -442,18 +454,8 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     const cloud = new MemoryCloud();
     const cancelledA = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
     const first = withOptIn({ ...cancelledA, tokens: [optInRow('token-b', 'cancelled', '2026-10-21T10:30:00.000Z')] });
-    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(first), version: 1 });
-    const store = new MemoryAdapter(cloud);
-    const write = store.write.bind(store);
-    let raced = false;
-    store.write = async (...args: Parameters<MemoryAdapter['write']>) => {
-      if (!raced) {
-        raced = true;
-        // An old writer saves A alone between this save's read and its conditional upload.
-        cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(withOptIn(cancelledA)), version: 2 });
-      }
-      return write(...args);
-    };
+    // An old writer saves A alone between this save's read and its conditional upload.
+    const store = racedOnce(cloud, first, withOptIn(cancelledA));
     // This device holds B active, from before the cancel.
     const ours = withOptIn(optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z'));
     const saved = await new SyncManager(store, 'a', ROADMAP_DOC, { now: () => NOW }).save(ours);
@@ -471,19 +473,8 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     // Another device added the same supplement under its own id, newer than this one.
     const cloudCopy = { ...seeded(), supplements: [supplement('supp-cloud', '2026-10-21T11:00:00.000Z')] };
     const cloud = new MemoryCloud();
-    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(cloudCopy), version: 1 });
-    const store = new MemoryAdapter(cloud);
-    const write = store.write.bind(store);
-    let raced = false;
-    store.write = async (...args: Parameters<MemoryAdapter['write']>) => {
-      if (!raced) {
-        raced = true;
-        // An erase that saw only the cloud copy lands before this conditional upload.
-        const erased = buildErasedFile({ stored: cloudCopy, own: cloudCopy, device: null, ctx: CTX });
-        cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(erased), version: 2 });
-      }
-      return write(...args);
-    };
+    // An erase that saw only the cloud copy lands before this conditional upload.
+    const store = racedOnce(cloud, cloudCopy, buildErasedFile({ stored: cloudCopy, own: cloudCopy, device: null, ctx: CTX }));
     const ours = { ...seeded(), supplements: [supplement('supp-local', '2026-10-21T10:00:00.000Z')] };
     const saved = await new SyncManager(store, 'a', ROADMAP_DOC, { now: () => NOW }).save(ours);
     expect(saved.attempts).toBe(1);
