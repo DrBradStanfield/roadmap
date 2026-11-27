@@ -16,7 +16,7 @@
  *   - health_roadmap_algorithm.md
  *   - docs/blog/index.json (router handle index)
  *   - docs/blog/<slug>.md (per-video platform-context, looked up by youtube: frontmatter)
- *   - app/lib/youtube-context.ts (the bot's platform-context builder and its YouTube prompt)
+ *   - app/lib/youtube-context.ts (the bot's platform-context builder; its prompt comes from the chat docs)
  *
  * Auth for YouTube comment fetch: shells out to claude_business/tools/youtube-analytics.js
  * (read-only OAuth as b.d.stanfield@gmail.com — same token used for analytics).

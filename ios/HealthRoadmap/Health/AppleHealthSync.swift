@@ -51,6 +51,9 @@ final class AppleHealthSync {
     /// a pay (`OwedPay`) and `disconnect`. A save owed meanwhile (`owe`) keeps the count, so it never changes it.
     /// Set only by `refreshOwedFooter`.
     private(set) var owedFooter = false
+    /// Settings' footer says lab results were skipped for a bad date (US-72 AC18): a cache of
+    /// `memory.labResultsUndated`, written only by `setUndated`, so it survives a restart until seen.
+    private(set) var undatedFooter = false
 
     private let store: RecordStore
     private let engine: HealthEngine
@@ -85,12 +88,23 @@ final class AppleHealthSync {
         self.reread = reread
         run = !client.isAvailable ? .unavailable : memory.connected ? .idle(.notYet) : .disconnected
         refreshOwedFooter()
+        undatedFooter = memory.labResultsUndated
         // After an erase disconnected Health, the cards read nothing until Connect (US-72 AC10).
         live?.connection = { [weak self] in self?.connection }
     }
 
     /// The one writer of `owedFooter` (US-72 AC16): its rule, read from what is owed.
     func refreshOwedFooter() { owedFooter = memory.owed.showsFooter }
+
+    /// Settings showed "Some results could not be read." and the person left it (US-72 AC18).
+    func undatedSeen() { setUndated(false) }
+
+    /// The one writer of the undated notice (US-72 AC18): stored, then its cache.
+    private func setUndated(_ undated: Bool) {
+        guard undatedFooter != undated else { return }
+        memory.labResultsUndated = undated
+        undatedFooter = undated
+    }
 
     /// The generation a read may start under; nil while an erase has Apple Health disconnected.
     var connection: Int? { memory.connected || memory.eraseSeen == nil ? generation : nil }
@@ -287,6 +301,7 @@ final class AppleHealthSync {
         memory.connected = false
         for kind in HealthKind.allCases { memory.setAnchor(nil, for: kind) }
         memory.labResultsAnchor = nil
+        setUndated(false)
         client.stopObserving()
     }
 
@@ -384,10 +399,15 @@ final class AppleHealthSync {
         let batch = try await client.labResults(after: anchor)
         try still(pass)
         if anchor == nil, batch.records.isEmpty { return }
-        if !batch.records.isEmpty, try await save(.healthRecords(batch.records), on: pass)?.landed == true {
-            analytics?.event(.healthRecordsImported)
+        var undated = false
+        if !batch.records.isEmpty, let counts = try await save(.healthRecords(batch.records), on: pass) {
+            if counts.landed { analytics?.event(.healthRecordsImported) }
+            undated = counts.skippedUndated
         }
         try still(pass)
+        // AC18: a result skipped for a bad date is said until seen, set only while the pass holds (an
+        // erase's disconnect clears it); a clean batch clears nothing.
+        if undated { setUndated(true) }
         memory.labResultsAnchor = batch.anchor
     }
 

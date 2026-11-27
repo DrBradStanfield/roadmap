@@ -111,6 +111,24 @@ describe('US-23 AC8 — plan-ready email fires ONLY on a new enrolment', () => {
   });
 });
 
+describe('US-17 AC8a: the 5 a day per email counts both Gmail spellings of one inbox', () => {
+  it('four sends to gmail.com and one to googlemail.com use up the day for both spellings', async () => {
+    enrolByEmail.mockResolvedValue({ token: 'tok-new', isNew: true });
+    freshEmail(); // a fresh client IP for this case
+    const send = (email: string) => action({ request: capture({ email, schedule: SCHEDULE }) } as never);
+    for (let i = 0; i < 4; i++) expect((await send('capture.inbox@gmail.com')).status).toBe(200);
+    expect((await send('capture.inbox@googlemail.com')).status).toBe(200);
+    // Only the count is shared: the row and the email keep the googlemail.com address.
+    expect(enrolByEmail).toHaveBeenLastCalledWith('capture.inbox@googlemail.com', 'typed', SCHEDULE);
+    expect(sendPlanReadyEmail).toHaveBeenLastCalledWith('capture.inbox@googlemail.com', 'guest', expect.anything());
+
+    expect((await send('capture.inbox@googlemail.com')).status).toBe(429);
+    expect((await send('capture.inbox@gmail.com')).status).toBe(429);
+    expect(enrolByEmail).toHaveBeenCalledTimes(5);
+    expect(sendPlanReadyEmail).toHaveBeenCalledTimes(5);
+  });
+});
+
 describe('no membership oracle — the response is constant', () => {
   it('returns an identical body for new and refreshed captures', async () => {
     enrolByEmail.mockResolvedValueOnce({ token: 't1', isNew: true });

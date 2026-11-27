@@ -13,13 +13,13 @@ const state = vi.hoisted(() => {
     YOUTUBE_BOT_CLIENT_SECRET: 'synthetic-secret', YOUTUBE_BOT_REFRESH_TOKEN: 'synthetic-refresh', YOUTUBE_BOT_FORCE_START: 'true',
   });
   return {
-    prompt: { kind: 'missing', files: ['docs/products.md'] } as { kind: 'loaded'; text: string } | { kind: 'missing'; files: string[] },
+    prompt: { kind: 'missing', files: ['docs/products.md'] } as { kind: 'loaded'; docs: { youtubePrompt: string } } | { kind: 'missing'; files: string[] },
     clients: 0,
     logins: 0,
   };
 });
 
-vi.mock('./chat-system-prompt.server', () => ({ get CHAT_PROMPT() { return state.prompt; } }));
+vi.mock('./chat-system-prompt.server', () => ({ chatDocs: () => state.prompt }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {} }));
 vi.mock('discord.js', () => ({
@@ -74,7 +74,7 @@ describe('US-15 AC65: the bots do not start without the chat system prompt', () 
   });
 
   it('control: loaded, the same setup starts both bots', () => {
-    state.prompt = { kind: 'loaded', text: 'prompt' };
+    state.prompt = { kind: 'loaded', docs: { youtubePrompt: 'template' } };
     startDiscordBot();
     startYouTubeBot();
     expect(state.logins).toBe(1);

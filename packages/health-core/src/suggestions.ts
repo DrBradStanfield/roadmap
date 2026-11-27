@@ -43,7 +43,7 @@ const FOLLOWUP_INFO = screeningFollowupInfo();
 const discuss = (text: string) => `${text} Whether it suits you is worth discussing with your doctor or pharmacist.`;
 const BASE_COSMOS = 'A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps.';
 const BASE_WHO = 'The WHO\'s 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials.';
-const BASE_K2 = 'If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.';
+const BASE_K2 = 'If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.';
 const CREATINE_STRENGTH = 'One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training.';
 const LUTEIN_PIGMENT = 'Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density.';
 const LUTEIN_AREDS = 'In the AREDS trial, a formula containing beta-carotene slowed the progression of macular degeneration. In AREDS2, lutein and zeaxanthin worked as well as beta-carotene, without beta-carotene\'s lung cancer signal in former smokers.';
@@ -192,7 +192,7 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
 /** The GLP-1 card's text, shared by the cascade's first step and the standalone card. */
 function glp1Description(bmi: number, reasons: string[]): string {
   const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
-  return `With a BMI of ${bmi}${and}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+  return `With a BMI of ${bmi}${and}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
 }
 
 /** A dose card's text (US-06 AC8): the steps the missing dose decides
@@ -730,7 +730,7 @@ export function generateSuggestions(
     }
     if (weightMeds.on) {
       // The GLP-1 sentence names medicines, so it needs a known adult age (US-07 AC6).
-      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? ' GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.' : ''}`);
+      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? ' GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.' : ''}`);
     }
     const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';
 
@@ -781,7 +781,7 @@ export function generateSuggestions(
     const stepCards: Record<LipidStep, [title: string, text: string]> = {
       statin: ['Consider discussing a statin with your doctor', 'Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.'],
       ezetimibe: ['Consider discussing Ezetimibe with your doctor', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
-      'bempedoic-acid': ['Consider discussing bempedoic acid with your doctor', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
+      'bempedoic-acid': ['Consider discussing Bempedoic acid with your doctor', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
       'statin-dose': ['Add your statin dose', `${doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)} ${onStatinPregnancy}`],
       'statin-increase': ['Consider discussing your statin dose with your doctor', `Discuss increasing your statin dose with your doctor. ${onStatinPregnancy}`],
       'statin-switch': ['Consider discussing a more potent statin with your doctor', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor. ${onStatinPregnancy}`],
@@ -1083,7 +1083,7 @@ export function generateSuggestions(
       category: 'skin',
       priority: 'info',
       title: 'Topical retinoid',
-      description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.',
+      description: 'A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.',
     },
     {
       id: 'skin-advanced',

@@ -242,7 +242,7 @@ Desktop: `grid-template-columns: 5fr 6fr; gap: 32px`
 | Desktop | >768px | Two-panel grid (5fr/6fr), tab bar hidden, results panel sticky |
 
 ### Mobile Specifics
-- Bottom tab bar, as on the iPhone: My data, My plan, Chat; icons over labels, the active tab in `--color-brand-text`
+- Bottom tab bar, as on the iPhone: My health and Chat, then Account (US-62 AC34); icons over labels, the active tab in `--color-brand-text`
 - Sticky at the widget's foot, never fixed, so it shows only with the widget; pads for `env(safe-area-inset-bottom)`
 - Plain React state picks the tab; the other panels stay mounted but hidden, and each tab keeps its scroll position
 - A slim top bar holds the storage button (Sign in) above every tab

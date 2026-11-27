@@ -61,6 +61,7 @@ beforeEach(() => {
   process.env.DROPBOX_APP_KEY = 'app-key';
   process.env.DROPBOX_APP_SECRET = 'app-secret';
   resetMcpMemory();
+  vi.mocked(recordServerEvent).mockClear(); // each test counts only its own events
   cloud = new MemoryCloud();
   makeAdapter = () => new MemoryAdapter(cloud);
   // Dropbox's token endpoint is the only network call the server makes here.

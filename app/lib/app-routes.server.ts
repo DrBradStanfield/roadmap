@@ -12,7 +12,7 @@ import { captureAllowListedWarning } from './sentry-allow-listed.server';
 import { extractOneFile, TOO_SLOW } from './lab-extract-one.server';
 import { BODY_TOO_LARGE, parseSimpleRequestJson } from './local-first-route.server';
 import { clientKey } from './ip-key.server';
-import { CHAT_PROMPT } from './chat-system-prompt.server';
+import { chatDocs } from './chat-system-prompt.server';
 
 /** 2 MB, the web chat's own cap (api.chat.ts). */
 const APP_CHAT_BODY_CAP = 2 * 1024 * 1024;
@@ -82,7 +82,7 @@ export async function appRegister(request: Request, store: KeyStore = supabaseKe
  */
 export async function appChat(request: Request, store?: KeyStore): Promise<Response> {
   // US-15 AC65: no prompt or chat off is refused before the gate: no key read, daily turn or unit.
-  if (appRoutesOff() || CHAT_PROMPT.kind === 'missing' || process.env.CHAT_ENABLED === 'false') return unavailable();
+  if (appRoutesOff() || chatDocs().kind === 'missing' || process.env.CHAT_ENABLED === 'false') return unavailable();
   const gate = await appGate(request, { kind: 'chat', bodyCap: APP_CHAT_BODY_CAP, store });
   if (gate instanceof Response) return gate;
   const inner = new Request(request.url, { method: 'POST', body: new Uint8Array(gate.body), headers: { 'Content-Type': 'application/json' } });

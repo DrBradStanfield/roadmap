@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import type { LatestMeasurementsResult } from '../lib/api-types';
 import type { ShownCopy } from './useRecordReads';
+import type { ProfileForm } from '../lib/remote-replay';
 
 const id = (epoch: number) => JSON.stringify([epoch, epoch === 0 ? null : `2026-11-0${epoch}T10:00:00.000Z`]);
 const A = id(0); // the record shown at load
@@ -64,7 +65,7 @@ function setup(loaded = true) {
     setInputs: vi.fn(),
     applyLists: vi.fn(),
     units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
-    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileDirty: vi.fn(() => false), clearAnswered: vi.fn(), savedProfile: vi.fn(() => ({})) },
+    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileForm: vi.fn((): ProfileForm => 'free'), clearAnswered: vi.fn(), savedProfile: vi.fn(() => ({})) },
     reloadValues: vi.fn(async (): Promise<LatestMeasurementsResult | null> => {
       log.push('read');
       await Promise.resolve();
@@ -138,12 +139,12 @@ const PATHS: Path[] = [
     expect(p.now().erase.loaded).toBe(true);
   }, { counted: 1, reads: 1 }, false],
   ['another writer\'s change held behind a dirty profile, then the erase', async (p) => {
-    p.fx.later.profileDirty.mockReturnValue(true);
+    p.fx.later.profileForm.mockReturnValue('typing');
     await announced(null);
     expect(p.reads()).toBe(0); // held
     await announced(B);
     // The erase's read showed the held change too: the save that cleans the profile reads nothing more.
-    p.fx.later.profileDirty.mockReturnValue(false);
+    p.fx.later.profileForm.mockReturnValue('free');
     act(() => { p.now().page.settled(); });
     await settle();
   }, { counted: 1, reads: 1 }],
@@ -228,10 +229,10 @@ describe('fix 4 (2b-3 R1, Fable): an arrival carrying the erase the machine show
 
   it('(a) with the profile dirty it is held, as any remote change: nothing read until the save that cleans it, and nothing counted', async () => {
     const page = await bShownEarly();
-    page.fx.later.profileDirty.mockReturnValue(true);
+    page.fx.later.profileForm.mockReturnValue('typing');
     await announced(B);
     expect(page.reads()).toBe(0); // held: the typing stays
-    page.fx.later.profileDirty.mockReturnValue(false);
+    page.fx.later.profileForm.mockReturnValue('free');
     act(() => { page.now().page.settled(); });
     await settle();
     expect({ counted: counted(), reads: page.reads() }).toEqual({ counted: 0, reads: 1 });
@@ -287,7 +288,7 @@ describe('fix 4 (2b-3), Fable: L1, a heard erase whose read fails, is never left
     await announced(B);
     expect(page.now().erase.shownErase).toBe(A); // B's read failed: the page still shows A
     page.fx.fail = false;
-    page.fx.later.profileDirty.mockReturnValue(true);
+    page.fx.later.profileForm.mockReturnValue('typing');
     await announced(null); // a change held behind a dirty profile: the page's copy would be A's
     // useLongitudinalSave's finish re-reads after a refused save too.
     await act(async () => { await page.now().page.ownSave(); });

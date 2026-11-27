@@ -1,5 +1,5 @@
 /**
- * My data's view (US-62 AC10, AC11; US-16 AC2) as one named state: the rows,
+ * My health's view (US-62 AC10, AC11; US-16 AC2) as one named state: the rows,
  * or a value page over them. The table is a toggle that both carry, so a page
  * opened and closed over the table leaves it shown. `seen` is the last chat
  * reveal the user moved on from (a page opened, the table toggled); a newer
@@ -10,7 +10,7 @@
  */
 import type { ValueSubject } from '../components/MyDataRows';
 
-/** The field a chat edit filled, for My data to show (US-16 AC2). */
+/** The field a chat edit filled, for My health to show (US-16 AC2). */
 export type RevealCell = { field: string; grid: boolean } | null;
 /** What held the focus, and the scroll, as a page opened: Back returns there (US-62 AC29). */
 export type CameFrom = { el: Element | null; y: number };

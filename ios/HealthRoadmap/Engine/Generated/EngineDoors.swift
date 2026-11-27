@@ -1,6 +1,6 @@
 // Generated from ios/engine/contract.ts by `npx tsx ios/scripts/gen-contract.ts`. Never edit it:
 // ios/engine/contract-drift.test.ts fails when it differs from what the contract generates.
-// contractHash: eb18cc9e1981de46
+// contractHash: 5f429de07fb672b2
 
 import Foundation
 import JavaScriptCore

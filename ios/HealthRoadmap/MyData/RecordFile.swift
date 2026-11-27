@@ -102,8 +102,9 @@ struct RecordProblem: Equatable, Sendable {
 /// What one edit to the phone's file did.
 enum PhoneApply: Sendable {
     case refused(EditOutcome)
-    /// The edit changed nothing, so nothing was written.
-    case unchanged
+    /// The edit changed nothing, so nothing was written. `healthRecords`: what a Health Records
+    /// batch did all the same, results skipped for a bad date included (US-72 AC18).
+    case unchanged(healthRecords: HealthRecordCounts?)
     /// `healthRecords`: what a Health Records batch did (US-72).
     case saved(record: String, drawn: HealthEngine.Drawn, healthRecords: HealthRecordCounts?)
 }
@@ -162,7 +163,7 @@ extension HealthEngine {
     func applyOnPhone(_ edit: RecordEdit, to record: String, units: String, shownIn: String, file: URL, marking: PhoneFiles?, deviceId: String) throws -> PhoneApply {
         let outcome = try apply(edit, to: record, now: .now, deviceId: deviceId, units: units)
         guard outcome.ok, let next = outcome.record else { return .refused(outcome) }
-        if next == record { return .unchanged }
+        if next == record { return .unchanged(healthRecords: outcome.healthRecords) }
         return .saved(record: next, drawn: try drawAndWrite(next, units: shownIn, to: file, marking: marking, deviceId: deviceId), healthRecords: outcome.healthRecords)
     }
 }

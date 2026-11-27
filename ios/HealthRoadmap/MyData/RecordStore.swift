@@ -12,7 +12,7 @@ import Observation
 @Observable
 final class RecordStore {
     enum ApplyResult: Equatable, Sendable {
-        /// `healthRecords`: what a Health Records batch did when it changed the record (US-72).
+        /// `healthRecords`: what a Health Records batch did, whether or not it changed the record (US-72, AC18).
         case saved(healthRecords: HealthRecordCounts? = nil)
         /// Nothing changed. `existingId` names the row that already holds that day.
         case refused(message: String, existingId: String?)
@@ -421,8 +421,8 @@ final class RecordStore {
             case .refused(let outcome):
                 return .refused(message: outcome.message ?? "That could not be saved.", existingId: outcome.existingId)
             // An edit that changed nothing (an Apple Health batch with nothing new) writes nothing.
-            case .unchanged:
-                return .saved()
+            case .unchanged(let counts):
+                return .saved(healthRecords: counts)
             case .saved(let next, let shown, let counts):
                 land(.phoneWritten, record: next, drawn: shown)
                 publish(choices)
