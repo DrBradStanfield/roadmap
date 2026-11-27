@@ -142,6 +142,9 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
       for (const spec of specifiers) expect(spec).toMatch(pattern);
       expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|anthropic)\b/i);
     }
+    // From node:fs the CLI takes these two only, so no write call is imported (US-41 AC2).
+    const cli = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'search-knowledge.ts'), 'utf8');
+    expect([...cli.matchAll(/^import\s+([^;]+?)\s+from\s+'node:fs'/gm)].map((m) => m[1].replace(/\s+/g, ' '))).toEqual(['{ existsSync, realpathSync }']);
   });
 });
 

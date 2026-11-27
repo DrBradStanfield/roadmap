@@ -15,6 +15,8 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+// @ts-expect-error plain .mjs script
+import { findVitest } from '../scripts/test-all-locked.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TSX = pathToFileURL(join(ROOT, 'node_modules', 'tsx', 'dist', 'loader.mjs')).href;
@@ -29,6 +31,8 @@ beforeAll(() => {
   symlinkSync(ROOT, linked, 'dir');
   noBrowsers = join(dir, 'no-browsers');
   mkdirSync(noBrowsers);
+  // With a vitest above the temp folder, the test-all-locked rows would start a real suite run.
+  expect(findVitest(dir), `TMPDIR must sit outside any checkout (vitest found above ${dir})`).toBeNull();
 });
 
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
