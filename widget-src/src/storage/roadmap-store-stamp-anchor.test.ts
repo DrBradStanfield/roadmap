@@ -71,7 +71,7 @@ const WRITES: Record<string, (store: RoadmapStore) => unknown> = {
   },
   markReportEmailCaptured: (s) => s.markReportEmailCaptured(s.shownErase),
   setLpaUnit: (s) => s.setLpaUnit('mg/dL', s.shownErase),
-  setReminderOptIn: (s) => s.setReminderOptIn({ status: 'cancelled', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' }, s.shownErase),
+  setReminderRows: (s) => s.setReminderRows([{ status: 'cancelled', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' }], s.shownErase),
   deleteAllData: async (s) => (await s.deleteAllData()).success,
 };
 

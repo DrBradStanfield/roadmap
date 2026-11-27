@@ -11,7 +11,8 @@ import { SchemaTooNewError } from './migrate';
 import type { SyncStorage } from './record-host';
 import type { RecordSession } from './record-session';
 import { ROADMAP_DOC } from './roadmap-doc';
-import { CURRENT_SCHEMA_VERSION, stableStringify, type RoadmapFile } from './roadmap-file';
+import { rowsOf } from './reminder-rows';
+import { CURRENT_SCHEMA_VERSION, stableStringify, type FileReminderOptIn, type RoadmapFile } from './roadmap-file';
 import { afterWrite, mayHaveLanded } from './write-refusal';
 
 /** What an erase that cannot read the cloud record says. It cannot list what
@@ -44,6 +45,11 @@ export interface EraseSteps {
   teardown?: () => Promise<void>;
   /** The chat history to tombstone; null when there is none. */
   chat?: () => Promise<{ eraseAll(): Promise<void> } | null>;
+  /** Told at the swap, before the erased copy replaces this one, every opt-in
+   *  the erase read: this copy's own as the erase began, the stored record's,
+   *  the device copy's, and this copy's after every merge taken in since (US-11
+   *  AC15). For the caller's teardown, which cancels each active row's token. */
+  swapping?: (read: FileReminderOptIn[]) => void;
 }
 
 /**
@@ -52,7 +58,7 @@ export interface EraseSteps {
  * teardown on Brad's server, the chat-history tombstones), so an erase
  * refused here has changed nothing anywhere (US-09 AC23).
  */
-export async function eraseSession(s: RecordSession, beforeErase?: () => Promise<void>): Promise<EraseResult> {
+export async function eraseSession(s: RecordSession, beforeErase?: () => Promise<void>, swapping?: EraseSteps['swapping']): Promise<EraseResult> {
   // Refused before anything moves: a session on-device because the cloud could not be read, as an erase
   // lists the rows it removes from the record it reads (a reload would not help it); a tab off the record
   // this browser has chosen, read live here (US-11 AC6); and a second erase while one runs (US-16 AC2f).
@@ -91,10 +97,11 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
         .catch(() => null);
     // The caller's step reads the opt-in from this copy, to cancel its server row. Another device,
     // or another tab whose save failed, may have opted in since this copy was read: when the merge
-    // of every copy read (epoch first, then the newer stamp) keeps an ACTIVE opt-in, give it to this
+    // of every copy read (epoch first, then the newer stamp) keeps any ACTIVE row, give it to this
     // copy, so that row is the one cancelled (US-11 AC4). Never anything less: an erase this copy
     // missed may hold no opt-in at all, and this copy's own active row must still be cancelled and
     // turned off. No save is scheduled; the erase replaces this copy.
+    const ownOptIn = s.current.reminderOptIn;
     let optIn: RoadmapFile['reminderOptIn'];
     try {
       optIn = [stored, device].reduce<RoadmapFile>(
@@ -104,13 +111,15 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
     } catch {
       optIn = undefined; // keep this copy's own
     }
-    if (optIn?.status === 'active' && stableStringify(optIn) !== stableStringify(s.current.reminderOptIn ?? null)) {
+    // Any active row counts, a nested one included (US-17 AC19, US-11 AC15).
+    if (rowsOf(optIn).some((row) => row.status === 'active') && stableStringify(optIn) !== stableStringify(s.current.reminderOptIn ?? null)) {
       s.current = { ...s.current, reminderOptIn: optIn };
     }
     await beforeErase?.();
     // From here every failure comes back as a refusal, never a rejection: the
     // caller's step has run, and its page must leave its deleting state.
     s.saveWarning = undefined;
+    swapping?.([ownOptIn, stored?.reminderOptIn, device?.reminderOptIn, s.current.reminderOptIn].filter((o): o is FileReminderOptIn => o !== undefined));
     try { s.current = buildErasedFile({ stored, own: s.current, device, ctx: s.ctx() }); } catch (e) { return { success: false, error: (e as Error).message }; }
     s.clearedFor = s.eraseIdentity; // an erase made here owes no clear: its own follows the write, or the page's
     s.dispatch({ type: 'eraseSwapped' });
@@ -183,7 +192,7 @@ export async function eraseSession(s: RecordSession, beforeErase?: () => Promise
  */
 export async function deleteAllDataSession(s: RecordSession, steps: EraseSteps = {}): Promise<EraseResult & { chatErased: boolean }> {
   let chatErased = false;
-  const result = await s.erase(async () => {
+  const result = await eraseSession(s, async () => {
     try {
       await steps.teardown?.();
     } catch (error) {
@@ -198,7 +207,7 @@ export async function deleteAllDataSession(s: RecordSession, steps: EraseSteps =
     } catch (error) {
       s.host.report(error, { op: 'chat-erase', repeat: false });
     }
-  });
+  }, steps.swapping);
   return { ...result, chatErased };
 }
 

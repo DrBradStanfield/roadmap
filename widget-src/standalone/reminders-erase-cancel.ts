@@ -15,7 +15,8 @@
  */
 import { eraseRunsHere, getEraseIdentity, getReminderOptIn } from '../src/lib/roadmap-data';
 import { REMOTE_CHANGED_EVENT } from '../src/storage/roadmap-store';
-import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
+import { rowsOf } from '@roadmap/health-core/reminder-rows';
+import type { FileReminderOptIn, ReminderTokenRow } from '@roadmap/health-core/roadmap-file';
 
 /** `watching`: the erase began at `at`, and `cancels` holds each distinct
  *  active token seen, in order, the first with its Drive proof once fetched.
@@ -27,10 +28,12 @@ export type EraseCancel =
   | { kind: 'done' };
 export type EraseCancelEvent =
   | { type: 'prepared'; at: string }
-  | { type: 'read'; optIn: FileReminderOptIn | undefined } // the prepare's first read
+  // Rows the erase read: the prepare's first read, and at the commit every
+  // copy the erase read up to its swap (US-11 AC15).
+  | { type: 'read'; rows: ReminderTokenRow[] }
   // A re-read merged something in. `running`: this tab's erase still runs;
   // `identity`: the erase the record is at now.
-  | { type: 'remote'; optIn: FileReminderOptIn | undefined; running: boolean; identity: string }
+  | { type: 'remote'; rows: ReminderTokenRow[]; running: boolean; identity: string }
   | { type: 'proved'; token: string; idToken: string | null }
   | { type: 'failed' }
   | { type: 'committed' };
@@ -44,9 +47,11 @@ function moved(from: EraseCancel, state: EraseCancel): EraseCancelStep {
   return { state, effects: was === is ? [] : [{ type: is ? 'listen' : 'unlisten' }] };
 }
 
-function kept(state: Extract<EraseCancel, { kind: 'watching' }>, optIn: FileReminderOptIn | undefined): EraseCancel {
-  if (optIn?.status !== 'active' || state.cancels.some((c) => c.token === optIn.token)) return state;
-  return { ...state, cancels: [...state.cancels, { token: optIn.token, idToken: null }] };
+/** Each active row's token, once, after those already kept. */
+function kept(state: Extract<EraseCancel, { kind: 'watching' }>, rows: ReminderTokenRow[]): EraseCancel {
+  const fresh = rows.filter((row, i) => row.status === 'active'
+    && !state.cancels.some((c) => c.token === row.token) && rows.findIndex((r) => r.token === row.token) === i);
+  return fresh.length === 0 ? state : { ...state, cancels: [...state.cancels, ...fresh.map(({ token }) => ({ token, idToken: null }))] };
 }
 
 export function eraseCancelTransition(state: EraseCancel, event: EraseCancelEvent): EraseCancelStep {
@@ -55,9 +60,9 @@ export function eraseCancelTransition(state: EraseCancel, event: EraseCancelEven
   if (state.kind !== 'watching') return moved(state, state);
   switch (event.type) {
     case 'read':
-      return moved(state, kept(state, event.optIn));
+      return moved(state, kept(state, event.rows));
     case 'remote':
-      if (event.running) return moved(state, kept(state, event.optIn));
+      if (event.running) return moved(state, kept(state, event.rows));
       // The erase ended where it began: refused or put back, and no commit
       // will come. Ended elsewhere, it landed: the commit is on its way.
       return moved(state, event.identity === state.at ? { kind: 'done' } : state);
@@ -68,13 +73,14 @@ export function eraseCancelTransition(state: EraseCancel, event: EraseCancelEven
   }
 }
 
-/** What the commit cancels: every token kept until the commit; spared if the
- *  record still holds it active once the erase stands. That one survived the
- *  erase's save (another device erased to the same epoch, then turned
- *  reminders on), so it is live consent, not a pre-erase row. */
+/** What the commit cancels: every token kept until the commit; spared if any
+ *  row of the record holds it active once the erase stands, nested or not.
+ *  That one survived the erase's save (another device erased to the same
+ *  epoch, then turned reminders on), so it is live consent, not a pre-erase row. */
 export function toCancel(state: EraseCancel, standing: FileReminderOptIn | undefined): { token: string; idToken: string | null }[] {
   if (state.kind !== 'watching') return [];
-  return state.cancels.filter(({ token }) => !(standing?.status === 'active' && standing.token === token));
+  const live = new Set(rowsOf(standing).filter((row) => row.status === 'active').map((row) => row.token));
+  return state.cancels.filter(({ token }) => !live.has(token));
 }
 
 let eraseCancel: EraseCancel = { kind: 'done' };
@@ -92,5 +98,5 @@ export function stepEraseCancel(event: EraseCancelEvent): void {
 }
 
 function watchErase(): void {
-  stepEraseCancel({ type: 'remote', optIn: getReminderOptIn(), running: eraseRunsHere(), identity: getEraseIdentity() });
+  stepEraseCancel({ type: 'remote', rows: rowsOf(getReminderOptIn()), running: eraseRunsHere(), identity: getEraseIdentity() });
 }

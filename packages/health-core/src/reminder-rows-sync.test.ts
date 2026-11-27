@@ -61,20 +61,37 @@ const row = (token: string, status: 'active' | 'cancelled', updatedAt: string): 
 
 const stored = (cloud: MemoryCloud): RoadmapFile => JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
 
-describe('US-17 AC19: a change to the hidden rows alone is taken in, never announced', () => {
-  it('a re-read that adds a nested row adopts it and tells the page nothing', async () => {
+describe('US-17 AC19: a re-read announces a change to what the reminders control shows, and only that', () => {
+  /** A session on cancelled A, then a re-read of the same object with `tokens` nested under it. */
+  async function reread(top: FileReminderOptIn, nested: FileReminderOptIn[]) {
     const cloud = new MemoryCloud();
     const start = createEmptyFile({ deviceId: 'seed', now: NOW });
-    start.reminderOptIn = row('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
+    start.reminderOptIn = top;
     cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(start), version: 1 });
     const announced: unknown[] = [];
     const session = await RecordSession.open(host(cloud, 'new-device', [], announced));
-    const listed = { ...start, schemaVersion: 2, reminderOptIn: { ...start.reminderOptIn, tokens: [row('token-b', 'active', '2026-10-21T10:00:00.000Z')] } };
+    const listed = { ...start, schemaVersion: 2, reminderOptIn: { ...top, tokens: nested } };
     cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(listed), version: 2 });
-
     await session.refreshFromRemote('pressed');
-    expect(session.file.reminderOptIn?.tokens).toEqual(listed.reminderOptIn.tokens);
-    expect(announced).toEqual([]);
+    expect(session.file.reminderOptIn?.tokens).toEqual(nested);
+    return announced;
+  }
+
+  it('a nested active row that becomes the shown one is announced (inverted from part 1)', async () => {
+    expect(await reread(row('token-a', 'cancelled', '2026-10-21T11:00:00.000Z'), [row('token-b', 'active', '2026-10-21T10:00:00.000Z')])).toEqual([{ erase: null }]);
+  });
+
+  it('a new active address under the shown row is announced', async () => {
+    expect(await reread(row('token-a', 'active', '2026-10-21T11:00:00.000Z'), [row('token-b', 'active', '2026-10-21T10:00:00.000Z')])).toEqual([{ erase: null }]);
+  });
+
+  it('a nested cancelled row, which changes nothing shown, is taken in silently', async () => {
+    expect(await reread(row('token-a', 'active', '2026-10-21T11:00:00.000Z'), [row('token-b', 'cancelled', '2026-10-21T10:00:00.000Z')])).toEqual([]);
+  });
+
+  it('a nested active row at an address already shown, under a newer active row, is taken in silently', async () => {
+    const older = { ...row('token-b', 'active', '2026-10-21T10:00:00.000Z'), email: 'token-a@example.test' };
+    expect(await reread(row('token-a', 'active', '2026-10-21T11:00:00.000Z'), [older])).toEqual([]);
   });
 });
 

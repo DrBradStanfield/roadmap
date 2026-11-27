@@ -45,7 +45,8 @@ const githubAccountEmail = vi.fn<() => Promise<string | null>>(async () => 'gh@e
 
 vi.mock('../src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
-  setReminderOptIn: (...args: Parameters<typeof setReminderOptIn>) => setReminderOptIn(...args),
+  // Each row of an edit, as the one-row writer saw it (US-17 AC19); the edit is refused if any row is.
+  setReminderRows: (rows: Parameters<typeof setReminderOptIn>[0][], erase?: string) => rows.map((row) => setReminderOptIn(row, erase)).every(Boolean),
   getShownErase: () => getShownErase(),
   getEraseIdentity: () => getEraseIdentity(),
   stillShown: (asked: string) => stillShown(asked),
@@ -751,7 +752,8 @@ describe('US-17 AC12 — a switch\'s cancel is remembered across visits', () => 
   it('the marker is written before the cancel and cleared when the enrolment lands', async () => {
     let file: FileReminderOptIn | undefined = ACTIVE;
     getReminderOptIn.mockImplementation(() => file);
-    setReminderOptIn.mockImplementationOnce((fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => {
+    // Each row of the edit lands in turn; the last is the stored object.
+    setReminderOptIn.mockImplementation((fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>) => {
       file = { ...fields, updatedAt: '2026-10-14T00:00:00.000Z', lamport: 4 };
       return true;
     });
@@ -1016,8 +1018,9 @@ describe('US-11 AC4c — the EraseCancel transition', () => {
   type Effect = import('./reminders-erase-cancel').EraseCancelEffect;
   const on = (token: string, status: 'active' | 'cancelled' = 'active'): FileReminderOptIn => ({ ...ACTIVE, token, status });
   const watching = (...cancels: { token: string; idToken: string | null }[]): State => ({ kind: 'watching', at: 'E0', cancels });
-  const running = (optIn: FileReminderOptIn | undefined, identity = 'E0'): Event => ({ type: 'remote', optIn, running: true, identity });
-  const ended = (identity: string): Event => ({ type: 'remote', optIn: undefined, running: false, identity });
+  const listOf = (optIn: FileReminderOptIn | undefined) => (optIn ? [optIn] : []);
+  const running = (optIn: FileReminderOptIn | undefined, identity = 'E0'): Event => ({ type: 'remote', rows: listOf(optIn), running: true, identity });
+  const ended = (identity: string): Event => ({ type: 'remote', rows: [], running: false, identity });
   const A = { token: 'test-token-a', idToken: null };
   const B = { token: 'test-token-b', idToken: null };
   const LISTEN: Effect[] = [{ type: 'listen' }];
@@ -1027,8 +1030,10 @@ describe('US-11 AC4c — the EraseCancel transition', () => {
     ['prepared starts watching at the erase, and listens', { kind: 'done' }, { type: 'prepared', at: 'E0' }, watching(), LISTEN],
     ['prepared again starts afresh, still listening', watching(A), { type: 'prepared', at: 'E1' }, { kind: 'watching', at: 'E1', cancels: [] }, []],
     ['prepared after a failed prepare listens again', { kind: 'unprepared' }, { type: 'prepared', at: 'E0' }, watching(), LISTEN],
-    ['the first read keeps an active token', watching(), { type: 'read', optIn: on('test-token-a') }, watching(A), []],
-    ['the first read of no opt-in keeps nothing', watching(), { type: 'read', optIn: undefined }, watching(), []],
+    ['the first read keeps an active token', watching(), { type: 'read', rows: [on('test-token-a')] }, watching(A), []],
+    ['the first read of no opt-in keeps nothing', watching(), { type: 'read', rows: [] }, watching(), []],
+    // US-11 AC15: every active row the erase read, each once, a cancelled one never.
+    ['a read of several rows keeps each active token once', watching(A), { type: 'read', rows: [on('test-token-b'), on('test-token-c', 'cancelled'), on('test-token-b'), on('test-token-a')] }, watching(A, B), []],
     ['a token merged in while the erase runs is kept', watching(A), running(on('test-token-b')), watching(A, B), []],
     ['the same token seen again is kept once', watching(A), running(on('test-token-a')), watching(A), []],
     ['a cancelled opt-in adds nothing', watching(A), running(on('test-token-b', 'cancelled')), watching(A), []],
@@ -1056,6 +1061,8 @@ describe('US-11 AC4c — the EraseCancel transition', () => {
     ['every token kept, the record holding a cancelled opt-in', watching(A, B), on('test-token-b', 'cancelled'), [A, B]],
     ['not the token the record still holds active', watching(A, B), on('test-token-b'), [A]],
     ['an active token the teardown never kept changes nothing', watching(A), on('test-token-c'), [A]],
+    // US-11 AC15: a token active in any row of the standing record is spared, nested beneath the marker too.
+    ['not a token active only in a nested row', watching(A, B), { ...on('', 'cancelled'), tokens: [on('test-token-b')] }, [A]],
     ['nothing from done', { kind: 'done' }, undefined, []],
     ['nothing from unprepared', { kind: 'unprepared' }, undefined, []],
   ];

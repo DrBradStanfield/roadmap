@@ -15,7 +15,7 @@ import { customSupplementAdd } from '@roadmap/health-core/input-form';
 import { LocalStorageAdapter } from '../storage/local-storage-adapter';
 import {
   addMeasurement, flushRoadmapStore, initRoadmapStore, openHistoryLightbox, saveChangedMeasurements, saveMedication, saveSupplement,
-  setReminderOptIn, getShownErase,
+  setReminderRows, getShownErase,
 } from '../lib/roadmap-data';
 import { formatShortDate } from '../lib/constants';
 import { formatDisplayValue, type MetricType } from '@roadmap/health-core/units';
@@ -241,7 +241,7 @@ describe('US-09 AC7l: the record\'s own text sits in no attribute on any main sc
   });
 
   it('the reminders line names the address they go to, in no attribute', async () => {
-    setReminderOptIn({ status: 'active', token: 'test-token-good', email: `${SENTINEL.email}@example.org`, provider: 'dropbox' }, getShownErase());
+    setReminderRows([{ status: 'active', token: 'test-token-good', email: `${SENTINEL.email}@example.org`, provider: 'dropbox' }], getShownErase());
     render(<RemindersControl backend="dropbox" />);
     shown(SENTINEL.email);
     expect(leaks()).toEqual([]);

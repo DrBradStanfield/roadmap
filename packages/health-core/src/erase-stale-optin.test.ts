@@ -123,6 +123,27 @@ describe('RecordSession.deleteAllData: the teardown sees the stored opt-in (US-1
     expect(seen).toMatchObject({ token: 'fresh', provider: 'github' });
   });
 
+  // US-11 AC15: the swap hands the caller every copy's opt-in, so this copy's own active row, which
+  // the higher epoch's merge drops, still reaches the teardown (was the AC4a residual).
+  it('the swap is told every opt-in read: this copy\'s own, the stored record\'s, and the working copy\'s', async () => {
+    const cloud = new MemoryCloud();
+    const session = await RecordSession.open(host(cloud));
+    session.edit((file) => { file.reminderOptIn = { ...active(9, 'dropbox'), token: 'stale' }; }, session.shownErase);
+    const other = record();
+    other.meta.eraseEpoch = 1;
+    other.reminderOptIn = { ...active(2, 'github'), token: 'fresh' };
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(other), version: 99 });
+
+    const order: string[] = [];
+    let told: string[] = [];
+    await session.deleteAllData({
+      teardown: async () => { order.push('teardown'); },
+      swapping: (read) => { order.push('swap'); told = read.map((o) => o.token); },
+    });
+    expect(order).toEqual(['teardown', 'swap']);
+    expect(told).toEqual(['stale', 'fresh', 'fresh']);
+  });
+
   for (const [label, theirs] of [
     ['no opt-in', undefined],
     ['a cancelled opt-in', { ...active(3, 'github'), status: 'cancelled', token: '', email: '' }],

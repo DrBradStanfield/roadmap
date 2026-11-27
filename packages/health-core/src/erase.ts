@@ -6,6 +6,7 @@
  */
 import { mergeErasedRows, pickNewerOptional, rowRootIds, stampInstant } from './merge';
 import { migrateFile } from './migrate';
+import { ownRow } from './reminder-rows';
 import { recordSchemaVersion, type RoadmapFile } from './roadmap-file';
 import type { SyncContext } from './sync-manager';
 
@@ -56,9 +57,10 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   // device saved after this copy was read sits only in the stored record or
   // the device file (US-11 AC4). Any of them turns reminders off; the newest
   // stamp only picks which provider the cancelled opt-in names.
+  // Each object's own row, its other tokens' list left out of the tie-break (US-17 AC19).
   const priorProvider = [stored, device].reduce(
-    (newest, file) => pickNewerOptional(newest, file?.reminderOptIn),
-    own.reminderOptIn,
+    (newest, file) => pickNewerOptional(newest, file?.reminderOptIn && ownRow(file.reminderOptIn)),
+    own.reminderOptIn && ownRow(own.reminderOptIn),
   )?.provider ?? null;
   // WHEN, beside WHICH: read only by a copy that missed an earlier erase
   // that listed nothing (US-09 AC20, AC23). Floored 1 ms past the last

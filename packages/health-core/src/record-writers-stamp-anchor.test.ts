@@ -42,7 +42,7 @@ import {
 } from './record-edits';
 import { recordSync } from './roadmap-doc';
 import { createMeasurement, stableStringify, type RoadmapFile } from './roadmap-file';
-import { setReminderOptIn, setScreening, stampProfile, upsertMedication, upsertSupplement } from './state-edits';
+import { setReminderRow, setScreening, stampProfile, upsertMedication, upsertSupplement } from './state-edits';
 import { stampCount, stampedRecord, stampsAheadOfMeta } from './stamp-anchor.test-helpers';
 
 const T0 = '2026-09-01T09:00:00.000Z';
@@ -127,7 +127,7 @@ const WRITERS: Record<string, (file: RoadmapFile, now: string) => RoadmapFile> =
   'stampProfile (Lp(a) unit)': (file, now) => stampProfile(file, { lpaUnit: 'mg/dL' }, now),
   'stampProfile (report email)': (file, now) => stampProfile(file, { reportEmailCaptured: true }, now),
   setScreening: (file, now) => setScreening(file, 'colorectal_last_date', '2025-03', now),
-  'setReminderOptIn (cancel)': (file, now) => setReminderOptIn(file, { status: 'cancelled', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' }, now),
+  'setReminderRow (cancel)': (file, now) => setReminderRow(file, { status: 'cancelled', token: 'test-token-good', email: 'a@example.com', provider: 'dropbox' }, now),
   // update_profile on both MCP servers, the engine's profile edit.
   updateProfile: (file, now) => {
     const outcome = updateProfile(file, { heightCm: 181, sex: 'male' }, now);

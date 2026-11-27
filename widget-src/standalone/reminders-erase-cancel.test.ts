@@ -38,7 +38,7 @@ describe('US-11 AC4b: a Turn off in flight during an erase leaves the erased rec
     const { cancelReminders } = await import('./reminders');
     const cloud = new MemoryCloud();
     await data.initRoadmapStore(new MemoryAdapter(cloud));
-    expect(data.setReminderOptIn({ status: 'active', token: 'test-token-good', email: ADDRESS, provider: 'dropbox' }, data.getShownErase())).toBe(true);
+    expect(data.setReminderRows([{ status: 'active', token: 'test-token-good', email: ADDRESS, provider: 'dropbox' }], data.getShownErase())).toBe(true);
     await data.flushRoadmapStore();
 
     let release!: () => void;
@@ -125,7 +125,7 @@ async function eraseSetUp() {
   const held = await heldCloud(cloud);
   await data.initRoadmapStore(held);
   data.setPreEraseHook(reminders.cancelRemindersForErase); // as standalone/app.tsx registers it
-  expect(data.setReminderOptIn({ status: 'active', token: TOKEN_A, email: ADDRESS, provider: 'google-drive' }, data.getShownErase())).toBe(true);
+  expect(data.setReminderRows([{ status: 'active', token: TOKEN_A, email: ADDRESS, provider: 'google-drive' }], data.getShownErase())).toBe(true);
   await data.flushRoadmapStore();
 
   const posts: Posted[] = [];
@@ -155,7 +155,7 @@ async function eraseSetUp() {
    *  its own announces kept off the page's window listeners (US-17 AC19 review, R7). */
   const otherWrites = { count: 0 };
   const otherAnnounced: unknown[] = [];
-  const asOtherDevice = async <T>(act: (other: InstanceType<typeof RoadmapStore>) => Promise<T>): Promise<T> => {
+  const asOtherDevice = async <T>(act: (other: Awaited<ReturnType<typeof RoadmapStore.create>>) => Promise<T>): Promise<T> => {
     const adapter = new MemoryAdapter(cloud);
     const write = adapter.write.bind(adapter);
     adapter.write = (...args: Parameters<typeof adapter.write>) => { otherWrites.count += 1; return write(...args); };
@@ -168,7 +168,7 @@ async function eraseSetUp() {
   /** Another device turns reminders on with its own row, and this page re-reads the cloud. */
   const otherDeviceTurnsOn = async (token = TOKEN_B) => {
     await asOtherDevice(async (other) => {
-      expect(other.setReminderOptIn({ status: 'active', token, email: ADDRESS, provider: 'dropbox' }, other.shownErase)).toBe(true);
+      expect(other.setReminderRows([{ status: 'active', token, email: ADDRESS, provider: 'dropbox' }], other.shownErase)).toBe(true);
       await other.flush();
     });
     return page.refreshFromRemote();
@@ -177,7 +177,7 @@ async function eraseSetUp() {
   const otherDeviceErasesThenTurnsOn = async (reread = true) => {
     await asOtherDevice(async (other) => {
       expect((await other.deleteAllData()).success).toBe(true);
-      expect(other.setReminderOptIn({ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }, other.eraseIdentity)).toBe(true);
+      expect(other.setReminderRows([{ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }], other.eraseIdentity)).toBe(true);
       await other.flush();
     });
     return reread ? page.refreshFromRemote() : false;
@@ -185,7 +185,7 @@ async function eraseSetUp() {
   /** Another device turns reminders on, written straight to the cloud, with no re-read here. */
   const otherDeviceWrites = async () => {
     await asOtherDevice(async (other) => {
-      expect(other.setReminderOptIn({ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }, other.shownErase)).toBe(true);
+      expect(other.setReminderRows([{ status: 'active', token: TOKEN_B, email: ADDRESS, provider: 'dropbox' }], other.shownErase)).toBe(true);
       await other.flush();
     });
   };
@@ -269,7 +269,7 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
   // pass lands, after the swap, when the working copy holds the erased opt-in.
   // Nothing here hears B: it is US-11 AC4c's Limit, lead H126. This pins the
   // limit as it stands; a fix turns the last line into [A, B].
-  it('Limit (H126): a token a running save folds in during the proof wait, announced only after the swap, is not cancelled', async () => {
+  it('US-11 AC15: a token a running save folds in during the proof wait, announced only after the swap, is cancelled (was the H126 Limit)', async () => {
     const t = await eraseSetUp();
     const before = t.data.getEraseIdentity();
     let foldedSilently = false;
@@ -306,7 +306,8 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     expect(announcedAt.length).toBeGreaterThan(0);
     expect(announcedAt.every((at) => at !== before)).toBe(true);
     expect(t.data.getEraseIdentity()).not.toBe(before);
-    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_A, idToken: PROOF }]);
+    // The swap hands the teardown every row the working copy took in, announced or not (US-11 AC15).
+    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_A, idToken: PROOF }, { op: 'cancel', token: TOKEN_B }]);
     // Writes and announces by store: the other device wrote once and told this page nothing.
     expect(t.otherWrites.count).toBe(1);
     expect(t.otherAnnounced).toEqual([]);

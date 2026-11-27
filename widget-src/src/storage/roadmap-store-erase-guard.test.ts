@@ -81,7 +81,7 @@ const WRITES: Array<[string, (s: RoadmapStore, ids: { weightId: string; document
   ['deleteDocument', (s, ids) => s.deleteDocument(ids.documentId, s.shownErase), false],
   ['setLpaUnit', (s) => s.setLpaUnit('mg/dL', s.shownErase), false],
   ['markReportEmailCaptured', (s) => s.markReportEmailCaptured(s.shownErase), false],
-  ['setReminderOptIn', (s) => s.setReminderOptIn({ status: 'active', token: 't', email: 'a@example.com', provider: 'dropbox' }, s.shownErase), false],
+  ['setReminderRows', (s) => s.setReminderRows([{ status: 'active', token: 't', email: 'a@example.com', provider: 'dropbox' }], s.shownErase), false],
 ];
 
 beforeEach(() => {

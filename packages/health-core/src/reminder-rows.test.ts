@@ -15,7 +15,7 @@ import { migrateFile } from './migrate';
 import { stampIsNewer } from './record-time';
 import { mergeOptIn, optInBehind, rowsOf, shownOptIn } from './reminder-rows';
 import { createEmptyFile, createMeasurement, stableStringify, type FileReminderOptIn, type ReminderTokenRow, type RoadmapFile } from './roadmap-file';
-import { setReminderOptIn, setReminderRow } from './state-edits';
+import { setReminderRow } from './state-edits';
 
 const CTX = { deviceId: 'dev_rows', now: '2026-05-09T12:00:00.000Z' };
 const T = ['2026-05-01T10:00:00.000Z', '2026-05-02T10:00:00.000Z', '2026-05-03T10:00:00.000Z'];
@@ -339,17 +339,12 @@ describe('US-17 AC19: setReminderRow writes the stored object', () => {
     expect(JSON.stringify(after)).not.toContain('token-z');
   });
 
-  it('until part 2 the live writer, setReminderOptIn, still replaces the opt-in whole, as today', () => {
-    const f = file({ ...row('token-b', 'cancelled', 1), tokens: [row('token-a', 'active', 0)] });
-    const after = setReminderOptIn(f, { status: 'active', token: 'token-c', email: 'token-c@example.test', provider: 'dropbox' }, NOW);
-    expect(after.reminderOptIn).toEqual({ status: 'active', token: 'token-c', email: 'token-c@example.test', provider: 'dropbox', updatedAt: NOW, lamport: 2 });
-  });
-
-  it('on a file with no rows, stamps as setReminderOptIn does', () => {
+  it('on a file with no rows, or its own token only, stamps as the replaced whole-object writer did', () => {
     const fields = { status: 'active', token: 'token-a', email: 'token-a@example.test', provider: 'dropbox' } as const;
-    expect(setReminderRow(file(), fields, NOW)).toEqual(setReminderOptIn(file(), fields, NOW));
-    const f = file(row('token-a', 'cancelled', 0, 3));
-    expect(setReminderRow(f, fields, NOW)).toEqual(setReminderOptIn(f, fields, NOW));
+    const first = setReminderRow(file(), fields, NOW);
+    expect(first.reminderOptIn).toEqual({ ...fields, updatedAt: NOW, lamport: 1 });
+    expect(first.meta.updatedAt).toBe(NOW);
+    expect(setReminderRow(file(row('token-a', 'cancelled', 0, 3)), fields, NOW).reminderOptIn).toEqual({ ...fields, updatedAt: NOW, lamport: 4 });
   });
 });
 

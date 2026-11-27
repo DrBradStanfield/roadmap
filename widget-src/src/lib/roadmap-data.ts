@@ -8,6 +8,7 @@ import type { HealthInputs } from '@roadmap/health-core/types';
 import type { LpaUnit, MetricType } from '@roadmap/health-core/units';
 import { MEASUREMENT_REFUSALS_WITH_METRIC, type MEASURES } from '@roadmap/health-core/product-events';
 import type { ReminderScheduleItem } from '@roadmap/health-core/reminder-schedule';
+import type { ReminderRowFields } from '@roadmap/health-core/state-edits';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { knownMinorOf } from '@roadmap/health-core/calculations';
 import { readableView } from '@roadmap/health-core/readable-rows';
@@ -192,8 +193,9 @@ export function setLpaUnit(unit: LpaUnit, erase: string): boolean {
 export function getReminderOptIn(): FileReminderOptIn | undefined {
   return store?.getReminderOptIn();
 }
-export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, erase: string): boolean {
-  return store?.setReminderOptIn(fields, erase) ?? false;
+/** Opt-in rows, one token each, in one guarded edit; every other token's row stays (US-17 AC19). */
+export function setReminderRows(rows: ReminderRowFields[], erase: string): boolean {
+  return store?.setReminderRows(rows, erase) ?? false;
 }
 export function computeCurrentReminderSchedule(): ReminderScheduleItem[] {
   return store?.computeReminderScheduleNow() ?? [];
@@ -364,8 +366,9 @@ export async function readDocumentFile(fileRef: string): Promise<Blob | null> {
  * inside the erase, before the swap, and returns the step that sends it
  * (commit), run only once the erase stands (US-11 AC4c).
  */
-let preEraseHook: (() => Promise<(() => Promise<void>) | null>) | null = null;
-export function setPreEraseHook(fn: () => Promise<(() => Promise<void>) | null>): void {
+type EraseCommit = (read: FileReminderOptIn[]) => Promise<void>;
+let preEraseHook: (() => Promise<EraseCommit | null>) | null = null;
+export function setPreEraseHook(fn: () => Promise<EraseCommit | null>): void {
   preEraseHook = fn;
 }
 
@@ -391,12 +394,18 @@ export async function deleteUserData(): Promise<{ success: boolean; error?: stri
     });
   };
   const prepare = preEraseHook;
-  let commit = null as (() => Promise<void>) | null;
+  let commit = null as EraseCommit | null;
+  // Every opt-in the erase read, handed over at its swap (US-11 AC15); memory only.
+  let read: FileReminderOptIn[] = [];
   const before = store.eraseIdentity;
-  const { chatErased, ...result } = await store.deleteAllData({ teardown: prepare ? async () => { commit = await prepare(); } : undefined, chat });
+  const { chatErased, ...result } = await store.deleteAllData({
+    teardown: prepare ? async () => { commit = await prepare(); } : undefined,
+    chat,
+    swapping: (optIns) => { read = optIns; },
+  });
   // The erased copy stands, landed or held for a retry (useErase's signal): only
   // then does the server step run, once. A refused erase cancels nothing (S59).
-  if (store.eraseIdentity !== before) await commit?.();
+  if (store.eraseIdentity !== before) await commit?.(read);
   const ran = step as EraseChatStep | null; // set in the closures above, which TS's narrowing does not see
   return { ...result, chat: ran && (chatErased ? 'erased' : ran) };
 }

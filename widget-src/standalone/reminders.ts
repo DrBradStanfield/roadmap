@@ -33,24 +33,23 @@ import {
   getReminderOptIn,
   getShownErase,
   isKnownMinorNow,
-  setReminderOptIn,
-  stillShown,
+  setReminderRows,
 } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
 import { eraseCancelState, stepEraseCancel, toCancel } from './reminders-erase-cancel';
-import { ERASE_IN_PROGRESS, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
-import { trackProductEvent } from '../src/lib/server-api';
+import { cancelProofFor, post, postCancel } from './reminders-post';
+import { cancelReminders, unchangedSince } from './reminders-turn-off';
+import { addressKey, rowsOf, shownOptIn } from '@roadmap/health-core/reminder-rows';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
 import { safeGetItem, safeRemoveItem, safeSetItem } from '../src/lib/storage';
 import { Sentry } from '../src/lib/sentry';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
-import { BRAD_SERVER_ORIGIN } from './server-origin';
 import type { Backend } from './connect';
 import { providerOf, type ReminderBackend } from './providers';
-import type { FileReminderOptIn } from '@roadmap/health-core/roadmap-file';
+import type { FileReminderOptIn, ReminderTokenRow } from '@roadmap/health-core/roadmap-file';
 
-const REMINDERS_API_URL = `${BRAD_SERVER_ORIGIN}/api/reminders-v2`;
+export { cancelReminders };
 
 /** Set once the provider has NO email to give (a GitHub PAT without the email
  *  permission, a pre-openid Drive grant). That answer won't change on its own,
@@ -79,15 +78,6 @@ export const ENROL_NOTICE_KEY = 'hr_reminders_notice';
 /** Reminders need an account email the browser can read (§10; the provider table says which). */
 export function remindersSupported(backend: Backend): backend is ReminderBackend {
   return providerOf(backend)?.reminders === true;
-}
-
-async function post(body: unknown, keepalive = false): Promise<Response> {
-  return fetch(REMINDERS_API_URL, {
-    method: 'POST',
-    // No Content-Type header → text/plain → CORS simple request (no preflight).
-    body: JSON.stringify(body),
-    keepalive,
-  });
 }
 
 type Identity = { provider: 'google-drive'; idToken: string } | { provider: ReminderBackend | 'typed'; email: string };
@@ -145,31 +135,7 @@ function sameOptIn(a: FileReminderOptIn | undefined, b: FileReminderOptIn | unde
 
 /** One address, however the provider cased or padded it. */
 function sameAddress(a: string, b: string): boolean {
-  return a.trim().toLowerCase() === b.trim().toLowerCase();
-}
-
-/** The ID token for a Drive-verified cancel (hard delete); null on any other lane or failure. */
-async function cancelProofFor(backend: ReminderBackend): Promise<string | null> {
-  switch (backend) {
-    case 'google-drive':
-      return new GoogleDriveAdapter(googleDriveConfig()).getReminderIdToken().catch(() => null);
-    case 'dropbox':
-    case 'github':
-      return null;
-    default: {
-      // Exhaustive at compile time; at run time the file's provider is not
-      // validated, so an unknown one cancels without proof, as it always has.
-      const unlisted: never = backend;
-      void unlisted;
-      return null;
-    }
-  }
-}
-
-/** A cancel, with the ID token only when there is one: the route's zod
- *  `.optional()` takes a missing key but answers null with a 400 (US-17 AC1b). */
-function postCancel(token: string, idToken: string | null, keepalive = false): Promise<Response> {
-  return post({ op: 'cancel', token, ...(idToken ? { idToken } : {}) }, keepalive);
+  return addressKey(a) === addressKey(b);
 }
 
 export interface OptInResult {
@@ -195,10 +161,12 @@ export interface OptInResult {
  *
  * silent: the US-17 auto-enrolment path (no typed input, no error surfaced).
  * `from` is the file's opt-in when that enrolment began (undefined: no decision).
+ * `retired`: a cloud switch's old row, whose server cancel landed; it is
+ * written cancelled in the same edit that saves the new token (US-17 AC19).
  */
 export async function optInToReminders(
   backend: Backend,
-  { marketingEmail, email, silent }: { marketingEmail?: string; email?: string; silent?: { from: FileReminderOptIn | undefined } } = {},
+  { marketingEmail, email, silent }: { marketingEmail?: string; email?: string; silent?: { from: FileReminderOptIn | undefined; retired?: ReminderTokenRow } } = {},
 ): Promise<OptInResult> {
   if (!remindersSupported(backend)) throw new Error('Reminders need a connected cloud account.');
   // US-07 AC6: the plan is built for adults, and so are its reminders.
@@ -231,12 +199,13 @@ export async function optInToReminders(
   // counted). A token the file already holds active is theirs: left alone.
   const now = getReminderOptIn();
   const superseded = silent && !sameOptIn(now, silent.from);
-  // A token the file already holds active is theirs: never cancelled, and
-  // its switch marker stays (adversary R1).
-  const held = now?.status === 'active' && now.token === reply.token;
+  // A token the file already holds active, in any row, is theirs: never
+  // cancelled, and its switch marker stays (adversary R1).
+  const held = rowsOf(now).some((row) => row.status === 'active' && row.token === reply.token);
+  const retired = silent?.retired && silent.retired.token !== reply.token ? [{ ...silent.retired, status: 'cancelled' as const }] : [];
   // The record can also refuse the token: it was erased under the page (US-16
   // AC2a). That erase is a decision made meanwhile too, so the row goes.
-  if (superseded || !setReminderOptIn({ status: 'active', token: reply.token, email: reply.email, provider: backend }, erase)) {
+  if (superseded || !setReminderRows([...retired, { status: 'active', token: reply.token, email: reply.email, provider: backend }], erase)) {
     // The decision that superseded this enrolment (an erase, a toggle-off) owns
     // the file now: no switch marker outlives it (US-11 AC4).
     if (!held && (!superseded || now?.status !== 'active')) safeRemoveItem(SWITCH_CANCELLED_KEY);
@@ -308,7 +277,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       const address = identity && 'email' in identity ? identity.email
         : backend === 'google-drive' ? new GoogleDriveAdapter(googleDriveConfig()).accountEmail() : null;
       if (address && sameAddress(address, current.email)) {
-        setReminderOptIn({ ...current, provider: backend }, erase);
+        setReminderRows([{ ...current, provider: backend }], erase);
         await flushRoadmapStore();
         return;
       }
@@ -339,6 +308,8 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
         throw refused;
       }
     }
+    // The old row is off on the server: the edit that saves the new token writes it cancelled.
+    const retired = optIn?.status === 'active' ? optIn : undefined;
 
     // An already-enrolled address (token lost with the file, or enrolled from
     // another lane) is refreshed server-side and nothing is written here —
@@ -346,7 +317,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
     // After a switch's cancel the file keeps the old opt-in until a new token
     // lands, so pushReminderSchedule holds off, on this visit and the next
     // (SWITCH_CANCELLED_KEY), and no 404 can mark it cancelled.
-    if ((await optInToReminders(backend, { silent: { from: optIn } })).refreshed) return;
+    if ((await optInToReminders(backend, { silent: { from: optIn, retired } })).refreshed) return;
     switchHoldsOldToken = false; // the new token is in the file
     safeRemoveItem(SWITCH_CANCELLED_KEY);
     try { sessionStorage.setItem(ENROL_NOTICE_KEY, '1'); } catch { /* the live event still fires */ }
@@ -384,18 +355,22 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
  * reminders. Registered as a hook by the standalone entry, because `src/`
  * (where the store lives) must never import `standalone/`.
  */
-export async function cancelRemindersForErase(): Promise<() => Promise<void>> {
+export async function cancelRemindersForErase(): Promise<(read?: FileReminderOptIn[]) => Promise<void>> {
   stepEraseCancel({ type: 'prepared', at: getEraseIdentity() });
   try {
-    const optIn = getReminderOptIn();
-    stepEraseCancel({ type: 'read', optIn });
-    if (optIn?.status === 'active') stepEraseCancel({ type: 'proved', token: optIn.token, idToken: await cancelProofFor(optIn.provider) });
+    const rows = rowsOf(getReminderOptIn());
+    stepEraseCancel({ type: 'read', rows });
+    // The first active token carries the Drive proof; the rest go bare (US-11 AC15).
+    const first = rows.find((row) => row.status === 'active');
+    if (first) stepEraseCancel({ type: 'proved', token: first.token, idToken: await cancelProofFor(first.provider) });
   } catch {
     stepEraseCancel({ type: 'failed' }); // what failed may quote the token or proof: nothing of it is kept
   }
-  return async () => {
+  // `read`: every opt-in the erase read, up to its swap (US-11 AC15).
+  return async (read: FileReminderOptIn[] = []) => {
     // An erase leaves no reminder token on the device, not even a cancelled one.
     safeRemoveItem(SWITCH_CANCELLED_KEY);
+    stepEraseCancel({ type: 'read', rows: read.flatMap(rowsOf) });
     const held = eraseCancelState();
     stepEraseCancel({ type: 'committed' });
     const failed = held.kind === 'unprepared' ? ['unprepared'] : await Promise.all(toCancel(held, getReminderOptIn()).map(
@@ -407,44 +382,6 @@ export async function cancelRemindersForErase(): Promise<() => Promise<void>> {
   };
 }
 
-/** Why a Turn off asked under `erase` is refused, as ChatEdits' replyStanding
- *  says it: at that erase, this tab's erase is running (US-11 AC4b);
- *  otherwise the record moved to another (US-16 AC2a). */
-function refusedWhy(erase: string): string {
-  return erase === getEraseIdentity() && erase === getShownErase() ? ERASE_IN_PROGRESS : RECORD_CHANGED_SINCE_ASKED;
-}
-
-/** Turn reminders off (server row tombstoned, or deleted when Drive can prove
- *  the inbox; the cancel propagates via the file).
- *  `count: false`: not the user's opt-out (US-07 AC6's age gate), so not
- *  counted, as the cloud switch's cancel is not. `keepalive`: the tab is going
- *  away, so the cancel leaves at once, unproven (a tombstone), as an update does. */
-export async function cancelReminders({ count = true, keepalive = false } = {}): Promise<void> {
-  const optIn = getReminderOptIn();
-  // Already off (an erased file's '' token among them): nothing to cancel or count (US-17 AC17).
-  if (optIn?.status !== 'active') return;
-  // The record this Turn off was asked for: an erase that lands during the
-  // cancel leaves reminders off already, and the old opt-in (its address and
-  // token) is refused, not written into the erased record (US-11 AC4b).
-  const erase = getShownErase();
-  const idToken = keepalive ? null : await cancelProofFor(optIn.provider);
-  // A write that would be refused is refused before the POST, so no row is
-  // cancelled under a switch that stays on (US-11 AC4b, lead S59b).
-  if (!stillShown(erase)) throw new Error(refusedWhy(erase));
-  const res = await postCancel(optIn.token, idToken, keepalive);
-  if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
-  // The opt-in changed while the cancel was out (another device's Turn on or
-  // off, an erase): that later decision stands, and nothing is counted (US-17 AC17).
-  if (!sameOptIn(getReminderOptIn(), optIn)) return;
-  // Refused while the POST was out: the switch stays on, and it says why.
-  if (!setReminderOptIn({ ...optIn, status: 'cancelled' }, erase)) throw new Error(refusedWhy(erase));
-  await flushRoadmapStore();
-  // The optout:optin ratio is US-17's kill criterion — it only works if BOTH
-  // sides are counted (the opt-in side has fired since 2026-08-06), and per
-  // LANE: the provider tag lets the typed and cloud ratios be judged apart.
-  if (count) trackProductEvent('reminder_optout', { provider: optIn.provider });
-}
-
 /**
  * Push the current schedule to the server. Fire-and-forget (reminders are
  * never allowed to break the core app). A 404 means the user unsubscribed
@@ -452,7 +389,8 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
  * reminders again (and the cancel syncs to their other devices).
  */
 export async function pushReminderSchedule(backend: Backend, keepalive = false): Promise<void> {
-  const optIn = getReminderOptIn();
+  // The shown row: the newest active one (US-17 AC19). Only its token is pushed.
+  const optIn = shownOptIn({ reminderOptIn: getReminderOptIn() });
   // The erase the opt-in was read under: a 404's clean-up writes under it, or not at all (US-16 AC2a).
   const erase = getShownErase();
   if (optIn?.status !== 'active') return;
@@ -481,13 +419,13 @@ export async function pushReminderSchedule(backend: Backend, keepalive = false):
       { op: 'update', token: optIn.token, schedule: computeCurrentReminderSchedule() },
       keepalive,
     );
-    // A 404 is about the opt-in this push carried. If the file has moved on
-    // meanwhile (a switch saved a new token, an erase, a toggle), or a switch
-    // cancelled this token while the request was in flight, it says nothing
-    // about the current one (Codex R1, 2026-10-14).
-    if (res.status === 404 && !cancelledBySwitch
-      && safeGetItem(SWITCH_CANCELLED_KEY) !== optIn.token && sameOptIn(getReminderOptIn(), optIn)) {
-      setReminderOptIn({ ...optIn, status: 'cancelled' }, erase);
+    // A 404 is about the token this push carried, and only that token's row
+    // goes off. If that row has moved on meanwhile (a switch, an erase, a
+    // toggle), or a switch cancelled this token while the request was in
+    // flight, it says nothing about the current one (Codex R1, 2026-10-14).
+    if (res.status === 404 && !cancelledBySwitch && safeGetItem(SWITCH_CANCELLED_KEY) !== optIn.token
+      && unchangedSince(optIn, getReminderOptIn())) {
+      setReminderRows([{ ...optIn, status: 'cancelled' }], erase);
       window.dispatchEvent(new Event('hr:reminders-changed'));
     }
   } catch (error) {

@@ -59,3 +59,20 @@ export function shownOptIn(file: Pick<RoadmapFile, 'reminderOptIn'>): ReminderTo
   if (active.length > 0) return active.reduce(newer);
   return file.reminderOptIn && ownRow(file.reminderOptIn);
 }
+
+/** One address however it is cased or padded. */
+export const addressKey = (email: string): string => email.trim().toLowerCase();
+
+/** Every address an active row names, each once however it is cased or
+ *  padded: the shown row's first, then the rest in order (US-17 AC19). */
+export function activeAddresses(file: Pick<RoadmapFile, 'reminderOptIn'>): string[] {
+  const shown = shownOptIn(file);
+  const active = rowsOf(file.reminderOptIn).filter((row) => row.status === 'active' && row.token !== shown?.token);
+  const seen = new Set<string>();
+  return [...(shown?.status === 'active' ? [shown] : []), ...active].flatMap(({ email }) => {
+    const key = addressKey(email);
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return [email];
+  });
+}
