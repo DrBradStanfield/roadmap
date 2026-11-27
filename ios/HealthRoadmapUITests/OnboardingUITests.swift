@@ -466,6 +466,26 @@ final class OnboardingUITests: XCTestCase {
         return element.exists && element.isHittable
     }
 
+    /// Waits until `element` can be tapped and has stopped moving inside the app's window: the
+    /// same frame on two looks a quarter second apart. While the app slides in from the app
+    /// switcher, its frame is mid-slide, so a tap lands beside it.
+    @MainActor
+    private func atRest(_ element: XCUIElement, in app: XCUIApplication, timeout: TimeInterval = 30) -> Bool {
+        var last = CGRect.null
+        let end = Date.now + timeout
+        while Date.now < end {
+            if element.exists, element.isHittable {
+                let frame = element.frame
+                if frame == last, app.windows.firstMatch.frame.contains(frame) { return true }
+                last = frame
+            } else {
+                last = .null
+            }
+            RunLoop.current.run(until: .now + 0.25)
+        }
+        return false
+    }
+
     /// Taps the tip's "Next".
     @MainActor
     private func tapNext(_ app: XCUIApplication) {
@@ -641,12 +661,19 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(all.exists, "Apple's Health sheet appears")
         XCTAssertNil(declineInSheet(sheet), "Apple's sheet closes after Don't Allow")
         app.activate()
-        app.buttons["Done"].firstMatch.tap()
+        // The activate slides the app back in from the app switcher: a tap on Done mid-slide lands
+        // where Done was, not where it stops, and the settings sheet stays over the row
+        // (docs/gotchas.md 2026-11-27). Tap once Done is at rest, and check the sheet went.
+        let bar = app.navigationBars["Settings"]
+        let done = bar.buttons["Done"]
+        XCTAssertTrue(atRest(done, in: app), "Done comes to rest on screen")
+        done.tap()
+        XCTAssertTrue(bar.waitForNonExistence(timeout: 10), "the settings sheet closes")
 
         // The row is under Fitness; the list draws only the rows near the screen.
         let open = app.buttons["Open Settings"]
         for _ in 0..<12 where !open.waitForExistence(timeout: 5) { app.swipeUp() }
-        XCTAssertTrue(open.waitForExistence(timeout: 30), "the row says Open Settings")
+        XCTAssertTrue(scrollTo(open, in: app), "the row says Open Settings and can be tapped")
         XCTAssertFalse(app.buttons["Reconnect"].exists, "never Reconnect")
         // iOS 18 moved Health under Settings › Apps; the app runs from iOS 17.
         let apps = (Int(UIDevice.current.systemVersion.split(separator: ".").first ?? "") ?? 0) >= 18 ? "Apps › " : ""
