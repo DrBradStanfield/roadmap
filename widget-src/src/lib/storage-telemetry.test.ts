@@ -4,6 +4,8 @@ import { eventFiltersIntegration, linkedErrorsIntegration, type Client, type Eve
 import { webcrypto } from 'node:crypto';
 import { Blob as NodeBlob } from 'node:buffer';
 import { ConflictError, StorageError } from '@roadmap/health-core/adapter';
+import { DriveAdapter } from '@roadmap/health-core/drive-rest';
+import { ROADMAP_DOC } from '@roadmap/health-core/roadmap-doc';
 import { MemoryAdapter } from '@roadmap/health-core/memory-adapter';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { LocalStorageAdapter } from '../storage';
@@ -92,7 +94,7 @@ describe('cloud-storage telemetry boundary', () => {
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
     expect(items[0][1].tags).toEqual({
-      area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'QuotaExceededError', errorClass: 'StorageError', causeClass: 'DOMException',
+      area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'QuotaExceededError', errorClass: 'StorageError', causeClass: 'DOMException', httpStatus: 'none',
     });
     expect(JSON.stringify(envelopes)).not.toContain(marker);
   });
@@ -107,7 +109,7 @@ describe('cloud-storage telemetry boundary', () => {
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
-    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory', errorClass: 'other', causeClass: 'none' });
+    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory', errorClass: 'other', causeClass: 'none', httpStatus: 'none' });
   });
 
   it.each([
@@ -156,7 +158,7 @@ describe('cloud-storage telemetry boundary', () => {
     await expect(store.flush()).rejects.toThrow('still on this device');
     await Sentry.flush();
     const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
-    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory', errorClass: 'StorageError', causeClass });
+    expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'memory', errorClass: 'StorageError', causeClass, httpStatus: 'none' });
     expect(JSON.stringify(envelopes)).not.toContain(marker);
   });
 
@@ -183,7 +185,7 @@ describe('cloud-storage telemetry boundary', () => {
       const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
       return items[0][1].tags;
     }
-    const local = { area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'other', errorClass: 'StorageError' };
+    const local = { area: 'cloud-sync', op: 'persist', backend: 'local', cause: 'other', errorClass: 'StorageError', httpStatus: 'none' };
 
     it('a corrupt file read before the write reads SyntaxError', async () => {
       expect(await persistTags(() => { localStorage.setItem(FILE_KEY, `{${marker}`); })).toEqual({ ...local, causeClass: 'SyntaxError' });
@@ -250,6 +252,62 @@ describe('cloud-storage telemetry boundary', () => {
       expect(writeSync).not.toHaveBeenCalled(); // the page is closed: the save stops before the write (US-09 AC2c)
       await Sentry.flush();
       expect(envelopes).toHaveLength(0);
+    });
+  });
+
+  // US-09 AC66 (Sentry JAVASCRIPT-REMIX-77, 2026-11-27): Drive persist failures
+  // arrived as errorClass=StorageError causeClass=StorageError with no status,
+  // so a 403, a 5xx and no answer read alike. As Drive really fails: the real
+  // DriveAdapter, its record write's own wrap, SyncManager, the web host's capture.
+  describe('a Google Drive record save, end to end (US-09 AC66)', () => {
+    type Fail = number | 'drop';
+    function driveFailing(step: 'update' | 'verify', failure: Fail) {
+      // A record already on Drive, so the save is the update PATCH.
+      let json = JSON.stringify(ROADMAP_DOC.migrate(null, { deviceId: 'laptop', now: '2024-06-01T08:00:00.000Z' }));
+      let uploaded = false;
+      let armed = false;
+      const answer = (): Response => {
+        if (failure === 'drop') throw new TypeError('terminated');
+        return new Response(`{"error":{"message":"${marker}"}}`, { status: failure });
+      };
+      vi.stubGlobal('fetch', vi.fn(async (input: string | URL, init: RequestInit = {}) => {
+        const url = String(input);
+        if (url.includes('/upload/')) {
+          if (armed && step === 'update') return answer();
+          json = String(init.body);
+          uploaded = true;
+          return Response.json({ id: 'r1', version: '4' });
+        }
+        if (url.includes('mimeType')) return Response.json({ files: [{ id: 'folder1', name: 'Health Roadmap' }] });
+        if (url.includes('/files?q=')) return Response.json({ files: [{ id: 'r1', createdTime: '2026-01-01T00:00:00.000Z' }] });
+        if (url.includes('fields=version')) return Response.json({ version: uploaded ? '4' : '3' });
+        if (url.includes('alt=media')) return armed && uploaded && step === 'verify' ? answer() : new Response(json);
+        throw new Error(`unexpected request ${url}`);
+      }));
+      return { arm: () => { armed = true; uploaded = false; } };
+    }
+
+    it.each([
+      ['403', 'a 403 answer to the update PATCH', 'update', 403],
+      ['5xx', 'a 503 answer to the update PATCH', 'update', 503],
+      ['5xx', 'a 503 on the read-back after the PATCH', 'verify', 503],
+      ['429', 'a 429 answer to the update PATCH', 'update', 429],
+      ['none', 'a PATCH that got no answer', 'update', 'drop'],
+    ] as const)('tags httpStatus=%s for %s', async (httpStatus, _label, step, failure) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const drive = driveFailing(step, failure);
+      const store = await RoadmapStore.create(new DriveAdapter('test-token-good'));
+      store.addMeasurement('weight', 82, '2024-06-01T09:00:00.000Z', store.shownErase);
+      await store.flush();
+      drive.arm();
+      store.addMeasurement('ldl', 4.5, '2024-06-02T09:00:00.000Z', store.shownErase);
+      await expect(store.flush()).rejects.toThrow();
+      await Sentry.flush();
+      expect(envelopes).toHaveLength(1);
+      const [, items] = envelopes[0] as [unknown, Array<[unknown, { tags: Record<string, string> }]>];
+      // What left the browser, after the real scrub (beforeSend).
+      expect(items[0][1].tags).toEqual({ area: 'cloud-sync', op: 'persist', backend: 'google-drive', errorClass: 'StorageError', causeClass: 'StorageError', httpStatus });
+      expect(JSON.stringify(envelopes)).not.toContain(marker);
     });
   });
 

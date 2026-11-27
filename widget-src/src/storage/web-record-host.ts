@@ -172,7 +172,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
         tags: {
           area: 'cloud-sync', op: at.op, backend: store.id, ...(at.cause ? { cause: at.cause } : {}),
-          errorClass: failureTags(error).errorClass, causeClass: storageCauseClass(error),
+          ...failureTags(error), causeClass: storageCauseClass(error), // US-09 AC66: httpStatus too
         },
       });
     },

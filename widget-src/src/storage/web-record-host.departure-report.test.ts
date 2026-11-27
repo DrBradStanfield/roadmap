@@ -49,11 +49,11 @@ describe('a cloud tab whose departure write the browser refuses (US-06 AC13a)', 
     expect(calls).toHaveLength(1);
     const [error, hint] = calls[0] as [Error, { tags: Record<string, string> }];
     expect(error.message).toBe('Cloud sync failed');
-    expect(hint.tags).toMatchObject({ area: 'cloud-sync', op: 'mirror-write', backend: 'memory', causeClass: 'DOMException' });
+    expect(hint.tags).toMatchObject({ area: 'cloud-sync', op: 'mirror-write', backend: 'memory', causeClass: 'DOMException', httpStatus: 'none' }); // US-09 AC66: this capture carries httpStatus too
     expect(JSON.stringify(calls)).not.toMatch(/synthetic|81\.5/);
     // What leaves the browser: the real beforeSend scrubber keeps the op from its closed list.
     const sent = realScrubEvent({ type: undefined, tags: hint.tags, exception: { values: [{ type: 'Error', value: error.message }] } });
-    expect(sent?.tags).toMatchObject({ area: 'cloud-sync', op: 'mirror-write', backend: 'memory' });
+    expect(sent?.tags).toMatchObject({ area: 'cloud-sync', op: 'mirror-write', backend: 'memory', httpStatus: 'none' });
     expect(warn.mock.calls.filter(([line]) => line === 'Cloud sync failed')).toHaveLength(2);
   });
 });
