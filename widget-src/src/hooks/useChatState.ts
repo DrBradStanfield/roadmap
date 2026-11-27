@@ -149,7 +149,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
   };
 
   // Always send the plan as chat context: local-first (v2) means the server
-  // has no health data for logged-in customers either (the v1 tables were
+  // has no health data for signed-in customers either (the v1 tables were
   // purged June 2026), so this is the only context the answer gets. Every
   // surface builds it with chatContextOf: the widget from its own state, the
   // blog bubble and the chatbot embed from the widget's saved copy. The

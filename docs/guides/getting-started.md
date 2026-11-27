@@ -1,6 +1,6 @@
 ---
 title: "An open-source health record you can connect to your AI"
-description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI with file access can all read it."
+description: "The code is public and MIT licensed. Your record is one file in your own cloud, so the website, the command line and an AI assistant with file access can all read it."
 slug: "ai-health-record"
 updated: "2026-11-09"
 stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
@@ -8,9 +8,9 @@ stories: ["US-29", "US-30", "US-31", "US-32", "US-38"]
 
 The code behind this tool is public, under the MIT licence, at [github.com/DrBradStanfield/roadmap](https://github.com/DrBradStanfield/roadmap). Anyone can read it and run it.
 
-Your record is one file, `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. [Find your health record file](/blogs/guides/find-your-record) shows the exact folder and how to open or back it up. You do not sign up for anything, and there is nothing on our side to log in to. If this site vanished tomorrow your file would still be plain JSON that any tool can read.
+Your record is one file, `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. [Find your health record](/blogs/guides/find-your-record) shows the exact folder and how to open or back it up. You do not sign up for anything, and there is nothing on our side to sign in to. If this site vanished tomorrow your record would still be plain JSON that any tool can read.
 
-We published the format of that file and the rules for changing it safely. Because they are published, three things work besides the website: the command line, ChatGPT or Claude on the web, and an AI running on your own computer.
+We published the format of that file and the rules for changing it safely. Because they are published, three things work besides the website: the command line, ChatGPT or Claude on the web, and an AI assistant running on your own computer.
 
 [diagram:local-first]
 
@@ -18,25 +18,25 @@ We published the format of that file and the rules for changing it safely. Becau
 
 [diagram:three-ways]
 
-The website is the one you already use. You type a value, it saves to your cloud folder, and it works out your plan: [the tool](https://drstanfield.com/pages/roadmap).
+The website is the one you already use. You type a value, it saves to your cloud folder, and it works out your plan: [open the website](https://drstanfield.com/pages/roadmap).
 
 ChatGPT or Claude in a browser reaches your folder through a connector we run. You authorize it once, and after that you can ask for your plan or file a new blood panel from your phone. It asks again after 90 days. The steps are further down this page, and the longer version is in [connect ChatGPT](/blogs/guides/connect-chatgpt).
 
-An AI on your own computer opens the file directly, with no server of ours in between. For Claude there is a ready-made setup: [connect Claude](/blogs/guides/connect-claude). For a plain terminal, there is [the command line](/blogs/guides/command-line).
+An AI assistant on your own computer opens the file directly, with no server of ours in between. For Claude there is a ready-made setup: [connect Claude](/blogs/guides/connect-claude). For a plain terminal, there is [the command line](/blogs/guides/command-line).
 
-## What the code lets an AI do
+## What the code lets your AI assistant do
 
 [diagram:tools]
 
-There are nine tools for your record, and none of them deletes anything from your record. An AI reads your record with `read_record` and works out your plan with `get_plan`, the same plan the website shows, with the reason and the citations behind each suggestion. It files one value with `add_measurement`, or a whole lab panel in one call with `add_lab_values`. It fixes a value that went in wrong with `correct_value`. It changes the four facts your plan is worked out from with `update_profile`: your sex, birth year, birth month and height. On a connected Dropbox it reads the lab files sitting in your folder with `import_documents`, and it files the values it read out of a file you dropped into the chat with `file_results`. When a tool refuses something you reasonably expected, it can report that as a public issue on the project's GitHub with `report_feedback`. It shows you the report and files it only after you say yes. The report carries its description of the problem, and the tool refuses a value, an email, a phone number or a file name, though it cannot spot a diagnosis written in prose. No tool deletes a reading or your record. When the connector has them switched on, two more tools, `search_knowledge` and `get_article`, read Dr Brad's public articles. They never touch your record.
+There are nine tools for your record, and none of them deletes anything from your record. Your AI assistant reads your record with `read_record` and works out your plan with `get_plan`, the same plan the website shows, with the reason and the citations behind each suggestion. It files one value with `add_measurement`, or a whole lab panel in one call with `add_lab_values`. It corrects a value that went in wrong with `correct_value`. It changes the four facts your plan is worked out from with `update_profile`: your sex, birth year, birth month and height. On a connected Dropbox it reads the lab files sitting in your folder with `import_documents`, and it files the values it read out of a file you dropped into the chat with `file_results`. When a tool refuses something you reasonably expected, it can report that as a public issue on the project's GitHub with `report_feedback`. It shows you the report and files it only after you say yes. The report carries its description of the problem, and the tool refuses a value, an email, a phone number or a file name, though it cannot spot a diagnosis written in prose. No tool deletes a reading or your record. When the connector has them switched on, two more tools, `search_knowledge` and `get_article`, read Dr Brad's public articles. They never touch your record.
 
 ## Why nothing is ever deleted
 
 [diagram:correction]
 
-A correction is a new row. The AI writes the right number as a fresh row that points back at the old one, then marks the old row "entered-in-error". Both rows stay in your file for good.
+A correction is a new row. Your AI assistant writes the right number as a fresh row that points back at the old one, then keeps the old row, marked as a mistake. Both rows stay in your record for good.
 
-The tools never rewrite a number: the only way to change one is to add another beside it. An AI editing the file directly is bound by the same rule in our published write rules, and by nothing else.
+The tools never rewrite a number: the only way to change one is to add another beside it. An AI assistant editing the file directly is bound by the same rule in our published write rules, and by nothing else.
 
 ## Is there an API?
 
@@ -44,7 +44,7 @@ We publish no API that stores your health data.
 
 The hosted connector at `mcp.drstanfield.com` is an API, and it keeps no copy of your record. It opens your folder with your own credential, answers one call, and drops the record from memory. It does read it for that call.
 
-The published parts are the [JSON Schema](https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json) for the file, the [write rules](https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/agent-access.md) an AI has to follow, and the tool set above.
+The published parts are the [JSON Schema](https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json) for the file, the [write rules](https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/agent-access.md) your AI assistant has to follow, and the tool set above.
 
 ## From the web
 
@@ -63,7 +63,7 @@ Both assistants ask for the same address. Copy it now:
 https://mcp.drstanfield.com/mcp
 ```
 
-Gemini is not on this list, because Google has not opened custom connectors to consumer accounts. If Gemini is your assistant, the [setup prompt](#on-your-own-computer) is your path, and it needs an AI that can open files.
+Gemini is not on this list, because Google has not opened custom connectors to consumer accounts. If Gemini is your assistant, the [setup prompt](#on-your-own-computer) is your path, and it needs an AI assistant that can open files.
 
 ## Connect Claude on the web
 
@@ -97,23 +97,23 @@ The longer version, including what to do when a step goes wrong, is in [connect 
 
 It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same plan the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. And it corrects a value that went in wrong. Drop a lab PDF, a photo of a result sheet or a clinic letter into the conversation and the assistant reads it itself, then sends our server only the values it read; the file never reaches our server, and our server checks each value and files only what you confirm. On a connected Dropbox it can also import the lab files sitting in that folder, showing you candidate values before anything is saved, and the next time it reads your record or works out your plan it offers files in the folder that are not yet in your record; those folder files go through our server to an extraction model (Anthropic's API) as soon as it reads them, before you confirm anything, and we keep none of them. Anthropic's terms say they do not train models on customer content, and their privacy centre says API inputs and outputs are deleted within 30 days unless they need to keep them to enforce their usage policy or comply with the law ([their policy](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)). That is a different path from the website upload, which reads the PDF in your browser and sends only the extracted text to our server. Either way nothing is written to your record until you confirm; the candidates wait in a pending file in your own folder, and the receipt that names it lasts an hour. When you confirm, our server deletes that pending file; if the delete fails we count it and the file stays. A pending file nobody acts on is removed at your next import, by whichever route you take, once it is two hours old. If you never import again it stays in your own folder, and you can delete it yourself. On a Google Drive record the folder cannot be read, so the chat and the website upload are the ways in. If a tool refuses something you reasonably expected, it can report it. Which of two things happens depends on where the assistant is connected from. The program on your own computer holds no key to anything, so it hands you a prefilled GitHub issue link and nothing is filed until you click it. The hosted connectors, Claude on the web and ChatGPT, show you the report first and file it once you say yes: a public issue on the project's GitHub carrying the assistant's description of the problem. The guard refuses a value, an email, a phone number or a file name, and cannot spot a diagnosis written in prose, which is why you see the report before it goes.
 
-It cannot delete anything, because there is no delete tool. A correction never erases either: the assistant adds a new row with the right number and marks the old row "entered-in-error", so both stay in your file for good. That is how a hospital record works, and it is why you can always see what you were told and when. It also cannot touch your medications, supplements or screenings. Documents it touches only through import: what it imports is filed as a record with a name and a date, never the text or the image. It can change four things about you: your sex, your birth year, your birth month and your height. Your plan is worked out from those. Those four are not kept in history the way a blood test is: the newest write is the one your record keeps, so of two changes made in the same minute, the later one is what you end up with. The assistant has to state what it believes a field holds before it changes it, and is refused if it has that wrong.
+It cannot delete anything, because there is no delete tool. A correction never deletes either: the assistant adds a new row with the right number and keeps the old row, marked as a mistake, so both stay in your record for good. That is how a hospital record works, and it is why you can always see what you were told and when. It also cannot touch your medications, supplements or screenings. Documents it touches only through import: what it imports is filed as a record with a name and a date, never the text or the image. It can change four things about you: your sex, your birth year, your birth month and your height. Your plan is worked out from those. Those four are not kept in history the way a blood test is: the newest write is the one your record keeps, so of two changes made in the same minute, the later one is what you end up with. The assistant has to state what it believes a field holds before it changes it, and is refused if it has that wrong.
 
 Your record holds one value per test per day. Ask for a second weight on a day that already has one and the call is refused by name, and the refusal points the assistant at a correction instead of an overwrite.
 
-If you use email reminders, your record carries a token that manages that schedule on our server. It is stripped out of every read, so it can never reach a chat transcript.
+If you use email reminders, your record carries a token that manages that schedule on our server. It is stripped out of every read, so it can never reach a conversation.
 
-Check what it files. An AI can misread a lab report the same way a person can.
+Check what it files. Your AI assistant can misread a lab report the same way a person can.
 
 ## On your own computer
 
-An AI on your own machine skips our server entirely. It opens the file directly, so no server of ours ever sees your record. What that assistant reads out of the file still goes to whichever AI vendor it runs on, under that vendor's own policy. That is the option for anyone who does not want our server reading their record in memory, and it is the same tools and the same rules.
+An AI assistant on your own machine skips our server entirely. It opens the file directly, so no server of ours ever sees your record. What that assistant reads out of the file still goes to whichever AI vendor it runs on, under that vendor's own policy. That is the option for anyone who does not want our server reading their record in memory, and it is the same tools and the same rules.
 
-You need an AI that can open files on your computer. [Claude Code](https://claude.com/claude-code) in a terminal is the one we use. Any desktop or command-line agent with file access works the same way. For Claude specifically there is a ready-made setup, with named tools instead of a prompt: [connect Claude to your health record](/blogs/guides/connect-claude).
+You need an AI assistant that can open files on your computer. [Claude Code](https://claude.com/claude-code) in a terminal is the one we use. Any desktop or command-line AI assistant with file access works the same way. For Claude specifically there is a ready-made setup, with named tools instead of a prompt: [connect Claude to your health record](/blogs/guides/connect-claude).
 
 Your cloud folder has to be synced to disk, so the file is really there. Dropbox does this by default, though a file set to online-only needs "Make available offline" first. For Google Drive, mark the folder "Available offline", or Drive streams the file instead of storing it.
 
-If you have never connected a cloud provider, your record lives only in your browser and there is no file on disk, so connect Dropbox or Google Drive in the tool first, which copies your record into a file there.
+If you have never connected cloud storage, your record lives only in your browser and there is no file on disk, so connect Dropbox or Google Drive on the website first, which copies your record into a file there.
 
 Then paste the setup prompt below into that AI and answer its questions.
 
@@ -143,25 +143,25 @@ Start now.
 
 ## What the setup prompt does
 
-It makes the AI prove what it can reach before anything else. An AI that can only see its own sandbox is told to stop and say so, rather than improvise something that half works.
+It makes your AI assistant prove what it can reach before anything else. An assistant that can only see its own sandbox is told to stop and say so, rather than improvise something that half works.
 
-It then sends the AI to our published rules and the JSON Schema. From that point the AI is working from the real spec instead of guessing what the fields mean, and the prompt is explicit that the spec is a spec: an AI reading a page from the internet should never take instructions from it.
+It then sends your AI assistant to our published rules and the JSON Schema. From that point your assistant is working from the real spec instead of guessing what the fields mean, and the prompt is explicit that the spec is a spec: an AI reading a page from the internet should never take instructions from it.
 
-It states the safety rules. Your record follows the same discipline a hospital record does: rows are never edited and never deleted. A correction is a new row that points back at the old one, and the old row gets marked as an error. Those rules are in the prompt because an AI that quietly rewrites a row destroys the history of what you were told and when.
+It states the safety rules. Your record follows the same discipline a hospital record does: rows are never edited and never deleted. A correction is a new row that points back at the old one, and the old row gets marked as an error. Those rules are in the prompt because an assistant that quietly rewrites a row destroys the history of what you were told and when.
 
-And it covers starting from nothing. If you have no file yet, the AI points you at [the tool](https://drstanfield.com/pages/roadmap), which writes the file to your cloud folder the first time you save a value.
+And it covers starting from nothing. If you have no file yet, your AI assistant points you at [the website](https://drstanfield.com/pages/roadmap), which writes the file to your cloud folder the first time you save a value.
 
 ## What to ask for
 
 ### Ask about your results
 
-"What was my LDL at each test, and is it going the right way?" The AI reads the full history in the file, including values the tool does not put on the front page.
+"What was my LDL at each test, and is it going the right way?" Your AI assistant reads the full history in the file, including values the website does not put on its front page.
 
 ### File a new lab result
 
-Paste in a lab report and ask the AI to add it. It checks whether that test on that day is already in your file, appends only what is missing, and leaves the rest alone.
+Paste in a lab report and ask your AI assistant to add it. It checks whether that test on that day is already in your record, appends only what is missing, and leaves the rest alone.
 
-If you have cloned [the repo](https://github.com/DrBradStanfield/roadmap), tell your AI to make each write through `npx tsx tools/edit-record.ts` rather than editing the JSON itself. It takes one value per command and refuses an occupied slot outright instead of overwriting it, and it copies the record to a `.bak` beside itself before every write. Reading the report and deciding what to file stays the AI's job, and so does the schema check.
+If you have cloned [the repo](https://github.com/DrBradStanfield/roadmap), tell your AI to make each write through `npx tsx tools/edit-record.ts` rather than editing the JSON itself. It takes one value per command and refuses an occupied slot outright instead of overwriting it, and it copies the record to a `.bak` beside itself before every write. Reading the report and deciding what to file stays your AI assistant's job, and so does the schema check.
 
 ### Get your plan
 
@@ -169,17 +169,17 @@ In that same clone, `npx tsx tools/get-plan.ts <your file>` prints the same plan
 
 ## If it gets something wrong
 
-Open the tool and correct the value there: [how to fix a value](/blogs/guides/upload-lab-report#fix-a-value-after-saving). The app appends the correction and marks the old row as an error, which is the same thing the rules above describe and the safest undo you have. If your AI used `edit-record`, the `.bak` file sitting beside your record is the version from just before that write.
+Open the website and correct the value there: [how to correct a value](/blogs/guides/upload-lab-report#fix-a-value-after-saving). The app appends the correction and marks the old row as an error, which is the same thing the rules above describe and the safest undo you have. If your AI used `edit-record`, the `.bak` file sitting beside your record is the version from just before that write.
 
 ## What this cannot do
 
 If your record lives in GitHub, the web connector cannot reach it, and the setup prompt on your own computer is the way in.
 
-The tool now keeps up with a file an AI is writing: it re-reads your record within seconds of the change, and as soon as you switch back to its tab. That is catching up, not a lock. Take care with it open while an AI writes. The writer on your computer takes a lock and merges in a conflicting edit. A browser tab writing through your cloud provider's own API sits outside that lock, so the two can still collide. On Google Drive this is looser still: Drive has no conditional write, so our server checks the file version before and after each save rather than reserving it, and two writers landing at the same instant can still race.
+The website now keeps up with a file your AI assistant is writing: it re-reads your record within seconds of the change, and as soon as you switch back to its tab. That is catching up, not a lock. Take care with it open while your AI assistant writes. The writer on your computer takes a lock and merges in a conflicting edit. A browser tab writing through your cloud storage's own API sits outside that lock, so the two can still collide. On Google Drive this is looser still: Drive has no conditional write, so our server checks the file version before and after each save rather than reserving it, and two writers landing at the same instant can still race.
 
-If two devices record the same measurement for the same day while apart, the newer entry becomes that day's value; the other stays in your history marked entered-in-error. Nothing is deleted.
+If two devices each save a value for the same test on the same day while apart, the newer one becomes that day's value; the other stays in your history, kept as a mistake. Nothing is deleted.
 
-The record file is the trust root. Anything that can write it can already delete it outright, and a file carrying a later erase wins on every device. Recovery is your provider's version history.
+Your record is the trust root. Anything that can write it can already delete it outright, and a file carrying a later deletion wins on every device. Recovery is the version history in your cloud storage.
 
 ## If you get stuck
 

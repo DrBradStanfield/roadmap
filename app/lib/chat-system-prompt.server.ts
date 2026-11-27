@@ -38,6 +38,7 @@ const OPTIONAL_DOC_FILES = {
   answerBank: PRODUCTS_BLOCK_FILES.answerBank,
   routerPrompt: 'app/lib/chat-router-prompt.md',
   classifierPrompt: 'app/lib/chat-classifier-prompt.md',
+  youtubePrompt: 'app/lib/chat-youtube-prompt.md',
 } as const;
 
 /** What the prompt builders and the router read, assembled once at load. */
@@ -54,6 +55,8 @@ export interface ChatDocs {
   router: { prompt: string; indexBlock: string; handles: ReadonlySet<string> };
   /** The pre-router classifier's system text, whole (US-15 AC81); '' fails it open. */
   classifierPrompt: string;
+  /** The YouTube bot's prompt template, whole (US-15 AC82); '' keeps the bot from starting. */
+  youtubePrompt: string;
 }
 
 export type ChatDocsState =
@@ -93,6 +96,7 @@ export function transition(state: ChatDocsState, event: ChatDocsEvent): ChatDocs
       handles: new Set(view.map((e) => e.handle)),
     },
     classifierPrompt: text(OPTIONAL_DOC_FILES.classifierPrompt),
+    youtubePrompt: text(OPTIONAL_DOC_FILES.youtubePrompt),
   };
   return absent.length ? { kind: 'degraded', docs, absent } : { kind: 'loaded', docs };
 }
@@ -107,7 +111,7 @@ function report(state: ChatDocsState): void {
   }
   if (state.kind === 'degraded') {
     for (const file of state.absent) {
-      console.error(`CHAT KNOWLEDGE MISSING: ${file} missing or empty; the chatbot answers without it`);
+      console.error(`CHAT KNOWLEDGE MISSING: ${file} missing or empty; what reads it runs without it or stays off`);
       Sentry.captureMessage(`Chat knowledge file missing: ${file}`, { level: 'error', tags: TAGS });
     }
   }

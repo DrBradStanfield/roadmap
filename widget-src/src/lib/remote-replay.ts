@@ -12,7 +12,10 @@
  *   would be overwritten by that read, so it waits (loading-held) and applies
  *   once the read is shown (`loaded`, survey R2);
  * - idle: nothing waits;
- * - held: a remote change waits for the next profile save to settle.
+ * - held: a remote change waits for the next profile save to settle. Only a
+ *   form holding a value the re-read would replace holds it (`typing`); an
+ *   out-of-range value, refused or half-typed, rides through the re-read with
+ *   its error, so it holds nothing (`free`, AC13).
  * Every whole re-read of the record goes through here, so a held change is applied
  * once (survey R8). `apply(remote, counts)`: `remote` says the re-read takes in
  * another writer's change; `counts` (by default, `remote`) that it counts.
@@ -27,13 +30,17 @@
  */
 export type HoldState = { phase: 'loading' | 'idle' } | { phase: 'loading-held' | 'held'; counts: boolean };
 
+/** The profile form as a change arrives: `typing` holds a value the re-read would replace (an in-range value still
+ *  to save, or this tab's unit switch); `free` holds none (as saved, or unsaved only in out-of-range values). */
+export type ProfileForm = 'free' | 'typing';
+
 export type HoldEvent =
-  /** A remote change arrived. `formDirty`: the user is mid-edit. `counts`: false for the late echo of an erase already shown. */
-  | { type: 'arrived'; formDirty: boolean; counts: boolean }
+  /** A remote change arrived. `form`: the profile form then. `counts`: false for the late echo of an erase already shown. */
+  | { type: 'arrived'; form: ProfileForm; counts: boolean }
   /** The page has shown its first read: a change that arrived before it applies now. */
   | { type: 'loaded' }
   /** A profile save settled: landed, had a value refused, or found nothing to save (US-34 AC8). Applies a change
-   *  held back by a dirty form; a refused value rides through the re-read. */
+   *  held behind an edit; a refused value rides through the re-read. */
   | { type: 'settled' }
   /** The page re-reads the record for itself (an upload, a refused save): the re-read shows a held change too.
    *  Not before the first read is shown: that read would overwrite this one, so a waiting change waits for it. */
@@ -57,7 +64,7 @@ export function transition(state: HoldState, event: HoldEvent): HoldStep {
       // Two changes waiting together count if either does.
       const counts = event.counts || ('counts' in state && state.counts);
       if (isLoading(state)) return { state: { phase: 'loading-held', counts }, read: null };
-      if (event.formDirty) return { state: { phase: 'held', counts }, read: null };
+      if (event.form === 'typing') return { state: { phase: 'held', counts }, read: null };
       return { state: IDLE, read: remoteRead(counts) }; // this re-read is the one a held change waited for
     }
     case 'loaded':
@@ -90,7 +97,7 @@ export function createRemoteChangeRelay<T>(apply: (remote: boolean, counts?: boo
   };
   const sendAndRun = (event: HoldEvent): void => { const read = send(event); if (read !== null) run(read); };
   return {
-    arrived(formDirty: boolean, counts = true): void { sendAndRun({ type: 'arrived', formDirty, counts }); },
+    arrived(form: ProfileForm, counts = true): void { sendAndRun({ type: 'arrived', form, counts }); },
     loaded(): void { sendAndRun({ type: 'loaded' }); },
     settled(): void { sendAndRun({ type: 'settled' }); },
     // reread and shows always ask for a read (the table test pins it).

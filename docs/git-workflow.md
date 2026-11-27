@@ -46,15 +46,19 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    commits and a missing PR still block. **Add the `hold` label** (`gh pr edit <n> --add-label hold`) to any PR that waits on Brad,
    on more fixes or a review, or whose merge order you are managing (shared files, a deploy in flight):
    auto-ship merges any `claude/` PR 30 minutes after a Claude Review approval and a green `test` unless it
-   carries `hold` (PRs 677 and 734 merged early, 2026-11-02/03; PR 850 mid-deploy, 2026-11-05). Remove it, or
+   carries `hold` (PRs 677 and 734 merged early, 2026-11-02/03; PR 850 mid-deploy, 2026-11-05). It never merges
+   a PR that touches any path under `ios/`, in any case (Brad 2026-11-27, US-46 AC20): that PR is merged by hand
+   through the session merge gate, and the simulator run comes at the checkpoint; the auto-ship run says so in its log. Remove `hold`, or
    merge with it on, when you merge by hand. A PR that carries `hold` gets no automatic Claude Review (its run ends green
    at once); adding or removing a label never starts or cancels one. It needs none (Brad 2026-11-13, PR 1533): the
    fresh adversary, plus Codex where the class needs it (§ Reviews below), is its review.
    Prefer PRs under 100 changed files where a change splits cleanly; orphaned code still dies in the same PR (CLAUDE.md).
 4. **Merge** it yourself when the work is done and its gates have passed. **The gate per PR** (Brad 2026-11-13):
    - unit tests written with the change;
-   - CI green on the exact head sha. `ios-compile` is advisory to `tools/merge-gated.sh` and `tools/wait-run.sh`,
-     but a red one is a real compile error: fix it before asking for a merge word;
+   - CI green on the exact head sha. `ios-compile` is required when the PR changes what it builds (any Swift file
+     under `ios/`, the Xcode project, the app and test folders, the Info.plist or entitlements; the one rule is
+     `tools/ios-compile-paths.sh`, US-64 AC43) and advisory otherwise, to both `tools/merge-gated.sh` and
+     `tools/wait-run.sh`. Even advisory, a red one is a real compile error: fix it before asking for a merge word;
    - one review where the class needs one (§ Reviews below), and clinical citation numbering checked;
    - the owner thread's word on that sha. A conditional word counts ("merge if the prod diff is exactly X and CI
      is green").
@@ -74,11 +78,14 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    left open, or a draft private security advisory for a security or privacy one (docs/review-format.md).
    **Merge by hand with `sh tools/merge-gated.sh <pr> <full sha>`**, never a scratch script of your own (US-64
    AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, the newest `ci.yml` run on
-   that sha ended success, every rollup check finished green with a `test` check SUCCESS (except the advisory
-   `ios-compile`, which only prints a note, Brad 2026-11-13), no generated file is out of step with main (below),
+   that sha ended success, every rollup check finished green with a `test` check SUCCESS (except an advisory
+   `ios-compile`, which only prints a note, Brad 2026-11-13; on a PR that changes what it builds it must be
+   there, finished and green, or the merge is refused, US-64 AC43; if it never started, re-run or dispatch it as
+   the refusal says; a PR that changes `.github/workflows/ios-compile.yml` always refuses (19): the owner merges
+   it by hand), no generated file is out of step with main (below),
    main's own CI is not red (below) and no Deploy run is unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI
    was started by workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the
-   `ci.yml` run check. Generated files (US-64 AC34): when the PR touches a file listed in
+   `ci.yml` run check, plus the newest `ios-compile.yml` run on the sha when the PR changes what it builds. Generated files (US-64 AC34): when the PR touches a file listed in
    `tools/generated-files.json`, as an output or an input, and main has changed that output or its generator
    script since the PR's merge base, it refuses (9): merge main into the PR, let CI run, then merge. An input
    change on main alone does not refuse: main's CI already keeps main's output fresh. The PR's paths come from
@@ -97,8 +104,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    red or re-running. When main has
    moved since the PR's merge base, it prints one note with how many commits; it never refuses for that, but
    read the note: CI may have tested an older main.
-   A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json` or
-   `.github/workflows/ci.yml`) needs nothing different from you: the script fetches main and lets main's copies
+   A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json`,
+   `tools/ios-compile-paths.sh` or `.github/workflows/ci.yml`) needs nothing different from you: the script fetches main and lets main's copies
    judge it, and refuses (16) when main has no copy, so the owner merges that PR by hand. A `ci.yml` PR also prints
    a note: its own CI ran the PR's workflow, so read that diff before merging. Every gh call and the fetch are
    killed after 60 s; a merge cut off that way has an unknown outcome, so check the PR. Each kind of refusal has

@@ -23,8 +23,9 @@ describe('CI type-checks the iPhone engine', () => {
     expect(pkg.scripts['typecheck:engine']).toBe('tsc --noEmit -p tsconfig.engine.json');
   });
 
-  it('ci.yml runs typecheck:engine', () => {
-    expect(ci.some((l) => /^\s*- run: npm run typecheck:engine\s*$/.test(l))).toBe(true);
+  it('ci.yml runs typecheck:all, which runs typecheck:engine', () => {
+    expect(ci.some((l) => /^\s*- run: npm run typecheck:all\s*$/.test(l))).toBe(true);
+    expect(pkg.scripts['typecheck:all'].split(' && ')).toContain('npm run typecheck:engine');
   });
 
   it('tsconfig.engine.json covers every ios/engine .ts file', () => {

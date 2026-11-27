@@ -106,13 +106,13 @@ export const scheduleSchema = z
 
 /**
  * The per-email rate-limit KEY (never the stored address): lowercase, `+tag`
- * stripped, and dots dropped for Gmail — otherwise one inbox owner has
- * unlimited free keys for one victim (review 2026-09-10).
+ * stripped, and for Gmail dots dropped and googlemail.com read as gmail.com
+ * (US-17 AC8a). Otherwise one inbox owner has many free keys (review 2026-09-10).
  */
 export function emailLimiterKey(email: string): string {
   const [local = '', domain = ''] = email.toLowerCase().split('@');
-  let user = local.split('+')[0];
-  if (domain === 'gmail.com' || domain === 'googlemail.com') user = user.replace(/\./g, '');
+  const user = local.split('+')[0];
+  if (domain === 'gmail.com' || domain === 'googlemail.com') return `${user.replace(/\./g, '')}@gmail.com`;
   return `${user}@${domain}`;
 }
 
