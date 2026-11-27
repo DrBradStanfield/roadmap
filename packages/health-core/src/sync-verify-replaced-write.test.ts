@@ -412,6 +412,21 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     expect(drive.body.meta.eraseEpoch).toBe((base.meta.eraseEpoch ?? 0) + 1);
   });
 
+  it('an opt-in-only save replaced by a newer erase before its check takes the erase in', async () => {
+    const empty = createEmptyFile(CTX);
+    const base = { ...empty, reminderOptIn: optInRow('token-a', 'active', '2026-10-21T10:00:00.000Z') };
+    const drive = new ControlledDrive(base, false); drive.install();
+    drive.clobberWith = buildErasedFile({ stored: base, own: base, device: null, ctx: CTX });
+    drive.clobberAhead = true;
+    drive.clobberOnce = true;
+    const ours = { ...clone(base), reminderOptIn: optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z') };
+    const saved = await manager('a').save(ours);
+    expect(saved.attempts).toBe(1);
+    expect(saved.file.meta.eraseEpoch).toBe((base.meta.eraseEpoch ?? 0) + 1);
+    expect(JSON.stringify(saved.file)).not.toContain('token-a');
+    expect(JSON.stringify(drive.body)).not.toContain('token-a');
+  });
+
   // Limit (US-17 AC19, US-10 AC6a): the retry merges the save's own input with the new read, as main does.
   it('limit: a row this save learned only from its first read, which another writer then removed, is not written back', async () => {
     const plain = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
