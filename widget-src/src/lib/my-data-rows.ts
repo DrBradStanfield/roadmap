@@ -1,4 +1,4 @@
-// Pure helpers for the phone's My data rows and value pages (US-62 AC8-AC10):
+// Pure helpers for the phone's My health rows and value pages (US-62 AC8-AC10):
 // one reading per day, newest first, and the row's "Oct 2026" date (the
 // trend's window is health-core's `recentTrend`). Data in, data out.
 

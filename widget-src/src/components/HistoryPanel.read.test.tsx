@@ -72,7 +72,7 @@ describe('US-06 AC4: the history lightbox once its reads land together (pins)', 
     expect(view.queryByText('Loading history...')).toBeNull();
     expect(ticked(view)).toEqual(['LDL Cholesterol', 'Weight', 'Zonulin']);
     expect(view.container.querySelectorAll('.metric-chart-container h3')).toHaveLength(3);
-    expect(view.getByText('Additional Lab Results')).toBeTruthy();
+    expect(view.getByText('Additional Blood Tests')).toBeTruthy();
   });
 
   it('opened on one metric: only that vital is ticked; every lab test is ticked', async () => {
@@ -123,7 +123,7 @@ describe('US-06 AC4: the history lightbox once its reads land together (pins)', 
     const view = render(<HistoryPanel />);
     await act(async () => { reads.vitals.resolve(VITALS); reads.labs.reject(new Error('read failed')); reads.meds.resolve([]); });
     expect(ticked(view)).toEqual(['LDL Cholesterol', 'Weight']);
-    expect(view.queryByText('Additional Lab Results')).toBeNull();
+    expect(view.queryByText('Additional Blood Tests')).toBeNull();
     expect(mocks.captureException).toHaveBeenCalledOnce();
   });
 

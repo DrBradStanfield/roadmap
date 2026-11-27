@@ -58,7 +58,7 @@ If you upload the same report twice, values already in your record show as plain
 
 1. In My health, find the test under Blood tests and open it. Its page lists every value under History.
 
-2. Click or tap the number. It turns into a box you can type in. You can also press All results as a table at the foot of Blood tests and click the number there. In the table, tests outside the main grid sit below it, under Additional lab results.
+2. Click or tap the number. It turns into a box you can type in. You can also press All results as a table at the foot of Blood tests and click the number there. In the table, tests outside the main grid sit below it, under Additional blood tests.
 
 3. Type the right number. Press Enter, or click anywhere else, to save it. Press Escape to stop without saving. If you clear the box and leave it, nothing changes. If the number is not one the website accepts, Enter does nothing, and clicking away puts the old number back without saving.
 
