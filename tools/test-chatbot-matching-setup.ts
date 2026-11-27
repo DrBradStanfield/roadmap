@@ -28,14 +28,21 @@ if (path.resolve(process.cwd()) !== REPO_ROOT) { console.error(`Run from the rep
 const args = process.argv.slice(2);
 
 const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
+// A count flag is a whole number of 1 or more, or the run exits before any API call (US-15 AC24c).
+const countArg = (flag: string, defaultValue: string) => {
+  const n = Number(getArg(flag, defaultValue));
+  if (Number.isInteger(n) && n >= 1) return n;
+  console.error(`Error: ${flag} must be a whole number of 1 or more`);
+  process.exit(1);
+};
 
-export const runs = Math.max(1, parseInt(getArg('--runs', '3'), 10));
+export const runs = countArg('--runs', '3');
 export const varianceThreshold = parseFloat(getArg('--variance-threshold', '0.05'));
 // Default concurrency 1: the 80K-token index counts toward ITPM on cold cache.
 // Five concurrent cold requests each recreate the cache = 400K tokens/min, blows
 // the Tier 1 50K ITPM limit. Post-warmup, cache reads consume ITPM at a reduced
 // rate, so --concurrency 3 is usually safe; bump manually if runs feel slow.
-export const concurrency = Math.max(1, parseInt(getArg('--concurrency', '1'), 10));
+export const concurrency = countArg('--concurrency', '1');
 export const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
 const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
@@ -46,7 +53,7 @@ const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 export const fixedHandlesOnly = args.includes('--fixed-handles-only');
 const includePending = args.includes('--include-pending');
 export const answerCheckMode = args.includes('--answer-check') || fixedHandlesOnly;
-export const answerCheckRuns = Math.max(1, parseInt(getArg('--answer-check-runs', String(runs)), 10));
+export const answerCheckRuns = countArg('--answer-check-runs', String(runs));
 // --estimate: price the run and exit before any API call (Brad 2026-11-10).
 const estimateOnly = args.includes('--estimate');
 
