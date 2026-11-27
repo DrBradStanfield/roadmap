@@ -13,7 +13,7 @@ import { buildErasedFile } from './erase';
 import { mergeFiles, pickNewerOptional } from './merge';
 import { migrateFile } from './migrate';
 import { stampIsNewer } from './record-time';
-import { mergeOptIn, rowsOf, shownOptIn } from './reminder-rows';
+import { mergeOptIn, optInBehind, rowsOf, shownOptIn } from './reminder-rows';
 import { createEmptyFile, createMeasurement, stableStringify, type FileReminderOptIn, type ReminderTokenRow, type RoadmapFile } from './roadmap-file';
 import { setReminderOptIn, setReminderRow } from './state-edits';
 
@@ -182,50 +182,50 @@ describe('US-17 AC19: what counts as a row', () => {
   });
 });
 
-describe('US-17 AC19: at one epoch a nested row from before the erase time goes', () => {
-  const marker = (t: number): FileReminderOptIn => ({ ...row('token-a', 'cancelled', t), token: '', email: '' });
-  const erased = (optIn: FileReminderOptIn, erasedAt?: string): RoadmapFile => {
-    const f = file(optIn, 1);
-    return erasedAt ? { ...f, meta: { ...f.meta, erasedAt } } : f;
-  };
+describe('US-17 AC19: two erases from one epoch, and a re-enrolment between them (owner decision)', () => {
+  const at = (hm: string) => `2026-05-01T${hm}:00.000Z`;
+  const marker = (hm: string): FileReminderOptIn => ({ ...row('token-a', 'cancelled', 0), token: '', email: '', updatedAt: at(hm) });
+  const reEnrol = (hm: string): FileReminderOptIn => ({ ...row('token-c', 'active', 0), updatedAt: at(hm) });
 
-  it('two erases from one epoch: the later erase wins and the earlier re-enrolment goes, in both orders', () => {
-    const erasedLater = erased(marker(2), '2026-05-03T10:00:00.001Z');
-    const reEnrolled = erased(row('token-c', 'active', 1), '2026-05-01T10:00:00.001Z');
-    for (const merged of [merge(erasedLater, reEnrolled), merge(reEnrolled, erasedLater)]) {
-      expect(merged.reminderOptIn).toEqual(marker(2));
-      expect(shownOptIn(merged)).toEqual(marker(2));
-      const bytes = JSON.stringify(merged);
-      expect(bytes).not.toContain('token-c');
-      expect(bytes).not.toContain('@example.test');
+  it('a re-enrolment stamped after the other erase is the stored object and shows on, in both orders', () => {
+    const [erased, enrolled] = [file(marker('10:00'), 1), file(reEnrol('10:15'), 1)];
+    for (const merged of [merge(erased, enrolled), merge(enrolled, erased)]) {
+      expect(merged.reminderOptIn).toEqual(reEnrol('10:15'));
+      expect(shownOptIn(merged)).toEqual(reEnrol('10:15'));
     }
   });
 
-  it('a marker at t1, X at t0 and Y at t2: every grouping gives Y with no X beneath it', () => {
-    const [m, x, y] = [erased(marker(1), T[1]), erased(row('token-x', 'active', 0)), erased(row('token-y', 'active', 2))];
-    const ends = [merge(merge(m, x), y), merge(m, merge(x, y)), merge(merge(m, y), x), merge(merge(x, y), m), merge(y, merge(x, m))];
-    for (const end of ends) {
-      expect(end.reminderOptIn).toEqual(row('token-y', 'active', 2));
-      expect(JSON.stringify(end)).not.toContain('token-x');
+  it('a re-enrolment stamped before the other erase stays as a nested row and shows on, in both orders', () => {
+    const [erased, enrolled] = [file(marker('10:00'), 1), file(reEnrol('09:45'), 1)];
+    for (const merged of [merge(erased, enrolled), merge(enrolled, erased)]) {
+      expect(merged.reminderOptIn).toEqual({ ...marker('10:00'), tokens: [reEnrol('09:45')] });
+      expect(shownOptIn(merged)).toEqual(reEnrol('09:45'));
+    }
+  });
+});
+
+describe('US-17 AC19: the check after a save reads the merge\'s own order', () => {
+  it('a written opt-in is never behind itself after a JSON round trip, malformed token included', () => {
+    const malformed = { ...row('x', 'cancelled', 1), token: { not: 'a string' } } as unknown as FileReminderOptIn;
+    for (const w of [{ ...row('token-a', 'cancelled', 1), tokens: [row('token-b', 'active', 0)] }, malformed, { ...row('token-a', 'cancelled', 0), token: '', email: '' }]) {
+      expect(optInBehind(w, JSON.parse(JSON.stringify(w)))).toBe(false);
     }
   });
 
-  it('a re-enrolment stamped after the erase survives as the stored object', () => {
-    const erasedHere = erased(marker(0), '2026-05-01T10:00:00.001Z');
-    const reEnrolled = erased(row('token-c', 'active', 2), '2026-05-01T09:00:00.000Z');
-    for (const merged of [merge(erasedHere, reEnrolled), merge(reEnrolled, erasedHere)]) {
-      expect(merged.reminderOptIn).toEqual(row('token-c', 'active', 2));
+  it('a written opt-in is never behind a merge that holds it', () => {
+    for (let seed = 1; seed <= 500; seed++) {
+      const r = rng(seed);
+      const [w, p] = [randomFile(r), randomFile(r)];
+      const written = mergeOptIn(w.reminderOptIn, undefined);
+      if (!written) continue;
+      expect(optInBehind(written, mergeOptIn(written, p.reminderOptIn)), `${seed}`).toBe(false);
     }
   });
 
-  it('pinned: a nested row stamped at the erase instant stays; one a millisecond before goes; no erase time, no floor', () => {
-    const top = erased(row('token-y', 'active', 2), T[1]);
-    const at = merge(top, erased(row('token-x', 'active', 1)));
-    expect(at.reminderOptIn?.tokens).toEqual([row('token-x', 'active', 1)]);
-    const before = merge(top, erased({ ...row('token-x', 'active', 1), updatedAt: '2026-05-02T09:59:59.999Z' }));
-    expect(before.reminderOptIn?.tokens).toBeUndefined();
-    const never = merge(erased(row('token-y', 'active', 2)), erased(row('token-x', 'active', 0)));
-    expect(never.reminderOptIn?.tokens).toEqual([row('token-x', 'active', 0)]);
+  it('a lost nested row or a lost stored object is behind', () => {
+    const w = { ...row('token-a', 'cancelled', 1), tokens: [row('token-b', 'active', 0)] };
+    expect(optInBehind(w, row('token-a', 'cancelled', 1))).toBe(true);
+    expect(optInBehind(row('token-a', 'cancelled', 1), row('token-a', 'active', 0))).toBe(true);
   });
 });
 
@@ -377,56 +377,64 @@ function rng(seed: number): () => number {
   };
 }
 
-/** A random row: three tokens, both statuses, three times, two lamports, and
- *  two addresses, so rows tie on the clock and differ only by content. */
+/** One instant spelled two ways, so rows tie on the clock and differ only by content. */
+const STAMPS = [T[0], T[1], '2026-05-02T10:00:00Z', T[2]];
+
+/** A random row: three tokens, both statuses, four stamps, two lamports and two addresses. */
 function randomRow(r: () => number): ReminderTokenRow {
   const pick = <T>(xs: readonly T[]) => xs[Math.floor(r() * xs.length)];
-  return row(pick(TOKENS), r() < 0.5 ? 'active' : 'cancelled', Math.floor(r() * 3), Math.floor(r() * 2), pick(['x@example.test', 'y@example.test']));
+  const base = row(pick(TOKENS), r() < 0.5 ? 'active' : 'cancelled', 0, Math.floor(r() * 2), pick(['x@example.test', 'y@example.test']));
+  return { ...base, updatedAt: pick(STAMPS) };
 }
 
 /** A random opt-in: absent, an erase marker, or a row with a list that may be
- *  absent, may miss the object's own token, and may repeat a token. */
+ *  absent, unsorted, may miss the object's own token, and may repeat a token. */
 function randomOptIn(r: () => number): FileReminderOptIn | undefined {
   if (r() < 0.15) return undefined;
-  const top: FileReminderOptIn = r() < 0.1 ? { ...randomRow(r), status: 'cancelled', token: '', email: '' } : randomRow(r);
-  if (r() < 0.5) return top;
-  const tokens = Array.from({ length: Math.floor(r() * 4) }, () => randomRow(r));
-  return tokens.length > 0 ? { ...top, tokens } : top;
+  const top: FileReminderOptIn = r() < 0.15 ? { ...randomRow(r), status: 'cancelled', token: '', email: '' } : randomRow(r);
+  if (r() < 0.4) return top;
+  const tokens = Array.from({ length: 1 + Math.floor(r() * 3) }, () => randomRow(r));
+  return { ...top, tokens };
 }
 
-/** A random copy at epoch 0-2. An erased copy carries the erase's list, as every
- *  erase writes one (erase.ts), so it is version 2 already. Without it the version
- *  alone depends on merge order across the gate: two version-1 copies at the
- *  losing epoch may merge to `tokens` (version 2) first, and the gate keeps the
- *  higher version of its inputs. A stated Limit of US-17 AC19. */
-function randomFile(r: () => number): RoadmapFile {
-  const f = file(randomOptIn(r), Math.floor(r() * 3));
+/** The erase bookkeeping a copy may carry: no list, a list covering its epoch,
+ *  or one from the next; no erase time, one before every row, or one after. */
+function withErase(f: RoadmapFile, r: () => number): RoadmapFile {
   const epoch = f.meta.eraseEpoch ?? 0;
-  if (epoch === 0) return f;
-  // An erase time at a row's instant, between rows, or after them all.
-  const erasedAt = [T[0], '2026-05-02T00:00:00.000Z', T[2]][Math.floor(r() * 3)];
-  return { ...f, schemaVersion: 2, erasedRows: { fromEpoch: epoch, ids: [] }, meta: { ...f.meta, erasedAt } };
+  const list = [undefined, { fromEpoch: epoch, ids: [] }, { fromEpoch: epoch + 1, ids: [] }][Math.floor(r() * 3)];
+  const erasedAt = [undefined, '2026-04-30T00:00:00.000Z', '2026-05-04T00:00:00.000Z'][Math.floor(r() * 3)];
+  const { erasedRows: _list, ...rest } = f;
+  const { erasedAt: _at, ...meta } = f.meta;
+  return { ...rest, meta: { ...meta, ...(erasedAt ? { erasedAt } : null) }, ...(list ? { erasedRows: list } : null) } as RoadmapFile;
 }
-const optKey = (f: RoadmapFile) => stableStringify([f.schemaVersion, f.reminderOptIn ?? null]);
 
-/** The expected token map, from the raw rows of the copies at the winning epoch: each token's newest row. */
-function expectedTokens(copies: RoadmapFile[], storedToken?: string): Record<string, ReminderTokenRow> {
+const randomFile = (r: () => number) => withErase(file(randomOptIn(r), Math.floor(r() * 3)), r);
+const optKey = (f: RoadmapFile) => key(f.reminderOptIn);
+const shownKey = (f: RoadmapFile) => stableStringify(shownOptIn(f) ?? null);
+
+/** The expected opt-in, built from the raw rows of the copies at the top epoch,
+ *  not through `rowsOf`: one copy there passes whole; several join row by row. */
+function expectedOptIn(copies: RoadmapFile[]): FileReminderOptIn | undefined {
   const top = Math.max(...copies.map((f) => f.meta.eraseEpoch ?? 0));
   const live = copies.filter((c) => (c.meta.eraseEpoch ?? 0) === top);
-  // Copies that meet at one epoch drop nested rows from before the latest erase time; one alone passes whole.
-  const floors = live.map((c) => c.meta.erasedAt).filter((at): at is string => at !== undefined).sort();
-  const floor = live.length > 1 ? floors[floors.length - 1] : undefined;
-  const map: Record<string, ReminderTokenRow> = {};
-  for (const f of live) {
-    const o = f.reminderOptIn;
-    for (const raw of o ? [o, ...(o.tokens ?? [])] : []) {
+  if (live.length === 1) return live[0].reminderOptIn;
+  const strip = (x: object) => { const { tokens: _t, ...rest } = x as FileReminderOptIn; return rest as ReminderTokenRow; };
+  const tops: ReminderTokenRow[] = [];
+  const real: Record<string, ReminderTokenRow> = {};
+  for (const o of live.map((c) => c.reminderOptIn)) {
+    if (!o) continue;
+    tops.push(strip(o));
+    for (const raw of [o, ...(o.tokens ?? [])]) {
       if (typeof raw.token !== 'string' || raw.token === '') continue;
-      const r = own(raw as FileReminderOptIn)!;
-      if (!map[r.token] || stampIsNewer(r, map[r.token])) map[r.token] = r;
+      const r = strip(raw);
+      if (!real[r.token] || stampIsNewer(r, real[r.token])) real[r.token] = r;
     }
   }
-  for (const [token, r] of Object.entries(map)) if (token !== storedToken && floor !== undefined && Date.parse(r.updatedAt) < Date.parse(floor)) delete map[token];
-  return map;
+  const all = [...tops, ...Object.values(real)];
+  if (all.length === 0) return undefined;
+  const stored = all.reduce((x, y) => (stampIsNewer(y, x) ? y : x));
+  const tokens = Object.values(real).filter((r) => r.token !== stored.token).sort((x, y) => (x.token < y.token ? -1 : 1));
+  return tokens.length > 0 ? { ...stored, tokens } : stored;
 }
 const tokenMap = (f: RoadmapFile) => Object.fromEntries(rowsOf(f.reminderOptIn).map((r) => [r.token, r]));
 
@@ -441,8 +449,8 @@ describe('US-17 AC19: a legacy erased copy (no erase list) and the version, a st
   });
 });
 
-describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStringify)', () => {
-  it('is commutative, associative and idempotent, in every order, over 3,000 triples', () => {
+describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real mergeFiles)', () => {
+  it('is commutative, associative and idempotent, in every order and grouping, over 3,000 triples', () => {
     for (let seed = 1; seed <= 3000; seed++) {
       const r = rng(seed);
       const [a, b, c] = [randomFile(r), randomFile(r), randomFile(r)];
@@ -452,15 +460,42 @@ describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStri
       // A copy the gate passed whole may be hand-written, its rows out of order;
       // once merged at its own epoch it is a fixed point.
       const settled = merge(left, left);
-      expect(key(settled.reminderOptIn), `idempotent ${seed}`).toBe(key(mergeOptIn(left.reminderOptIn, undefined, left.meta.erasedAt)));
+      expect(key(settled.reminderOptIn), `idempotent ${seed}`).toBe(key(mergeOptIn(left.reminderOptIn, undefined)));
       expect(optKey(merge(settled, settled)), `idempotent ${seed}`).toBe(optKey(settled));
-      expect(optKey(merge(settled, a)), `absorbs ${seed}`).toBe(optKey(settled));
-      // Every order of the three copies, either grouping, ends on one opt-in and one shown row.
       const orders = [[a, b, c], [a, c, b], [b, a, c], [b, c, a], [c, a, b], [c, b, a]];
       const ends = orders.flatMap(([x, y, z]) => [merge(merge(x, y), z), merge(x, merge(y, z))]);
       expect(new Set(ends.map(optKey)).size, `orders ${seed}`).toBe(1);
-      expect(new Set(ends.map((f) => stableStringify(shownOptIn(f) ?? null))).size, `shown ${seed}`).toBe(1);
+      expect(new Set(ends.map(shownKey)).size, `shown ${seed}`).toBe(1);
+      // The oracle, from the raw rows.
+      expect(optKey(left), `oracle ${seed}`).toBe(key(expectedOptIn([a, b, c])));
     }
+  });
+
+  it('the erase time and the erase list never change the merged opt-in', () => {
+    for (let seed = 1; seed <= 3000; seed++) {
+      const r = rng(seed);
+      const copies = [randomFile(r), randomFile(r), randomFile(r)];
+      const other = rng(seed + 100_000);
+      const varied = copies.map((f) => withErase(f, other));
+      const [x, y] = [copies, varied].map((cs) => cs.reduce((p, q) => merge(p, q)));
+      expect(optKey(y), `erase bookkeeping ${seed}`).toBe(optKey(x));
+      expect(shownKey(y), `erase bookkeeping ${seed}`).toBe(shownKey(x));
+    }
+  });
+
+  it('three erased copies, two listed and one not, give one opt-in in every grouping', () => {
+    const at = (h: string) => `2026-05-01T${h}:00:00.000Z`;
+    const erasedCopy = (optIn: FileReminderOptIn, erasedAt: string, listed: boolean): RoadmapFile => {
+      const f = file(optIn, 1);
+      return { ...f, meta: { ...f.meta, erasedAt }, ...(listed ? { erasedRows: { fromEpoch: 1, ids: [] } } : null) };
+    };
+    const a = erasedCopy({ ...row('token-x', 'active', 0), updatedAt: at('09') }, at('08'), true);
+    const b = erasedCopy({ ...row('token-y', 'cancelled', 0), updatedAt: at('11') }, at('10'), true);
+    const c = erasedCopy({ ...row('token-a', 'cancelled', 0), token: '', email: '', updatedAt: at('07') }, at('07'), false);
+    const orders = [[a, b, c], [a, c, b], [b, a, c], [b, c, a], [c, a, b], [c, b, a]];
+    const ends = orders.flatMap(([x, y, z]) => [merge(merge(x, y), z), merge(x, merge(y, z))]);
+    expect(new Set(ends.map(optKey)).size).toBe(1);
+    expect(ends[0].reminderOptIn).toEqual({ ...row('token-y', 'cancelled', 0), updatedAt: at('11'), tokens: [{ ...row('token-x', 'active', 0), updatedAt: at('09') }] });
   });
 
   it('three live tokens and a later cancel of one: every token keeps its own newest row', () => {
@@ -472,33 +507,21 @@ describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStri
     ];
     const ends = [copies.reduce((x, y) => merge(x, y)), copies.reduceRight((x, y) => merge(x, y))];
     for (const merged of ends) {
-      expect(tokenMap(merged)).toEqual(expectedTokens(copies));
+      expect(key(merged.reminderOptIn)).toBe(key(expectedOptIn(copies)));
       expect(tokenMap(merged)).toEqual({ 'token-a': row('token-a', 'active', 0), 'token-b': row('token-b', 'cancelled', 2), 'token-c': row('token-c', 'active', 1, 2) });
       expect(own(merged.reminderOptIn)).toEqual(row('token-b', 'cancelled', 2));
       expect(shownOptIn(merged)).toEqual(row('token-c', 'active', 1, 2));
     }
   });
-
-  it('stores the newest of every row at the top epoch, the erase marker included', () => {
-    for (let seed = 1; seed <= 3000; seed++) {
-      const r = rng(seed);
-      const copies = [randomFile(r), randomFile(r), randomFile(r)];
-      const top = Math.max(...copies.map((f) => f.meta.eraseEpoch ?? 0));
-      const live = copies.filter((f) => (f.meta.eraseEpoch ?? 0) === top).map((f) => f.reminderOptIn);
-      const candidates = live.flatMap((o) => (o ? [own(o)!, ...rowsOf(o)] : []));
-      const merged = copies.reduce((x, y) => merge(x, y));
-      // Every token and its winning row, against the map built from the raw rows.
-      expect(tokenMap(merged), `tokens ${seed}`).toEqual(expectedTokens(copies, merged.reminderOptIn?.token));
-      if (candidates.length === 0) continue;
-      const newest = candidates.reduce((x, y) => (stampIsNewer(y, x) ? y : x));
-      // Only one copy at the top epoch passes through the gate untouched, as today.
-      if (live.length === 1) expect(key(merged.reminderOptIn), `${seed}`).toBe(key(live[0]));
-      else expect(own(merged.reminderOptIn), `${seed}`).toEqual(newest);
-    }
-  });
 });
 
 /* ---- A mixed fleet: old merges keep the newer object whole ------------- */
+
+/** Every stamp in its one canonical spelling. */
+function canonical(o: FileReminderOptIn | undefined): FileReminderOptIn | undefined {
+  const fix = <R extends ReminderTokenRow>(x: R): R => ({ ...x, updatedAt: new Date(Date.parse(x.updatedAt)).toISOString() });
+  return o && { ...fix(o), ...(o.tokens ? { tokens: o.tokens.map(fix) } : null) };
+}
 
 /** What a merge from before this change does to the opt-in: the newer object, its list with it. */
 const oldMerge = (a: RoadmapFile, b: RoadmapFile): RoadmapFile => ({
@@ -530,7 +553,8 @@ describe('US-17 AC19: old and new merges mixed', () => {
       const pick = (n: number) => Math.floor(r() * n);
       // Each copy as an app leaves it: the object newest of its own rows.
       const copies = Array.from({ length: 2 + pick(3) }, (): RoadmapFile => {
-        const f = file(randomOptIn(r));
+        // One spelling per instant: a same-instant spelling tie is a stated Limit against the old rule.
+        const f = file(canonical(randomOptIn(r)));
         return { ...f, reminderOptIn: mergeOptIn(f.reminderOptIn, undefined) };
       });
       for (let step = 0; step < 8; step++) {

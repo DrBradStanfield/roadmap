@@ -438,21 +438,6 @@ describe('the check after a save also covers the reminder opt-in (US-17 AC19)', 
     expect(drive.body.profile.heightCm).toBe(182);
   });
 
-  it('a nested row from before the re-read erase time is not owed: no retry', async () => {
-    const plain = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
-    const atEpoch = (f: RoadmapFile, erasedAt: string): RoadmapFile => ({ ...f, meta: { ...f.meta, eraseEpoch: 1, erasedAt } });
-    const base = atEpoch(withOptIn(plain), '2026-10-21T09:00:00.000Z');
-    const drive = new ControlledDrive(base, false); drive.install();
-    // Another erase at the same epoch, later than the row, lands over the upload once.
-    drive.clobberWith = atEpoch(withOptIn(plain), '2026-10-21T10:30:00.000Z');
-    drive.clobberAhead = true;
-    drive.clobberOnce = true;
-    const ours = { ...clone(base), reminderOptIn: { ...plain, tokens: [optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z')] } };
-    const saved = await manager('a').save(ours);
-    expect(saved.attempts).toBe(0);
-    expect(drive.aPatches).toBe(1);
-  });
-
   it('an old-code writer that drops the list in the window costs one retry, then the save settles', async () => {
     const base = withOptIn(optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z'));
     const drive = new ControlledDrive(base, true); drive.install();

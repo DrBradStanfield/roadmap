@@ -682,14 +682,6 @@ export function mergeFiles(
     };
   }
 
-  // When one side's list covers this epoch and the other's does not, the
-  // listing erase's rows go by id; the time that still decides is the
-  // unlisted erase's, or a copy that missed it would lose rows typed
-  // between the two (US-09 AC23). A list that claims nothing counts as
-  // no list.
-  const erase = listsThisEpoch(local) === listsThisEpoch(remote)
-    ? laterErase(local.meta.erasedAt, remote.meta.erasedAt)
-    : laterErase((listsThisEpoch(local) ? remote : local).meta.erasedAt, undefined);
   const merged = {
     // Spread both first so unknown/future top-level fields are preserved at
     // runtime (H7). Known fields below overwrite these.
@@ -698,17 +690,25 @@ export function mergeFiles(
 
     ...listing,
     meta: {
-      createdAt: local.meta.createdAt < remote.meta.createdAt ? local.meta.createdAt : remote.meta.createdAt,
+      createdAt:
+        local.meta.createdAt < remote.meta.createdAt ? local.meta.createdAt : remote.meta.createdAt,
       updatedAt,
       lastDeviceId: opts.deviceId,
       lamport: nextLamport(local.meta.lamport, remote.meta.lamport),
       eraseEpoch: localEpoch, // equal on both sides in this branch
-      ...erase,
+      // When one side's list covers this epoch and the other's does not, the
+      // listing erase's rows go by id; the time that still decides is the
+      // unlisted erase's, or a copy that missed it would lose rows typed
+      // between the two (US-09 AC23). A list that claims nothing counts as
+      // no list.
+      ...(listsThisEpoch(local) === listsThisEpoch(remote)
+        ? laterErase(local.meta.erasedAt, remote.meta.erasedAt)
+        : laterErase((listsThisEpoch(local) ? remote : local).meta.erasedAt, undefined)),
     },
 
     profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),
     screenings: mergeFields<FileScreenings>(local.screenings, remote.screenings),
-    reminderOptIn: mergeOptIn(local.reminderOptIn, remote.reminderOptIn, erase.erasedAt),
+    reminderOptIn: mergeOptIn(local.reminderOptIn, remote.reminderOptIn),
 
     measurements: mergeSlotted<FileMeasurement>(
       local.measurements,
