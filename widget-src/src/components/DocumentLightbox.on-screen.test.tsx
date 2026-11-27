@@ -16,6 +16,7 @@ import type { ApiDocument } from '../lib/api-types';
 
 vi.mock('../lib/roadmap-data', () => ({ readDocumentFile: vi.fn(), deleteDocument: vi.fn() }));
 vi.mock('../lib/useIsMobile', () => ({ useIsMobile: () => false }));
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true; }; // jsdom has none; the viewer is a <dialog> (US-14 AC7a)
 
 const doc: ApiDocument = {
   id: 'd1', documentType: 'scan_result', title: 'Synthetic chest X-ray', documentDate: '2024-06-01',
