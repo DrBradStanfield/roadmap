@@ -2,7 +2,7 @@
 // Side-effect free until called, so the tests pass their own candidates; no test hook sits in the wrapper.
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { accessSync, closeSync, constants, fstatSync, mkdtempSync, openSync, readdirSync, readSync, realpathSync, rmSync, statSync } from "node:fs";
+import { accessSync, closeSync, constants, fstatSync, mkdtempSync, openSync, readdirSync, readFileSync, readSync, realpathSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, isAbsolute, join, resolve } from "node:path";
 import { configArgs, disableArgs, parseFeatures, searchMode, unjudged, VERSION_LINE } from "./codex-review-features.mjs";
@@ -87,7 +87,7 @@ export function probeCodex(bin, env, live, hooks = {}) {
   if (!id || id.startsWith("changed:")) { rmSync(home, { recursive: true, force: true }); return { version: "version unknown", stop: `E_CODEX_CHANGED: the codex binary could not be read, changed while it was hashed, or ${REFUSED}` }; }
   try {
     let version;
-    try { version = run(["--version"]).trim().split("\n")[0]; } catch (e) { return { version: "version unknown", stop: `E_CODEX_VERSION: \`--version\` ${failed(e)}` }; }
+    try { version = run(["--version"]).trim(); /* the whole output must be one version line (Codex R3, PR 2222g) */ } catch (e) { return { version: "version unknown", stop: `E_CODEX_VERSION: \`--version\` ${failed(e)}` }; }
     if (!VERSION_LINE.test(version)) return { version: "version unknown", stop: "E_CODEX_VERSION: `--version` printed an unrecognised line" }; // Codex R9: the CLI text never reaches the report
     const mode = searchMode(live, version), cfg = configArgs(mode);
     const list = (stage, extra) => {
@@ -118,18 +118,25 @@ export function recheckCodex(bin, probe, env, live, say, { reprobe = true } = {}
   if (!reprobe) return { ...probe, stop: "E_CODEX_CHANGED: the codex binary changed after its probe, and a test policy shaped this snapshot, so it is not probed again" };
   say("codex binary changed after its probe; probing it again");
   const again = probeCodex(bin, env, live);
-  return again.stop || binaryId(bin) === again.id ? again : { ...again, stop: "E_CODEX_CHANGED: the codex binary changed again after a second probe" };
+  if (!again.stop && binaryId(bin) !== again.id) return { ...again, stop: "E_CODEX_CHANGED: the codex binary changed again after a second probe" };
+  const login = again.stop ? null : checkLogin(bin, env, again.configArgs); // the replacement's own login (Codex R2, PR 2222g)
+  return login ? { ...again, stop: login } : again;
 }
 
 /**
- * The stored login the review will use, read with `login status` under the run's own environment and CODEX_HOME (Codex R2,
- * PR 2222f): null when it exits 0 and the first non-empty line of its output is exactly "Logged in using ChatGPT", else a
- * stop reason naming only the exit code. Both supported CLIs print that line on STDERR with stdout empty (0.163.0 and
- * 0.171.0-alpha.13.2, 2026-11-27), so both streams are read, stdout first. The CLI's text (which can carry a masked key)
- * never reaches the report.
+ * The stored login the review will use, read with `login status` under the run's own environment, CODEX_HOME and launch -c
+ * settings (Codex R2, PR 2222f): null when it exits 0 and the first non-empty line of its output is exactly "Logged in
+ * using ChatGPT", else a stop reason naming only the exit code. Both supported CLIs print that line on STDERR with stdout
+ * empty (0.163.0 and 0.171.0-alpha.13.2, 2026-11-27), so both streams are read, stdout first. The CLI's text (which can
+ * carry a masked key) never reaches the report. `login status` cannot take --ignore-user-config, so it would read a user
+ * config the review ignores: one that sets `cli_auth_credentials_store` stops the run first (E_LOGIN_STORE; Codex R1, PR
+ * 2222g), since the check and the review could then read different stores.
  */
-export function checkLogin(bin, env) {
-  const r = spawnSync(bin, ["login", "status"], { encoding: "utf8", env, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 1 << 20 });
+export function checkLogin(bin, env, configArgs) {
+  let config = "";
+  try { config = readFileSync(join(env.CODEX_HOME || join(env.HOME ?? "", ".codex"), "config.toml"), "utf8"); } catch { /* no user config */ }
+  if (/^\s*cli_auth_credentials_store\s*=/m.test(config)) return "E_LOGIN_STORE: the user config sets cli_auth_credentials_store, which the review ignores (--ignore-user-config) and `login status` reads, so the two could see different logins; remove that setting to run a review";
+  const r = spawnSync(bin, [...configArgs, "login", "status"], { encoding: "utf8", env, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 1 << 20 });
   if (r.error || r.signal || r.status !== 0) return `E_LOGIN_NOT_CHATGPT: \`login status\` ${failed({ code: r.error?.code, signal: r.signal, status: r.status })}`;
   const first = `${r.stdout ?? ""}\n${r.stderr ?? ""}`.split("\n").map((l) => l.trim()).find(Boolean);
   return first === "Logged in using ChatGPT" ? null : "E_LOGIN_NOT_CHATGPT: `login status` (exit 0) does not report a ChatGPT login";

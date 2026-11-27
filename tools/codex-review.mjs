@@ -1007,7 +1007,7 @@ await new Promise(setImmediate);
 const env = launchEnv(process.env); // the CR2 allow-list
 WEB_ACCESS = (probe = probeCodex(CODEX, env, has("--live"))).mode ?? WEB_ACCESS; // the search mode follows the version (Codex R1, PR 2222f)
 if (probe.stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0"); // E_FEATURES_UNREADABLE, E_UNKNOWN_FEATURES, E_CODEX_*: fail closed
-{ const stop = checkLogin(CODEX, env); if (stop) finish(incomplete(`${stop}; the reviewer was not started`), "0.0"); } // Codex R2 (PR 2222f): a ChatGPT login only, read, never changed
+{ const stop = checkLogin(CODEX, env, probe.configArgs); if (stop) finish(incomplete(`${stop}; the reviewer was not started`), "0.0"); } // Codex R2 (PR 2222f): a ChatGPT login only, read, never changed
 
 // --- 2. Immutable snapshot: source in work/src, artifacts beside it (CR1) ---
 // Prune earlier runs' leftovers first: each work dir holds a ~2 GB snapshot, and a kept (incomplete) run or a

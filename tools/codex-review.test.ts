@@ -40,7 +40,7 @@ const FEATURES_0163 = resolve(__dirname, 'fixtures', 'codex-features-0.163.txt')
  * unknown name with exit 1, as the real CLI does); for `exec`, records argv, env and stdin, emits configured JSONL,
  * writes the -o file and exits as told.
  */
-function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop'; version?: string; versionExit?: number; login?: 'chatgpt' | 'api' | 'none' }) {
+function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop'; version?: string; versionExit?: number; login?: 'chatgpt' | 'api' | 'none'; loginV2?: 'chatgpt' | 'api' }) {
   const dir = mkdtempSync(join(tmpdir(), 'fake-codex-'));
   writeFileSync(join(dir, 'config.json'), JSON.stringify({ exit: 0, events: [], stderr: '', features: FEATURES_0171, extraEnabled: [], version: VERIFIED_CACHED, versionExit: 0, ...config }));
   const bin = join(dir, 'codex');
@@ -59,8 +59,10 @@ if (all.includes('--version')) {
 if (all.at(-2) === 'login' && all.at(-1) === 'status') {
   // Both real CLIs (0.163.0 and 0.171.0-alpha.13.2) print the status on STDERR with stdout empty (checked 2026-11-27 under an
   // empty CODEX_HOME: "Not logged in", exit 1; Brad's real ChatGPT login: "Logged in using ChatGPT", exit 0).
-  if (cfg.login === 'api') { console.error('Logged in using an API key - test-***'); process.exit(0); }
-  if (cfg.login === 'none') { console.error('Not logged in'); process.exit(1); }
+  const login = fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n') && cfg.loginV2 ? cfg.loginV2 : cfg.login;
+  fs.writeFileSync(path.join(dir, 'login-args.json'), JSON.stringify(all));
+  if (login === 'api') { console.error('Logged in using an API key - test-***'); process.exit(0); }
+  if (login === 'none') { console.error('Not logged in'); process.exit(1); }
   console.error('Logged in using ChatGPT'); process.exit(0);
 }
 if (all.at(-2) === 'features' && all.at(-1) === 'list') {
@@ -2688,7 +2690,7 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     const once = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson, '--live'], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(swapIn(f.bin))}:${process.env.PATH}` }) }); // --live: the v2 build is unverified, so cached search would turn off
     expect(once.status).toBe(0);
     expect(once.stderr).toContain('codex binary changed after its probe; probing it again');
-    expect(callKinds(f)).toEqual(['version', 'features', 'features', 'login', 'version', 'features', 'features', 'exec']);
+    expect(callKinds(f)).toEqual(['version', 'features', 'features', 'login', 'version', 'features', 'features', 'login', 'exec']); // the replacement's login is read again (Codex R2, PR 2222g)
     expect(once.stderr).toContain(`(${VERIFIED_CACHED}-v2), author`);
     expect(once.stderr).not.toContain(`(${VERIFIED_CACHED}), author`);
     expect(JSON.parse(readFileSync(outJson, 'utf8')).codex_version).toBe(`${VERIFIED_CACHED}-v2`);
@@ -2771,6 +2773,43 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
       expect(r.stdout + r.stderr + readFileSync(outJson, 'utf8')).not.toContain('SYNTHETIC-PRIVATE-7712');
       expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     }
+  });
+  it('Codex R1 on PR 2222g: login status runs with the launch -c settings, and a user config that moves the credential store stops the run', () => {
+    writeFileSync(join(repo, 'a.txt'), 'store check\n');
+    const f = fake({ output: CLEAN, version: 'codex-cli 0.171.0-alpha.13.2' });
+    expect(runWrapper(f.bin).status).toBe(0);
+    const loginArgs: string[] = JSON.parse(f.read('login-args.json'));
+    expect(loginArgs.slice(-2)).toEqual(['login', 'status']);
+    for (const s of ['web_search="disabled"', 'shell_environment_policy.inherit="core"', 'model_reasoning_effort="high"', 'project_doc_max_bytes=0', 'project_doc_fallback_filenames=[]']) expect(loginArgs).toContain(s);
+    for (const viaCodexHome of [false, true]) {
+      const home = mkdtempSync(join(tmpdir(), 'cr-home-store-'));
+      const codexHome = viaCodexHome ? join(home, 'elsewhere') : join(home, '.codex');
+      mkdirSync(codexHome, { recursive: true });
+      writeFileSync(join(codexHome, 'config.toml'), 'model = "x"\ncli_auth_credentials_store = "keyring"\n'); // the review ignores this file; login status would read it
+      const g = fake({ output: CLEAN });
+      const r = spawnSync('node', [WRAPPER, '--codex', g.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ HOME: home, ...(viaCodexHome ? { CODEX_HOME: codexHome } : {}) }) });
+      expect([viaCodexHome, r.status]).toEqual([viaCodexHome, 3]);
+      expect(r.stdout).toContain('E_LOGIN_STORE');
+      expect(r.stdout).not.toContain('keyring');
+      expect(existsSync(join(g.dir, 'argv.json'))).toBe(false);
+    }
+  });
+  it('Codex R2 on PR 2222g: a replacement whose stored login is not ChatGPT never reaches exec', () => {
+    writeFileSync(join(repo, 'a.txt'), 'replacement login\n');
+    const f = fake({ output: CLEAN, loginV2: 'api' });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson, '--live'], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(swapIn(f.bin))}:${process.env.PATH}` }) });
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('E_LOGIN_NOT_CHATGPT');
+    expect(callKinds(f)).toEqual(['version', 'features', 'features', 'login', 'version', 'features', 'features', 'login']);
+  });
+  it('Codex R3 on PR 2222g: a --version with more than one line stops pre-flight, naming no CLI text', () => {
+    writeFileSync(join(repo, 'a.txt'), 'two-line version\n');
+    const f = fake({ output: CLEAN, version: `${VERIFIED_CACHED}\nSYNTHETIC-PRIVATE-8813 extra` });
+    const r = runWrapper(f.bin);
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('E_CODEX_VERSION: `--version` printed an unrecognised line');
+    expect(r.stdout + r.stderr + readFileSync(outJson, 'utf8')).not.toContain('SYNTHETIC-PRIVATE-8813');
+    expect(callKinds(f)).toEqual(['version']);
   });
   it('Codex R1 on PR 2222f: the search mode is chosen from the version before the feature listings, which use the launch settings', () => {
     for (const [version, mode] of [[VERIFIED_CACHED, 'cached'], ['codex-cli 0.171.0-alpha.13.2', 'disabled']]) {
