@@ -5,9 +5,9 @@
 export const VALUE_OPTIONS = ["--codex", "--commit", "--range", "--message", "--model", "--out", "--timeout-min", "--record-file", "--include", "--include-limit-mb", "--subject", "--baseline", "--context"];
 
 /** argv as an ordered list of { name, value? }; a value option at the very end has no value (undefined). */
-export function parseArgv(argv, valueOptions = VALUE_OPTIONS) {
+export function parseArgv(argv) {
   const parsed = [];
-  for (let i = 0; i < argv.length; i++) parsed.push(valueOptions.includes(argv[i]) ? { name: argv[i], value: argv[++i] } : { name: argv[i] });
+  for (let i = 0; i < argv.length; i++) parsed.push(VALUE_OPTIONS.includes(argv[i]) ? { name: argv[i], value: argv[++i] } : { name: argv[i] });
   return parsed;
 }
 

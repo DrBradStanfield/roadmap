@@ -30,6 +30,8 @@ const sh = (cwd: string, cmd: string) => execFileSync('sh', ['-c', cmd], { cwd, 
 /** A wrapper child's whole environment: the system minimum plus the case's own keys. `--loop` collects every variable, so the runner's shell must never reach it. */
 const childEnv = (extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({ ...Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'LANG'].filter((k) => process.env[k]).map((k) => [k, process.env[k]])), ...extra });
 
+/** The build where AC14 showed cached-only search (2026-10-03); the fake reports it unless a case says otherwise (US-40 AC19). */
+const VERIFIED_CACHED = 'codex-cli 0.159.0-alpha.12.1';
 /** Real `features list` output (empty CODEX_HOME), 2026-11-27: the ChatGPT app's CLI and the Homebrew one (US-40 AC19). */
 const FEATURES_0171 = resolve(__dirname, 'fixtures', 'codex-features-0.171.txt');
 const FEATURES_0163 = resolve(__dirname, 'fixtures', 'codex-features-0.163.txt');
@@ -38,9 +40,9 @@ const FEATURES_0163 = resolve(__dirname, 'fixtures', 'codex-features-0.163.txt')
  * unknown name with exit 1, as the real CLI does); for `exec`, records argv, env and stdin, emits configured JSONL,
  * writes the -o file and exits as told.
  */
-function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop' }) {
+function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop'; version?: string; versionExit?: number }) {
   const dir = mkdtempSync(join(tmpdir(), 'fake-codex-'));
-  writeFileSync(join(dir, 'config.json'), JSON.stringify({ exit: 0, events: [], stderr: '', features: FEATURES_0171, extraEnabled: [], ...config }));
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ exit: 0, events: [], stderr: '', features: FEATURES_0171, extraEnabled: [], version: VERIFIED_CACHED, versionExit: 0, ...config }));
   const bin = join(dir, 'codex');
   writeFileSync(bin, `#!/usr/bin/env node
 const fs = require('fs'); const path = require('path');
@@ -51,7 +53,8 @@ try { fs.appendFileSync(path.join(dir, 'calls.jsonl'), JSON.stringify({ bin: pro
 if (all.includes('--version')) {
   if (fs.existsSync(path.join(dir, 'armed'))) { const me = process.argv[1], t = me + '.n'; fs.writeFileSync(t, fs.readFileSync(me, 'utf8') + '// replaced\\n'); fs.chmodSync(t, 0o755); fs.renameSync(t, me); }
   if (fs.existsSync(path.join(dir, 'slow'))) { fs.rmSync(path.join(dir, 'slow')); fs.writeFileSync(path.join(dir, 'reached'), ''); require('child_process').execSync('sleep 2'); }
-  console.log(fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n') ? 'codex-cli 0.0.0-fake-v2' : 'codex-cli 0.0.0-fake'); process.exit(0);
+  if (cfg.versionExit) process.exit(cfg.versionExit);
+  console.log(fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n') ? cfg.version + '-v2' : cfg.version); process.exit(0);
 }
 if (all.at(-2) === 'features' && all.at(-1) === 'list') {
   if (cfg.failFeatures) { process.stderr.write(cfg.failFeatures.stderr); process.exit(cfg.failFeatures.code); }
@@ -280,7 +283,7 @@ describe('US-40 AC14 — hosted, index-only web search; the shell stays offline 
       '--sandbox', 'read-only',
       ...off.flatMap((n) => ['--disable', n]),
       '-c', 'web_search="cached"', '-c', 'shell_environment_policy.inherit="core"', '-c', 'model_reasoning_effort="high"',
-      '-c', 'project_doc_max_bytes=0', '-c', 'project_doc_fallback_filenames=[]', '-c', 'forced_login_method="chatgpt"',
+      '-c', 'project_doc_max_bytes=0', '-c', 'project_doc_fallback_filenames=[]',
       '--model', 'gpt-6.2-sol',
       '-C', '<work>', '--output-schema', '<work>', '-o', '<work>', '--color', 'never', '-',
     ]);
@@ -2499,10 +2502,10 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(argv.filter((a) => a === '--model')).toHaveLength(1);
     expect(argv[argv.indexOf('--model') + 1]).toBe('gpt-6.2-astra');
     expect(argv).not.toContain('--deep');
-    expect(JSON.parse(readFileSync(outJson, 'utf8'))).toMatchObject({ model: 'gpt-6.2-astra', deep: true, codex_bin: realpathSync(f.bin), codex_version: 'codex-cli 0.0.0-fake' });
+    expect(JSON.parse(readFileSync(outJson, 'utf8'))).toMatchObject({ model: 'gpt-6.2-astra', deep: true, codex_bin: realpathSync(f.bin), codex_version: VERIFIED_CACHED });
     expect(r.stderr).toContain('model gpt-6.2-astra');
     expect(r.stdout).toContain('## Codex review (gpt-6.2-astra)');
-    expect(r.stderr).toContain(`codex ${JSON.stringify(realpathSync(f.bin))} (codex-cli 0.0.0-fake)`); // the pre-flight line names the binary and its --version
+    expect(r.stderr).toContain(`codex ${JSON.stringify(realpathSync(f.bin))} (${VERIFIED_CACHED})`); // the pre-flight line names the binary and its --version
   });
   it('--deep as the value of another option is data, not the setting', () => {
     writeFileSync(join(repo, 'a.txt'), 'deep as data\n');
@@ -2549,7 +2552,7 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
       expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     }
   });
-  it('forces the ChatGPT login and passes no API-key variable to the child', () => {
+  it('passes no API-key variable to the child, and forces no login method', () => {
     writeFileSync(join(repo, 'a.txt'), 'login check\n');
     const f = fake({ output: CLEAN });
     const keys = { OPENAI_API_KEY: 'test-token-good', CODEX_API_KEY: 'test-token-good', OPENAI_BASE_URL: 'http://127.0.0.1:9' };
@@ -2559,8 +2562,7 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     for (const k of Object.keys(keys)) expect(env[k]).toBeUndefined();
     expect(Object.keys(env).filter((k) => /API_KEY|OPENAI/i.test(k))).toEqual([]);
     const argv: string[] = JSON.parse(f.read('argv.json'));
-    expect(argv.filter((a) => /forced_login_method/.test(a))).toEqual(['forced_login_method="chatgpt"']);
-    expect(argv[argv.indexOf('forced_login_method="chatgpt"') - 1]).toBe('-c');
+    expect(argv.filter((a) => /forced_login_method/.test(a))).toEqual([]); // Codex R4 (PR 2222e): the CLI logs a mismatched stored login out, so no login method is forced
   });
   it('an enabled feature no one has judged stops the run before the snapshot (E_UNKNOWN_FEATURES); exec never starts', () => {
     writeFileSync(join(repo, 'a.txt'), 'unknown feature\n');
@@ -2627,16 +2629,13 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(r.stdout).toContain('E_FEATURES_UNREADABLE: `features list` (discovery) exited 7');
     for (const text of [r.stdout, r.stderr, readFileSync(outJson, 'utf8')]) expect(text).not.toContain('SYNTHETIC-PRIVATE-4471');
   });
-  it('Codex R8 on PR 2222: every codex call carries the forced ChatGPT login setting', () => {
-    writeFileSync(join(repo, 'a.txt'), 'login everywhere\n');
+  it('Codex R4 on PR 2222e: no codex call carries a forced login method (it can sign the caller out)', () => {
+    writeFileSync(join(repo, 'a.txt'), 'no forced login\n');
     const f = fake({ output: CLEAN });
     expect(runWrapper(f.bin).status).toBe(0);
     const calls = f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l));
     expect(calls).toHaveLength(4);
-    for (const c of calls) {
-      expect(c.args.filter((a: string) => /forced_login_method/.test(a))).toEqual(['forced_login_method="chatgpt"']);
-      expect(c.args[c.args.indexOf('forced_login_method="chatgpt"') - 1]).toBe('-c');
-    }
+    for (const c of calls) expect(c.args.join(' ')).not.toContain('forced_login_method');
   });
   it('Codex R1 on PR 2222: argv is parsed once, so a flag-shaped --message value never hides the real --out after it', () => {
     writeFileSync(join(repo, 'a.txt'), 'stale out\n');
@@ -2679,13 +2678,13 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
   it('Codex R5 and R8 on PR 2222: a binary replaced between the probe and the review is probed again, and the launch line and report name the replacement; replaced again, the run stops', () => {
     writeFileSync(join(repo, 'a.txt'), 'swap once\n');
     const f = fake({ output: CLEAN });
-    const once = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(swapIn(f.bin))}:${process.env.PATH}` }) });
+    const once = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson, '--live'], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(swapIn(f.bin))}:${process.env.PATH}` }) }); // --live: the v2 build is unverified, so cached search would turn off
     expect(once.status).toBe(0);
     expect(once.stderr).toContain('codex binary changed after its probe; probing it again');
     expect(callKinds(f)).toEqual(['version', 'features', 'features', 'version', 'features', 'features', 'exec']);
-    expect(once.stderr).toContain('(codex-cli 0.0.0-fake-v2), author');
-    expect(once.stderr).not.toContain('(codex-cli 0.0.0-fake), author');
-    expect(JSON.parse(readFileSync(outJson, 'utf8')).codex_version).toBe('codex-cli 0.0.0-fake-v2');
+    expect(once.stderr).toContain(`(${VERIFIED_CACHED}-v2), author`);
+    expect(once.stderr).not.toContain(`(${VERIFIED_CACHED}), author`);
+    expect(JSON.parse(readFileSync(outJson, 'utf8')).codex_version).toBe(`${VERIFIED_CACHED}-v2`);
     const g = fake({ output: CLEAN });
     const twice = spawnSync('node', [WRAPPER, '--codex', g.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(`${swapIn(g.bin)}; touch "${join(g.dir, 'armed')}"`)}:${process.env.PATH}` }) });
     expect(twice.status).toBe(3);
@@ -2706,7 +2705,7 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
   it('Codex R6 on PR 2222c: a cancel during the final re-probe stops the run (130) before the review starts', async () => {
     writeFileSync(join(repo, 'a.txt'), 'cancel in reprobe\n');
     const f = fake({ output: CLEAN });
-    const child = spawn('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, env: childEnv({ PATH: `${archiveShim(`${swapIn(f.bin)}; touch "${join(f.dir, 'slow')}"`)}:${process.env.PATH}` }), stdio: 'ignore' });
+    const child = spawn('node', [WRAPPER, '--codex', f.bin, '--out', outJson, '--live'], { cwd: repo, env: childEnv({ PATH: `${archiveShim(`${swapIn(f.bin)}; touch "${join(f.dir, 'slow')}"`)}:${process.env.PATH}` }), stdio: 'ignore' });
     while (!existsSync(join(f.dir, 'reached'))) await new Promise((r) => setTimeout(r, 20));
     child.kill('SIGINT');
     const code = await new Promise((r) => child.on('close', (c, sig) => r(c ?? sig)));
@@ -2724,61 +2723,55 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     }
     expect(existsSync(join(f.dir, 'calls.jsonl'))).toBe(false);
   });
-  it('Codex R9 on PR 2222: the live probe script, in --dry-run, builds the wrapper launch arguments and makes no exec call', () => {
-    const f = fake({ output: CLEAN });
-    const r = spawnSync('node', [resolve(__dirname, 'codex-review-probe.mjs'), '--dry-run', '--codex', f.bin], { encoding: 'utf8', env: childEnv() });
-    expect(r.status).toBe(0);
-    const lines = r.stdout.split('\n').filter((l) => /^probe [abc][-a-z]*: \[/.test(l));
-    expect(lines.map((l) => l.slice(0, 7))).toEqual(['probe a', 'probe b', 'probe c']);
-    const a: string[] = JSON.parse(lines[0].slice(lines[0].indexOf('[')));
-    expect(a.slice(1, 9)).toEqual(['exec', '--ignore-user-config', '--strict-config', '--json', '--ephemeral', '--skip-git-repo-check', '--sandbox', 'read-only']);
-    expect(a.filter((x) => x === '--disable')).toHaveLength(OFF_0171.length);
-    expect(a).toContain('forced_login_method="chatgpt"');
-    const c: string[] = JSON.parse(lines[2].slice(lines[2].indexOf('[')));
-    expect(c).toContain('cli_auth_credentials_store="file"');
-    const kinds = f.read('calls.jsonl').trim().split('\n').map((l) => JSON.parse(l).args.includes('exec') ? 'exec' : 'probe');
-    expect(kinds).not.toContain('exec');
+  it('Codex R3 on PR 2222e: hosted search runs cached only on a build where cached-only was shown; otherwise it is disabled unless --live', () => {
+    const run = (version: string, extra: string[] = []) => {
+      writeFileSync(join(repo, 'a.txt'), `search ${version} ${extra.join(' ')}\n`);
+      const f = fake({ output: CLEAN, version });
+      const r = runWrapper(f.bin, extra);
+      expect(r.status).toBe(0);
+      const argv: string[] = JSON.parse(f.read('argv.json'));
+      return { r, search: argv.filter((a) => /^web_search=/.test(a)), report: JSON.parse(readFileSync(outJson, 'utf8')), prompt: f.read('stdin.txt').replace(/\s+/g, ' ') };
+    };
+    const verified = run(VERIFIED_CACHED);
+    expect(verified.search).toEqual(['web_search="cached"']);
+    expect(verified.report.web_access).toBe('cached');
+    const newer = run('codex-cli 0.171.0-alpha.13.2');
+    expect(newer.search).toEqual(['web_search="disabled"']);
+    expect(newer.report.web_access).toBe('disabled');
+    expect(newer.r.stderr).toContain('web search disabled (cached-only search is not verified on codex-cli 0.171.0-alpha.13.2; --live turns on live pages)');
+    expect(newer.prompt).toContain('You have no web search tool in this run');
+    expect(newer.prompt).not.toContain('You have a web search tool');
+    const live = run('codex-cli 0.171.0-alpha.13.2', ['--live']);
+    expect(live.search).toEqual(['web_search="live"']);
+    expect(live.report.web_access).toBe('live');
   });
-  it('Codex R3-R6 on PR 2222c and d: the probe judges give PASS only on positive evidence tied to the exact action (synthetic events, no model call)', async () => {
-    const { judgeShell, judgeSearch, judgeLogin, REQUESTED_CURL } = await import('./codex-review-probe.mjs');
-    const ev = (item: object) => ({ type: 'item.completed', item });
-    const res = (items: object[], extra: object = {}) => ({ status: 0, events: items.map(ev), answer: '', text: '', ...extra });
-    const sh = (command: string, exit_code: number) => ({ type: 'command_execution', command: `/bin/zsh -lc ${JSON.stringify(command)}`, exit_code });
-    const curl = (exit_code: number) => sh(REQUESTED_CURL, exit_code);
-    expect(REQUESTED_CURL).toBe('curl -sS -m 15 -o /dev/null https://example.com/');
-    expect(judgeShell(6, res([curl(6)]))[0]).toBe('INCONCLUSIVE'); // control failed: offline
-    expect(judgeShell(0, res([]))[0]).toBe('INCONCLUSIVE'); // curl never ran
-    expect(judgeShell(0, res([curl(0)]))[0]).toBe('FAIL');
-    for (const code of [60, 35, 127]) expect(judgeShell(0, res([curl(code)]))[0]).toBe('INCONCLUSIVE'); // TLS, handshake, missing curl
-    expect(judgeShell(0, res([curl(6)]))[0]).toBe('PASS');
-    expect(judgeShell(0, res([curl(7)]))[0]).toBe('PASS');
-    expect(judgeShell(0, res([sh('curl -sS -m 15 -o /dev/null https://no-such-host.invalid/', 6)]))[0]).toBe('INCONCLUSIVE'); // Codex R6 (d): another target
-    expect(judgeShell(0, res([sh(`${REQUESTED_CURL}; true`, 0)]))[0]).toBe('INCONCLUSIVE'); // a compound command
-    expect(judgeShell(0, res([sh(`cd /tmp && ${REQUESTED_CURL}`, 6)]))[0]).toBe('INCONCLUSIVE');
-    const url = 'https://example.com/?codex-review-probe=abcd1234';
-    const open = (outcome?: string, at = url) => ({ type: 'web_search', action: { type: 'open_page', url: at }, ...(outcome === undefined ? {} : { result: outcome }) });
-    expect(judgeSearch(res([], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE'); // no tool call
-    expect(judgeSearch(res([{ type: 'web_search', action: { type: 'search', query: url } }], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE'); // the URL in a query is not an open
-    expect(judgeSearch(res([open('Cache miss', `${url}x`)]), url, 'cached')[0]).toBe('INCONCLUSIVE'); // another URL
-    expect(judgeSearch(res([open()], { answer: 'Cache miss' }), url, 'cached')[0]).toBe('INCONCLUSIVE'); // Codex R4 (d): the outcome must belong to the open, not the answer
-    expect(judgeSearch(res([open('Cache miss')]), url, 'cached')[0]).toBe('PASS');
-    expect(judgeSearch(res([open('Example Domain')]), url, 'cached')[0]).toBe('FAIL');
-    expect(judgeSearch(res([open('Example Domain')]), url, 'live')[0]).toBe('PASS');
-    expect(judgeSearch(res([open()], { answer: 'Example Domain' }), url, 'live')[0]).toBe('INCONCLUSIVE');
-    const keyed = { status: 0, stdout: 'Logged in using an API key - test-***', stderr: '' };
-    const refusal = (text: string, status = 1) => ({ status, events: [], answer: '', text });
-    const mismatch = 'Error: API key login is not allowed: forced_login_method requires ChatGPT';
-    expect(judgeLogin({ status: 0, stdout: 'Not logged in', stderr: '' }, refusal(mismatch))[0]).toBe('INCONCLUSIVE'); // the key was never read
-    expect(judgeLogin({ status: 1, stdout: '', stderr: 'could not read the API key from auth.json' }, refusal(mismatch))[0]).toBe('INCONCLUSIVE'); // Codex R5 (d): a failed control
-    expect(judgeLogin(keyed, refusal('Error: unknown variant `chatgpt` for key forced_login_method; failed to load configuration'))[0]).toBe('INCONCLUSIVE'); // a configuration error
-    expect(judgeLogin(keyed, refusal('Not logged in'))[0]).toBe('INCONCLUSIVE'); // generic
-    expect(judgeLogin(keyed, refusal('Please log in with ChatGPT'))[0]).toBe('INCONCLUSIVE'); // names ChatGPT, but no mismatch with the API key
-    expect(judgeLogin(keyed, refusal('error: 401 Unauthorized'))[0]).toBe('FAIL');
-    expect(judgeLogin(keyed, refusal('ok', 0))[0]).toBe('FAIL');
-    expect(judgeLogin(keyed, refusal(mismatch))[0]).toBe('PASS');
-    // every line counts turn.started events (zero: no model turn began); the verdict does not change with it
-    expect(judgeLogin(keyed, refusal('Not logged in'))).toEqual(['INCONCLUSIVE', 'exec exited 1 without an explicit API-key versus ChatGPT login mismatch (a generic refusal is not enough); 0 turn.started event(s)']);
-    expect(judgeLogin(keyed, { ...refusal('Not logged in'), events: [{ type: 'thread.started' }, { type: 'turn.started' }] })[1]).toMatch(/; 1 turn\.started event\(s\)$/);
+  it('Codex R3 on PR 2222e: a replacement that would change the search mode stops the run', () => {
+    writeFileSync(join(repo, 'a.txt'), 'mode change\n');
+    const f = fake({ output: CLEAN });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(swapIn(f.bin))}:${process.env.PATH}` }) });
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('E_CODEX_CHANGED');
+    expect(r.stdout).toContain('search mode');
+    expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+  });
+  it('Codex R9 on PR 2222e: a failed or unrecognised --version stops pre-flight with a bounded diagnostic', () => {
+    for (const [cfg, why] of [[{ versionExit: 5 }, '`--version` exited 5'], [{ version: 'SYNTHETIC-PRIVATE-7712 build' }, '`--version` printed an unrecognised line']] as const) {
+      writeFileSync(join(repo, 'a.txt'), `version ${why}\n`);
+      const f = fake({ output: CLEAN, ...cfg });
+      const r = runWrapper(f.bin);
+      expect([why, r.status]).toEqual([why, 3]);
+      expect(r.stdout).toContain(`E_CODEX_VERSION: ${why}`);
+      expect(r.stdout + r.stderr + readFileSync(outJson, 'utf8')).not.toContain('SYNTHETIC-PRIVATE-7712');
+      expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
+    }
+  });
+  it('Codex R1 on PR 2222e: a file replaced during the initial hash stops the probe before any codex call', async () => {
+    const { probeCodex, launchEnv, configArgs } = await import('./codex-review-bin.mjs');
+    const f = fake({ output: CLEAN });
+    const bin = realpathSync(f.bin);
+    const p = probeCodex(bin, launchEnv(process.env), configArgs('cached'), { afterRead: () => { writeFileSync(`${bin}.n`, readFileSync(bin, 'utf8') + '// x\n'); chmodSync(`${bin}.n`, 0o755); renameSync(`${bin}.n`, bin); } });
+    expect(p.stop).toMatch(/^E_CODEX_CHANGED/);
+    expect(existsSync(join(f.dir, 'calls.jsonl'))).toBe(false);
   });
   it('Codex R1 on PR 2222d: a file replaced while it is hashed never yields the old identity', async () => {
     const { binaryId } = await import('./codex-review-bin.mjs');

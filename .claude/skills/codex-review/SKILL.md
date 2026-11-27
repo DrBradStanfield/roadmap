@@ -25,9 +25,17 @@ shape; erase and privacy paths; security surfaces; guards and agent contracts.
 Everything else runs the default, gpt-6.2-sol. Both at high reasoning effort.
 `--model <id>` names any other model, and `--deep --model` is a usage error.
 The wrapper launches the ChatGPT app's own CLI when it is installed (the
-Homebrew `codex` 0.163 refuses gpt-6.2-astra on a ChatGPT login), forces the
-ChatGPT login, and prints the binary and its version on the pre-flight line;
-`--codex <bin>` or `CODEX_BIN` overrides it. Before the snapshot it reads the
+Homebrew `codex` 0.163 refuses both 6.2 models on a ChatGPT login) and prints
+the binary and its version on the pre-flight line; `--codex <bin>` or
+`CODEX_BIN` overrides it. It forces no login method (forcing one can sign a
+stored login of the other kind out); API-key variables never reach it.
+
+**Web search on the newer CLI.** Cached-only search is verified only on
+codex-cli 0.159.0-alpha.12.1, so on the app's CLI the wrapper turns hosted
+search off (the pre-flight line says `web search disabled`, the report
+`web_access: disabled`). A review that must check a cited study passes
+`--live`: our own changes only, never with `--record` or `--loop`, as AC14
+says. Without it, a source the reviewer cannot check offline is "not checked". Before the snapshot it reads the
 binary's `features list`, turns off every sub-agent, browser and automation
 feature it lists, and stops with `E_UNKNOWN_FEATURES` (incomplete) if any
 other feature is enabled that is not judged in `tools/codex-review-features.mjs`.

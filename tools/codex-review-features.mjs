@@ -89,9 +89,21 @@ const REMOVED_ONLY = new Set(["item_ids", "resize_all_images", "sqlite", "steer"
 /** The child's whole environment (CR2): only what the CLI needs to find itself and its login; never an API-key variable. */
 export const launchEnv = (parent) => ({ ...Object.fromEntries(["PATH", "HOME", "TMPDIR", "LANG", "CODEX_HOME"].filter((k) => parent[k]).map((k) => [k, parent[k]])), CI: "1" });
 
-/** The -c settings of every codex call: search mode (AC14), core shell env, high effort, no project docs, the ChatGPT login only (AC19). */
+/**
+ * The -c settings of every codex call: search mode (AC14), core shell env, high effort, no project docs. No login method is
+ * forced: both supported CLIs carry "ChatGPT login is required, but an API key is currently being used. Logging out.", so
+ * forcing one could sign the caller out of a stored login of the other kind (Codex R4, PR 2222e); the env allow-list keeps
+ * API-key variables from the child instead.
+ */
 export const configArgs = (webAccess) => ["-c", `web_search="${webAccess}"`, "-c", 'shell_environment_policy.inherit="core"', "-c", 'model_reasoning_effort="high"',
-  "-c", "project_doc_max_bytes=0", "-c", "project_doc_fallback_filenames=[]", "-c", 'forced_login_method="chatgpt"'];
+  "-c", "project_doc_max_bytes=0", "-c", "project_doc_fallback_filenames=[]"];
+
+/** Builds where AC14 showed hosted search stays cached-only on a cache miss (probe 2026-10-03). Nowhere else is "cached" trusted. */
+const CACHED_VERIFIED = ["codex-cli 0.159.0-alpha.12.1"];
+/** The search mode a run uses (Codex R3, PR 2222e): --live keeps its own rules; else cached on a verified build, else disabled. */
+export const searchMode = (live, version) => (live ? "live" : CACHED_VERIFIED.includes(version) ? "cached" : "disabled");
+/** A `--version` line this wrapper recognises. */
+export const VERSION_LINE = /^codex-cli \d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
 
 /**
  * `features list` text as { features: [{ name, stage, enabled }] }, or { error } when any non-blank row is not exactly

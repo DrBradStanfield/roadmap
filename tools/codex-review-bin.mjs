@@ -5,8 +5,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { accessSync, closeSync, constants, fstatSync, mkdtempSync, openSync, readdirSync, readSync, realpathSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, isAbsolute, join, resolve } from "node:path";
-import { disableArgs, parseFeatures, unjudged } from "./codex-review-features.mjs";
-export { configArgs, launchEnv } from "./codex-review-features.mjs";
+import { disableArgs, parseFeatures, unjudged, VERSION_LINE } from "./codex-review-features.mjs";
+export { configArgs, launchEnv, searchMode } from "./codex-review-features.mjs";
 
 /** The CLI bundled with the ChatGPT desktop app: on 2026-11-27 it ran gpt-6.2-astra on a ChatGPT login, the Homebrew 0.163 refused it. */
 export const CHATGPT_APP_CODEX = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex";
@@ -72,22 +72,24 @@ export function binaryId(p, { afterRead } = {}) {
 /**
  * Pre-flight probe, no model call: `--version`, then `features list` twice under an empty CODEX_HOME (as
  * --ignore-user-config reads no user config; `features list` cannot take that flag): once to learn which features the
- * binary lists, once with the run's own --disable arguments. Every call carries the run's -c settings, the forced ChatGPT
- * login among them. Returns { version, disable, id } (`id` taken before the first call, so recheckCodex also sees a change
- * during the probe), plus `stop` (E_FEATURES_UNREADABLE, E_UNKNOWN_FEATURES or E_CODEX_CHANGED) when the run must not start. A failure names its stage and exit code only: the CLI's own output
- * never reaches the report (Codex R3).
+ * binary lists, once with the run's own --disable arguments. Every call carries the run's -c settings. Returns
+ * { version, disable, id } (`id` taken before the first call, so recheckCodex also sees a change during the probe), plus
+ * `stop` (E_CODEX_CHANGED, E_CODEX_VERSION, E_FEATURES_UNREADABLE or E_UNKNOWN_FEATURES) when the run must not start. A
+ * failure names its stage and exit code only: the CLI's own output never reaches the report (Codex R3).
  */
-export function probeCodex(bin, env, configArgs) {
+export function probeCodex(bin, env, configArgs, hooks = {}) {
   const home = mkdtempSync(join(tmpdir(), "cr-codex-home-"));
   const run = (a) => execFileSync(bin, [...configArgs, ...a], { encoding: "utf8", env: { ...env, CODEX_HOME: home }, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 4 << 20 });
-  const id = binaryId(bin);
-  if (!id) { rmSync(home, { recursive: true, force: true }); return { version: "version unknown", stop: `E_CODEX_CHANGED: the codex binary could not be read, or ${REFUSED}` }; }
+  const failed = (e) => (e.code === "ETIMEDOUT" || e.signal ? "timed out" : typeof e.status === "number" ? `exited ${e.status}` : "could not start");
+  const id = binaryId(bin, hooks); // `hooks.afterRead`: the tests' moment inside the hash
+  if (!id || id.startsWith("changed:")) { rmSync(home, { recursive: true, force: true }); return { version: "version unknown", stop: `E_CODEX_CHANGED: the codex binary could not be read, changed while it was hashed, or ${REFUSED}` }; }
   try {
-    let version = "version unknown";
-    try { version = run(["--version"]).trim().split("\n")[0] || version; } catch { /* reported as unknown */ }
+    let version;
+    try { version = run(["--version"]).trim().split("\n")[0]; } catch (e) { return { version: "version unknown", stop: `E_CODEX_VERSION: \`--version\` ${failed(e)}` }; }
+    if (!VERSION_LINE.test(version)) return { version: "version unknown", stop: "E_CODEX_VERSION: `--version` printed an unrecognised line" }; // Codex R9: the CLI text never reaches the report
     const list = (stage, extra) => {
       let text;
-      try { text = run([...extra, "features", "list"]); } catch (e) { return { stop: `\`features list\` (${stage}) ${e.code === "ETIMEDOUT" || e.signal ? "timed out" : typeof e.status === "number" ? `exited ${e.status}` : "could not start"}` }; }
+      try { text = run([...extra, "features", "list"]); } catch (e) { return { stop: `\`features list\` (${stage}) ${failed(e)}` }; }
       const parsed = parseFeatures(text);
       return parsed.error ? { stop: `\`features list\` (${stage}) ${parsed.error}` } : parsed;
     };
@@ -116,12 +118,12 @@ export function recheckCodex(bin, probe, env, configArgs, say, { reprobe = true 
   return again.stop || binaryId(bin) === again.id ? again : { ...again, stop: "E_CODEX_CHANGED: the codex binary changed again after a second probe" };
 }
 
-/** The review's argument list, as the wrapper launches it (AC3, AC14, AC19); the probe script builds the same. */
+/** The review's argument list, as the wrapper launches it (AC3, AC14, AC19). */
 export const launchArgs = ({ disable, configArgs, model, recordArgs = [], src, schemaPath, outPath }) => [
   "exec", "--ignore-user-config", "--strict-config", "--json", "--ephemeral", "--skip-git-repo-check",
   "--sandbox", "read-only",
   ...disable, // AC3's eight, plus every sub-agent, browser, automation and unused feature this binary lists (AC19)
-  ...configArgs, // hosted search (AC14): "cached" by default, "live" under --live; never "indexed", never --search
+  ...configArgs, // hosted search (AC14, AC19): "cached" on a verified build, else "disabled"; "live" under --live; never "indexed"
   "--model", model, ...recordArgs,
   "-C", src, "--output-schema", schemaPath, "-o", outPath, "--color", "never", "-",
 ];
