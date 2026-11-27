@@ -199,7 +199,7 @@ export function AdditionalLabRows({ labValues, coreValues, onAdded, onCorrect, m
 
   return (
     <div className="alr-wrap">
-      <div className="alr-title">Additional lab results</div>
+      <div className="alr-title">Additional blood tests</div>
       {groups.map(g => (
         <LabGroupSection key={g.id} group={g} expanded={expandedIds.has(g.id)} onToggle={() => toggle(g.id)} onCorrect={onCorrect} move={move}/>
       ))}

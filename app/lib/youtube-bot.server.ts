@@ -35,7 +35,6 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase-client.server';
-import { YOUTUBE_PROMPT_TEMPLATE } from './youtube-context';
 import {
   POLL_INTERVAL_MS,
   DAILY_REPLY_CAP,
@@ -81,7 +80,7 @@ import {
 import { safeErrorFields } from './safe-error-fields.server';
 import { postClaimed, countSent } from './youtube-bot-post.server';
 import { nextPosting, OPEN_POSTING, type Posting } from './youtube-bot-post-result';
-import { CHAT_PROMPT } from './chat-system-prompt.server';
+import { chatDocs } from './chat-system-prompt.server';
 import { transition, type Effect, type Lifecycle, type LifecycleEvent } from './youtube-bot-lifecycle';
 
 // The pipeline names this file exported before the split (issue #429).
@@ -124,15 +123,13 @@ export function startYouTubeBot(): void {
     return;
   }
 
-  if (!YOUTUBE_PROMPT_TEMPLATE) {
-    console.warn('YouTube bot: chat-youtube-prompt.md missing — bot disabled');
+  const docs = chatDocs();
+  if (docs.kind === 'missing') {
+    console.warn(`YouTube bot: chat docs missing (${docs.files.join(', ')}) — bot disabled`);
     return;
   }
-
-  if (CHAT_PROMPT.kind === 'missing') {
-    console.warn(`YouTube bot: chat docs missing (${CHAT_PROMPT.files.join(', ')}) — bot disabled`);
-    return;
-  }
+  // No prompt template: the docs load already reported the file (US-15 AC82).
+  if (!docs.docs.youtubePrompt) return;
 
   // Block auto-start during local `npm run dev` so dev reloads don't spawn
   // posting loops. Developers can force-start with YOUTUBE_BOT_FORCE_START=true.

@@ -63,7 +63,7 @@ const SOURCED: Record<string, Array<{ says: string; in: Source; as: string }>> =
     { says: 'by a further 15 to 20%', in: 'evidence', as: 'additional 15–20%' },
   ],
   bempedoic_acid: [
-    { says: 'A daily 180 mg tablet (Nexletol)', in: 'types', as: 'Nexletol (bempedoic acid 180mg)' },
+    { says: 'A daily 180 mg tablet (Nexletol)', in: 'types', as: 'Nexletol (Bempedoic acid 180mg)' },
     { says: '13% fewer major heart and blood vessel events', in: 'evidence', as: '13% reduction in major adverse cardiovascular events' },
   ],
   pcsk9i: [

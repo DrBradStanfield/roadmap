@@ -58,6 +58,12 @@ struct HealthSyncMemory {
         nonmutating set { defaults.set(newValue, forKey: "appleHealth.labResultsAsked") }
     }
 
+    /// Lab results were skipped for a bad date and Settings has not yet shown it (US-72 AC18).
+    var labResultsUndated: Bool {
+        get { defaults.bool(forKey: "appleHealth.labResults.undated") }
+        nonmutating set { defaults.set(newValue, forKey: "appleHealth.labResults.undated") }
+    }
+
     /// The record erase the sync last saw, with its source: one value, written in one step.
     var eraseSeen: EraseSeen? {
         get { defaults.data(forKey: "appleHealth.eraseSeen").flatMap { try? JSONDecoder().decode(EraseSeen.self, from: $0) } }

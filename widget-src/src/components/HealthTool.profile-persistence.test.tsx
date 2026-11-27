@@ -287,11 +287,12 @@ it.each(['1975', '1976', ''])(
   },
 );
 
-it('US-34 AC8 (H14): a refused year\'s save settles and releases a held update; clearing the year then reads nothing more', async () => {
-  const { year } = await form();
+it('US-34 AC13 (H14): a half-typed out-of-range year holds no update: it shows at once, 197 stays; its save and clearing the year then read nothing more', async () => {
+  const { view, year } = await form();
   fireEvent.change(year, { target: { value: '197' } });
   await remoteMonth();
-  expect(await appliedRemote()).toBe(0);
+  expect(await appliedRemote()).toBe(1); // was held until the year's save settled (AC8)
+  expect(view.container.querySelector<HTMLSelectElement>('#birthMonth')!.value).toBe('6');
   await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
   expect(year.value).toBe('197');
   expect(await appliedRemote()).toBe(1);
@@ -305,8 +306,10 @@ it('US-34 AC8 (H14): a refused year\'s save settles and releases a held update; 
 // year typed before the re-read lands would be replaced by the record's (only a range fault rides through).
 it('US-34 AC8 (H14): the held change shows within the settle\'s task, so a valid year typed in the next task stays', async () => {
   const { view, year } = await form();
+  fireEvent.change(view.container.querySelector('#heightCm')!, { target: { value: '180' } }); // a valid edit: the change holds (AC13)
   fireEvent.change(year, { target: { value: '197' } });
   await remoteMonth();
+  expect(await appliedRemote()).toBe(0);
   const { trackProductEvent } = await import('../lib/server-api');
   // remote_change_applied counts in the settle's own task, just before the re-read: the keystroke goes in the next task.
   vi.mocked(trackProductEvent).mockImplementation((name: string) => {

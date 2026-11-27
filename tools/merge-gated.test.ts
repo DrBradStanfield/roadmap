@@ -42,6 +42,7 @@ case "$*" in
   # Main's runs: newest first, filtered by --event, then cut to --limit, as the API does.
   *"run list --workflow ci.yml --branch main"*) json "$(printf '%s\\n' "$MAINRUNS" | jq -c --arg e "$ev" --argjson n "$lim" \\
       '[.[] | select($e == "" or .event == $e)] | sort_by(.createdAt, .databaseId) | reverse | .[0:$n]')" ;;
+  *"run list"*ios-compile.yml*) json "$IOSRUNS" ;;
   *"run list"*ci.yml*) json "$CIRUNS" ;;
   *"run list"*deploy.yml*) runs=$RUNS
     # FLIP=<id>:<k>: in the status-filtered reads, run <id> is pending for the first k and in_progress after.
@@ -64,12 +65,14 @@ printf 'git\\t%s\\t' "$@" >> "$LOG"; echo >> "$LOG"
 case "$1" in
   fetch) [ -z "\${GIT_FETCH_FAIL:-}" ] || { echo "fatal: unable to access origin" >&2; exit 128; } ;;
   show) [ "$2" = refs/remotes/origin/main:tools/generated-files.json ] && { cat "${join(dirname(SCRIPT), 'generated-files.json')}"; exit; }
+    [ "$2" = refs/remotes/origin/main:tools/ios-compile-paths.sh ] && { cat "${join(dirname(SCRIPT), 'ios-compile-paths.sh')}"; exit; }
     [ "$2" = refs/remotes/origin/main:tools/merge-gated.sh ] && [ -f "\${MAIN_COPY:-/nonexistent}" ] || { echo "fatal: path does not exist in origin/main" >&2; exit 128; }
     cat "$MAIN_COPY" ;;
   cat-file) ;;
   merge-base) [ "$2" = refs/remotes/origin/main ] || exit 1; echo ${'b'.repeat(40)} ;;
   rev-list) [ -z "\${GIT_REVLIST_FAIL:-}" ] || { echo "fatal: bad revision" >&2; exit 128; }; echo "\${GIT_BEHIND:-0}" ;;
-  diff) printf '%s\\n' "\${GIT_DIFF:-tools/wait-run.sh}" ;;
+  # NUL-delimited, as git diff -z prints.
+  diff) printf '%s\\n' "\${GIT_DIFF:-tools/wait-run.sh}" | tr '\\n' '\\0' ;;
   *) echo "unexpected git call: $*" >&2; exit 1 ;;
 esac
 `);
@@ -101,6 +104,7 @@ function gate(args: string[], fx: Record<string, unknown> = {}, env: Record<stri
       FILES: JSON.stringify(fx.files ?? FILES),
       ROLLUP: JSON.stringify(fx.rollup ?? GREEN),
       CIRUNS: JSON.stringify(fx.ci ?? CI_GREEN),
+      IOSRUNS: JSON.stringify(fx.ios ?? []),
       MAINRUNS: JSON.stringify(fx.main ?? MAIN_GREEN),
       LABELS: JSON.stringify(fx.labels ?? []),
       RUNS: JSON.stringify(fx.runs ?? [{ databaseId: 1, status: 'completed' }]),
@@ -181,7 +185,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
         const r = gate(['123', SHA, '--commit-checks'], { files: self }, { MAIN_COPY: fakeMain(code) });
         expect(r.status).toBe(code);
         expect(r.stderr).toContain(`main copy: marker=1 args=123 ${SHA} --commit-checks`);
-        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
+        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show', 'show']);
         expect(r.merges).toEqual([]);
       }
     });
@@ -210,6 +214,8 @@ describe('US-64 AC32 merge-gated.sh', () => {
       expect(r.merges).toEqual([MERGE_ARGV]);
       expect(gate(['123', SHA], { files: ciPr }).status).toBe(16);
       expect(gate(['123', SHA], { files: { changedFiles: 1, files: [{ path: 'tools/generated-files.json' }] } }).status).toBe(16);
+      // US-64 AC43: the iOS path rule is a gate file too.
+      expect(gate(['123', SHA], { files: { changedFiles: 1, files: [{ path: 'tools/ios-compile-paths.sh' }] } }).status).toBe(16);
       expect(gate(['123', SHA]).stderr).not.toMatch(NOTE);
     });
     it('refuses a PR whose file list gh truncated at 100 (17), or 16 if the part it sees holds the script', () => {
@@ -232,7 +238,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
         files[114] = { path: '.github/workflows/ci.yml' };
         const r = gate(['123', SHA], { files: { changedFiles: 121, files } }, { MAIN_COPY: fakeMain(0) });
         expect(r.stderr).toContain(`main copy: marker=1 args=123 ${SHA}`);
-        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
+        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show', 'show']);
         expect(r.status).toBe(0);
         expect(r.merges).toEqual([]);
       });
@@ -241,7 +247,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
         files[105] = { path: 'tools/old-gate.sh', previous: 'tools/merge-gated.sh' };
         const r = gate(['123', SHA], { files: { changedFiles: 121, files } }, { MAIN_COPY: fakeMain(9) });
         expect(r.stderr).toContain("main's copy judges it");
-        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
+        expect(r.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show', 'show']);
         expect(r.status).toBe(9);
         expect(r.merges).toEqual([]);
       });
@@ -254,7 +260,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
     });
 
     describe("T-13: judges gate files by git's path list (renames split), not only gh's", () => {
-      const ROUTED = ['fetch', 'cat-file', 'merge-base', 'rev-list', '-c', 'fetch', 'show', 'show'];
+      const ROUTED = ['fetch', 'cat-file', 'merge-base', 'rev-list', '-c', 'fetch', 'show', 'show', 'show'];
       it("a PR with more files than gh lists: a gate file past gh's page sends it to main's copy, not 17", () => {
         const hundred = Array.from({ length: 100 }, (_, i) => ({ path: `f${i}.ts` }));
         const all = [...Array.from({ length: 182 }, (_, i) => `f${i}.ts`), 'tools/merge-gated.sh'].join('\n');
@@ -301,7 +307,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
           expect(viaGit.merges).toEqual([]);
           const viaGh = gate(['123', SHA], { files: { changedFiles: 1, files: [{ path: variant }] } }, { MAIN_COPY: fakeMain(7) });
           expect(viaGh.status, variant).toBe(7);
-          expect(viaGh.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
+          expect(viaGh.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show', 'show']);
         }
         for (const lookalike of ['Tools/Merge_Gated.sh', 'tools/merge-gated2.SH', '.github/workflows/CI.yaml', 'TOOLS/generated-files.json5']) {
           const r = gate(['123', SHA], { files: { changedFiles: 1, files: [{ path: lookalike }] } }, { GIT_DIFF: lookalike, MAIN_COPY: fakeMain(7) });
@@ -317,7 +323,7 @@ describe('US-64 AC32 merge-gated.sh', () => {
           expect(viaGit.merges).toEqual([]);
           const viaGh = gate(['123', SHA], { files: { changedFiles: 2, files: [{ path: 'docs/a.md' }, { path }] } }, { MAIN_COPY: fakeMain(7) });
           expect(viaGh.status, path).toBe(7);
-          expect(viaGh.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show']);
+          expect(viaGh.gits.map((c) => c[1])).toEqual(['fetch', 'show', 'show', 'show']);
         }
         const ascii = gate(['123', SHA], { files: { changedFiles: 2, files: [{ path: 'docs/a.md' }, { path: 'docs/cafe.md' }] } },
           { GIT_DIFF: 'docs/a.md\ndocs/cafe.md', MAIN_COPY: fakeMain(7) });
@@ -469,6 +475,118 @@ describe('US-64 AC32 merge-gated.sh', () => {
       });
       it('an ios-compile alone is not a check: an otherwise empty rollup still refuses', () => {
         expect(gate(['123', SHA], { rollup: [ios('SUCCESS')] }).status).toBe(7);
+      });
+      it('a PR touching only non-build iOS files (docs, engine, scripts) keeps it advisory', () => {
+        const paths = ['ios/architecture.md', 'ios/engine/cloud.ts', 'ios/scripts/sim-run.sh'];
+        const files = { changedFiles: 3, files: paths.map((path) => ({ path })) };
+        const r = gate(['123', SHA], { files, rollup: [...GREEN, ios(null, 'IN_PROGRESS')] }, { GIT_DIFF: paths.join('\n') });
+        expect(r.status).toBe(0);
+        expect(r.merges).toEqual([MERGE_ARGV]);
+        expect(r.stderr).toContain('advisory check ios-compile is IN_PROGRESS; not blocking');
+      });
+    });
+
+    describe('US-64 AC43: ios-compile is required when the PR changes what it builds (2026-11-27)', () => {
+      const ios = (c: string | null, s = 'COMPLETED') => cr('ios-compile', c, s, 'iOS compile');
+      const swift = (path = 'ios/HealthRoadmapTests/FooTests.swift') =>
+        [{ files: { changedFiles: 1, files: [{ path }] } }, { GIT_DIFF: path }] as const;
+      it('refuses (8) while it is in progress, saying why it is required', () => {
+        const [fx, env] = swift();
+        const r = gate(['123', SHA], { ...fx, rollup: [...GREEN, ios(null, 'IN_PROGRESS')] }, env);
+        expect(r.status).toBe(8);
+        expect(r.stderr).toContain('merge-gated: refused: still running: ios-compile');
+        expect(r.stderr).toContain('PR 123 changes iOS build files, so ios-compile is required');
+        expect(r.stderr).not.toMatch(/advisory/);
+        expect(r.merges).toEqual([]);
+      });
+      it('refuses (9) when it failed', () => {
+        const [fx, env] = swift();
+        const r = gate(['123', SHA], { ...fx, rollup: [...GREEN, ios('FAILURE')] }, env);
+        expect(r.status).toBe(9);
+        expect(r.stderr).toContain('not green: ios-compile=FAILURE');
+        expect(r.merges).toEqual([]);
+      });
+      it('refuses (8) when it has not reported at all', () => {
+        const [fx, env] = swift();
+        const r = gate(['123', SHA], { ...fx, rollup: GREEN }, env);
+        expect(r.status).toBe(8);
+        expect(r.stderr).toContain('ios-compile has not reported; its workflow may not have started');
+        expect(r.stderr).toContain('case-sensitive');
+        expect(r.stderr).toContain('300 files');
+        expect(r.stderr).toContain('gh workflow run ios-compile.yml');
+        expect(r.merges).toEqual([]);
+      });
+      it('merges when it succeeded', () => {
+        const [fx, env] = swift();
+        const r = gate(['123', SHA], { ...fx, rollup: [...GREEN, ios('SUCCESS')] }, env);
+        expect(r.status).toBe(0);
+        expect(r.merges).toEqual([MERGE_ARGV]);
+      });
+      it("judges git's path list, so a Swift file renamed away still counts", () => {
+        const files = { changedFiles: 1, files: [{ path: 'docs/old.md' }] };
+        const r = gate(['123', SHA], { files, rollup: [...GREEN, ios(null, 'QUEUED')] }, { GIT_DIFF: 'docs/old.md\nios/HealthRoadmap/Old.swift' });
+        expect(r.status).toBe(8);
+      });
+      describe('--commit-checks reads the newest ios-compile.yml run on the sha instead of the rollup', () => {
+        const run = (databaseId: number, createdAt: string, conclusion: string | null = 'success', status = 'completed') =>
+          ({ databaseId, status, conclusion, createdAt });
+        const cc = (ios: unknown[]) => { const [fx, env] = swift(); return gate(['123', SHA, '--commit-checks'], { ...fx, ios }, env); };
+        it('no run refuses (8) with the never-started remedy', () => {
+          const r = cc([]);
+          expect(r.status).toBe(8);
+          expect(r.stderr).toContain('no ios-compile run on this sha; its workflow may not have started');
+          expect(r.merges).toEqual([]);
+        });
+        it('a running newest run refuses (8), a failed one (9), even over an older green one', () => {
+          const old = run(11, '2026-11-27T01:00:00Z');
+          const running = cc([old, run(12, '2026-11-27T02:00:00Z', null, 'in_progress')]);
+          expect(running.status).toBe(8);
+          expect(running.stderr).toContain('the newest ios-compile run 12 is in_progress');
+          const red = cc([old, run(12, '2026-11-27T02:00:00Z', 'failure')]);
+          expect(red.status).toBe(9);
+          expect(red.stderr).toContain('the newest ios-compile run 12 ended failure');
+          expect([...running.merges, ...red.merges]).toEqual([]);
+        });
+        it('a green newest run merges', () => {
+          const r = cc([run(11, '2026-11-27T01:00:00Z', 'failure'), run(12, '2026-11-27T02:00:00Z')]);
+          expect(r.status).toBe(0);
+          expect(r.merges).toEqual([MERGE_ARGV]);
+        });
+        it('a PR outside the rule never reads ios-compile runs', () => {
+          const r = gate(['123', SHA, '--commit-checks']);
+          expect(r.status).toBe(0);
+          expect(r.calls.some((c) => c.join(' ').includes('ios-compile.yml'))).toBe(false);
+        });
+      });
+      it('a PR changing the ios-compile workflow refuses (19) with a note, whatever the check says', () => {
+        const path = '.github/workflows/ios-compile.yml';
+        const files = { changedFiles: 2, files: [{ path }, { path: 'ios/HealthRoadmap/A.swift' }] };
+        for (const mode of [[], ['--commit-checks']]) {
+          const r = gate(['123', SHA, ...mode], { files, rollup: [...GREEN, ios('SUCCESS')] }, { GIT_DIFF: `${path}\nios/HealthRoadmap/A.swift` });
+          expect(r.status).toBe(19);
+          expect(r.stderr).toContain('its ios-compile result came from the PR\'s own workflow');
+          expect(r.stderr).toContain('the owner reviews that diff and merges this PR by hand');
+          expect(r.merges).toEqual([]);
+        }
+      });
+    });
+
+    describe('US-64 AC43: tools/ios-compile-paths.sh, the one path rule', () => {
+      const RULE = join(dirname(SCRIPT), 'ios-compile-paths.sh');
+      const rule = (paths: string[]) => spawnSync('sh', ['-c', '. "$0"; ios_compile_paths', RULE], { input: paths.join('\n') + '\n' }).status;
+      it('needs ios-compile for each input the job builds', () => {
+        for (const p of ['ios/HealthRoadmapTests/FooTests.swift', 'ios/HealthRoadmap/App.swift', 'ios/HealthRoadmapUITests/U.swift',
+          'ios/HealthRoadmap.xcodeproj/project.pbxproj', 'ios/HealthRoadmap/Assets.xcassets/Contents.json',
+          'ios/HealthRoadmap/PrivacyInfo.xcprivacy', 'ios/HealthRoadmap-Info.plist', 'ios/HealthRoadmap.entitlements',
+          'ios/Other/Loose.swift', 'IOS/HealthRoadmap/App.SWIFT']) expect(rule(['docs/a.md', p]), p).toBe(0);
+      });
+      it('leaves it advisory for everything else, iOS docs, engine and scripts included', () => {
+        expect(rule(['ios/architecture.md', 'ios/CLAUDE.md', 'ios/engine/cloud.ts', 'ios/scripts/sim-run.sh', 'ios/engine-floor.json',
+          'tools/wait-run.sh', 'docs/HealthRoadmap.swift.md', 'x/ios/HealthRoadmap/App.swift', 'ios/HealthRoadmapX/a.txt'])).toBe(1);
+        expect(rule([])).toBe(1);
+      });
+      it('fails closed: a line holding \\001 (a control character in a path) counts as required', () => {
+        expect(rule(['docs/a.md', 'docs/b\u0001c.md'])).toBe(0);
       });
     });
 

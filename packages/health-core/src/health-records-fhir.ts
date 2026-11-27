@@ -48,8 +48,13 @@ export const quantity = z.object({
  * dropped too, never the result.
  */
 const meta = z.object({ versionId: z.string().max(64).optional(), lastUpdated: z.string().max(64).optional() });
+/** A date that is there but cannot be read is kept as '' (AC18): present, so the date chosen
+ *  before it is still the one judged, and unreadable, so the result is undated, never re-dated.
+ *  JSON null is absent, not malformed: the next date is used. */
+const absentIfNull = <T extends z.ZodType>(schema: T) => z.preprocess((v) => v ?? undefined, schema.optional());
+const date = absentIfNull(z.string().max(64).catch(''));
 // effective[x] as a period: its start is the draw (the collection began then).
-const period = z.object({ start: z.string().max(64).optional() });
+const period = absentIfNull(z.object({ start: date }).catch({ start: '' }));
 
 const observation = z.object({
   resourceType: z.literal('Observation'),
@@ -58,10 +63,10 @@ const observation = z.object({
   status: z.string().max(32),
   code: z.object({ coding: z.array(z.object({ system: z.string().optional(), code: z.string().optional() })).optional() }),
   valueQuantity: quantity.optional(),
-  effectiveDateTime: z.string().max(64).optional(),
-  effectivePeriod: period.optional().catch(undefined),
+  effectiveDateTime: date,
+  effectivePeriod: period,
   // The release, close to the draw: Apple's sample DSTU2 results carry only this (AC3).
-  issued: z.string().max(64).optional(),
+  issued: date,
   referenceRange: z.array(z.object({ low: quantity.optional(), high: quantity.optional() })).optional().catch(undefined),
 });
 export type Observation = z.infer<typeof observation>;
@@ -75,13 +80,13 @@ export type Observation = z.infer<typeof observation>;
 const report = z.object({
   resourceType: z.literal('DiagnosticReport'),
   id: z.string().regex(FHIR_ID),
-  // Strict, no `.catch`: a result takes these from its report, so a malformed one dropped
-  // would date it by the report's release or lose its version. The whole report is not read.
+  // Strict, no `.catch`: a result takes its version from its report, so a malformed one dropped
+  // would lose it. The whole report is not read. A bad date is kept as '' (`date`, AC18).
   meta: meta.optional(),
   status: z.string().max(32),
-  effectiveDateTime: z.string().max(64).optional(),
-  effectivePeriod: period.optional(),
-  issued: z.string().max(64).optional(),
+  effectiveDateTime: date,
+  effectivePeriod: period,
+  issued: date,
   contained: z.array(z.unknown()).max(10_000).optional().catch(undefined),
   result: z.array(z.object({ reference: z.string().max(200).optional() }).catch({})).max(10_000).optional().catch(undefined),
 });
@@ -111,7 +116,7 @@ function asReported(obs: Observation, rep: Report): Observation {
 /** A result with no draw of its own (AC3) takes the report's draw, and the report's
  *  release when it has none of its own either; a result with its own draw keeps its day. */
 function reportDay(obs: Observation, rep: Report): Partial<Observation> {
-  if (obs.effectiveDateTime ?? obs.effectivePeriod?.start) return {};
+  if ((obs.effectiveDateTime ?? obs.effectivePeriod?.start) !== undefined) return {};
   return { effectiveDateTime: rep.effectiveDateTime, effectivePeriod: rep.effectivePeriod, issued: obs.issued ?? rep.issued };
 }
 

@@ -34,6 +34,8 @@ case "$*" in *rate_limit*graphql=*) if [ -n "\${BLOCK_END_BUDGET:-}" ]; then
   if [ -e "$STATE.budget1" ]; then : > "$STATE.inend"; until [ -e "$STATE.go" ]; do /bin/sleep 0.05; done
   else : > "$STATE.budget1"; fi; fi ;; esac
 case "$*" in
+  # The PR's files (US-64 AC43): PR_FILES, a JSON array of {filename}; none by default.
+  *"/pulls/"*"/files"*) [ -n "\${FILES_FAIL:-}" ] && exit 1; json "\${PR_FILES:-[]}" ;;
   *rate_limit*) [ -n "\${RL_FAIL:-}" ] && exit 1; json "{\\"resources\\":{\\"core\\":{\\"remaining\\":\${RL_CORE:-4000},\\"reset\\":\${RL_RESET:-0}},\\"graphql\\":{\\"remaining\\":\${RL_GQL:-4000},\\"reset\\":\${RL_RESET:-0}}}}" ;;
   *"conclusion,headSha,jobs"*) [ -n "\${JOBS_FAIL:-}" ] && exit 1; [ -n "\${JOBS:-}" ] && { json "$JOBS"; exit; }; printf 'conclusion=%b\\n' "$CONCLUSION"; echo "head=abc123"; echo "job deploy=$CONCLUSION" ;;
   *statusCheckRollup*) pend='[{"__typename":"CheckRun","name":"t","workflowName":"CI","status":"IN_PROGRESS","conclusion":""}]'
@@ -203,6 +205,60 @@ describe('wait-run.sh (US-64 AC26)', () => {
         expect(r.stdout).not.toMatch(/advisory/);
       }
     });
+    it('a PR touching only non-build iOS files keeps it advisory: a pending one is not waited on', () => {
+      const ROLLUP = JSON.stringify([cr('test', 'COMPLETED', 'SUCCESS'), cr('ios-compile', 'IN_PROGRESS')]);
+      const PR_FILES = JSON.stringify([{ filename: 'ios/architecture.md' }, { filename: 'ios/engine/cloud.ts' }]);
+      const r = run(['pr', '42'], { ROLLUP, PR_FILES, CHECKS: JSON.stringify([...green, { name: 'ios-compile', bucket: 'pending' }]) });
+      expect(r.sleeps).toEqual([]);
+      expect(status(r.stdout).wait_run).toBe('success');
+      expect(r.stdout).toContain('note: advisory check ios-compile is pending; not counted');
+    });
+  });
+  describe('US-64 AC43: pr: ios-compile is required when the PR changes what it builds (2026-11-27)', () => {
+    const green = [{ name: 'checks', bucket: 'pass' }, { name: 'test', bucket: 'pass' }];
+    const cr = (name: string, status: string, conclusion = '') => ({ __typename: 'CheckRun', name, workflowName: 'W', status, conclusion });
+    const PR_FILES = JSON.stringify([{ filename: 'ios/HealthRoadmapTests/FooTests.swift' }]);
+    // MERGE pins the rollup to ROLLUP on every poll (the stub's default turns it green after DONE_AT).
+    const MERGE = '"mergeable":"MERGEABLE"';
+    const rollup = (ios: object[]) => JSON.stringify([cr('test', 'COMPLETED', 'SUCCESS'), ...ios]);
+    it('waits while it is in progress, never reporting success', () => {
+      const r = run(['pr', '42'], { PR_FILES, MERGE, ROLLUP: rollup([cr('ios-compile', 'IN_PROGRESS')]), WAIT_RUN_MAX_MIN: '5' });
+      expect(r.sleeps.length).toBeGreaterThan(0);
+      expect(r.status).toBe(3);
+      expect(status(r.stdout).wait_run).toBe('timeout');
+    });
+    it('waits while it has not reported at all', () => {
+      const r = run(['pr', '42'], { PR_FILES, MERGE, ROLLUP: rollup([]), WAIT_RUN_MAX_MIN: '5' });
+      expect(r.status).toBe(3);
+      expect(status(r.stdout).wait_run).toBe('timeout');
+    });
+    it('a failed one is checks_failed, named, with no advisory note', () => {
+      const r = run(['pr', '42'], { PR_FILES, MERGE, ROLLUP: rollup([cr('ios-compile', 'COMPLETED', 'FAILURE')]),
+        CHECKS: JSON.stringify([...green, { name: 'ios-compile', bucket: 'fail' }]) });
+      expect(r.status).toBe(1);
+      expect(status(r.stdout).wait_run).toBe('checks_failed');
+      expect(r.stdout).toContain('failed: ios-compile');
+      expect(r.stdout).not.toMatch(/advisory/);
+    });
+    it('a green one is success, counted', () => {
+      const r = run(['pr', '42'], { PR_FILES, MERGE, ROLLUP: rollup([cr('ios-compile', 'COMPLETED', 'SUCCESS')]),
+        CHECKS: JSON.stringify([...green, { name: 'ios-compile', bucket: 'pass' }]) });
+      expect(r.status).toBe(0);
+      expect(r.stdout).toContain('pass=3 fail=0');
+    });
+    it('agrees with merge-gated on names git would quote: a double quote, a backslash or a tab still waits', () => {
+      for (const filename of ['ios/HealthRoadmap/a"b.swift', 'ios/HealthRoadmap/a\\b.swift', 'docs/a\tb.md']) {
+        const r = run(['pr', '42'], { PR_FILES: JSON.stringify([{ filename }]), MERGE, ROLLUP: rollup([]), WAIT_RUN_MAX_MIN: '5' });
+        expect(status(r.stdout).wait_run, filename).toBe('timeout');
+      }
+      const plain = run(['pr', '42'], { PR_FILES: JSON.stringify([{ filename: 'docs/a b.md' }]), MERGE, ROLLUP: rollup([]) });
+      expect(status(plain.stdout).wait_run).toBe('success');
+    });
+    it('a failed files read is a gh error: retried, then 10 in a row give up', () => {
+      const r = run(['pr', '42'], { FILES_FAIL: '1' });
+      expect(r.status).toBe(3);
+      expect(status(r.stdout).wait_run).toBe('gh_errors');
+    });
   });
   it('a failed check named like a verdict cannot turn it into success (Codex re-check R2)', () => {
     expect(run(['pr', '42'], { FAILS: '1', FAILNAME: 'x fail=0 skipped=0 pending=0' }).status).toBe(1);
@@ -245,7 +301,8 @@ describe('wait-run.sh (US-64 AC26)', () => {
       const polls = r.calls.filter((c) => /actions\/runs\/|statusCheckRollup/.test(c));
       expect(polls.length).toBe(25);
       expect(loopRateReads(r.calls)).toBe(3);
-      expect(r.calls.length).toBe(25 + 3 + (mode === 'deploy' ? 1 : 2) + 2); // + the final reads, + start and end budget lines
+      // + the final reads (pr: and its one files read first, AC43), + start and end budget lines
+      expect(r.calls.length).toBe(25 + 3 + (mode === 'deploy' ? 1 : 3) + 2);
     }
   });
   it('sleeps until the reset when under 200 requests are left, saying so once', () => {

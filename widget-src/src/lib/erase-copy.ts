@@ -19,7 +19,7 @@ export const ERASE_CONFIRM =
   `${SHOPIFY_SURFACE ? 'Seven' : 'Four'} things this cannot reach:\n` +
   '1. Documents you uploaded that are already in your cloud folder. They stay.\n' +
   '2. Candidate files from a connector import (imports/pending-*.json). They stay until your next import.\n' +
-  '3. Your cloud provider keeps version history, and GitHub keeps every past commit.\n' +
+  '3. Your cloud storage keeps version history, and GitHub keeps every past commit.\n' +
   '4. Backups made by the command-line tool stay beside the file until that tool next writes it.\n' +
   // Only the Shopify build has a blog bubble, an embed and a feedback box
   // (US-11), and a server chat (US-15 AC7/AC8). Each bubble and embed row
@@ -47,8 +47,8 @@ export const ERASE_CONFIRM =
 const ERASE_DONE_TAIL =
   '\n\nA value another device had not saved yet, or saved during the erase, is kept and arrives later.' +
   '\n\nStill in your cloud folder: the documents you uploaded, any pending import files, ' +
-  'your provider\'s version history, and any command-line backups until that tool next writes the file. ' +
-  'Delete those in your cloud account if you want them gone.' +
+  'your cloud storage\'s version history, and any command-line backups until that tool next writes the file. ' +
+  'Delete those in your cloud storage if you want them gone.' +
   // Items 5 to 7 of the confirm, shorter (US-11 AC5).
   (SHOPIFY_SURFACE
     ? '\n\nOn another device, the blog chat bubble and the chatbot embed send your old record until the widget loads there. ' +

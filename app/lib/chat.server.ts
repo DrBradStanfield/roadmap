@@ -7,20 +7,16 @@
  * does keep chat text: see US-15 AC7/AC8 and app/lib/chat-purge-cron.server.ts.
  */
 import * as Sentry from '@sentry/react-router';
-import fs from 'fs';
-import path from 'path';
-import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { loadBlogArticle, loadMatchedContent } from './matched-content';
-import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { buildChatContextJson } from '../../packages/health-core/src/chat-context';
 import { toolOnlyAck, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { chatToolsFor, withRoadmapRound, type ChatTurnMessage, type RoadmapRoundCounts, type ToolResultFor } from '../../packages/health-core/src/run-roadmap';
 import { callAnthropicWithUsage, streamAnthropicWithUsage, isNetworkOrTimeoutError, type AnthropicStreamEvent, type AnthropicUsage, type ChatPurpose } from './anthropic.server';
 import { CHAT_EFFORT, CHAT_MAX_TOKENS, CHAT_MODEL, PROMPT_CACHE, REFUSAL_RESPONSES, modelParams, refusalLine, type RefusalCategory } from '../../packages/health-core/src/models';
 import { cutText } from '../../packages/health-core/src/chat-history';
-import { PRODUCTS_BLOCK_FILES, productsBlockText } from './chat-products-block';
 import { PROPOSE_SUBSCRIPTION_CHANGE_TOOL, parseSubscriptionProposal, type SubscriptionProposal } from './subscription-gateway.server';
-import { CHAT_PROMPT } from './chat-system-prompt.server';
+// Every chat doc is one load state, read once at server start (US-15 AC65, AC72, AC80).
+import { requireChatDocs } from './chat-system-prompt.server';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -48,95 +44,6 @@ import { CHAT_PROMPT } from './chat-system-prompt.server';
 const MAX_MESSAGE_LENGTH = 8000;
 const HISTORY_TOKEN_BUDGET = 8000;
 
-// The system prompt, algorithm, products doc and postures: one state read at
-// import by chat-system-prompt.server.ts (US-15 AC65, AC72). 'missing' has no
-// text; every chat entry refuses before any model call.
-const DOCS = CHAT_PROMPT.kind === 'loaded' ? CHAT_PROMPT : null;
-
-// ---------------------------------------------------------------------------
-// Writing style + answer bank — read once at module load, synced or generated
-// from claude_business (never edited here). They ride in the products block.
-// Missing = every answer silently loses them, so this logs loudly.
-// ---------------------------------------------------------------------------
-
-function loadSharedDoc(file: string): string {
-  try {
-    return fs.readFileSync(path.join(process.cwd(), file), 'utf-8');
-  } catch {
-    console.error(`CHAT KNOWLEDGE MISSING: ${file} not found — the chatbot answers without it`);
-    Sentry.captureMessage(`Chat knowledge file missing: ${file}`, { level: 'error' });
-    return '';
-  }
-}
-
-// Every surface (both websites, YouTube, Discord) gets the same block (US-15 AC29).
-const PRODUCTS_BLOCK = productsBlockText({
-  products: DOCS?.products ?? '',
-  writingStyle: loadSharedDoc(PRODUCTS_BLOCK_FILES.writingStyle),
-  answerBank: loadSharedDoc(PRODUCTS_BLOCK_FILES.answerBank),
-});
-
-// ---------------------------------------------------------------------------
-// Blog article index — read once at module load
-// ---------------------------------------------------------------------------
-
-const BLOG_INDEX: BlogIndexEntry[] = loadBlogIndex();
-
-function buildKnowledgeOverview(): string {
-  if (BLOG_INDEX.length === 0) return '';
-  const blogCount = BLOG_INDEX.filter(a => !a.type || a.type === 'article').length;
-  const refCount = BLOG_INDEX.filter(a => a.type === 'reference').length;
-  const guidelines = BLOG_INDEX.filter(a => a.type === 'guideline');
-
-  const guidelineLines = guidelines.map(g => {
-    let line = `- ${g.title}`;
-    if (g.summary) {
-      const words = g.summary.split(/\s+/);
-      line += ` — ${words.length > 50 ? words.slice(0, 50).join(' ') + '...' : g.summary}`;
-    }
-    return line;
-  }).join('\n');
-
-  return `## Knowledge Base
-
-You have access to a health knowledge base with ${BLOG_INDEX.length} entries. When the user asks about a topic, a retrieval step loads relevant content if available. You do not need to search or request content — if it's relevant, it will appear below.
-
-### Blog & Reference Articles (${blogCount + refCount})
-${blogCount} video-based articles and ${refCount} supplement reference articles covering: supplements, skin health, bone health, sleep, longevity, diet, exercise, blood pressure, cholesterol, and blood test interpretation.
-
-### Clinical Guidelines
-${guidelineLines}
-
-If matched content appears below, use it to inform your answer. If no content is loaded for a topic, answer from the algorithm, evidence, and product knowledge above.`;
-}
-
-const KNOWLEDGE_OVERVIEW = buildKnowledgeOverview();
-
-// ---------------------------------------------------------------------------
-// Evidence document — serialized from evidence.ts at module load
-// ---------------------------------------------------------------------------
-
-function serializeEvidence(): string {
-  const lines: string[] = ['# Clinical Evidence Reference\n'];
-  for (const [id, ev] of Object.entries(SUGGESTION_EVIDENCE)) {
-    lines.push(`## ${id}`);
-    lines.push(`Reason: ${ev.reason}`);
-    if (ev.guidelines.length > 0) {
-      lines.push(`Guidelines: ${ev.guidelines.join(', ')}`);
-    }
-    for (const ref of ev.references) {
-      lines.push(`- ${ref.label} (${ref.url})`);
-    }
-    lines.push('');
-  }
-  return lines.join('\n');
-}
-
-const EVIDENCE_DOC = serializeEvidence();
-
-// Pre-concatenate at module level to avoid per-request string allocation.
-const SYSTEM_PROMPT_WITH_ALGORITHM = DOCS ? DOCS.text + DOCS.algorithm : '';
-
 // ---------------------------------------------------------------------------
 // Surface posture blocks — the per-surface override layer (identity, voice, and
 // product policy) injected after the shared cached base. The base stays
@@ -146,8 +53,10 @@ const SYSTEM_PROMPT_WITH_ALGORITHM = DOCS ? DOCS.text + DOCS.algorithm : '';
 // microvitamin.com store. See claude_business docs/chat-architecture.md → "Surface posture".
 // ---------------------------------------------------------------------------
 
-export const DOCTOR_POSTURE = DOCS?.doctorPosture ?? '';
-export const BRAND_POSTURE = DOCS?.brandPosture ?? '';
+export function surfacePosture(surface: 'doctor' | 'brand'): string {
+  const docs = requireChatDocs();
+  return surface === 'brand' ? docs.brandPosture : docs.doctorPosture;
+}
 
 // ---------------------------------------------------------------------------
 // Context assembly — always from the client-supplied plan (local-first v2)
@@ -163,14 +72,14 @@ export const EMPTY_CHAT_CONTEXT: ChatContext = Object.freeze({
 });
 
 /**
- * Resolve the health context for a chat turn — logged-in or guest alike.
+ * Resolve the health context for a chat turn — signed-in or guest alike.
  *
  * The v1 server-side health tables were purged June 2026, so the
  * client-supplied `guestInputs` is the ONLY possible source of health context.
  * Inputs that are absent or hold nothing (an empty form — v2 invites chat
  * before any data entry — or a malformed payload) degrade to the empty
  * context, never an error; saved values with no sex or height still reach the
- * model, with no plan (US-15 AC36). (Regression: Sentry 7563968375 — the logged-in
+ * model, with no plan (US-15 AC36). (Regression: Sentry 7563968375 — the signed-in
  * path used to read the purged tables and 500 on every message.) The Pages
  * BYOK chat builds the same JSON with the same function, which is also the
  * anti-injection boundary: see health-core chat-context.ts (US-15 AC11).
@@ -212,25 +121,26 @@ export function buildSystemBlocks(
   // block (uncached), then per-user blocks. All four markers are 1-hour
   // (PROMPT_CACHE): in chat_timing only 170 of 456 turns (37%) came within
   // 5 minutes of the one before (router calls: 38 of 169, 22%; audit F9).
+  const docs = requireChatDocs();
   const blocks: SystemBlock[] = [
     {
       type: 'text',
-      text: SYSTEM_PROMPT_WITH_ALGORITHM,
+      text: docs.systemPrompt,
       cache_control: PROMPT_CACHE,
     },
     {
       type: 'text',
-      text: EVIDENCE_DOC,
+      text: docs.evidence,
       cache_control: PROMPT_CACHE,
     },
-    ...(PRODUCTS_BLOCK ? [{
+    ...(docs.productsBlock ? [{
       type: 'text' as const,
-      text: PRODUCTS_BLOCK,
+      text: docs.productsBlock,
       cache_control: PROMPT_CACHE,
     }] : []),
-    ...(KNOWLEDGE_OVERVIEW ? [{
+    ...(docs.knowledgeOverview ? [{
       type: 'text' as const,
-      text: KNOWLEDGE_OVERVIEW,
+      text: docs.knowledgeOverview,
       cache_control: PROMPT_CACHE,
     }] : []),
     ...(opts?.surfaceContext ? [{ type: 'text' as const, text: opts.surfaceContext }] : []),
@@ -249,7 +159,7 @@ export function buildSystemBlocks(
     });
   }
 
-  // US-59: the logged-in customer's subscriptions and the rules for proposing a
+  // US-59: the signed-in customer's subscriptions and the rules for proposing a
   // change (brand surface, while enabled). Per request and uncached, like orders.
   if (opts?.subscriptionBlock) {
     blocks.push({ type: 'text', text: opts.subscriptionBlock });
@@ -423,7 +333,7 @@ const subscriptionToolResult: ToolResultFor = (b, blocks) => {
  * the first call's usage and the round's counts.
  *
  * `opts.subscriptionTool` (US-59): the propose-only subscription tool, sent on
- * every brand-surface turn while subscription actions are enabled, logged in or
+ * every brand-surface turn while subscription actions are enabled, signed in or
  * not, so that surface keeps one cached prefix shape. In a run_roadmap round its
  * call gets its own tool_result, and the proposal is read from both calls' blocks.
  *
@@ -442,8 +352,7 @@ export async function getChatCompletion(
   onEvent: ((event: ChatStreamEvent) => void) | undefined,
   opts: { purpose: ChatPurpose; subscriptionTool?: boolean; guestInputs?: unknown; profileEdits?: boolean; app?: boolean; model?: string },
 ): Promise<ChatCompletionResult> {
-  // Backstop for any caller that skipped its own guard (US-15 AC65); file names only (AC74).
-  if (CHAT_PROMPT.kind === 'missing') throw new Error(`Chat docs missing (${CHAT_PROMPT.files.join(', ')}); no model call`);
+  requireChatDocs(); // backstop for blocks built without the docs (US-15 AC65)
   const profileEdits = opts?.profileEdits === true;
   const app = opts?.app === true;
   const tools = [...(canApplyEdits ? chatToolsFor(messages, profileEdits, app) : []), ...(opts?.subscriptionTool ? [PROPOSE_SUBSCRIPTION_CHANGE_TOOL] : [])];

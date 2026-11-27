@@ -30,7 +30,7 @@ vi.mock('./chat.server', async (original) => (await import('./chat-server.test-h
   resolveChatContext: (inputs: unknown) => ({ userContextJson: JSON.stringify(inputs ?? null) }),
   buildConversationMessages: (history: unknown[], message: string) => [...history, { role: 'user', content: message }],
   loadMatchedArticlesFromHandles: () => ({ content: 'x', titles: ['ApoB explained'], skipped: [], reduced: [] }),
-  DOCTOR_POSTURE: 'doctor', BRAND_POSTURE: 'brand',
+  surfacePosture: (surface: string) => surface,
   getChatCompletion: mocks.getChatCompletion,
   generateTitle: () => 't',
 }));

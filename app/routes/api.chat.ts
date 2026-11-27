@@ -22,8 +22,7 @@ import {
   buildSystemBlocks,
   buildConversationMessages,
   loadMatchedArticlesFromHandles,
-  DOCTOR_POSTURE,
-  BRAND_POSTURE,
+  surfacePosture,
   getChatCompletion,
   reportChatFallback,
   generateTitle,
@@ -42,7 +41,7 @@ import { PURGED_TEXT, clearConversationMatchEvents } from '../lib/chat-purge-cro
 import { retentionOf, savedChatOf } from '../lib/chat-retention';
 import { recordServerEvent } from '../lib/product-events.server';
 import { subscriptionActionsEnabled, getCachedSubscriptions, formatSubscriptionBlock, subscriptionCard, SUBSCRIPTION_HELP_LINE } from '../lib/subscription-gateway.server';
-import { CHAT_PROMPT } from '../lib/chat-system-prompt.server';
+import { chatDocs } from '../lib/chat-system-prompt.server';
 
 // ---------------------------------------------------------------------------
 // Unified auth: handles both authenticated users and guests
@@ -61,7 +60,7 @@ async function getAuthOrGuest(
   request: Request,
   sessionToken?: string | null,
   // Local-first clients (Health Plan v2 on drstanfield.com): the user's plan
-  // lives in THEIR cloud, never our DB, so even a logged-in Shopify customer has
+  // lives in THEIR cloud, never our DB, so even a signed-in Shopify customer has
   // no server-side health record to read. Force the guest path — context comes
   // from the client-supplied `guestInputs`, conversations store under the guest
   // session. Only the app-proxy HMAC is checked: no customer lookup, no user
@@ -269,7 +268,7 @@ async function chatAction(request: Request, app: boolean) {
     if (process.env.CHAT_ENABLED === 'false') {
       return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
-    if (request.method !== 'DELETE' && CHAT_PROMPT.kind === 'missing') return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 }); // US-15 AC65: before auth, guest session, claim and model; DELETE still runs
+    if (request.method !== 'DELETE' && chatDocs().kind === 'missing') return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 }); // US-15 AC65: before auth, guest session, claim and model; DELETE still runs
 
     // 2 MB: 20 prior turns at their longest plus the plan context come to
     // well under half of it (US-09 AC25).
@@ -395,11 +394,11 @@ async function chatAction(request: Request, app: boolean) {
 
       const routerInput = routerTurn(message, history);
 
-      // Stage 1: classifier + (logged-in) orders fetch dispatch first so their
+      // Stage 1: classifier + (signed-in) orders fetch dispatch first so their
       // network round-trips overlap the synchronous context assembly below.
       // Health context is client-supplied on every v2 surface — the v1
       // server-side health tables were purged June 2026 — so it's built from
-      // body.guestInputs for guests and logged-in customers alike
+      // body.guestInputs for guests and signed-in customers alike
       // (missing/invalid inputs degrade to the empty context).
       const ordersPromise = !auth.isGuest && auth.admin
         ? getCachedOrders(auth.admin, auth.customerId!)
@@ -483,7 +482,7 @@ async function chatAction(request: Request, app: boolean) {
       // Surface posture: the brand store (microvitamin.com) sets CHAT_SURFACE=brand;
       // everything else (drstanfield.com education) defaults to the strict doctor
       // posture — a config slip can never silently produce a selling bot.
-      const surfaceContext = process.env.CHAT_SURFACE === 'brand' ? BRAND_POSTURE : DOCTOR_POSTURE;
+      const surfaceContext = surfacePosture(process.env.CHAT_SURFACE === 'brand' ? 'brand' : 'doctor');
       const systemBlocks = buildSystemBlocks(context.userContextJson, {
         surfaceContext, savedChat: savedChatOf(retention), orderSummary, blogArticles: articles?.content ?? null,
         subscriptionBlock: subscriptions ? formatSubscriptionBlock(subscriptions) : null,

@@ -11,6 +11,7 @@ import { stopDiscordBot } from './lib/discord-bot.server';
 import { stopYouTubeBot } from './lib/youtube-bot.server';
 import { stopChatPurgeCron } from './lib/chat-purge-cron.server';
 import { isUnservedProbe } from './lib/route-miss.server';
+import { chatDocs } from './lib/chat-system-prompt.server';
 
 // NOTE: Sentry.init (with the HIPAA PII/PHI scrubbing) now lives in instrument.server.mjs,
 // loaded via `node --import` before this bundle. See that file. Here we only consume the
@@ -31,6 +32,11 @@ process.on('SIGTERM', () => {
     process.exit(0);
   }, 5_000);
 });
+
+// US-15 AC80: read the chat docs once at server start, as the bots start, so a
+// deploy missing one alarms now (one Sentry error) and the first chat turn pays
+// no load. The docs modules themselves read nothing at import.
+chatDocs();
 
 export const streamTimeout = 5000;
 

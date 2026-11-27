@@ -4,7 +4,7 @@
  * Spec: US-40 (docs/user-stories.md). Each block names its AC and the Codex
  * finding that wrote it (docs/reviews/2026-09-19-codex-reviewer-wiring.md).
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, symlinkSync, existsSync, chmodSync, lstatSync, statSync, realpathSync, truncateSync, linkSync, renameSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -60,12 +60,16 @@ process.exit(cfg.exit);
 }
 
 let outJson: string;
+/** An email-shaped string: the wrapper's hard-coded scratch-account address is gone, so its own --record text carries none (US-40 AC6). */
+const EMAIL_SHAPE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
 function runWrapper(bin: string, extra: string[] = [], cwd = repo) {
   extra = [...extra, '--out', outJson];
   return spawnSync('node', [WRAPPER, '--codex', bin, ...extra], { cwd, encoding: 'utf8', env: childEnv({ CANARY_SECRET: 'canary-value' }) });
 }
 
-beforeAll(() => {
+// Each test gets its own fixture repo, with a.txt changed since its commit: a test that changed
+// the shared one left the next test reviewing its edits, in whatever order they ran.
+beforeEach(() => {
   repo = mkdtempSync(join(tmpdir(), 'cr-repo-'));
   marker = join(mkdtempSync(join(tmpdir(), 'cr-marker-')), 'marker.txt');
   writeFileSync(marker, 'untouched');
@@ -78,6 +82,7 @@ beforeAll(() => {
   // CR1: a tracked symlink with the wrapper's own artifact name, pointing outside the repo.
   symlinkSync(marker, join(repo, 'REVIEW_PATCH.diff'));
   sh(repo, 'git add -A && git commit -q -m base');
+  writeFileSync(join(repo, 'a.txt'), 'two\n');
   fakeDir = mkdtempSync(join(tmpdir(), 'unused-'));
   outJson = join(fakeDir, 'out.json');
   scratchFile = join(fakeDir, 'scratch-record.json');
@@ -438,9 +443,16 @@ describe('US-40 AC6 — only the designated scratch record is ever served, verif
       const r = runWrapper(f.bin, ['--record', '--record-file', file]);
       expect(r.status).toBe(3);
       expect(r.stdout).toContain(code);
-      expect(r.stdout).toContain('brad@microvitamin.com');
+      expect(r.stdout).toContain("Brad's scratch account"); // the hard-coded address is gone from the how-to
+      expect(r.stdout + r.stderr).not.toMatch(EMAIL_SHAPE);
       expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     }
+  });
+  it("the wrapper's hard-coded scratch-account address is gone: a --record run that serves the record shows no email-shaped string in its output, report or prompt", () => {
+    const f = fake({ output: CLEAN });
+    const r = runWrapper(f.bin, ['--record', '--record-file', scratchFile]);
+    expect(r.status).toBe(0);
+    for (const text of [r.stdout, r.stderr, readFileSync(outJson, 'utf8'), f.read('stdin.txt')]) expect(text).not.toMatch(EMAIL_SHAPE);
   });
   it('the right record is served from a COPY through the stdio server via the checkout\'s own tsx, read tools only, no URL, no launcher', () => {
     const f = fake({ output: CLEAN });

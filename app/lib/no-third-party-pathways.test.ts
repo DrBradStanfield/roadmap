@@ -12,7 +12,7 @@ import { loadBlogIndex } from './blog-index.server';
 import { loadBlogArticle, loadMatchedContent } from './matched-content';
 import { routerIndexBlock, routerView } from './router-view';
 import { buildSystemBlocks } from './chat.server';
-import { ROUTER_VERSION, VALID_HANDLES } from './chat-router.server';
+import { ROUTER_VERSION, routerHandles } from './chat-router.server';
 
 const ROOT = process.cwd();
 // Built from parts so this public repo never spells the publisher's name. The
@@ -58,7 +58,7 @@ describe('US-15 AC39 — no third-party pathway content', () => {
 
   it('the router can neither see nor return a pathway (since ROUTER_VERSION 4; 5 added condition guides, US-70)', () => {
     expect(ROUTER_VERSION).toBe(5);
-    for (const h of FORMER_PATHWAYS) expect(VALID_HANDLES.has(h), h).toBe(false);
+    for (const h of FORMER_PATHWAYS) expect(routerHandles().has(h), h).toBe(false);
     expect(routerIndexBlock(routerView(loadBlogIndex()))).not.toMatch(/^\[pathway\]/m);
     const prompt = fs.readFileSync(path.join(ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
     expect(prompt).not.toMatch(/pathway/i);

@@ -139,8 +139,9 @@ export const EDIT = z.discriminatedUnion('kind', [
 
 // --- Answers the app decodes (typed; every other door's answer is still opaque) -------------
 
-/** What a Health Records batch did (US-72), counts only. */
-const healthRecordCounts = z.object({ added: z.int(), corrected: z.int(), withdrawn: z.int(), alreadyInRecord: z.int(), notRead: z.int() })
+/** What a Health Records batch did (US-72), counts only. `undated` (AC18): of `notRead`, those
+ *  with a bad date; optional, so an engine before it still decodes. */
+const healthRecordCounts = z.object({ added: z.int(), corrected: z.int(), withdrawn: z.int(), alreadyInRecord: z.int(), notRead: z.int(), undated: z.int().optional() })
   .meta({ id: 'HealthRecordCounts' });
 
 /** applyEditJson's and cloudEdit's answer: the new record, or why it refused. `reason`: the engine's
@@ -197,6 +198,9 @@ export const DOORS = {
     kind: 'sync',
     result: EDIT_OUTCOME,
     args: [['recordJson', text], ['editJson', text], ['nowIso', text], ['deviceId', text], ['unitsJson', maybeText]],
+    // The counts also carry an optional `undated` (US-72 AC18; `healthRecordCounts` above). This text
+    // is left as it is on purpose: it is hashed into the bridge id, and an optional count that an
+    // older app ignores and an older engine leaves out needs no bridge move (cloudEdit's too).
     returns: "{ok:true, record} or {ok:false, reason, message}; the edit kinds include healthRecords {kind:'healthRecords', records:[{sourceId, resourceType, fhirVersion, json}]} (US-72), whose answer adds healthRecords {added, corrected, withdrawn, alreadyInRecord, notRead}; an engine without that kind must not reach an app that sends it",
   },
   chatContextJson: {
