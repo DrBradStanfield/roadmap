@@ -15,8 +15,7 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { gisReady, GoogleDriveAdapter, isSyncPending, markSyncPending, preloadGis, SAVE_STATUS_EVENT, savePopupGrant, SYNC_PENDING_EVENT } from '../src/storage';
 import { currentRetryDue, currentSaveStatus, recordFileSync } from '../src/lib/roadmap-data';
-import { driveReconnectCheck } from '../src/storage/drive-reconnect-check';
-import { didNotConnect } from './switch-stop';
+import { driveReconnectCheck, driveSignInNow } from '../src/storage/drive-reconnect-check';
 import type { SaveStatus } from '@roadmap/health-core/save-state';
 import { googleDriveConfig } from './google-config';
 import { adapterFor, connectRefusal, copySessionToDevice, flushBeforeExit, exitChoice, forgetBackend, liftLocalInto, rememberSignIn, storageState, type Backend } from './connect';
@@ -145,6 +144,8 @@ function storageBarLabel(backend: Backend, lost: LostSignIn | undefined, facts: 
 
 /** US-09 AC30: said instead of starting a popup the browser would block. */
 export const GIS_LOADING = 'Google is loading. Tap again.';
+/** US-09 AC65 (words approved 2026-11-27): a reconnect whose sign-in cannot open this browser's record file. */
+const CANNOT_OPEN_RECORD = 'Google Drive did not connect: this sign-in cannot open the record saved in this browser. Nothing changed. To keep working, choose Use this browser only.';
 
 /** US-09 AC13: the way back to a provider that could not be read this session,
  *  shared by the plan panel and the top bar so the two cannot drift. Drive
@@ -190,11 +191,16 @@ function useReconnect(lost?: LostSignIn) {
       const token = await new GoogleDriveAdapter(googleDriveConfig(), gen).acquireViaPopup()
         .catch((error: unknown) => { if (isCurrentRun(run)) connectRefusal(error); throw error; });
       if (!isCurrentRun(run)) return; // a popup answer after the reconnect stopped saves nothing
-      // Kept only when it reaches the record this browser was syncing (US-09 AC65): nothing is saved or sent otherwise.
+      // US-09 AC65: the record file is confirmed first. A lookup whose stored sign-in changed meanwhile is set aside: the page reloads onto it.
+      const signIn = driveSignInNow();
       const check = await driveReconnectCheck(token.accessToken, recordFileSync());
-      if (check === 'notVisible') throw new Error(didNotConnect(PROVIDERS['google-drive'].label));
       if (!isCurrentRun(run)) return;
-      if (rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
+      const current = driveSignInNow() === signIn;
+      if (current && check === 'notVisible') {
+        await copySessionToDevice('google-drive'); // this browser keeps the page's record; nothing is sent
+        throw new Error(CANNOT_OPEN_RECORD);
+      }
+      if (current && rememberSignIn(savePopupGrant(token, gen), 'google-drive', gen)) {
         dispatch({ type: 'saved', run }); // from here it runs to the reload: Stop is gone
         markSyncPending();
         await flushBeforeExit();
