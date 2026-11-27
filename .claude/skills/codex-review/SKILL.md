@@ -41,8 +41,9 @@ feature it lists, and stops with `E_UNKNOWN_FEATURES` (incomplete) if any
 other feature is enabled that is not judged in `tools/codex-review-features.mjs`.
 That is what an updated ChatGPT app looks like: judge each named feature (or
 disable it) in that file, in its own PR; never bypass the check. The stop on an app update is intended. Until the
-features file is updated, the fallback is `--codex /opt/homebrew/bin/codex --model gpt-6.1-sol` (the older CLI and
-model, with search disabled).
+features file is updated, an ORDINARY review can fall back to `--codex /opt/homebrew/bin/codex --model gpt-6.1-sol`
+(the older CLI and model). That build defaults to search disabled; keeping `--live` on the retry keeps live search under
+AC14's rules. A review that requires `--deep` has no fallback: it stays incomplete until the features file is updated.
 
 **How many, and when to start it.** Several Codex runs may go at once (Brad,
 2026-11-10: "You can run multiple codex agents"), at most two on this Mac.

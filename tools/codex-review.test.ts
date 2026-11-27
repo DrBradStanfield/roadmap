@@ -53,36 +53,39 @@ const fs = require('fs'); const path = require('path');
 const dir = ${JSON.stringify(dir)};
 const cfg = JSON.parse(fs.readFileSync(path.join(dir, 'config.json'), 'utf8'));
 const all = process.argv.slice(2);
+// Every output is ONE synchronous write: process.stdout.write queues when a pipe is full, and process.exit drops the queue
+// (CI, 2026-11-27: a feature listing lost its last rows on the Linux runner, so the two listings differed).
+const emit = (fd, text) => { if (text) fs.writeSync(fd, text); };
 try { fs.appendFileSync(path.join(dir, 'calls.jsonl'), JSON.stringify({ bin: process.argv[1], args: all, codexHome: process.env.CODEX_HOME || null }) + '\\n'); } catch { /* a ulimit -f case: the log is the tests' own, the probe must still answer */ }
 if (all.includes('--version')) {
   if (fs.existsSync(path.join(dir, 'armed'))) { const me = process.argv[1], t = me + '.n'; fs.writeFileSync(t, fs.readFileSync(me, 'utf8') + '// replaced\\n'); fs.chmodSync(t, 0o755); fs.renameSync(t, me); }
   if (fs.existsSync(path.join(dir, 'slow'))) { fs.rmSync(path.join(dir, 'slow')); fs.writeFileSync(path.join(dir, 'reached'), ''); require('child_process').execSync('sleep 2'); }
   if (cfg.versionExit) process.exit(cfg.versionExit);
-  console.log(fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n') ? cfg.version + '-v2' : cfg.version); process.exit(0);
+  emit(1, (fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n') ? cfg.version + '-v2' : cfg.version) + '\\n'); process.exit(0);
 }
 if (all.at(-2) === 'login' && all.at(-1) === 'status') {
   // Both real CLIs (0.163.0 and 0.171.0-alpha.13.2) print the status on STDERR with stdout empty (checked 2026-11-27 under an
   // empty CODEX_HOME: "Not logged in", exit 1; Brad's real ChatGPT login: "Logged in using ChatGPT", exit 0).
   const login = fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n') && cfg.loginV2 ? cfg.loginV2 : cfg.login;
   fs.writeFileSync(path.join(dir, 'login-args.json'), JSON.stringify(all));
-  if (login === 'api') { console.error('Logged in using an API key - test-***'); process.exit(0); }
-  if (login === 'none') { console.error('Not logged in'); process.exit(1); }
-  console.error('Logged in using ChatGPT'); process.exit(0);
+  if (login === 'api') { emit(2, 'Logged in using an API key - test-***\\n'); process.exit(0); }
+  if (login === 'none') { emit(2, 'Not logged in\\n'); process.exit(1); }
+  emit(2, 'Logged in using ChatGPT\\n'); process.exit(0);
 }
 if (all.at(-2) === 'features' && all.at(-1) === 'list') {
-  if (cfg.failFeatures) { process.stderr.write(cfg.failFeatures.stderr); process.exit(cfg.failFeatures.code); }
+  if (cfg.failFeatures) { emit(2, cfg.failFeatures.stderr); process.exit(cfg.failFeatures.code); }
   const check = all.includes('--disable');
-  if (!check && cfg.firstList !== undefined) { process.stdout.write(cfg.firstList); process.exit(0); }
+  if (!check && cfg.firstList !== undefined) { emit(1, cfg.firstList); process.exit(0); }
   const v2 = fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n');
   let lines = fs.readFileSync(cfg.features, 'utf8').split('\\n').filter(Boolean).concat([...cfg.extraEnabled, ...(v2 && cfg.extraEnabledV2 ? cfg.extraEnabledV2 : [])].map((n) => n + '  stable  true'));
   const names = lines.map((l) => l.split(/\\s+/)[0]);
   const off = all.flatMap((a, i) => (a === '--disable' ? [all[i + 1]] : []));
   const unknown = off.find((n) => !names.includes(n));
-  if (unknown) { process.stderr.write('Error: Unknown feature flag: ' + unknown + '\\n'); process.exit(1); }
+  if (unknown) { emit(2, 'Error: Unknown feature flag: ' + unknown + '\\n'); process.exit(1); }
   if (check && cfg.checkList === 'malformed') lines = lines.concat(['shiny_new_tool  stable  true  (new)']);
   if (check && cfg.checkList === 'duplicate') lines = lines.concat([lines[0]]);
   if (check && cfg.checkList === 'drop') lines = lines.slice(1);
-  for (const l of lines) process.stdout.write((off.includes(l.split(/\\s+/)[0]) ? l.replace(/true$/, 'false') : l) + '\\n');
+  emit(1, lines.map((l) => (off.includes(l.split(/\\s+/)[0]) ? l.replace(/true$/, 'false') : l) + '\\n').join(''));
   process.exit(0);
 }
 const argv = all;
@@ -97,8 +100,8 @@ if (cfg.output !== undefined) {
   fs.writeFileSync(out, typeof o === 'string' ? o : JSON.stringify(o));
 }
 if (cfg.during) require('child_process').execSync(cfg.during);
-for (const e of cfg.events) process.stdout.write(e + '\\n');
-if (cfg.stderr) process.stderr.write(cfg.stderr);
+emit(1, cfg.events.map((e) => e + '\\n').join(''));
+emit(2, cfg.stderr);
 process.exit(cfg.exit);
 `);
   chmodSync(bin, 0o755);
@@ -2779,6 +2782,20 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
       expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     }
   });
+  it('the fake codex never loses output to a slow reader (CI, 2026-11-27: a pipe that filled before process.exit dropped the tail of a feature listing)', async () => {
+    const extra = Array.from({ length: 3000 }, (_, i) => `slow_reader_${i}`);
+    const f = fake({ output: CLEAN, extraEnabled: extra });
+    const want = readFileSync(FEATURES_0171, 'utf8').split('\n').filter(Boolean).length + extra.length;
+    const child = spawn(f.bin, ['features', 'list'], { stdio: ['ignore', 'pipe', 'ignore'], env: childEnv() });
+    let out = '';
+    const closed = new Promise((r) => child.on('close', r));
+    child.stdout.on('data', (c) => { out += c; });
+    child.stdout.pause(); // a slow reader: the pipe fills while the fake is still writing
+    await new Promise((r) => setTimeout(r, 300));
+    child.stdout.resume();
+    await closed;
+    expect(out.split('\n').filter(Boolean)).toHaveLength(want);
+  });
   it('Codex R1 on PR 2222h: the credential-store guard sees a quoted, single-quoted or dotted key, and ignores a comment', () => {
     const cases: [string, boolean][] = [
       ['"cli_auth_credentials_store" = "keyring"\n', true], ["'cli_auth_credentials_store'='keyring'\n", true],
@@ -2970,7 +2987,11 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     }
     expect(read('CLAUDE.md')).not.toContain('gpt-6.1-sol');
     expect(read('.claude/skills/codex-review/SKILL.md').match(/gpt-6\.1-sol/g)).toEqual(['gpt-6.1-sol']); // only the app-update fallback, `--model gpt-6.1-sol`
-    expect(read('.claude/skills/codex-review/SKILL.md')).toContain('--codex /opt/homebrew/bin/codex --model gpt-6.1-sol');
+    const skillFlat = read('.claude/skills/codex-review/SKILL.md').replace(/\s+/g, ' ');
+    expect(skillFlat).toContain('--codex /opt/homebrew/bin/codex --model gpt-6.1-sol');
+    expect(skillFlat).toContain('an ORDINARY review can fall back'); // the fallback is for ordinary reviews only
+    expect(skillFlat).toContain('A review that requires `--deep` has no fallback: it stays incomplete until the features file is updated');
+    expect(skillFlat).toContain('That build defaults to search disabled; keeping `--live` on the retry keeps live search');
   });
   it('prefers the ChatGPT app binary when it is an executable file, else falls back to the old lookup', async () => {
     const { findCodex, CHATGPT_APP_CODEX } = await import('./codex-review-bin.mjs');
