@@ -83,6 +83,13 @@
     },
     {
       "if": {
+        "required": ["reminderOptIn"],
+        "properties": { "reminderOptIn": { "required": ["tokens"], "properties": { "tokens": { "minItems": 1 } } } }
+      },
+      "then": { "properties": { "schemaVersion": { "enum": [2, 3] } } }
+    },
+    {
+      "if": {
         "required": ["labValues"],
         "properties": { "labValues": { "contains": { "type": "object", "required": ["core"], "properties": { "core": { "const": true } } } } }
       },
@@ -421,7 +428,23 @@
           "description": "Opaque server-issued capability token. It manages ONLY the reminder schedule. Treat it as a secret: never copy it elsewhere, never send it anywhere."
         },
         "email": { "type": "string", "description": "Provider-verified address, kept for display and change detection." },
-        "provider": { "enum": ["google-drive", "dropbox", "github"] }
+        "provider": { "enum": ["google-drive", "dropbox", "github"] },
+        "tokens": {
+          "type": "array",
+          "description": "The newest row of every other token this record has held, sorted by token; absent when there is none. Each token is a capability secret, as above. A file with any row here is version 2 or above. Readers drop a row that breaks these rules.",
+          "items": {
+            "type": "object",
+            "required": ["status", "token", "email", "provider"],
+            "properties": {
+              "updatedAt": { "type": "string" },
+              "lamport": { "type": "number" },
+              "status": { "enum": ["active", "cancelled"] },
+              "token": { "type": "string", "minLength": 1, "maxLength": 256 },
+              "email": { "type": "string" },
+              "provider": { "type": "string" }
+            }
+          }
+        }
       }
     },
 

@@ -26,7 +26,7 @@ import { screeningRange } from './mappings';
 import { laterStamp, stampFields } from './merge';
 import { commaQuestion, parseLocalisedNumber } from './parseNumber';
 import { newId, stampUpdatedAt } from './record-edits';
-import { mergeOptIn, rowsOf } from './reminder-rows';
+import { mergeOptIn } from './reminder-rows';
 import type { FileMedication, FileReminderOptIn, FileScreenings, FileSupplement, HistoryChangeType, ReminderTokenRow, RoadmapFile, RoadmapProfile } from './roadmap-file';
 
 export interface StateEditResult {
@@ -164,7 +164,7 @@ export function setReminderOptIn(file: RoadmapFile, fields: Omit<FileReminderOpt
  */
 export function setReminderRow(file: RoadmapFile, fields: Omit<ReminderTokenRow, 'updatedAt' | 'lamport'>, now: string): RoadmapFile {
   const optIn = file.reminderOptIn;
-  const clocks = optIn ? [optIn, ...rowsOf(optIn)] : [];
+  const clocks = optIn ? [optIn, ...(optIn.tokens ?? [])] : [];
   const updatedAt = clocks.reduce((at, row) => laterStamp(at, row.updatedAt), now);
   const lamport = Math.max(0, ...clocks.map((row) => row.lamport ?? 0)) + 1;
   return stampUpdatedAt({ ...file, reminderOptIn: mergeOptIn(optIn, { ...fields, updatedAt, lamport }) }, now);

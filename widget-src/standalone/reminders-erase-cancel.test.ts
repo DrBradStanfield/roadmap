@@ -248,14 +248,16 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
   });
 
   // D3 (b): a save that began before Delete folds token B in during the proof
-  // wait (its first pass meets B's write), but announces only when its last
-  // pass lands, after the swap, when the working copy holds the erased opt-in.
-  // Nothing here hears B: it is US-11 AC4c's Limit, lead H126. This pins the
-  // limit as it stands; a fix turns the last line into [A, B].
-  it('Limit (H126): a token a running save folds in during the proof wait, announced only after the swap, is not cancelled', async () => {
+  // wait (its first pass meets B's write). Since US-17 AC19 the fold first
+  // writes the opt-in's `tokens` (B on top, A nested), so that pass writes once
+  // more and announces at the fold, before the swap; the erase still cancels
+  // only A, as it reads the stored object until R9 part 2. Nothing here cancels
+  // B: it is US-11 AC4c's Limit, lead H126. This pins the limit as it stands;
+  // a fix turns the last line into [A, B].
+  it('Limit (H126): a token a running save folds in during the proof wait is not cancelled', async () => {
     const t = await eraseSetUp();
     const before = t.data.getEraseIdentity();
-    let foldedSilently = false;
+    let announcedAtFold = -1;
     let releaseFirst!: () => void;
     const firstHeld = new Promise<void>((r) => { releaseFirst = r; });
     const epochs: number[] = [];
@@ -274,8 +276,8 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     t.proof.mockImplementation(async () => {
       await t.otherDeviceWrites();
       releaseFirst();
-      await until(() => t.data.getReminderOptIn()?.token === TOKEN_B); // folded in, not yet announced
-      foldedSilently = announcedAt.length === 0;
+      await until(() => t.data.getReminderOptIn()?.token === TOKEN_B); // folded in
+      announcedAtFold = announcedAt.length;
       return PROOF;
     });
 
@@ -283,11 +285,12 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     await saving;
 
     // The case itself: pass 1's retry and pass 2 went out before the erased
-    // copy, and the one announce came only after the swap.
-    expect(foldedSilently).toBe(true);
+    // copy; the fold announced once before the swap, and again after it.
+    expect(announcedAtFold).toBe(1);
     expect(epochs.slice(0, 3)).toEqual([0, 0, 0]);
-    expect(announcedAt.length).toBeGreaterThan(0);
-    expect(announcedAt.every((at) => at !== before)).toBe(true);
+    expect(announcedAt[0]).toBe(before);
+    expect(announcedAt.slice(1).length).toBeGreaterThan(0);
+    expect(announcedAt.slice(1).every((at) => at !== before)).toBe(true);
     expect(t.data.getEraseIdentity()).not.toBe(before);
     expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: TOKEN_A, idToken: PROOF }]);
     window.removeEventListener(REMOTE, announcer);

@@ -681,16 +681,13 @@ export function mergeFiles(
     };
   }
 
-  const reminderOptIn = mergeOptIn(local.reminderOptIn, remote.reminderOptIn);
-  return {
+  const merged = {
     // Spread both first so unknown/future top-level fields are preserved at
     // runtime (H7). Known fields below overwrite these.
     ...remote,
     ...local,
 
     ...listing,
-    // The merge that first writes opt-in `tokens` lifts the file to their version (US-17 AC19).
-    schemaVersion: Math.max(listing.schemaVersion, recordSchemaVersion({ reminderOptIn })),
     meta: {
       createdAt:
         local.meta.createdAt < remote.meta.createdAt ? local.meta.createdAt : remote.meta.createdAt,
@@ -710,7 +707,7 @@ export function mergeFiles(
 
     profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),
     screenings: mergeFields<FileScreenings>(local.screenings, remote.screenings),
-    reminderOptIn,
+    reminderOptIn: mergeOptIn(local.reminderOptIn, remote.reminderOptIn),
 
     measurements: mergeSlotted<FileMeasurement>(
       local.measurements,
@@ -725,6 +722,8 @@ export function mergeFiles(
     supplementHistory: unionLog<FileSupplement>(local.supplementHistory, remote.supplementHistory),
     documents: mergeDocuments(local.documents, remote.documents),
   } as RoadmapFile;
+  // Stamped on what the merge holds: the merge that first writes opt-in `tokens` lifts the file (US-17 AC19).
+  return { ...merged, schemaVersion: recordSchemaVersion(merged) };
 }
 
 type KeyedLists = Pick<RoadmapFile, 'medications' | 'supplements' | 'reminderPreferences' | 'recommendationSnapshots'>;

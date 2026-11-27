@@ -4,6 +4,10 @@
  * is the newest active row. Every merge here runs the real `mergeFiles`, and
  * every tie runs the real `stableStringify`. Synthetic tokens and addresses.
  */
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import Ajv2020 from 'ajv/dist/2020';
 import { describe, expect, it } from 'vitest';
 import { buildErasedFile } from './erase';
 import { mergeFiles, pickNewerOptional } from './merge';
@@ -186,6 +190,23 @@ describe('US-17 AC19: a file with tokens rows is at least version 2', () => {
     f.meta.updatedAt = T[2];
     expect(migrateFile(JSON.parse(JSON.stringify(f)), CTX).schemaVersion).toBe(2);
     expect(migrateFile(JSON.parse(JSON.stringify({ ...f, schemaVersion: 3 })), CTX).schemaVersion).toBe(3);
+  });
+});
+
+describe('US-17 AC19: the published schema describes the rows (US-29)', () => {
+  const schema = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../docs/health-roadmap-file.schema.json'), 'utf8'));
+  const validate = new Ajv2020({ allErrors: true, validateFormats: false }).compile(schema);
+  const valid = (f: unknown) => validate(JSON.parse(JSON.stringify(f))) as boolean;
+
+  it('a merged two-token file validates; one stamped below 2, or with a malformed row, does not', () => {
+    const merged = merge(file(row('token-a', 'active', 0)), file(row('token-b', 'cancelled', 1)));
+    expect(valid(merged)).toBe(true);
+    expect(valid({ ...merged, schemaVersion: 1 })).toBe(false);
+    for (const bad of [{ token: '' }, { token: 'x'.repeat(257) }, { status: 'paused' }, { email: { a: 1 } }, { provider: 3 }]) {
+      const opt = { ...merged.reminderOptIn!, tokens: [{ ...merged.reminderOptIn!.tokens![0], ...bad }] };
+      expect(valid({ ...merged, reminderOptIn: opt }), JSON.stringify(bad)).toBe(false);
+    }
+    expect(valid(merge(file(row('token-a', 'active', 0)), file(row('token-a', 'cancelled', 1))))).toBe(true);
   });
 });
 

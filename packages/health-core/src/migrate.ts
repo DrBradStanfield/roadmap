@@ -200,7 +200,7 @@ function optInOf(optIn: Record<string, unknown>, anchor: string): Record<string,
   const { tokens, ...own } = optIn;
   const rows = (Array.isArray(tokens) ? tokens : [])
     .filter(isTokenRow)
-    // A row with no stamp is an unknown time, `""`, as a singleton's is.
+    // A row with no stamp is an unknown time, `""`: a row's clock is a string.
     .map(({ tokens: _nested, ...row }) => sanitizeStamp('updatedAt' in row ? row : { ...row, updatedAt: '' }, anchor));
   return { ...sanitizeStamp(own, anchor), ...(rows.length > 0 ? { tokens: rows } : null) };
 }
