@@ -1,5 +1,5 @@
 /**
- * "About this measure" guides (US-58), shown below a metric's page in the iOS app
+ * "About this measure" guides (US-58), shown below a metric's page in the iPhone app
  * and behind each medication question's info button, as Apple Health does.
  *
  * DISPLAY-ONLY CLINICAL TEXT. A guide may only restate thresholds and claims that
@@ -15,7 +15,7 @@
  * Keys: metric types from mappings.ts (blood pressure as one, `blood_pressure`), height,
  * MEDICATION_KEYS without the two escalation answers, and the four Apple Health metrics in snake case
  * (the app's `LiveMetric.guideKey`). The iOS engine serves them on
- * My data (ios/engine/my-data.ts), so a correction ships over the air (ios/architecture.md D3).
+ * My health (ios/engine/my-data.ts), so a correction ships over the air (ios/architecture.md D3).
  */
 import { GUIDE_REFERENCES, SUGGESTION_EVIDENCE, STAT_CARD_EVIDENCE, getBmiEvidence, getIbwEvidence, type SuggestionReference } from './evidence';
 

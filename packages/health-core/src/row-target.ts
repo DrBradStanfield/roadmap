@@ -1,5 +1,5 @@
 // The one source of the target a value is read against, as the web's grids
-// print it under each unit and the phone's My data rows print it under each
+// print it under each unit and the phone's My health rows print it under each
 // name (US-62 AC9). Four sources: the blood tests' reference hints, Lp(a)'s in
 // its chosen unit, the plan's vitals targets, and a catalogue test's printed
 // range. The iPhone is to call it too.
