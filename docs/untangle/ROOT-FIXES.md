@@ -215,3 +215,9 @@ which waits for Brad's look.
   half is no longer held, since PR 2183 merged; next, `app/lib/youtube-context.ts` joins `ChatDocsState`.
 - **R4** PR 2 merged (PR 2182).
 - **R14** merged as PR 2181 (lead H35).
+- **R24** follow-up, lead T38, done: the YouTube prompt template joins `ChatDocsState` as an optional doc
+  (US-15 AC82); its import-time reader in `app/lib/youtube-context.ts` is gone.
+- **R28** closed, both leads done before this check: H48, the cleanup keeps skips (PR 1866, US-15 AC68:
+  `cleanupSkippedRows` deletes by age; the RPC is no longer called), and H49, the lifecycle as one union
+  (PR 2087, `app/lib/youtube-bot-lifecycle.ts` with its table test). The unused RPC stays in
+  `supabase/rls-policies.sql` until it is dropped live.
