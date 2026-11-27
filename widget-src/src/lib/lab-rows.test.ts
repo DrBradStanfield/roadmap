@@ -247,3 +247,23 @@ describe('US-10: groupLabHistory (history charts)', () => {
     expect(series.zinc.rows.map((r) => r.id)).toEqual(['a', 'b']);
   });
 });
+
+describe('US-21 AC3d: a lab test named like a built-in object property', () => {
+  // Synthetic values. A test name is free text (typed, MCP add_lab_values, an upload),
+  // so "constructor" is a name like any other and must not read the object's own prototype.
+  it('groups "constructor", "Constructor", "__proto__" and "toString" like any other name', () => {
+    const { keys, series } = groupLabHistory([
+      row({ id: 'c1', metricName: 'constructor', value: 1, unit: 'U/L' }),
+      row({ id: 'p1', metricName: '__proto__', value: 3, unit: 'U/L' }),
+      row({ id: 't1', metricName: 'toString', value: 4, unit: 'U/L' }),
+      row({ id: 'c2', metricName: 'Constructor', value: 2, unit: 'IU/L' }),
+      row({ id: 'z1', metricName: 'zinc', value: 12, unit: 'µmol/L' }),
+    ]);
+    expect([...keys].sort()).toEqual([' proto ', 'constructor', 'tostring', 'zinc']);
+    expect(Object.keys(series).sort()).toEqual([...keys].sort());
+    expect(series.constructor).toEqual({ label: 'Constructor', rows: [expect.objectContaining({ id: 'c1' }), expect.objectContaining({ id: 'c2' })], units: ['U/L', 'IU/L'] });
+    expect(series[' proto '].rows.map((r) => r.id)).toEqual(['p1']);
+    expect(series.tostring.rows.map((r) => r.id)).toEqual(['t1']);
+    expect(series.zinc.rows.map((r) => r.id)).toEqual(['z1']);
+  });
+});
