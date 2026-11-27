@@ -334,8 +334,33 @@ function randomOptIn(r: () => number): FileReminderOptIn | undefined {
   return tokens.length > 0 ? { ...top, tokens } : top;
 }
 
-const randomFile = (r: () => number) => file(randomOptIn(r), Math.floor(r() * 3));
-const optKey = (f: RoadmapFile) => key(f.reminderOptIn);
+/** A random copy at epoch 0-2. An erased copy carries the erase's list, as every
+ *  erase writes one (erase.ts), so it is version 2 already. Without it the version
+ *  alone depends on merge order across the gate: two version-1 copies at the
+ *  losing epoch may merge to `tokens` (version 2) first, and the gate keeps the
+ *  higher version of its inputs. A stated Limit of US-17 AC19. */
+function randomFile(r: () => number): RoadmapFile {
+  const f = file(randomOptIn(r), Math.floor(r() * 3));
+  const epoch = f.meta.eraseEpoch ?? 0;
+  return epoch > 0 ? { ...f, schemaVersion: 2, erasedRows: { fromEpoch: epoch, ids: [] } } : f;
+}
+const optKey = (f: RoadmapFile) => stableStringify([f.schemaVersion, f.reminderOptIn ?? null]);
+
+/** The expected token map, from the raw rows of the copies at the winning epoch: each token's newest row. */
+function expectedTokens(copies: RoadmapFile[]): Record<string, ReminderTokenRow> {
+  const top = Math.max(...copies.map((f) => f.meta.eraseEpoch ?? 0));
+  const map: Record<string, ReminderTokenRow> = {};
+  for (const f of copies.filter((c) => (c.meta.eraseEpoch ?? 0) === top)) {
+    const o = f.reminderOptIn;
+    for (const raw of o ? [o, ...(o.tokens ?? [])] : []) {
+      if (typeof raw.token !== 'string' || raw.token === '') continue;
+      const r = own(raw as FileReminderOptIn)!;
+      if (!map[r.token] || stampIsNewer(r, map[r.token])) map[r.token] = r;
+    }
+  }
+  return map;
+}
+const tokenMap = (f: RoadmapFile) => Object.fromEntries(rowsOf(f.reminderOptIn).map((r) => [r.token, r]));
 
 describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStringify)', () => {
   it('is commutative, associative and idempotent, in every order, over 3,000 triples', () => {
@@ -348,7 +373,7 @@ describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStri
       // A copy the gate passed whole may be hand-written, its rows out of order;
       // once merged at its own epoch it is a fixed point.
       const settled = merge(left, left);
-      expect(optKey(settled), `idempotent ${seed}`).toBe(key(mergeOptIn(left.reminderOptIn, undefined)));
+      expect(key(settled.reminderOptIn), `idempotent ${seed}`).toBe(key(mergeOptIn(left.reminderOptIn, undefined)));
       expect(optKey(merge(settled, settled)), `idempotent ${seed}`).toBe(optKey(settled));
       expect(optKey(merge(settled, a)), `absorbs ${seed}`).toBe(optKey(settled));
       // Every order of the three copies, either grouping, ends on one opt-in and one shown row.
@@ -356,6 +381,22 @@ describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStri
       const ends = orders.flatMap(([x, y, z]) => [merge(merge(x, y), z), merge(x, merge(y, z))]);
       expect(new Set(ends.map(optKey)).size, `orders ${seed}`).toBe(1);
       expect(new Set(ends.map((f) => stableStringify(shownOptIn(f) ?? null))).size, `shown ${seed}`).toBe(1);
+    }
+  });
+
+  it('three live tokens and a later cancel of one: every token keeps its own newest row', () => {
+    const copies = [
+      file(row('token-a', 'active', 0)),
+      file({ ...row('token-b', 'active', 1), tokens: [row('token-a', 'active', 0)] }),
+      file(row('token-c', 'active', 1, 2)),
+      file({ ...row('token-b', 'cancelled', 2), tokens: [row('token-c', 'active', 0)] }),
+    ];
+    const ends = [copies.reduce((x, y) => merge(x, y)), copies.reduceRight((x, y) => merge(x, y))];
+    for (const merged of ends) {
+      expect(tokenMap(merged)).toEqual(expectedTokens(copies));
+      expect(tokenMap(merged)).toEqual({ 'token-a': row('token-a', 'active', 0), 'token-b': row('token-b', 'cancelled', 2), 'token-c': row('token-c', 'active', 1, 2) });
+      expect(own(merged.reminderOptIn)).toEqual(row('token-b', 'cancelled', 2));
+      expect(shownOptIn(merged)).toEqual(row('token-c', 'active', 1, 2));
     }
   });
 
@@ -367,6 +408,8 @@ describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real stableStri
       const live = copies.filter((f) => (f.meta.eraseEpoch ?? 0) === top).map((f) => f.reminderOptIn);
       const candidates = live.flatMap((o) => (o ? [own(o)!, ...rowsOf(o)] : []));
       const merged = copies.reduce((x, y) => merge(x, y));
+      // Every token and its winning row, against the map built from the raw rows.
+      expect(tokenMap(merged), `tokens ${seed}`).toEqual(expectedTokens(copies));
       if (candidates.length === 0) continue;
       const newest = candidates.reduce((x, y) => (stampIsNewer(y, x) ? y : x));
       // Only one copy at the top epoch passes through the gate untouched, as today.
