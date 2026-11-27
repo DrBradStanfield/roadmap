@@ -23,7 +23,7 @@ function showsOtherHeight(heightCm: number | undefined, typed: number | undefine
 export function useHeightPair(heightCm: number | undefined, unitSystem: UnitSystem) {
   const [heightFeet, setHeightFeet] = useState<string>('');
   const [heightInches, setHeightInches] = useState<string>('');
-  // The height the feet and inches boxes last wrote (US-02 AC11).
+  // The height the feet and inches boxes last wrote, while they still show it (US-02 AC11, AC11b).
   const typedHeightCm = useRef<number | undefined>(undefined);
 
   // Sync heightCm → feet/inches display when loading data or switching units,
@@ -31,6 +31,7 @@ export function useHeightPair(heightCm: number | undefined, unitSystem: UnitSyst
   useEffect(() => {
     if (unitSystem === 'conventional' && showsOtherHeight(heightCm, typedHeightCm.current)) {
       const { feet, inches } = cmToFeetInches(heightCm);
+      typedHeightCm.current = undefined; // the boxes now show another height: the one typed here shows again when it comes back (US-02 AC11b)
       setHeightFeet(String(feet));
       setHeightInches(String(inches));
     } else if (unitSystem === 'si' || heightCm === undefined) {
