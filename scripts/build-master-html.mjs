@@ -47,10 +47,10 @@
 //
 // Commerce links: a master's drstanfield.com/products/<h> link becomes the
 // on-store /products/<h'> link, as the current commerce copies do.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
 import { headingKey, pushPath, textOf, extractCarried, placeCarried, pathText } from './build-master-carry.mjs';
 export { headingKey, tokenizeTags, extractCarried, placeCarried } from './build-master-carry.mjs';
@@ -416,4 +416,6 @@ function main(argv) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main(process.argv.slice(2));
+// Node gives import.meta.url as the real path and argv[1] as typed, so both are resolved (US-32 AC56a).
+const entry = process.argv[1] && existsSync(process.argv[1]) ? realpathSync(process.argv[1]) : '';
+if (entry === realpathSync(fileURLToPath(import.meta.url))) main(process.argv.slice(2));

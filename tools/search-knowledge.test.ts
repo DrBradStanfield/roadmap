@@ -132,7 +132,7 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
 
   it('imports no network module and no model client (the CLI and the core it ranks with)', () => {
     const allowed = {
-      'search-knowledge.ts': /^(node:(url)|\.\.\/app\/lib\/(blog-index\.server|matched-content|search-knowledge))$/,
+      'search-knowledge.ts': /^(node:(fs|url)|\.\.\/app\/lib\/(blog-index\.server|matched-content|search-knowledge))$/,
       '../app/lib/search-knowledge.ts': /^\.\/search-knowledge-abbreviations\.json$/,
     };
     for (const [file, pattern] of Object.entries(allowed)) {
