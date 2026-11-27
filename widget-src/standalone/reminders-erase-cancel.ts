@@ -6,7 +6,8 @@
  * observed set, every opt-in row seen in any copy or merge from the erase's
  * start to its swap (I1), and hands it to the commit. This state says only
  * whether the prepare ran and holds the Drive proof it fetched, in memory, for
- * the erase's span. The commit decides what to cancel from the freshest rows,
+ * the erase's span: it lives in the one erase's closure (cancelRemindersForErase),
+ * so a refused erase, whose commit never runs, drops it with the closure. The commit decides what to cancel from the freshest rows,
  * synchronously, just before its requests leave (I3, `toCancel`).
  */
 import { rowsOf } from '@roadmap/health-core/reminder-rows';
@@ -46,11 +47,3 @@ export function toCancel(observed: FileReminderOptIn | undefined, standing: (Fil
   return rowsOf(observed).filter((row) => row.status === 'active' && !live.has(row.token));
 }
 
-let eraseCancel: EraseCancel = { kind: 'done' };
-/** The teardown now, for the commit to read before it steps to `done`. */
-export function eraseCancelState(): EraseCancel {
-  return eraseCancel;
-}
-export function stepEraseCancel(event: EraseCancelEvent): void {
-  eraseCancel = eraseCancelTransition(eraseCancel, event);
-}

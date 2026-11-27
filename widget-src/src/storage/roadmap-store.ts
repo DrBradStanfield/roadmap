@@ -396,6 +396,11 @@ export class RoadmapStore {
     return this.file.reminderOptIn;
   }
 
+  /** The erase's observed set so far, while an erase reads (US-11 AC15, I1). */
+  eraseObserved(): FileReminderOptIn | undefined {
+    return this.session.eraseSeen?.optIn;
+  }
+
   /** Write opt-in rows, one token each, in one guarded edit; every other token's row stays (US-17 AC19). */
   setReminderRows(rows: ReminderRowFields[], erase: string): boolean {
     const now = new Date().toISOString();

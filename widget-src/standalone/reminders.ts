@@ -32,11 +32,13 @@ import {
   getReminderOptIn,
   getShownErase,
   isKnownMinorNow,
+  getEraseObserved,
   setReminderRows,
+  stillShown,
 } from '../src/lib/roadmap-data';
 import type { EraseSeen } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
-import { eraseCancelState, stepEraseCancel, toCancel } from './reminders-erase-cancel';
+import { eraseCancelTransition, toCancel } from './reminders-erase-cancel';
 import { cancelProofFor, post, postCancel } from './reminders-post';
 import { cancelReminders, unchangedSince } from './reminders-turn-off';
 import { addressKey, rowsOf, shownOptIn } from '@roadmap/health-core/reminder-rows';
@@ -128,9 +130,12 @@ function noReminderLane(backend: never): never {
 let switchHoldsOldToken = false;
 const SWITCH_CANCELLED_KEY = 'hr_reminders_switch_cancelled';
 
-/** The same decision in the file: both absent, or the same status, token and provider. */
-function sameOptIn(a: FileReminderOptIn | undefined, b: FileReminderOptIn | undefined): boolean {
-  return a?.status === b?.status && a?.token === b?.token && a?.provider === b?.provider;
+/** The stored object as it was read: absent both times, or the same token's
+ *  row by every field the cancel rule reads (status, provider, time, lamport;
+ *  `unchangedSince`), so a same-token re-enrolment with a newer stamp counts
+ *  as a change (I3). */
+function storedAsRead(read: FileReminderOptIn | undefined, now: FileReminderOptIn | undefined): boolean {
+  return read === undefined ? now === undefined : now?.token === read.token && unchangedSince(read, now);
 }
 
 /** One inbox, however the provider cased or padded it; a missing or blank
@@ -199,7 +204,7 @@ export async function optInToReminders(
   // cancelled so it cannot outlive the decision (not their opt-out, so not
   // counted). A token the file already holds active is theirs: left alone.
   const now = getReminderOptIn();
-  const superseded = silent && !sameOptIn(now, silent.from);
+  const superseded = silent && !storedAsRead(silent.from, now);
   // A token the file already holds active, in any row, is theirs: never
   // cancelled, and its switch marker stays (adversary R1).
   const holdsActive = (optIn: FileReminderOptIn | undefined) => rowsOf(optIn).some((row) => row.status === 'active' && row.token === reply.token);
@@ -278,7 +283,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       // The lookup awaited: an erase, a toggle-off or another device may have
       // changed the opt-in meanwhile. Act only on the one we read.
       const current = getReminderOptIn();
-      if (!current || !sameOptIn(current, optIn)) return;
+      if (!current || !storedAsRead(optIn, current)) return;
       // Drive's identity carries an ID token, not an address; its account email is local.
       const address = identity && 'email' in identity ? identity.email
         : backend === 'google-drive' ? new GoogleDriveAdapter(googleDriveConfig()).accountEmail() : null;
@@ -303,7 +308,7 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
       // proves nothing about the row, so that marker stays.
       const proof = await cancelProofFor(optIn.provider);
       // I3: decided after the proof, from the opt-in standing now: a change made meanwhile stands.
-      if (!sameOptIn(getReminderOptIn(), optIn)) return;
+      if (!storedAsRead(optIn, getReminderOptIn()) || !stillShown(erase)) return;
       const cancelledBefore = safeGetItem(SWITCH_CANCELLED_KEY) === optIn.token;
       switchHoldsOldToken = true;
       safeSetItem(SWITCH_CANCELLED_KEY, optIn.token);
@@ -368,20 +373,22 @@ export async function autoEnrolReminders(backend: Backend): Promise<void> {
  * (where the store lives) must never import `standalone/`.
  */
 export async function cancelRemindersForErase(): Promise<(seen?: EraseSeen) => Promise<void>> {
-  stepEraseCancel({ type: 'prepared' });
+  // This erase's teardown, held in its own closure only (review R4).
+  let teardown = eraseCancelTransition({ kind: 'done' }, { type: 'prepared' });
   try {
-    // A Drive row here gets the proof, fetched before the swap so the commit leaves at once (review R2).
-    const drive = rowsOf(getReminderOptIn()).some((row) => row.status === 'active' && row.provider === 'google-drive');
-    stepEraseCancel({ type: 'proved', proof: drive ? await cancelProofFor('google-drive') : null });
+    // A Drive row the erase has observed so far gets the proof, whatever the token order, fetched
+    // before the swap so the commit leaves at once (reviews R2, R3).
+    const drive = rowsOf(getEraseObserved() ?? getReminderOptIn()).some((row) => row.status === 'active' && row.provider === 'google-drive');
+    teardown = eraseCancelTransition(teardown, { type: 'proved', proof: drive ? await cancelProofFor('google-drive') : null });
   } catch {
-    stepEraseCancel({ type: 'failed' }); // what failed may quote the token or proof: nothing of it is kept
+    teardown = eraseCancelTransition(teardown, { type: 'failed' }); // what failed may quote the token or proof: nothing of it is kept
   }
   // `seen.observed`: the erase's observed set; `seen.landed`: the copy that took its write (US-11 AC15).
   return async ({ observed, landed }: EraseSeen = { observed: undefined, landed: undefined }) => {
     // An erase leaves no reminder token on the device, not even a cancelled one.
     safeRemoveItem(SWITCH_CANCELLED_KEY);
-    const held = eraseCancelState();
-    stepEraseCancel({ type: 'committed' });
+    const held = teardown;
+    teardown = eraseCancelTransition(teardown, { type: 'committed' });
     // I3: decided here, from the rows standing now, and every cancel leaves in this task, keepalive,
     // so a tab closed after the first still sent the rest; past the route's per-address rate the
     // rest are refused and reported (US-11 AC15).

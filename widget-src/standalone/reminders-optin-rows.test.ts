@@ -321,6 +321,37 @@ describe('US-11 AC15: an erase cancels every active row of every copy it reads',
     expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: A }, { op: 'cancel', token: drive, idToken: 'test-proof-good' }]);
   });
 
+  // I2 (review R2): the marker follows the presence of an opt-in, never its provider.
+  it.each([
+    ['the provider missing', undefined],
+    ['a provider outside the list', 'some-other-cloud'],
+  ] as const)('a cancelled opt-in with %s: the erase writes a marker without a provider, and the next load enrols nobody', async (_case, provider) => {
+    const optIn = { status: 'cancelled', token: '', email: '', updatedAt: T(1), lamport: 1, ...(provider ? { provider } : {}) } as unknown as FileReminderOptIn;
+    const t = await setUp(optIn);
+    expect((await t.data.deleteUserData()).success).toBe(true);
+    const { RoadmapStore } = await import('../src/storage/roadmap-store');
+    const reopened = await RoadmapStore.create(new MemoryAdapter(t.cloud));
+    const marker = reopened.getReminderOptIn();
+    expect(marker).toMatchObject({ status: 'cancelled', token: '', email: '' });
+    expect(marker && 'provider' in marker).toBe(false);
+    t.posts.length = 0;
+    await t.reminders.autoEnrolReminders('dropbox');
+    expect(t.posts).toEqual([]);
+  });
+
+  it('a Drive token seen only in a lower-epoch device copy gets a proved cancel (review R3)', async () => {
+    const t = await setUp();
+    // The working and cloud copies are at a later erase with no opt-in; the device copy, older, holds an active Drive row.
+    t.cloudWrites(undefined, (f) => { f.meta.eraseEpoch = 1; f.meta.erasedAt = T(5); f.schemaVersion = 2; f.erasedRows = { fromEpoch: 1, ids: [] }; });
+    expect(await t.page().refreshFromRemote()).toBe(true);
+    const device = createEmptyFile({ deviceId: 'dev_tab', now: T(1) });
+    device.reminderOptIn = row(A, 'active', 1, { provider: 'google-drive' });
+    localStorage.setItem('health_roadmap_file_v2', JSON.stringify(device));
+    t.proof.mockResolvedValue('test-proof-good');
+    expect((await t.data.deleteUserData()).success).toBe(true);
+    expect(t.posts.filter((p) => p.op === 'cancel')).toEqual([{ op: 'cancel', token: A, idToken: 'test-proof-good' }]);
+  });
+
   it('a nested active token present only in the cloud copy is cancelled', async () => {
     const t = await setUp(row(A, 'cancelled', 2));
     t.cloudWrites(nest(row(A, 'cancelled', 2), row(C, 'active', 1)));

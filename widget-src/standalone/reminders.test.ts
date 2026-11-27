@@ -44,6 +44,7 @@ const githubAccountEmail = vi.fn<() => Promise<string | null>>(async () => 'gh@e
 
 vi.mock('../src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
+  getEraseObserved: () => undefined, // no erase reading: the prepare reads this copy's rows
   // Each row of an edit, as the one-row writer saw it (US-17 AC19); the edit is refused if any row is.
   setReminderRows: (rows: Parameters<typeof setReminderOptIn>[0][], erase?: string) => rows.map((row) => setReminderOptIn(row, erase)).every(Boolean),
   getShownErase: () => getShownErase(),
@@ -453,6 +454,19 @@ describe('US-17 — switching clouds moves the reminders, it does not duplicate 
     getReminderOptIn.mockReturnValue(ACTIVE);
     getReminderIdToken.mockImplementationOnce(async () => {
       getReminderOptIn.mockReturnValue({ ...ACTIVE, status: 'cancelled', lamport: 4 });
+      return 'signed-id-token';
+    });
+    const f = mockFetchOk();
+    const { autoEnrolReminders } = await loadReminders();
+    await autoEnrolReminders('dropbox');
+    expect(f).not.toHaveBeenCalled();
+  });
+
+  // I3 (review R1): the full row, stamp included: a same-token re-enrolment with a newer stamp is spared.
+  it('a same-token Drive re-enrolment taken in while the switch fetches its proof: no cancel, no enrolment', async () => {
+    getReminderOptIn.mockReturnValue(ACTIVE);
+    getReminderIdToken.mockImplementationOnce(async () => {
+      getReminderOptIn.mockReturnValue({ ...ACTIVE, updatedAt: '2026-08-02T00:00:00.000Z', lamport: 4 });
       return 'signed-id-token';
     });
     const f = mockFetchOk();

@@ -11,7 +11,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ROADMAP_FILE_NAME, StorageError } from './adapter';
 import type { FileReminderOptIn, FileSupplement, RoadmapFile } from './roadmap-file';
-import { pickNewerOptional } from './merge';
+import { pickNewerOptional } from './old-optin-merge.test-helpers';
 import { DriveAdapter } from './drive-rest';
 import { createEmptyFile, createMeasurement } from './roadmap-file';
 import { ROADMAP_DOC } from './roadmap-doc';

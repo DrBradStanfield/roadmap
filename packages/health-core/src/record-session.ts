@@ -15,9 +15,9 @@ import { SchemaTooNewError } from './migrate';
 import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, reportSaveFailure, tellSaveStatus, type DeviceMirror, type SaveReportKey, type RecordHost, type RemoteChange, type SaveTold, type SyncStorage } from './record-host';
 import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
-import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, landedOf, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
+import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, landedOf, mirrorNowSession, saveRecordInto, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
 import { refreshDue, type RefreshReason } from './refresh-pause';
-import { recordSync, ROADMAP_DOC, saveRecordInto } from './roadmap-doc';
+import { recordSync, ROADMAP_DOC } from './roadmap-doc';
 import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
 import type { RoadmapFile } from './roadmap-file';
 import type { SyncContext, SyncManager } from './sync-manager';
@@ -44,7 +44,7 @@ export { ERASE_BUSY, ERASE_STALE_TAB, ERASE_UNREACHABLE, type EraseResult, type 
 /** What an awaited save that failed says. */
 const SAVE_FAILED = 'Cloud sync failed — your latest changes are still on this device.';
 
-export { saveRecordInto } from './roadmap-doc';
+export { saveRecordInto } from './record-session-mirror';
 
 /**
  * Model: edits change the working copy at once and schedule a debounced,

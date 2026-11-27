@@ -41,7 +41,7 @@ export function rowsOf(optIn: FileReminderOptIn | undefined): ReminderTokenRow[]
 /**
  * The equal-epoch merge of two opt-ins. The stored object is the newest of
  * both objects' own rows (the erase marker included) and every row, which for
- * app-written copies is `pickNewerOptional` over the two objects, as before.
+ * app-written copies is the newer of the two objects, as before.
  * `tokens` holds every other token's row, sorted by token, and only when there
  * is one: a file with one real token is byte for byte what it was. A superseded
  * erase marker is dropped: it is no token's row. The merge reads no erase time.
@@ -49,7 +49,7 @@ export function rowsOf(optIn: FileReminderOptIn | undefined): ReminderTokenRow[]
 export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileReminderOptIn | undefined): FileReminderOptIn | undefined {
   if (!local && !remote) return undefined;
   const rows = mergeByKey(rowsOf(local), rowsOf(remote), (row) => row.token);
-  // Remote first: an exact tie keeps the remote object, as `pickNewerOptional` did.
+  // Remote first: an exact tie keeps the remote object, as the old object rule did.
   const stored = [remote, local].flatMap((o) => (o ? [canonical(o)] : [])).concat(rows).reduce(newer);
   const tokens = rows.filter((row) => row.token !== stored.token);
   return tokens.length > 0 ? { ...stored, tokens } : stored;

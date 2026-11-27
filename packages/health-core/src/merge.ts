@@ -60,11 +60,10 @@ import {
   type RoadmapProfile,
   type FileScreenings,
   type RecommendationSnapshot,
-  type SyncStamp,
 } from './roadmap-file';
 import type { MeasurementStatus } from './validation';
 import { isFoldRow, labRowSlot, v2FormOf } from './core-rows';
-import { clockOf, cmpClock, cmpStored, cmpStr, dayOf, laterStamp, latestStamp, mergeByKey, stampInstant, stampIsNewer, type Clock } from './record-time';
+import { clockOf, cmpClock, cmpStored, cmpStr, dayOf, laterStamp, latestStamp, mergeByKey, stampInstant, type Clock } from './record-time';
 import { mergeOptIn } from './reminder-rows';
 // The time and stamp primitives live in record-time.ts; these keep the old import paths working.
 export { cmpStr, dayOf, daysBetween, laterStamp, latestDayOnEarth, latestStamp, localDay, stampInstant } from './record-time';
@@ -315,17 +314,6 @@ function mergeSnapshots(
     if (richer) map.set(snap.date, snap);
   }
   return [...map.values()].sort((a, b) => cmpStr(a.date, b.date));
-}
-
-/** The newer of two OPTIONAL singletons by `cmpClock`: present always
- *  beats absent. */
-export function pickNewerOptional<T extends SyncStamp>(
-  local: T | undefined,
-  remote: T | undefined,
-): T | undefined {
-  if (!local) return remote;
-  if (!remote) return local;
-  return stampIsNewer(local, remote) ? local : remote;
 }
 
 /** The keys of a field-stamped singleton that are its clocks, not its fields. */

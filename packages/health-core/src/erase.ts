@@ -7,7 +7,7 @@
 import { mergeErasedRows, rowRootIds, stampInstant } from './merge';
 import { migrateFile } from './migrate';
 import { mergeOptIn } from './reminder-rows';
-import { recordSchemaVersion, type RoadmapFile } from './roadmap-file';
+import { recordSchemaVersion, REMINDER_PROVIDERS, type FileReminderOptIn, type RoadmapFile } from './roadmap-file';
 import type { SyncContext } from './sync-manager';
 
 export interface EraseInputs {
@@ -60,9 +60,11 @@ export function buildErasedFile({ stored, own, device, observed, ctx }: EraseInp
   // the device file (US-11 AC4). Any of them turns reminders off; the newest
   // stamp only picks which provider the cancelled opt-in names.
   // One rule (US-11 AC15, I2): the marker is written if and only if any
-  // decision was seen, in a copy read or in the erase's observed set; it names
-  // the newest row's provider.
-  const priorProvider = [own, stored, device].reduce((seen, file) => mergeOptIn(seen, file?.reminderOptIn), observed)?.provider ?? null;
+  // decision was seen, in a copy read or in the erase's observed set. It names
+  // the newest row's provider only when that is one the app writes; otherwise
+  // it names none, and a reader of a cancelled marker never reads one.
+  const decided = [own, stored, device].reduce((seen, file) => mergeOptIn(seen, file?.reminderOptIn), observed);
+  const provider = (REMINDER_PROVIDERS as readonly unknown[]).includes(decided?.provider) ? decided?.provider : undefined;
   // WHEN, beside WHICH: read only by a copy that missed an earlier erase
   // that listed nothing (US-09 AC20, AC23). Floored 1 ms past the last
   // write this eraser has seen, so a slow clock here cannot let through a
@@ -79,11 +81,11 @@ export function buildErasedFile({ stored, own, device, observed, ctx }: EraseInp
   file.schemaVersion = recordSchemaVersion(file);
   file.meta.eraseEpoch = eraseEpoch;
   file.meta.erasedAt = erasedAt;
-  if (priorProvider) {
+  if (decided) {
     file.reminderOptIn = {
-      status: 'cancelled', token: '', email: '', provider: priorProvider,
+      status: 'cancelled', token: '', email: '', ...(provider ? { provider } : {}),
       updatedAt: ctx.now, lamport: 1,
-    };
+    } as FileReminderOptIn;
   }
   return file;
 }

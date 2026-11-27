@@ -352,6 +352,13 @@ export async function readDocumentFile(fileRef: string): Promise<Blob | null> {
   }
 }
 
+/** The erase's observed set so far, while this tab's erase reads (US-11 AC15, I1); undefined otherwise. */
+export function getEraseObserved(): FileReminderOptIn | undefined {
+  return store?.eraseObserved();
+}
+/** `observed`: the erase's observed set, every opt-in row it saw up to its swap; `landed`: the opt-in of the copy that took its write, as read back (US-11 AC15). */
+export type EraseSeen = { observed: FileReminderOptIn | undefined; landed: FileReminderOptIn | undefined };
+
 /**
  * Teardown for the erase, registered by the standalone entry. `src/` must
  * never import `standalone/`, so the dependency is injected rather than
@@ -361,8 +368,6 @@ export async function readDocumentFile(fileRef: string): Promise<Blob | null> {
  * inside the erase, before the swap, and returns the step that sends it
  * (commit), run only once the erase stands (US-11 AC4c).
  */
-/** `observed`: the erase's observed set, every opt-in row it saw up to its swap; `landed`: the opt-in of the copy that took its write, as read back (US-11 AC15). */
-export type EraseSeen = { observed: FileReminderOptIn | undefined; landed: FileReminderOptIn | undefined };
 type EraseCommit = (seen: EraseSeen) => Promise<void>;
 let preEraseHook: (() => Promise<EraseCommit | null>) | null = null;
 export function setPreEraseHook(fn: () => Promise<EraseCommit | null>): void {

@@ -15,7 +15,7 @@ import { isObject, migrateFile, RecordShapeError } from './migrate';
 import { optInBehind } from './reminder-rows';
 import { APPEND_ONLY_ARRAYS, ROW_ARRAYS, type RoadmapFile } from './roadmap-file';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
-import { SyncManager, type DocumentSpec, type SaveResult, type SyncContext } from './sync-manager';
+import { SyncManager, type DocumentSpec, type SyncContext } from './sync-manager';
 
 /**
  * Refuse bytes that are not this record. An ABSENT file (null) is not a
@@ -88,12 +88,3 @@ export function recordSync(adapter: StorageAdapter, deviceId: string, now: strin
   return new SyncManager<RoadmapFile>(adapter, deviceId, ROADMAP_DOC, { now: typeof now === 'string' ? () => now : now });
 }
 
-/**
- * Merge a raw record body into `target` (migrate + read-merge-write). The one
- * cross-store transfer: the failure mirror, the connect-time lift-up and the
- * pre-switch copy-down all go through it. Moved here from record-session.ts
- * (file budget); it answers what landed, for the erase's teardown (US-11 AC15).
- */
-export async function saveRecordInto(target: StorageAdapter, body: unknown, ctx: SyncContext): Promise<SaveResult<RoadmapFile>> {
-  return recordSync(target, ctx.deviceId, ctx.now).save(ROADMAP_DOC.migrate(body, ctx));
-}

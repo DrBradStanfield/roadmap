@@ -21,6 +21,7 @@ const setReminderRows = vi.fn((_rows: { token: string; status: string }[], _eras
 
 vi.mock('../../widget-src/src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
+  getEraseObserved: () => undefined,
   setReminderRows: (rows: { token: string; status: string }[], erase: string) => setReminderRows(rows, erase),
   getShownErase: () => '[0,null]',
   getEraseIdentity: () => '[0,null]',

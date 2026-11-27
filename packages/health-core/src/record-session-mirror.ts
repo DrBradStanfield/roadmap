@@ -5,14 +5,15 @@
  * function on the session, which keeps a one-line method for each.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
-import { ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from './adapter';
 import { eraseIdentityOf } from './erase-identity';
 import { mergeFiles } from './merge';
 import type { DeviceMirror, RecordHost, SyncStorage } from './record-host';
 import type { RecordSession } from './record-session';
 import { contentOf } from './record-session-content';
-import { ROADMAP_DOC } from './roadmap-doc';
+import { recordSync, ROADMAP_DOC } from './roadmap-doc';
 import type { RoadmapFile } from './roadmap-file';
+import type { SaveResult, SyncContext } from './sync-manager';
 
 /** The device copy's revision on a cloud whose copy has a synchronous path;
  *  undefined on any other host (US-06 AC13). */
@@ -141,4 +142,15 @@ export function coveredCopySession(s: RecordSession, sync: SyncStorage, preErase
   } catch {
     return null;
   }
+}
+
+/**
+ * Merge a raw record body into `target` (migrate + read-merge-write). The one
+ * cross-store transfer: the failure mirror, the connect-time lift-up and the
+ * pre-switch copy-down all go through it. Moved here from record-session.ts
+ * (file budget); it asks `recordSync` through the module, so a test can
+ * watch the builder; it answers what landed, for the erase's teardown (US-11 AC15).
+ */
+export async function saveRecordInto(target: StorageAdapter, body: unknown, ctx: SyncContext): Promise<SaveResult<RoadmapFile>> {
+  return recordSync(target, ctx.deviceId, ctx.now).save(ROADMAP_DOC.migrate(body, ctx));
 }

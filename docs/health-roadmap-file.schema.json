@@ -417,8 +417,10 @@
 
     "FileReminderOptIn": {
       "type": "object",
-      "description": "The user's email-reminder opt-in. Cancelling flips status; the object is never removed, because an absent field cannot win a merge.",
-      "required": ["updatedAt", "status", "token", "email", "provider"],
+      "description": "The user's email-reminder opt-in. Cancelling flips status; the object is never removed, because an absent field cannot win a merge. An erase leaves a cancelled marker with an empty token and address; it names a provider only when it knew one from the list, so a marker may have none.",
+      "required": ["updatedAt", "status", "token", "email"],
+      "if": { "not": { "required": ["status", "token"], "properties": { "status": { "const": "cancelled" }, "token": { "const": "" } } } },
+      "then": { "required": ["provider"] },
       "properties": {
         "updatedAt": { "type": "string" },
         "lamport": { "type": "number" },

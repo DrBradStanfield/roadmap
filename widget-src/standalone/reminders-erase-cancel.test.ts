@@ -331,6 +331,9 @@ describe('US-11 AC4c: an erase cancels every active reminders token it sees (lea
     expect(await t.otherDeviceTurnsOn()).toBe(true);
 
     expect(t.posts).toEqual([]);
+    // Review R4: the Drive proof lived in that erase's closure; no module state holds it after.
+    const teardown = await import('./reminders-erase-cancel');
+    expect(Object.keys(teardown).sort()).toEqual(['eraseCancelTransition', 'toCancel']);
   });
 
   it('a prepare that throws posts nothing', async () => {

@@ -16,13 +16,14 @@ import { createEmptyFile, type FileReminderOptIn, type RoadmapFile } from './roa
 const OLD = 'old-device';
 vi.mock('./merge', async (importOriginal) => {
   const real = await importOriginal<typeof import('./merge')>();
+  const { pickNewerOptional } = await import('./old-optin-merge.test-helpers');
   return {
     ...real,
     // The old device's merge: the newer opt-in object whole, as main did before the rows.
     mergeFiles: (a: RoadmapFile, b: RoadmapFile, opts: { deviceId: string; now: string }) => {
       const merged = real.mergeFiles(a, b, opts);
       return opts.deviceId === OLD && (a.meta.eraseEpoch ?? 0) === (b.meta.eraseEpoch ?? 0)
-        ? { ...merged, reminderOptIn: real.pickNewerOptional(a.reminderOptIn, b.reminderOptIn) }
+        ? { ...merged, reminderOptIn: pickNewerOptional(a.reminderOptIn, b.reminderOptIn) }
         : merged;
     },
   };
