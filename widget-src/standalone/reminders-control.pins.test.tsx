@@ -74,7 +74,7 @@ describe('US-17 AC18: turn on', () => {
     const call = deferred<{ email: string; refreshed: boolean }>();
     optInToReminders.mockReturnValue(call.promise);
     const view = open();
-    expect(text(view)).toContain('Reminders go to the email address of your connected cloud storage.');
+    expect(text(view)).toContain('Reminders go to the email address on your cloud storage account.');
     expect((view.getByRole('checkbox') as HTMLInputElement).checked).toBe(false);
     expect(view.queryByRole('textbox')).toBeNull();
     fireEvent.click(button(view, 'Turn on reminders'));

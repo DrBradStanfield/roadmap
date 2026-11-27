@@ -102,7 +102,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
       ) : view.phase === 'asking' ? (
         <div className="hr-sync-form">
           <span className="hr-sync-detail">
-            Reminders go to the email address of your connected cloud storage.
+            Reminders go to the email address on your cloud storage account.
           </span>
           {view.form.needsEmail && (
             <input
