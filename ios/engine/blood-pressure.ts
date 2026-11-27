@@ -127,7 +127,7 @@ export function pressureHistory(file: RoadmapFile, excludedFields: readonly stri
     const shownRow = (index: number): HistoryRow => {
       const now = held.length > 0 && index === stateAt;
       const snapshot = snapshots[index];
-      // `shown`: each active pair's stored halves, so My data grades the pair it shows (adversary R1).
+      // `shown`: each active pair's stored halves, so My health grades the pair it shows (adversary R1).
       // Both halves present, each with its limit if it was printed as one (US-12 AC20).
       if (now && snapshot.sys && snapshot.dia) {
         shown?.set(`${day}:${snapshot.id}`, { value: snapshot.sys.value, ...comparatorOf(snapshot.sys), dia: { value: snapshot.dia.value, ...comparatorOf(snapshot.dia) } });

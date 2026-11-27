@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { mergeFiles, stampFields, stampInstant } from './merge';
 import { migrateFile } from './migrate';
-import { setReminderOptIn, upsertMedication } from './state-edits';
+import { setReminderRow, upsertMedication } from './state-edits';
 import {
   createEmptyFile,
   stableStringify,
@@ -205,11 +205,10 @@ describe('US-10 AC8: a stamp from a clock running ahead does not win forever', (
 
   it('the reminders opt-in: the next edit beats the future stamp it replaced', () => {
     const skewed = file();
-    skewed.reminderOptIn = { status: 'subscribed', updatedAt: FUTURE, lamport: 3 } as unknown as FileReminderOptIn;
-    const edited = setReminderOptIn(skewed, { status: 'unsubscribed' } as unknown as Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>, NOW);
-    for (const merged of bothWays(edited, skewed)) {
-      expect((merged.reminderOptIn as unknown as { status: string }).status).toBe('unsubscribed');
-    }
+    const fields = { token: 'test-token-good', email: 'a@example.test', provider: 'dropbox' } as const;
+    skewed.reminderOptIn = { ...fields, status: 'active', updatedAt: FUTURE, lamport: 3 };
+    const edited = setReminderRow(skewed, { ...fields, status: 'cancelled' }, NOW);
+    for (const merged of bothWays(edited, skewed)) expect(merged.reminderOptIn?.status).toBe('cancelled');
   });
 
   it('an edit made without seeing the future stamp still loses to it: the merge is pure, the residual stated', () => {

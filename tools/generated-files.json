@@ -19,6 +19,7 @@
         "packages/health-core/src/merge.ts",
         "packages/health-core/src/parseNumber.ts",
         "packages/health-core/src/record-time.ts",
+        "packages/health-core/src/reminder-rows.ts",
         "packages/health-core/src/roadmap-file.ts",
         "packages/health-core/src/screening-followup-info.ts",
         "packages/health-core/src/screening-inputs.ts",

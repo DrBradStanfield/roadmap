@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// How My data draws one value (US-25 AC17, AC17d): a row, or an Apple Health card for
+/// How My health draws one value (US-25 AC17, AC17d): a row, or an Apple Health card for
 /// a vital, with its trend line and a bounce when a new value lands. `CardValue` is
 /// shared with the plan's summary tiles, `LabelValue` with the metric page. The web
 /// twin of the row is MyDataRows.tsx's MetricRow (US-62 AC8).
@@ -310,12 +310,12 @@ struct CardShell<Value: View>: View {
     }
 }
 
-/// A card's value, large, with its unit: My data's vitals cards and the plan's summary tiles.
+/// A card's value, large, with its unit: My health's vitals cards and the plan's summary tiles.
 struct CardValue: View {
     let value: String
     /// Empty for a value with no unit (BMI).
     let unit: String
-    /// Counts new values, for My data's bounce.
+    /// Counts new values, for My health's bounce.
     var bounces = 0
     /// A vital's grade colour (`ValueRow.gradeColor`); nil draws it plain.
     var color: Color? = nil
@@ -358,7 +358,7 @@ private struct Bounce: ViewModifier {
 }
 
 /// A row's label and value: side by side, stacked at accessibility text sizes so
-/// neither is squeezed into a broken word. Used by My data and the metric page.
+/// neither is squeezed into a broken word. Used by My health and the metric page.
 enum LabelValue {
     /// Side by side, the value centred on the row (Brad 2026-10-23): on the label's first
     /// line, a value whose label has a day or a note under it sat high.

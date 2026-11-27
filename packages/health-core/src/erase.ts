@@ -4,9 +4,10 @@
  * the write and the cleanup are the caller's. The web widget's RoadmapStore
  * calls it, and so will the iPhone app, so both erase by one rule.
  */
-import { mergeErasedRows, pickNewerOptional, rowRootIds, stampInstant } from './merge';
+import { mergeErasedRows, rowRootIds, stampInstant } from './merge';
 import { migrateFile } from './migrate';
-import { recordSchemaVersion, type RoadmapFile } from './roadmap-file';
+import { mergeOptIn } from './reminder-rows';
+import { recordSchemaVersion, REMINDER_PROVIDERS, type FileReminderOptIn, type RoadmapFile } from './roadmap-file';
 import type { SyncContext } from './sync-manager';
 
 export interface EraseInputs {
@@ -18,10 +19,12 @@ export interface EraseInputs {
   /** On a cloud, the device copy where failed saves wait; null when there is
    *  none or it could not be read into a record. */
   device: RoadmapFile | null;
+  /** The erase's observed set: every opt-in row it saw, in any copy or merge, from its start (US-11 AC15). */
+  observed?: RoadmapFile['reminderOptIn'];
   ctx: SyncContext;
 }
 
-export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): RoadmapFile {
+export function buildErasedFile({ stored, own, device, observed, ctx }: EraseInputs): RoadmapFile {
   // Bump the erase epoch so the empty file BEATS the merge — persist goes
   // through read-merge-write, whose never-lose-data semantics would otherwise
   // resurrect every record from the stored copy (and any other device's).
@@ -56,10 +59,12 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   // device saved after this copy was read sits only in the stored record or
   // the device file (US-11 AC4). Any of them turns reminders off; the newest
   // stamp only picks which provider the cancelled opt-in names.
-  const priorProvider = [stored, device].reduce(
-    (newest, file) => pickNewerOptional(newest, file?.reminderOptIn),
-    own.reminderOptIn,
-  )?.provider ?? null;
+  // One rule (US-11 AC15, I2): the marker is written if and only if any
+  // decision was seen, in a copy read or in the erase's observed set. It names
+  // the newest row's provider only when that is one the app writes; otherwise
+  // it names none, and a reader of a cancelled marker never reads one.
+  const decided = [own, stored, device].reduce((seen, file) => mergeOptIn(seen, file?.reminderOptIn), observed);
+  const provider = (REMINDER_PROVIDERS as readonly unknown[]).includes(decided?.provider) ? decided?.provider : undefined;
   // WHEN, beside WHICH: read only by a copy that missed an earlier erase
   // that listed nothing (US-09 AC20, AC23). Floored 1 ms past the last
   // write this eraser has seen, so a slow clock here cannot let through a
@@ -76,11 +81,11 @@ export function buildErasedFile({ stored, own, device, ctx }: EraseInputs): Road
   file.schemaVersion = recordSchemaVersion(file);
   file.meta.eraseEpoch = eraseEpoch;
   file.meta.erasedAt = erasedAt;
-  if (priorProvider) {
+  if (decided) {
     file.reminderOptIn = {
-      status: 'cancelled', token: '', email: '', provider: priorProvider,
+      status: 'cancelled', token: '', email: '', ...(provider ? { provider } : {}),
       updatedAt: ctx.now, lamport: 1,
-    };
+    } as FileReminderOptIn;
   }
   return file;
 }

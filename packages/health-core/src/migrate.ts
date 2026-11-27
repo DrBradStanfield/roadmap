@@ -37,6 +37,7 @@ import {
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
   recordSchemaVersion,
+  REMINDER_PROVIDERS,
   type ErasedRows,
   type FileLabValue,
   type FileMeasurement,
@@ -123,7 +124,10 @@ function recoveredClock(raw: Record<string, unknown>): string {
     const row = raw[key];
     if (!isObject(row)) continue;
     stamps.push(row.updatedAt);
-    if (key !== 'reminderOptIn' && isObject(row.fieldStamps)) {
+    // The opt-in's valid nested rows are clocks too (US-17 AC19).
+    if (key === 'reminderOptIn') {
+      for (const nested of Array.isArray(row.tokens) ? row.tokens : []) if (isTokenRow(nested)) stamps.push(nested.updatedAt);
+    } else if (isObject(row.fieldStamps)) {
       for (const stamp of Object.values(row.fieldStamps)) {
         if (isObject(stamp)) stamps.push(stamp.updatedAt);
       }
@@ -184,6 +188,27 @@ function sanitizeStamp<T>(row: T, anchor: string): T {
     ...(future ? { updatedAt: anchor } : null),
     ...(mistyped ? { updatedAt: '' } : null),
   } as T;
+}
+
+/** A nested opt-in row worth keeping: a non-empty token (as the object's has
+ *  no maximum), a known status, a string address and a provider the app
+ *  writes (US-17 AC19). */
+function isTokenRow(row: unknown): row is Record<string, unknown> {
+  return isObject(row) && typeof row.token === 'string' && row.token !== ''
+    && (row.status === 'active' || row.status === 'cancelled') && typeof row.email === 'string'
+    && (REMINDER_PROVIDERS as readonly unknown[]).includes(row.provider);
+}
+
+/** The opt-in and its `tokens` rows (US-17 AC19): each row's stamp sanitized
+ *  as the object's, its own `tokens` dropped; any other row is dropped, and so
+ *  is a list left empty. */
+function optInOf(optIn: Record<string, unknown>, anchor: string): Record<string, unknown> {
+  const { tokens, ...own } = optIn;
+  const rows = (Array.isArray(tokens) ? tokens : [])
+    .filter(isTokenRow)
+    // A row with no stamp is an unknown time, `""`: a row's clock is a string.
+    .map(({ tokens: _nested, ...row }) => sanitizeStamp('updatedAt' in row ? row : { ...row, updatedAt: '' }, anchor));
+  return { ...sanitizeStamp(own, anchor), ...(rows.length > 0 ? { tokens: rows } : null) };
 }
 
 /** The printed row's id plus this suffix, so every device computes the SAME id
@@ -354,7 +379,7 @@ export function migrateFile(
     reminderPreferences: stamped(raw.reminderPreferences),
     recommendationSnapshots: rowsOf(raw.recommendationSnapshots),
     // Absent stays absent — present-beats-absent is how a cancellation wins.
-    ...(isObject(raw.reminderOptIn) ? { reminderOptIn: sanitizeStamp(raw.reminderOptIn, anchor) } : null),
+    ...(isObject(raw.reminderOptIn) ? { reminderOptIn: optInOf(raw.reminderOptIn, anchor) } : null),
   } as RoadmapFile;
   // Every reader drops the listed rows, so the widget, `read_record` and the
   // CLI agree on what the record holds.

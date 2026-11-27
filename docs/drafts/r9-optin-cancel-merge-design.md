@@ -1,5 +1,7 @@
 # R9: how reminder opt-ins and cancels merge (design of record)
 
+Status: built in PRs 2221 and 2230 (merged 27 Nov 2026, US-17 AC19, US-11 AC15); this note is history.
+
 Evidence: main at 5c3c5ae65 (27 Nov); amendments checked at 0065415e7. Leads: H115 (this root fix), H126 (R1),
 A4 (R19). Paths under packages/health-core/src unless named. Reviewed three times; this is the design the build follows.
 
@@ -39,9 +41,9 @@ Case 3: one device turns reminders on while another, not yet merged with it (60 
 field, `tokens?: ReminderTokenRow[]`: rows of the opt-in's own fields and stamp, with no `tokens` of their own.
 
 **`rowsOf(optIn)`:** the object's own row (its `tokens` key stripped) plus every `tokens` row, one per token
-by `stampIsNewer`. A row whose token is `''` is skipped. A nested row is kept only if its token is a string of
-1 to 256 characters, its status is `active` or `cancelled`, and its email and provider are strings; any other
-row is dropped. migrate sanitizes each row's stamp as it does the object's (migrate.ts:357). Every comparison,
+by `stampIsNewer`. A row whose token is `''` is skipped. A nested row is kept only if its token is a non-empty
+string (as the object's own has no maximum), its status is `active` or `cancelled`, its email is a string and its
+provider is one the app writes (`REMINDER_PROVIDERS`); any other row is dropped. migrate sanitizes each row's stamp as it does the object's (migrate.ts:357). Every comparison,
 `stableStringify` included, runs on rows with `tokens` stripped.
 
 **Merge (equal epoch).** `rows = mergeByKey(rowsOf(L), rowsOf(R), (r) => r.token)` (merge.ts:287). The stored object is the newest of
@@ -50,6 +52,11 @@ newest of its own rows, so this equals `pickNewerOptional` over the two objects,
 all rows also keeps a hand-edited row newer than its object. `tokens` holds every row in `rows` except the
 stored object's own, sorted by token, written only when not empty. So a file with one real token (any erase
 marker superseded) is byte for byte what it is today. **Across an erase:** unchanged; the winner's object stands.
+**Two erases from one epoch (owner decision, 27 Nov).** The merge reads neither `meta.erasedAt` nor
+`erasedRows`. An erase reaches only the rows of the epoch it erased: a row another device wrote at the new
+epoch, such as a re-enrolment between two unsynced erases, stays as a real row, on top if it is newer than the
+other erase marker and nested under it if older, and shows on until that device or this one turns it off. Its
+server row is live, since that erase never held its token, so the record can still cancel it.
 
 **Two readers, two jobs:**
 - The **stored object** (newest row overall) drives the auto-enrol gate and the provider-switch path, as
@@ -216,8 +223,8 @@ AC17's Limit. Merge class: a fresh adversary and Codex pass on each PR.
 - **Tests (failing first where they pin a change).**
   - US-17 AC19: case 3 shows active B in both orders with cancelled A stored; cases 1-6 as a table, both orders.
   - A one-real-token file, with and without a superseded erase marker, round-trips byte for byte.
-  - Nested-row validation: `''`, a non-string or a 257-character token, another status, a non-string email
-    or provider are each dropped; the object's own `tokens` key never reaches a comparison.
+  - Nested-row validation: `''` or a non-string token, another status, a non-string email or a provider outside
+    the closed list are each dropped; the object's own `tokens` key never reaches a comparison.
   - `recordSchemaVersion`: a two-token file is version 2; a one-token file is unchanged; a merge that first
     creates `tokens` is version 2.
   - Marker stamp: `setReminderRow` over an erase marker newer than every row writes past it. Tied-comparator

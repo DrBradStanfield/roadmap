@@ -58,7 +58,7 @@ async function setUp(provider: 'dropbox' | 'google-drive' = 'dropbox') {
   const cloud = new FailingCloud();
   await data.initRoadmapStore(cloud);
   data.setPreEraseHook(reminders.cancelRemindersForErase); // as standalone/app.tsx registers it
-  expect(data.setReminderOptIn({ status: 'active', token: TOKEN, email: ADDRESS, provider }, data.getShownErase())).toBe(true);
+  expect(data.setReminderRows([{ status: 'active', token: TOKEN, email: ADDRESS, provider }], data.getShownErase())).toBe(true);
   await data.flushRoadmapStore();
   localStorage.setItem(SWITCH_KEY, 'old-switch-token');
   return { data, reminders, cloud, Sentry };

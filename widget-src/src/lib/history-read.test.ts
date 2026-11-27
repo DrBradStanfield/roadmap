@@ -94,3 +94,11 @@ describe('the ticks on open, whatever order the reads land in (US-21 AC3c)', () 
     });
   });
 });
+
+describe('a lab test named like a built-in object property (US-21 AC3d)', () => {
+  it('"constructor" settles ready, its box ticked beside every other lab test', () => {
+    const labs = [...LABS, { id: 'c1', metricName: 'constructor', value: 1, unit: 'U/L', recordedAt: '2026-08-01' }] as ApiLabValue[];
+    const order: HistoryReadEvent[] = [E.vitalsRead, { type: 'labsRead', rows: labs }, E.medsRead];
+    expect(order.reduce(transition, loading)).toMatchObject({ phase: 'ready', selectedLabMetrics: new Set(['constructor', 'zonulin']) });
+  });
+});

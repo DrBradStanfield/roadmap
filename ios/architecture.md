@@ -154,7 +154,7 @@ launch time: there, pre-main alone is 1.4 to 3 s (docs/reference.md gotcha).
   - **Typed numbers** are read in Swift, `TypedNumber.read`, the engine's `readNumber` rule (Arabic-Indic digits, JavaScript's trim, either mark, plain decimals only, -0 as 0; "1,234" read as thousands only inside the input range My health's `inputRanges` gives with the decimal reading below it, never as the decimal, else nil, with the screen's message line asking `TypedNumber.question`; grouped thousands only against a range, US-02 AC7, 2026-10-27); NumberReadingTests holds it to the engine's `numberJson` on 59 texts, and on them and four more under six ranges against the rule written once in the test over the engine's readings. The engine's door stays (tests only; no bridge change). It is in the binary: a change to health-core's number rule needs an app release (D3).
   - **A value's history** is `RecordStore.chart(for:) async`, read once per metric and record `revision` (a counter that moves with the record and the per-test units; the eGFR and waist-to-height series once per draw too, review round 3); a second ask for the same revision joins the read under way, so a page and the page above it make one engine call. The store keeps each answer with its chart inputs (`ChartData`: points, days, the first and last day and the range a page opens on, built once per history) and drops older revisions' as a newer one lands. A page draws `shownChart(for:)`, which may trail the record by one read, and asks again on `.task(id: store.revision)`; only `shownHistory(for:)`, the history read for the record and units as they are now, opens a correction, so Show All Data holds its taps while it trails (adversary R2). An erase drops every kept history in the step that lands it, made here or taken in (`erasures`, lead S70), so no page draws a pre-erase chart while it reads again. A correction's "Now" hint comes from that current history, and for Lp(a) only one read in the sheet's unit (`correctionHint`): never "100 mg/dL" from a 100 nmol/L row.
   - **Onboarding's conversions** (`TypedAnswer`) await the engine; a unit switch's conversion lands only if the box did not move meanwhile, so a box never shows text in units it no longer holds. A trial's confirm needs no engine call: the store confirms as it draws.
-  - **Chat history** (`ChatHistoryStore`) awaits the engine for its list, messages, saves and deletes; each save or delete reads, changes and writes in one engine step. The app has one store, made at launch (`AppParts`) and shared by Chat and the eraser: `DataEraser` reads its list again after an erase, and opening History reads it again, so Chat shows what is on disk without a refresh of its own. Both erases now write the chat tombstones on the engine's queue (the phone erase's `keepChat` runs through `perform`), so neither lands between a save's read and write.
+  - **Chat history** (`ChatHistoryStore`) awaits the engine for its list, messages, saves and deletes; each save or delete reads, changes and writes in one engine step. The app has one store, made at launch (`AppParts`) and shared by Chat and the eraser: `DataEraser` reads its list again after an erase, and opening History reads it again, so Chat shows what is on disk without a refresh of its own. Both erases now write the chat tombstones on the engine's queue (the phone erase's `keepChat` runs through `perform`), so neither lands between a save's read and write. Opening a saved conversation is one state, `ChatThreadRead` (ready, loading, failed; root fix R29, US-52 AC17), changed only by its pure `transition`; each read names its attempt, so a late one changes nothing. A file that is there but cannot be read is a failed read, drawn in the web's words with Try again and New chat, and Send waits.
   - **Cloud news** is decoded on the engine's queue (`CloudNews`) before it goes to main.
   - **Photos and scans** are made `@concurrent` (`LabFileReader.picked(photo:)` takes the photo's bytes; `picked(scan:)` takes the scan's images, which are Sendable in the iOS 27 SDK); a test's `working` hook checks neither runs on the main thread (LabSourceTests, US-25 AC21).
   - **The upload runner (2026-11-15, US-52 AC7e, shared upload PR 14; the live path for a file from Files since PR 15).** `UploadRunner` (an actor) holds the engine's upload state as text and steps it with `uploadStepJson`, one event at a time: events queue in arrival order and the first caller steps them all, so no two steps start from one state. The state is split from its effects inside JavaScript (`UploadDoors.splitScript`), so Swift never re-writes a number in it. Each effect runs in its own task (`list`, `hash`, `convert` on `LabFileReader.Held`; `send` through `LabReadSender`; `abort` cancels the send's task; `forget`; `save` runs the save door, PR 15); the engine limits them, the runner adds no limit or retry. The view (`uploadViewJson`) is computed on the engine's queue, at most one a frame, latest state wins, and published to `UploadModel`, one `@MainActor` state: unavailable (an engine without the doors: the sheet says the pick was not read), starting, drawn, or refused. `AppAttestClient.open` answers a refusal instead of throwing it; the lock still spans signing to headers, which lab-read sends once the counter is spent, so five reads stream at once. A waiter cancelled before its turn leaves the queue and never signs (chat too: a chat cancelled while waiting now throws at once, where it used to sign, then fail). A send has two clocks: 600 s to its headers, 120 s from them. A refused step stops the run and stays on the screen until the next pick. A failed file's `line` in the view can carry a server's or a proxy's own words (the gate's `error`, trimmed and at most 200 characters): the review page draws it as plain text, never as markup or a link.
@@ -1858,9 +1858,12 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
   - `Onboarding/`: the new-user flow (D12, US-54). `OnboardingSteps` (which questions,
     resume, region units, Health's sex and birth month and year), `TypedAnswer` (a typed
     height or weight and its entry-only unit switch), `OnboardingFlow` (the flow's one named
-    state, below), `OnboardingView` and `OnboardingPage` (one screen's layout). The tour after it (US-57): `TourTips` (three TipKit tips, one
-    line each; `TourSetup` configures TipKit at launch and hides it under `--ui-testing`
-    unless `--show-tips`) and `CloudPrompt` (the one backup offer after the third own save).
+    state, below), `OnboardingView` and `OnboardingPage` (one screen's layout). The tour after it (US-57): `TourState` (the tour's one
+    state and its pure `transition`; `TourSight`, the facts My health's list reports), `TourTips`
+    (`TourGuide`, which runs it; the three tips, one line each, as the app's own popovers; the step kept
+    in TipKit's store; `TourSetup` hides the tour under `--ui-testing` unless `--show-tips`), `TourList`
+    (the list's side: on screen, at rest, its anchors, the scroll) and `CloudPrompt` (the one backup
+    offer after the third own save). Why: § The tour's one state, below.
   - `Engine/`: `HealthEngine.swift` loads the bundle into a `JSContext` and awaits its
     Promises; `EngineNatives.swift` is the bridge (D2); `PhoneFiles.swift` the phone's copy
     of the health record and pending marker the natives read and write; `EngineHTTP.swift` its network
@@ -1903,7 +1906,12 @@ accent buttons carry black text (`OnAccent`, dimmed when disabled). Controls car
     Charts, scrubbing, the VoiceOver chart descriptor, the medication markers and their
     list, `MedicationMarkerList`), `ChartRange` (which ranges to
     offer), `MetricEntrySheet` (picks `BloodPressureSheet` or `ValueEntrySheet`) and
-    `FeetInchesSheet`.
+    `FeetInchesSheet`. `SystolicAdvance` is the blood pressure sheet's move from systolic to
+    diastolic (US-02 AC12, root fix R30): one state (idle, asking, pausing) and a pure
+    `transition`; the rule is health-core's `bpSysAdvance`, asked of the engine for each systolic
+    typed through the optional door of that name (bridge id unchanged), never copied into Swift.
+    The sheet runs what the state asks for in `.task(id:)`, so a newer state cancels the question
+    or the pause. Only the 800 ms pause is a Swift constant (the web's `useAutoAdvance`).
   - `Reminders/`: on-device reminders (D7). `PhoneReminders` is the engine's answer,
     `ReminderScheduler` keeps the pending notifications equal to it behind
     `NotificationScheduling` (a fake in the tests), `ReminderTaps` sends a tap to My plan,
@@ -2159,7 +2167,38 @@ by name in one place (`RecordEdit.labAddName`); an engine without the door lists
 own tests only. About you, units, alcohol, reminders, Apple Health and the record sit in a
 settings sheet behind the person button; its close lets a due backup offer show (US-57 AC8).
 The review prompt waits for a plan card on screen (US-25 AC10). The tour's three tips anchor on
-the tab in Brad's words (US-57, approved 2026-11-05). Clarity's screen is "My health", with two
+the tab in Brad's words (US-57, approved 2026-11-05).
+
+**The tour's one state (2026-11-27, US-57 AC12).** Tip 3 failed twice under timing patches (a
+late attach after a 700 ms sleep, then a second scroll after one), because TipKit decided when a
+tip showed: a `popoverTip` presents on its own when its rules turn true, and on iOS 27.2 one whose
+row is created after that never presents. My health's list creates the Blood tests row only when
+it scrolls near. Worse, TipKit's wrapper hid the heading's scroll id, so the scroll to it did
+nothing: on main it failed 10 of 10 (docs/gotchas.md). Now the app owns it.
+`TourState` (`notStarted | waiting(step) | bringing(step) | showing(step) | leaving(step, then) | finished`) changes
+only through its pure `transition`, with a table test. A due tip shows when the list reports, through
+`TourSight`, that its anchor is on screen and the list is at rest (`onScrollPhaseChange` for the
+person's and iOS's scrolls, iOS 18+; below that, never known). Off screen at rest, it scrolls the
+anchor in (`bringing`) and shows the tip once the anchor has arrived: it sits where the scroll puts
+it (top or middle), or the list can go no further that way, read from the scroll geometry
+(`onScrollGeometryChange`, iOS 18+). Three things were measured on iOS 27.2 first: the scroll phase
+does not report a scroll the app starts; `withAnimation`'s completion fires at once for a List (it
+looped); and an instant `scrollTo` into the lazy list lands short of a row not yet drawn, so only an
+animated scroll reaches Blood tests. No iOS 17 runtime was run: there the list reports neither the
+scroll phase nor its geometry, so a tip shows once its anchor is on screen, possibly while the
+person's own scroll still moves. A tip waits while anything else is presented in the window, read from
+the window. A step saved by an earlier build ends at the upgrade (`Tour.keptByThisBuild`, owner
+ruling); one this build saved resumes. "Where the scroll puts it" has 12 points of slack: the row ends 5
+points above the list's edge (section spacing). Below iOS 18 the anchor on screen counts as arrived.
+A tip also waits while the first-run cover slides away: a scroll asked for then did nothing. A scroll to the top from a tap by the clock, the person's own scroll or a redraw never
+loses a due tip. The next tip, and tip 3's
+upload, wait in `leaving` until the popover's view has gone, so two presentations never overlap. No
+timer decides anything. The popover is SwiftUI's own (`.popover`, compact adaptation `.popover`):
+a tap outside only dismisses it, as Apple's popovers do, and counts as closed. TipKit only keeps
+the step (`Tour.step`, the same parameter as before, so a phone mid-tour resumes), in the store that
+already has the demo record's folder and the UI tests' fresh start. Rejected: driving TipKit's
+`popoverTip` from the state (its presentation stays TipKit's, the part that failed), and a full-screen
+overlay (it would hide the row the tip explains and needs its own VoiceOver focus handling). Clarity's screen is "My health", with two
 new events, "Jump pill tapped" and "Blood test added" (D9, Brad 2026-11-05). Sleep and Fitness
 read Apple Health in their own view, so a live refresh never rebuilds the list.
 
@@ -2173,8 +2212,12 @@ SwiftUI text by `DocumentText` (no web view; links lose their target, since the 
 uploaded file), and "View original file", which reads the original by document id through the
 optional door `documentOriginal` (`RecordStore.original(of:)`, only with a cloud open) into a
 temporary file for Quick Look, removed when the preview closes; the read is cancelled if the page
-goes, and `DocumentPage.sweep` clears leftovers when a page opens. Only the web's passive kinds open
-(`DocumentPage.previewName`, mirroring `file-kinds.ts` `VIEWABLE_TYPES`, US-14 AC3). The engine
+goes, and `DocumentPage.sweep` clears leftovers when a page opens. Only the web's passive kinds open,
+by one rule both clients use (health-core `file-kinds.ts` `originalPreview`, US-14 AC14): the engine
+sends each original's `previewName`, and Swift keeps no table; with no name (an older engine) nothing
+opens, stricter than the rule, never looser. The engine's `original.previewName` is the only rule
+for which originals open, so Android can share it: the phone keeps no second list, and the engine's
+signature is the trust root for this field, as for everything else the phone shows (PR 2204 review R1). The engine
 completes legacy rows with the web's defaults and Swift decodes the list row by row (review R1). No delete on the phone yet: the engine has no
 document delete door, and the web's delete is its store's own tombstone (Brad's call).
 

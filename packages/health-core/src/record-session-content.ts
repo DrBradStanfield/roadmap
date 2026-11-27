@@ -6,6 +6,7 @@
  */
 import { eraseOf } from './erase-identity';
 import { CLOCK_KEYS } from './merge';
+import { activeAddresses, addressKey, shownOptIn } from './reminder-rows';
 import { stableStringify, type RoadmapFile } from './roadmap-file';
 
 /** The record minus its own clocks — what a person would call a change. Keys
@@ -29,10 +30,13 @@ export function visibleContentOf(file: RoadmapFile): string {
   // The erase list is bookkeeping too, and so is the version it raises: a
   // change to them alone is nothing a person sees (US-09 AC23). The erase
   // itself is: it drops the chat's banners (US-16 AC2a).
-  const { meta: _clocks, erasedRows: _list, schemaVersion: _version, ...rest } = file;
+  const { meta: _clocks, erasedRows: _list, schemaVersion: _version, reminderOptIn, ...rest } = file;
   const seen: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(rest)) {
     seen[key] = Array.isArray(value) ? value.map((row) => stableStringify(row, CLOCK_KEYS)).sort() : value;
   }
+  // Of the opt-in, what the reminders control shows: the shown row and every
+  // active address. Any other row is bookkeeping (US-17 AC19).
+  if (reminderOptIn) seen.reminderOptIn = { shown: shownOptIn(file), addresses: activeAddresses(file).map(addressKey).sort() };
   return stableStringify([eraseOf(file), seen], CLOCK_KEYS);
 }

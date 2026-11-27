@@ -1,5 +1,5 @@
 // The one source of a value's grade, as the web's grids and phone rows colour
-// it and the iPhone's My data rows colour it too (US-62 AC8, US-25 AC17):
+// it and the iPhone's My health rows colour it too (US-62 AC8, US-25 AC17):
 // ok, amber (warn) or red (bad), and the words a screen reader says off
 // target. Moved here unchanged from the widget (blood-test-cell.ts statusOf,
 // StartingInfoVitals.tsx's vitals grades, MyDataRows.tsx gradeWords) so both

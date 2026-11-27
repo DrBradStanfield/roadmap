@@ -121,7 +121,7 @@ final class DataEraser {
     @discardableResult
     func eraseAll() async -> Outcome {
         guard Self.transition(phase, .started) == .erasing, !erasing else {
-            return .refused(erasing ? "An erase is already running." : "The last erase's words have not been seen yet.")
+            return .refused(erasing ? "Your data is already being deleted." : "The result of the last deletion has not been seen yet.")
         }
         send(.started)
         let outcome = await erase()

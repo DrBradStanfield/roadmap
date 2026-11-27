@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { deleteDocument, getShownErase, readDocumentFile } from '../lib/roadmap-data';
 import { DOCUMENT_TYPE_LABELS } from '@roadmap/health-core/document-path';
 import { formatDocumentDate } from '../lib/document-format';
-import { viewableType } from '../lib/file-kinds';
+import { originalPreview } from '@roadmap/health-core/file-kinds';
 import type { ApiDocument } from '../lib/api-types';
 import { renderMarkdown } from '../lib/markdown';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -59,9 +59,9 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
       return;
     }
     sendOriginal('opened');
-    // Only a vetted passive type opens in a tab; anything else (an SVG, HTML)
-    // would run script with this page's origin, so it downloads (US-14 AC3).
-    const type = viewableType(doc.fileRef, blob.type);
+    // Only a vetted passive type opens in a tab, re-typed by the shared table; anything else
+    // (an SVG, HTML) would run script with this page's origin, so it downloads (US-14 AC3, AC14).
+    const type = originalPreview(doc.fileRef, doc.mimeType ?? null, blob.type)?.type;
     const url = URL.createObjectURL(new Blob([blob], { type: type ?? 'application/octet-stream' }));
     if (type) {
       window.open(url, '_blank', 'noopener');

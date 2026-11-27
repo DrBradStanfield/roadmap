@@ -18,6 +18,7 @@ vi.mock('../lib/build-flags', () => ({ SHOPIFY_SURFACE: false }));
 vi.mock('../lib/assistant-config', () => ({ getSkipEmailGate: () => false }));
 vi.mock('./FeedbackForm', () => ({ FeedbackForm: () => null }));
 import { PlanHost as ResultsPanel } from '../testing/plan-host';
+import { PlanTile } from './PlanCards';
 
 afterEach(cleanup);
 
@@ -74,15 +75,18 @@ describe('US-07 AC16: a snapshot tile with evidence from the keyboard', () => {
   it('the LDL tile is a focusable control that Enter and Space open and close', () => {
     const view = plan();
     const ldl = tile(view, 'LDL Cholesterol');
-    expect(ldl.getAttribute('role')).toBe('button');
-    expect(ldl.tabIndex).toBe(0);
-    expect(ldl.getAttribute('aria-expanded')).toBe('false');
-    expect(key(ldl, 'Enter')).toBe(false);
+    const control = within(ldl).getByRole('button'); // the tile's title (US-07 AC16a)
+    expect(control.tabIndex).toBe(0);
+    // The focus stop is the title alone; the tile itself is no control.
+    expect(ldl.hasAttribute('tabindex')).toBe(false);
+    expect(ldl.hasAttribute('aria-expanded')).toBe(false);
+    expect(control.getAttribute('aria-expanded')).toBe('false');
+    expect(key(control, 'Enter')).toBe(false);
     expect(ldl.querySelector('.stat-detail')).not.toBeNull();
-    expect(ldl.getAttribute('aria-expanded')).toBe('true');
-    expect(key(ldl, ' ')).toBe(false);
+    expect(control.getAttribute('aria-expanded')).toBe('true');
+    expect(key(control, ' ')).toBe(false);
     expect(ldl.querySelector('.stat-detail')).toBeNull();
-    expect(key(ldl, 'a')).toBe(true);
+    expect(key(control, 'a')).toBe(true);
     expect(ldl.querySelector('.stat-detail')).toBeNull();
   });
 
@@ -106,11 +110,51 @@ describe('US-07 AC16: a snapshot tile with evidence from the keyboard', () => {
     expect(plain.length).toBeGreaterThan(0);
     for (const c of plain) {
       expect(c.getAttribute('role')).toBeNull();
+      expect(within(c).queryByRole('button')).toBeNull();
+      expect(c.querySelector('[aria-labelledby]')).toBeNull();
       expect(c.hasAttribute('tabindex')).toBe(false);
+      expect(c.querySelector('[tabindex]')).toBeNull();
       expect(c.hasAttribute('aria-expanded')).toBe(false);
       expect(key(c, 'Enter')).toBe(true);
       expect(c.querySelector('.stat-detail')).toBeNull();
     }
+  });
+});
+
+describe("US-07 AC16a: an open tile's links are not inside its button", () => {
+  const ldlButton = (view: ReturnType<typeof plan>) => view.getByRole('button', { name: /^LDL Cholesterol/ });
+
+  it("the open tile's links stay links outside every button, and its button names only the tile", () => {
+    const view = plan();
+    const button = ldlButton(view);
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(key(button, 'Enter')).toBe(false);
+    const tile = button.closest('.stat-card') as HTMLElement;
+    expect(within(tile).getAllByRole('link').length).toBeGreaterThan(0);
+    for (const b of view.getAllByRole('button')) expect(within(b).queryAllByRole('link')).toHaveLength(0);
+    const name = 'LDL Cholesterol 4.9 mmol/L High';
+    expect(view.getByRole('button', { name, expanded: true })).toBe(button);
+    expect(key(button, ' ')).toBe(false);
+    expect(view.getByRole('button', { name, expanded: false })).toBe(button);
+    expect(tile.querySelector('.stat-detail')).toBeNull();
+  });
+
+  it('a tile with evidence and no status is named by its title and value', () => {
+    const evidence = { reason: 'Synthetic reason.', guidelines: [], references: [{ label: 'Synthetic ref', url: 'https://example.org/ref' }] };
+    const view = render(<PlanTile tile={{ key: 'bmi', label: 'Synthetic Tile', value: '7', unit: 'u', about: 'Synthetic.', evidence }}/>);
+    expect(view.container.querySelector('.stat-status')).toBeNull();
+    fireEvent.click(view.getByRole('button', { name: 'Synthetic Tile 7 u', expanded: false }));
+    expect(view.getByRole('link', { name: 'Synthetic ref' })).toBeTruthy();
+    expect(view.getByRole('button', { name: 'Synthetic Tile 7 u', expanded: true })).toBeTruthy();
+  });
+
+  it('a click anywhere on the tile still opens and closes it', () => {
+    const view = plan();
+    const tile = ldlButton(view).closest('.stat-card') as HTMLElement;
+    fireEvent.click(tile.querySelector('.stat-value')!);
+    expect(tile.querySelector('.stat-detail')).not.toBeNull();
+    fireEvent.click(ldlButton(view));
+    expect(tile.querySelector('.stat-detail')).toBeNull();
   });
 });
 
