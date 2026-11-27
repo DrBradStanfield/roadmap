@@ -41,11 +41,11 @@ async function opened() {
   const reminders = await import('./reminders');
   await data.initRoadmapStore(new MemoryAdapter(new MemoryCloud()));
   data.markEraseShown(data.getEraseIdentity());
-  expect(data.setReminderOptIn(OPT_IN, data.getShownErase())).toBe(true);
+  expect(data.setReminderRows([OPT_IN], data.getShownErase())).toBe(true);
   const eraseMeanwhile = async () => {
     expect((await data.deleteUserData()).success).toBe(true);
     data.markEraseShown(data.getEraseIdentity());
-    expect(data.setReminderOptIn(OPT_IN, data.getShownErase())).toBe(true);
+    expect(data.setReminderRows([OPT_IN], data.getShownErase())).toBe(true);
     await data.flushRoadmapStore(); // the save stamps the record's clock: settled before the snapshot
     return JSON.stringify(data.recordFileSync());
   };

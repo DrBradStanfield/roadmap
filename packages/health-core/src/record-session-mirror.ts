@@ -5,19 +5,24 @@
  * function on the session, which keeps a one-line method for each.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
-import { ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from './adapter';
 import { eraseIdentityOf } from './erase-identity';
 import { mergeFiles } from './merge';
 import type { DeviceMirror, RecordHost, SyncStorage } from './record-host';
 import type { RecordSession } from './record-session';
 import { contentOf } from './record-session-content';
-import { ROADMAP_DOC } from './roadmap-doc';
+import { recordSync, ROADMAP_DOC } from './roadmap-doc';
+import type { RoadmapFile } from './roadmap-file';
+import type { SaveResult, SyncContext } from './sync-manager';
 
 /** The device copy's revision on a cloud whose copy has a synchronous path;
  *  undefined on any other host (US-06 AC13). */
 export function deviceCopyRevision(host: RecordHost): string | null | undefined {
   return host.tier === 'cloud' ? host.mirror.sync?.revision(ROADMAP_FILE_NAME) : undefined;
 }
+
+/** What the erase's teardown reads of the copy a write landed in (US-11 AC15). */
+export const landedOf = (file: RoadmapFile) => ({ epoch: file.meta.eraseEpoch ?? 0, optIn: file.reminderOptIn });
 
 /** After a failed device write past an erase's swap: whether the device copy
  *  may carry this erase or a later one, read from the copy itself so a retry
@@ -26,7 +31,8 @@ export function deviceCopyRevision(host: RecordHost): string | null | undefined 
  *  cannot be read: true, unknown errs toward the cancel. A copy that cannot
  *  be parsed or migrated: false, since the mirror write reads and migrates it
  *  before writing, so it was never replaced. Otherwise its migrated epoch at
- *  or past the erased record's. */
+ *  or past the erased record's; then that copy's opt-in is the one the erase's
+ *  teardown reads (`landedOptIn`). */
 export function deviceCopyHoldsErase(s: RecordSession): boolean {
   const sync = s.host.tier === 'cloud' ? s.host.mirror.sync : undefined;
   if (!sync) return false;
@@ -38,7 +44,11 @@ export function deviceCopyHoldsErase(s: RecordSession): boolean {
   }
   if (body == null) return false;
   try {
-    return (ROADMAP_DOC.migrate(body, s.ctx()).meta.eraseEpoch ?? 0) >= (s.current.meta.eraseEpoch ?? 0);
+    const landed = landedOf(ROADMAP_DOC.migrate(body, s.ctx()));
+    if (landed.epoch < (s.current.meta.eraseEpoch ?? 0)) return false;
+    // The copy that holds the erase is where it stands: the teardown spares its active tokens (US-11 AC15).
+    s.landedOptIn = landed;
+    return true;
   } catch {
     return false;
   }
@@ -132,4 +142,15 @@ export function coveredCopySession(s: RecordSession, sync: SyncStorage, preErase
   } catch {
     return null;
   }
+}
+
+/**
+ * Merge a raw record body into `target` (migrate + read-merge-write). The one
+ * cross-store transfer: the failure mirror, the connect-time lift-up and the
+ * pre-switch copy-down all go through it. Moved here from record-session.ts
+ * (file budget); it asks `recordSync` through the module, so a test can
+ * watch the builder; it answers what landed, for the erase's teardown (US-11 AC15).
+ */
+export async function saveRecordInto(target: StorageAdapter, body: unknown, ctx: SyncContext): Promise<SaveResult<RoadmapFile>> {
+  return recordSync(target, ctx.deviceId, ctx.now).save(ROADMAP_DOC.migrate(body, ctx));
 }

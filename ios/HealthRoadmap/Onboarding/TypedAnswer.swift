@@ -2,7 +2,7 @@ import Foundation
 
 /// A typed height or weight on its onboarding screen (US-54 AC6). Its unit switch is for
 /// entry only: the box keeps its own text and units and never writes the record's, which
-/// come from the region default and change in My data's Units row. Every conversion is the
+/// come from the region default and change in the Units row in Settings. Every conversion is the
 /// engine's (`convertJson`, health-core's factors), awaited off the main thread (US-25 AC21).
 /// Pure apart from that, so OnboardingStepsTests checks it.
 struct TypedAnswer: Equatable {

@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H434,health-core,hasUnsavedProfileEdits has no caller outside its tests,surplus code,not started,"Filed 2026-11-27. packages/health-core/src/mappings.ts:121 exports hasUnsavedProfileEdits; git grep finds no caller outside packages/health-core/src/mappings.test.ts and docs (US-34 AC4 says profileForm took its place at AC13). It is health-core, not Swift; the iPhone engine bundle carries it only because the bundle includes mappings.ts. Delete it with its tests and update US-34 AC4.",,no

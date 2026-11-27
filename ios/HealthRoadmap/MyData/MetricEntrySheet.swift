@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Adds a value to one metric (US-25 AC5, AC17): systolic and diastolic side by
-/// side for blood pressure, one number otherwise. Opened from My data and the
+/// side for blood pressure, one number otherwise. Opened from My health and the
 /// metric page's "+".
 struct MetricEntrySheet: View {
     let store: RecordStore

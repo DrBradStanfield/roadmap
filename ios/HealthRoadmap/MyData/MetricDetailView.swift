@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One metric's page, pushed from My data (US-25 AC9, AC17), laid out as Apple
+/// One metric's page, pushed from My health (US-25 AC9, AC17), laid out as Apple
 /// Health's (Brad 2026-10-23: "just copy what Apple Health have done"): "+" at
 /// the top, the range picker, the latest value large with its day, a chart that
 /// opens on the newest value and scrolls back, then Show All Data and Unit, then
@@ -50,7 +50,7 @@ struct MetricDetailView: View {
         _chartRead = State(initialValue: .reading(revision: store.revision))
     }
 
-    /// What Add Data and the "+" open: the entry sheet for the metric as My data shows it now.
+    /// What Add Data and the "+" open: the entry sheet for the metric as My health shows it now.
     static func adding(_ row: MyData.Row, in store: RecordStore) -> Editing {
         .add(live(row, in: store) ?? row, store.screen)
     }
@@ -162,7 +162,7 @@ struct MetricDetailView: View {
         return live(row, in: data)?.latest != nil
     }
 
-    /// This metric's row in My data now, so a units switch shows at once; a lab test's too (US-25 AC25).
+    /// This metric's row in My health now, so a units switch shows at once; a lab test's too (US-25 AC25).
     static func live(_ row: MyData.Row, in store: RecordStore) -> MyData.Row? {
         store.myData.flatMap { live(row, in: $0) }
     }
@@ -326,7 +326,7 @@ private struct AllDataView: View {
                         }
                     }
                 } footer: {
-                    Text("Tap a value to correct it. The old value stays in your record, struck through and marked as entered in error.")
+                    Text("Tap a value to correct it. The old value stays in your record, struck through and kept as a mistake.")
                 }
             }
         }
@@ -398,7 +398,7 @@ private struct HistoryRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(DayText.short(row.day))
                 if !row.isActive {
-                    Text("Entered in error").font(.caption).foregroundStyle(.secondary)
+                    Text("Kept as a mistake").font(.caption).foregroundStyle(.secondary)
                 } else if row.current && excluded {
                     Text("Not used: outside the range your plan accepts").font(.caption).foregroundStyle(.orange)
                 } else if let note = row.note {
@@ -421,7 +421,7 @@ private struct HistoryRow: View {
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(row.isActive ? "\(row.value) \(shownUnit), \(DayText.short(row.day))" : "Entered in error: \(row.value) \(shownUnit), \(DayText.short(row.day))")
+        .accessibilityLabel(row.isActive ? "\(row.value) \(shownUnit), \(DayText.short(row.day))" : "Kept as a mistake: \(row.value) \(shownUnit), \(DayText.short(row.day))")
     }
 
     /// The row's own unit in a lab series reported in more than one, else the page's.

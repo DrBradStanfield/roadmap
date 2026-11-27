@@ -296,6 +296,15 @@ describe('docs/health-roadmap-file.schema.json (US-29)', () => {
     expect(check({ ...file, meta: { ...file.meta, erasedAt: 5 } }).ok).toBe(false);
   });
 
+  it('US-11 AC15: an erase marker may name no provider; any other opt-in still must', () => {
+    const marker = { status: 'cancelled', token: '', email: '', updatedAt: '2026-11-27T00:00:00.000Z', lamport: 1 };
+    const base = createEmptyFile(OPTS);
+    expect(check({ ...base, reminderOptIn: marker }).errors).toBe('No errors');
+    expect(check({ ...base, reminderOptIn: { ...marker, token: 'test-token-good' } }).ok).toBe(false);
+    expect(check({ ...base, reminderOptIn: { ...marker, status: 'active' } }).ok).toBe(false);
+    expect(check({ ...base, reminderOptIn: { ...marker, provider: 'dropbox' } }).errors).toBe('No errors');
+  });
+
   it('US-09 AC23, US-66 AC15: a listed erase carries erasedRows through merge + migrate, at 2, or 3 beside a core row', () => {
     const erased = createEmptyFile(OPTS);
     erased.schemaVersion = 2;

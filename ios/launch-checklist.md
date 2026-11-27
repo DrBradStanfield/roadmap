@@ -109,6 +109,9 @@ by the orchestrator, not a fresh reviewer.
      the external test group or sent to beta review: Brad's step in App Store Connect.
    - **Build 11** (0.2) was uploaded 2026-11-11. **Build 12** (0.2) carries the Needs-attention
      banner's corners and the My health footer's clearance (US-73) and is the resubmission.
+   - **Build 15** is version 0.3 (PRs 2180 and 2190, 2026-11-27), in TestFlight only. Archived 27 Nov from
+     511eb0b10 (the merged tour PR 2209); it waits for Brad's TestFlight upload. While a build is
+     being cut, contributor PRs on `ios/` and engine paths wait (docs/git-workflow.md).
    - **Next release: new screenshots and app video (Brad 2026-10-29, don't forget).** App
      Store Connect locks screenshots and app previews while a version waits for review, so
      0.1 went out with the old five plain captures. With the next version, replace them with:

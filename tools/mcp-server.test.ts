@@ -125,6 +125,17 @@ describe('US-32 — the JSON-RPC handshake', () => {
     expect((await call(path, 'delete_everything')).result?.isError).toBe(true);
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it('US-32 AC1a: answers a name every object carries as an unknown tool, and leaves the file alone', async () => {
+    const { dir, path } = writeFixture(fixture());
+    const before = readFileSync(path, 'utf8');
+    for (const name of ['toString', 'constructor', '__proto__', 'hasOwnProperty']) {
+      expect(await call(path, name), name).toEqual({ jsonrpc: '2.0', id: 1, result: { content: [{ type: 'text', text: `No tool named ${name}.` }], isError: true } });
+    }
+    expect(readFileSync(path, 'utf8')).toBe(before);
+    expect(readdirSync(dir)).toEqual(['health-roadmap.json']);
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
 
 describe('US-32 — tools/call against a real file', () => {

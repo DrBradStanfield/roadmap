@@ -23,14 +23,14 @@ function useOpenEvidence(key: string): [boolean, () => void] {
 }
 
 /** A control that opens a card's evidence by mouse or keyboard (US-07 AC16):
- *  focusable, says whether it is open, and Enter or Space toggles it. Enter or
- *  Space on a link inside an open tile is left to the link. Without `toggle`, nothing. */
-function evidenceToggle(open: boolean, toggle: (() => void) | undefined) {
+ *  focusable, says whether it is open, and Enter or Space toggles it. It holds
+ *  only text, never a link (US-07 AC16a). Without `toggle`, nothing. */
+function evidenceToggle(open: boolean, toggle: (() => void) | undefined, labelledBy?: string) {
   if (!toggle) return {};
   return {
-    role: 'button', tabIndex: 0, 'aria-expanded': open, onClick: toggle,
+    role: 'button', tabIndex: 0, 'aria-expanded': open, 'aria-labelledby': labelledBy, onClick: toggle,
     onKeyDown: (e: React.KeyboardEvent) => {
-      if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+      if (e.key !== 'Enter' && e.key !== ' ') return;
       e.preventDefault(); // Space would scroll the page
       toggle();
     },
@@ -46,12 +46,15 @@ function StatCard({ openKey, label, value, status, evidence }: {
 }) {
   const [open, toggle] = useOpenEvidence(openKey);
   const hasDetail = !!evidence;
+  const id = useId();
+  // The title is the button, named by the title, value and status, so the open
+  // tile's links sit outside it (US-07 AC16a). A click anywhere on the tile toggles.
+  const { onClick, ...control } = evidenceToggle(open, hasDetail ? toggle : undefined, `${id}l ${id}v ${id}s`);
   return (
-    <div className={`stat-card${hasDetail ? ' stat-card-clickable' : ''}${open ? ' stat-card-open' : ''}`}
-         {...evidenceToggle(open, hasDetail ? toggle : undefined)}>
-      <span className="stat-label">{label}</span>
-      <span className="stat-value">{value}</span>
-      {status?.label && <span className={`stat-status ${status.className}`}>{status.label}</span>}
+    <div className={`stat-card${hasDetail ? ' stat-card-clickable' : ''}${open ? ' stat-card-open' : ''}`} onClick={onClick}>
+      <span className="stat-label" id={`${id}l`} {...control}>{label}</span>
+      <span className="stat-value" id={`${id}v`}>{value}</span>
+      {status?.label && <span className={`stat-status ${status.className}`} id={`${id}s`}>{status.label}</span>}
       {hasDetail && open && (
         <div className="stat-detail">
           <p className="stat-detail-text">{evidence.reason}</p>

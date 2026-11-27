@@ -86,6 +86,9 @@ export interface SaveResult<T> {
   attempts: number;
   /** The adapter's note on the write that landed (`WriteResult.warning`). */
   warning?: string;
+  /** What the check after the write read back, when it ran: the written file
+   *  plus whatever another writer added meanwhile (US-11 AC15). */
+  verified?: T;
 }
 
 export interface SyncOptions {
@@ -134,8 +137,8 @@ export class SyncManager<T extends SyncedFile> {
           const { version: newVersion, warning } = await this.adapter.write(this.doc.fileName, merged, version, signal);
           mayHaveWritten = true;
           landedWarning = warning;
-          if (this.doc.verify !== false) await this.verifyAfterWrite(merged, signal);
-          return { file: merged, version: newVersion, attempts: attempt, ...(warning ? { warning } : {}) };
+          const verified = this.doc.verify !== false ? await this.verifyAfterWrite(merged, signal) : undefined;
+          return { file: merged, version: newVersion, attempts: attempt, ...(warning ? { warning } : {}), ...(verified ? { verified } : {}) };
         } catch (error) {
           lastError = error;
           if (error instanceof LostUpdateError) mayHaveWritten = true;
@@ -193,7 +196,7 @@ export class SyncManager<T extends SyncedFile> {
    * concurrent newer write (lamport advanced) — that's not corruption. Throws
    * only if the file is gone, unparseable, or its lamport regressed below ours.
    */
-  private async verifyAfterWrite(expected: T, signal?: AbortSignal): Promise<void> {
+  private async verifyAfterWrite(expected: T, signal?: AbortSignal): Promise<T> {
     const { body } = await this.adapter.read(this.doc.fileName, signal);
     if (body == null) {
       throw new StorageError(
@@ -212,6 +215,7 @@ export class SyncManager<T extends SyncedFile> {
       throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error, undefined, undefined, 'may-have-landed');
     }
     verifyPersistedFile(this.doc, expected, parsed, this.ctx());
+    return parsed;
   }
 }
 

@@ -1,7 +1,7 @@
 import AuthenticationServices
 import SwiftUI
 
-/// The Sync screen (US-25 AC11e), opened from My data's About you line: what sync does,
+/// The Sync screen (US-25 AC11e), opened from My health's Sync button: what sync does,
 /// where the record is, its state in plain words, Connect Dropbox or Google
 /// Drive, Sync now, Switch to another cloud, and Disconnect. Every action is CloudSync's; this view only
 /// draws and asks.

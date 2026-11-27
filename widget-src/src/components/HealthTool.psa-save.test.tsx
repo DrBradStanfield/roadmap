@@ -437,3 +437,58 @@ describe('hiding the tab waits for the date (US-06 AC15, Brad 2026-11-03: "Wait 
   });
 });
 
+
+// US-06 AC15a: a closing tab fires no blur, so a weight still focused in its
+// box is moved out first, as the PSA row is; its blur then saves as leaving does.
+describe('the tab closes with focus still in the weight box (US-06 AC15a)', () => {
+  it.each(['beforeunload', 'pagehide'] as const)('%s: the weight is on disk at once', async event => {
+    const { view, weight } = await pageWithWeight('82');
+    expect(document.activeElement).toBe(weight);
+    depart(event); // no blur first: browsers fire none
+    expect(rawActive('weight')).toEqual([[82, localDay(new Date())]]);
+    view.unmount();
+  });
+
+  it('beforeunload then pagehide: one weight write, one weight row', async () => {
+    const { view } = await pageWithWeight('82');
+    writes.length = 0;
+    act(() => {
+      window.dispatchEvent(new Event('beforeunload'));
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    view.unmount();
+    await wait(700);
+    expect(await all('weight')).toEqual([[82, localDay(new Date()), 'active']]);
+    expect(writes.filter(metric => metric === 'weight')).toEqual(['weight']);
+  });
+
+  it('a weight out of range (5 kg) is not saved, and stays in the box', async () => {
+    const { view, weight } = await pageWithWeight('82');
+    type(weight, '5');
+    depart('pagehide');
+    await wait(700);
+    expect(await active('weight')).toEqual([]);
+    expect(weight.value).toBe('5');
+    view.unmount();
+  });
+
+  it('a box the browser cannot read saves nothing (US-02 AC7)', async () => {
+    const { view, weight } = await pageWithWeight('82');
+    Object.defineProperty(weight, 'validity', { configurable: true, value: { ...weight.validity, badInput: true } });
+    fireEvent.change(weight, { target: { value: '' } }); // what a browser hands over for "8,,2"
+    depart('pagehide');
+    await wait(700);
+    expect(await active('weight')).toEqual([]);
+    view.unmount();
+  });
+
+  it('hiding the tab leaves the focused weight box alone; the close then saves it', async () => {
+    const { view, weight } = await pageWithWeight('82');
+    depart('visibilitychange');
+    expect(rawActive('weight')).toEqual([]);
+    expect(document.activeElement).toBe(weight);
+    depart('pagehide');
+    expect(rawActive('weight')).toEqual([[82, localDay(new Date())]]);
+    view.unmount();
+  });
+});

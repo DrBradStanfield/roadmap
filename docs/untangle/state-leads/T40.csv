@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T40,mcp import,fileDates is looked up by file name in a plain object; make it a Map,lead,not started,"Filed 2026-11-27. packages/health-core/src/mcp-import.ts:106 types fileDates as Record<string, string>, built with Object.fromEntries at :904 and read as bundle.fileDates?.[name] at :378. A Map reads only what was set, as PRs 2236 and 2238 did for other lookups by name.",,no

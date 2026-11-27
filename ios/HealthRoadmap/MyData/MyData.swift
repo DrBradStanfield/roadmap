@@ -14,7 +14,7 @@ struct MyData: Decodable {
         /// A US height in feet and inches, by health-core's `cmToFeetInches`; nil in metric (AC17).
         let feetInches: FeetInches?
         /// "Do you drink alcohol?" (US-60); nil when not answered, from an older engine, or
-        /// unreadable. Read leniently, so a value this app does not know never hides My data.
+        /// unreadable. Read leniently, so a value this app does not know never hides My health.
         var alcohol: Lenient<Alcohol>? = nil
     }
 
@@ -67,7 +67,7 @@ struct MyData: Decodable {
         /// The value's grade, as the web's row colours it (health-core's valueStatus, US-62 AC8):
         /// "warn" amber, "bad" red, "ok" plain; nil when ungraded, or from an older engine.
         var status: String? = nil
-        /// `status` as a grade; nil for an unknown word from a newer engine, so it never blanks My data.
+        /// `status` as a grade; nil for an unknown word from a newer engine, so it never blanks My health.
         var grade: Grade? { status.flatMap(Grade.init(rawValue:)) }
         /// The grade as VoiceOver says it after an off-target value ("above optimal", health-core's
         /// gradeWords); nil on target, ungraded, or from an older engine.
@@ -118,7 +118,7 @@ struct MyData: Decodable {
     /// "1,234" is read against (US-02 AC7); nil from an older engine. Read leniently.
     let inputRanges: Lenient<[String: [String: InputRange]]>?
     /// The letters and scan results listed at the foot of My health (US-73 AC12); nil from an
-    /// older engine, which lists none. Read leniently, so a bad list never blanks My data.
+    /// older engine, which lists none. Read leniently, so a bad list never blanks My health.
     var documents: Lenient<Documents>? = nil
 
     /// The engine's `documentShelf` (ios/engine/documents.ts): scan results, then letters and
@@ -143,6 +143,9 @@ struct MyData: Decodable {
             /// The file's name in the cloud, "2026-09-14 Cardiology follow-up.pdf".
             let name: String
             let mimeType: String
+            /// The name Quick Look may open it under, or nil when it may not open: health-core's
+            /// one rule (file-kinds.ts originalPreview, US-14 AC14). Nil from an older engine too.
+            var previewName: String? = nil
         }
 
         let id: String
@@ -174,7 +177,7 @@ struct MyData: Decodable {
 }
 
 /// The guides by key, read leniently (US-58 AC3): a malformed guide is left out, and a
-/// malformed map reads as none, so a bad over-the-air guide never blanks My data.
+/// malformed map reads as none, so a bad over-the-air guide never blanks My health.
 struct MetricGuides: Decodable {
     private let byKey: [String: MetricGuide]
 
@@ -222,7 +225,7 @@ struct MetricGuide: Decodable {
     }
 }
 
-/// One change the My data tab asks for (`Edit` in ios/engine/my-data.ts).
+/// One change the My health tab asks for (`Edit` in ios/engine/my-data.ts).
 /// Numbers are in the user's units; the engine stores SI.
 enum RecordEdit: Encodable, Equatable {
     case profile(sex: String? = nil, birthYear: Int? = nil, birthMonth: Int? = nil, height: Double? = nil)

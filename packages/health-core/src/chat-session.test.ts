@@ -611,3 +611,55 @@ describe('US-11 AC2e: a chat save already on its way lands before an erase or a 
     expect((await liveIn(store)).sort()).toEqual(['c1', 'c2']);
   });
 });
+
+describe('US-10 AC6a: a chat save retries from its own copy, not from the failed attempt (as before)', () => {
+  const live = async (cloud: MemoryCloud) => (await ChatSession.open(cloudHost(new MemoryAdapter(cloud)))).listConversations().map((c) => c.id);
+
+  it('a conversation the cap tombstoned in an attempt whose write conflicted is not carried into the retry', async () => {
+    class ConflictOnce extends MemoryAdapter {
+      before: (() => Promise<void>) | null = null;
+      async write(name: string, body: object, expected: string | null, signal?: AbortSignal) {
+        const run = this.before;
+        this.before = null;
+        if (run) await run();
+        return super.write(name, body, expected, signal);
+      }
+    }
+    const cloud = new MemoryCloud();
+    const store = new ConflictOnce(cloud);
+    const a = await ChatSession.open(cloudHost(store));
+    for (let i = 1; i <= 50; i++) await exchange(a, `c${String(i).padStart(2, '0')}`);
+    // Between this save's read and its write, another device deletes c02, so the
+    // retry has room for c01, which the first attempt's cap tombstoned.
+    store.before = async () => { await (await ChatSession.open(cloudHost(new MemoryAdapter(cloud)))).deleteConversation('c02'); };
+    await exchange(a, 'c51');
+    const ids = await live(cloud);
+    expect(ids).toContain('c01');
+    expect(ids).not.toContain('c02');
+    expect(ids).toHaveLength(50);
+  });
+
+  it('a verified delete retries from its own copy and the tombstones, so a live row only the failed attempt read is not written', async () => {
+    class OverwrittenOnce extends MemoryAdapter {
+      stale: object | null = null;
+      async write(name: string, body: object, expected: string | null, signal?: AbortSignal) {
+        const result = await super.write(name, body, expected, signal);
+        if (!this.stale) return result;
+        const stale = this.stale;
+        this.stale = null;
+        return super.write(name, stale, result.version);
+      }
+    }
+    const cloud = new MemoryCloud();
+    const store = new OverwrittenOnce(cloud);
+    const a = await ChatSession.open(cloudHost(store));
+    await exchange(a, 'c1');
+    const before = (await store.read('chat-history.json')).body as { meta: { lamport: number } };
+    // Another device adds b1; this page never sees it before its delete.
+    await exchange(await ChatSession.open(cloudHost(new MemoryAdapter(cloud))), 'b1');
+    // A stale writer that never held b1 lands over the delete's first write.
+    store.stale = { ...before, meta: { ...before.meta, lamport: before.meta.lamport + 10 } };
+    await a.deleteConversation('c1');
+    expect(await live(cloud)).toEqual([]);
+  });
+});

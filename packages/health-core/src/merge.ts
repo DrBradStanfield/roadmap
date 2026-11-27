@@ -55,17 +55,16 @@ import {
   type FileMedication,
   type FileSupplement,
   type FileReminderPreference,
-  type FileReminderOptIn,
   type FileDocument,
   type FieldStamped,
   type RoadmapProfile,
   type FileScreenings,
   type RecommendationSnapshot,
-  type SyncStamp,
 } from './roadmap-file';
 import type { MeasurementStatus } from './validation';
 import { isFoldRow, labRowSlot, v2FormOf } from './core-rows';
-import { clockOf, cmpClock, cmpStored, cmpStr, dayOf, laterStamp, latestStamp, stampInstant, type Clock } from './record-time';
+import { clockOf, cmpClock, cmpStored, cmpStr, dayOf, laterStamp, latestStamp, mergeByKey, stampInstant, type Clock } from './record-time';
+import { mergeOptIn } from './reminder-rows';
 // The time and stamp primitives live in record-time.ts; these keep the old import paths working.
 export { cmpStr, dayOf, daysBetween, laterStamp, latestDayOnEarth, latestStamp, localDay, stampInstant } from './record-time';
 
@@ -273,31 +272,6 @@ function mergeSlotted<T extends SlottableRow>(
 }
 
 /**
- * Recency for a mutable record: the clock order (`cmpClock`), then the
- * deterministic content tie-break. Returns true if `a` should win over `b`.
- */
-function stampIsNewer(a: SyncStamp, b: SyncStamp): boolean {
-  const order = cmpClock(clockOf(a), clockOf(b));
-  return order !== 0 ? order > 0 : stableStringify(a) > stableStringify(b);
-}
-
-/** Per-key last-write-wins for current-state lists (medications, supplements,
- *  prefs): of every row for a key, on either side or the same one, the newest
- *  by `stampIsNewer` stays and the others are not kept (US-10 AC15). */
-function mergeByKey<T extends SyncStamp>(
-  local: T[],
-  remote: T[],
-  keyOf: (row: T) => string,
-): T[] {
-  const map = new Map<string, T>();
-  for (const row of [...remote, ...local]) {
-    const existing = map.get(keyOf(row));
-    if (!existing || stampIsNewer(row, existing)) map.set(keyOf(row), row);
-  }
-  return [...map.values()].sort((a, b) => cmpStr(keyOf(a), keyOf(b)));
-}
-
-/**
  * Union two append-only change logs (medication/supplement history). Same
  * immutability rule as the slot rows, minus the slots: a history log has no
  * one-active-per-day contest to resolve, so a quarantined row is simply kept.
@@ -340,17 +314,6 @@ function mergeSnapshots(
     if (richer) map.set(snap.date, snap);
   }
   return [...map.values()].sort((a, b) => cmpStr(a.date, b.date));
-}
-
-/** The newer of two OPTIONAL singletons by `cmpClock`: present always
- *  beats absent. */
-export function pickNewerOptional<T extends SyncStamp>(
-  local: T | undefined,
-  remote: T | undefined,
-): T | undefined {
-  if (!local) return remote;
-  if (!remote) return local;
-  return stampIsNewer(local, remote) ? local : remote;
 }
 
 /** The keys of a field-stamped singleton that are its clocks, not its fields. */
@@ -688,9 +651,10 @@ export function mergeFiles(
     if (kept) {
       // `now: updatedAt` carries the max over BOTH metas into the re-merge —
       // the pruned copy wears the winner's meta, so the loser's own clock
-      // would otherwise be dropped here (the never-rewind guard above).
+      // would otherwise be dropped here (the never-rewind guard above). The
+      // winner's opt-in stands whole, as when nothing is rescued (US-17 AC19).
       const next = { ...opts, now: updatedAt };
-      return localWins ? mergeFiles(winner, kept, next) : mergeFiles(kept, winner, next);
+      return { ...(localWins ? mergeFiles(winner, kept, next) : mergeFiles(kept, winner, next)), reminderOptIn: winner.reminderOptIn };
     }
     return {
       ...winner,
@@ -706,7 +670,7 @@ export function mergeFiles(
     };
   }
 
-  return {
+  const merged = {
     // Spread both first so unknown/future top-level fields are preserved at
     // runtime (H7). Known fields below overwrite these.
     ...remote,
@@ -732,10 +696,7 @@ export function mergeFiles(
 
     profile: mergeFields<RoadmapProfile>(local.profile, remote.profile),
     screenings: mergeFields<FileScreenings>(local.screenings, remote.screenings),
-    reminderOptIn: pickNewerOptional<FileReminderOptIn>(
-      local.reminderOptIn,
-      remote.reminderOptIn,
-    ),
+    reminderOptIn: mergeOptIn(local.reminderOptIn, remote.reminderOptIn),
 
     measurements: mergeSlotted<FileMeasurement>(
       local.measurements,
@@ -750,6 +711,7 @@ export function mergeFiles(
     supplementHistory: unionLog<FileSupplement>(local.supplementHistory, remote.supplementHistory),
     documents: mergeDocuments(local.documents, remote.documents),
   } as RoadmapFile;
+  return { ...merged, schemaVersion: recordSchemaVersion(merged) }; // the merge that first writes opt-in `tokens` lifts it (US-17 AC19)
 }
 
 type KeyedLists = Pick<RoadmapFile, 'medications' | 'supplements' | 'reminderPreferences' | 'recommendationSnapshots'>;

@@ -38,12 +38,14 @@ case "$p" in
   pulls/7/update-branch) touch "$LOG.updated"; echo '{}';;
   pulls/7/commits*) [ "$(q .commitsError)" = true ] && { echo "HTTP 502" >&2; exit 1; }
     jq -c '.commits // [{sha:.head,author:{login:"DrBradStanfield"}}]' "$SCEN" | out;;
-  pulls/7/files) jq -c '.prFiles // []' "$SCEN" | out;;
+  pulls/7/files*) [ "$(q .filesError)" = true ] && { echo "HTTP 502" >&2; exit 1; }
+    jq -c '.prFiles // []' "$SCEN" | out;;
   pulls/7) k=0; [ -f "$LOG.merged" ] && { k=$(( $(cat "$LOG.reads" 2>/dev/null || echo 0) + 1 )); echo "$k" > "$LOG.reads"; }
     [ -f "$LOG.merged" ] && { [ "$(q .failMergeRead)" = true ] || [ "$k" -le "$(q '.failMergeReads // 0')" ]; } && { echo "HTTP 502" >&2; exit 1; }
     m=0; [ -f "$LOG.merged" ] && [ "$(q .staleMergeRead)" != true ] && [ "$k" -gt "$(q '.staleMergeReads // 0')" ] && m=1
     jq -c --argjson u $upd --argjson m $m '{state:"open",merged:($m==1),title:"t",body:(.prBody // "b"),user:{login:"u"},labels:[],
     commits:(.prCommitCount // ((.commits // [1]) | length)), merge_commit_sha:.mergeSha,
+    changed_files:(.prChangedFiles // ((.prFiles // []) | length)),
     head:{ref:"claude/x",repo:{full_name:"o/r"},sha:(if $u==1 then .newSha else .head end)}}' "$SCEN" | out;;
   issues/7/comments*) jq -c '.comments // [{user:{type:"Bot",login:"github-actions[bot]"},body:("VERDICT: APPROVE "+.head)}]' "$SCEN" | out;;
   commits/main) jq -c '{sha:.main}' "$SCEN" | out;;
@@ -468,6 +470,52 @@ describe("auto-ship claim 7 (US-46 AC5)", { timeout: 60_000 }, () => {
         expect(deploys(r.calls)).toEqual([`${DEPLOY} -f surfaces=all -f pages_sha=`]);
       }
       expect(afterMerge(run({}).calls)).toEqual([READ]);
+    });
+  });
+
+  // US-46 AC20 (Brad 2026-11-27, "make auto-ship refuse any PR that touches ios/"):
+  // an ios/ path anywhere in the paginated file list ends the run before the veto
+  // issue, with no merge; an unreadable or short list refuses too (fail closed).
+  describe("PRs that touch ios/ (US-46 AC20)", () => {
+    const file = (filename: string, previous_filename?: string) => ({ filename, previous_filename, additions: 1, deletions: 0 });
+    const IOS = "touches ios/: merged by hand through the session merge gate; the simulator run comes at the checkpoint — not shipping.";
+    const refusedWith = (over: Record<string, unknown>, line: string) => {
+      const r = run(over);
+      expect(r.code).toBe(0);
+      expect(merged(r.calls)).toEqual([]);
+      expect(r.calls).not.toContain("issue create");
+      expect(r.calls).not.toContain("workflow run");
+      expect(r.out).toContain(line);
+    };
+
+    it("asks for the file list with --paginate", () => {
+      const r = run({ prFiles: [file("a.ts")] });
+      expect(r.calls).toContain("api --paginate repos/o/r/pulls/7/files?per_page=100");
+      expect(merged(r.calls)).toHaveLength(1);
+    });
+    it("a changed, added or deleted file under ios/ refuses, wherever it sits in the list", () => {
+      const many = Array.from({ length: 400 }, (_, i) => file(`src/f${i}.ts`));
+      refusedWith({ prFiles: [file("ios/App/Main.swift")] }, IOS);
+      refusedWith({ prFiles: [...many, file("ios/engine/x.ts")] }, IOS);
+    });
+    it("a file renamed out of ios/ refuses", () => {
+      refusedWith({ prFiles: [file("docs/old.swift", "ios/App/Old.swift")] }, IOS);
+    });
+    it("the ios/ match ignores case", () => {
+      refusedWith({ prFiles: [file("IOS/HealthRoadmap/X.swift")] }, IOS);
+      refusedWith({ prFiles: [file("docs/x.swift", "Ios/HealthRoadmap/X.swift")] }, IOS);
+    });
+    it("a path that only contains ios/ further in, or starts with ios but not ios/, still ships", () => {
+      const r = run({ prFiles: [file("docs/ios/notes.md"), file("iosx/a.ts"), file("tools/ios-compile-paths.sh")] });
+      expect(merged(r.calls)).toEqual(["pr merge 7 -R o/r --merge --match-head-commit aaaa"]);
+      expect(r.out).not.toContain("touches ios/");
+    });
+    it("a file list that cannot be read refuses", () => {
+      refusedWith({ filesError: true }, "Could not list the PR's files — not shipping (the ios/ check fails closed).");
+    });
+    it("a file list shorter than the PR's changed_files refuses (an ios/ path could be missing)", () => {
+      refusedWith({ prFiles: [file("a.ts")], prChangedFiles: 3001 },
+        "File list does not hold every changed file — not shipping (the ios/ check fails closed).");
     });
   });
 });

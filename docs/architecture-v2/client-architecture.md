@@ -93,7 +93,7 @@ One JSON file per user. Append-only arrays are never mutated; corrections add a 
 
 ### The store + sync
 
-[RoadmapStore](../../widget-src/src/storage/roadmap-store.ts) owns the local record operations exposed by `roadmap-data.ts`, including: `getPrefillInputs()` (synchronous profile seed so a returning user's "Starting Info" renders collapsed on first paint), `getReportEmailCaptured()/markReportEmailCaptured()`, `getReminderOptIn/setReminderOptIn/computeReminderScheduleNow`, and `flush()/flushSync()`. `app.tsx` awaits `initRoadmapStore` before render.
+[RoadmapStore](../../widget-src/src/storage/roadmap-store.ts) owns the local record operations exposed by `roadmap-data.ts`, including: `getPrefillInputs()` (synchronous profile seed so a returning user's "Starting Info" renders collapsed on first paint), `getReportEmailCaptured()/markReportEmailCaptured()`, `getReminderOptIn/setReminderRows/computeReminderScheduleNow`, and `flush()/flushSync()`. `app.tsx` awaits `initRoadmapStore` before render.
 
 The [SyncManager](../../packages/health-core/src/sync-manager.ts) runs one optimistic-concurrency loop per named document — `health-roadmap.json` and `chat-history.json` ride the same loop via injected `DocumentSpec`s (filename + migrate + merge). After every write it re-reads and confirms the file parses and `lamport` hasn't regressed — catching half-writes and corruption at the cost of one extra read per save (invisible on an app used a few times a year).
 

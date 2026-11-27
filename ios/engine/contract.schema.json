@@ -672,6 +672,20 @@
         }
       ]
     },
+    "bpSysAdvance": {
+      "kind": "sync",
+      "optionalDoor": true,
+      "args": [
+        {
+          "name": "systolic",
+          "type": "string"
+        },
+        {
+          "name": "diastolic",
+          "type": "string"
+        }
+      ]
+    },
     "documentOriginal": {
       "kind": "promise",
       "optionalDoor": true,
