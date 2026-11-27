@@ -5,7 +5,9 @@
 # unit tests, UI tests), the app's Info.plist and entitlements. It exits 1 when none does, so the check stays
 # advisory; any other exit is an error. Case is ignored: macOS disks fold case, so IOS/x.swift builds as
 # ios/x.swift. The one rule, shared by tools/merge-gated.sh and tools/wait-run.sh. The job builds no engine
-# bundle, so nothing outside ios/ feeds it.
+# bundle, so nothing outside ios/ feeds it. Fails closed: each caller turns a control character in a path (a
+# newline included) into \001, and a line holding \001 is not a plain path, so it counts as required.
 ios_compile_paths() {
-  grep -Eiq '^ios/(.*\.swift|HealthRoadmap(Tests|UITests)?/.*|HealthRoadmap\.xcodeproj/.*|HealthRoadmap-Info\.plist|HealthRoadmap\.entitlements)$'
+  LC_ALL=C grep -Eiq -e '^ios/(.*\.swift|HealthRoadmap(Tests|UITests)?/.*|HealthRoadmap\.xcodeproj/.*|HealthRoadmap-Info\.plist|HealthRoadmap\.entitlements)$' \
+    -e "$(printf '\001')"
 }

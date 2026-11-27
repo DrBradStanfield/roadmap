@@ -33,7 +33,11 @@
 #      list is a literal in the jq filter below, so nothing at call time can widen it. Unless the PR changes what
 #      that job builds (US-64 AC43, 2026-11-27: a PR changing a Swift test merged while it still ran): when a path
 #      in git's list (step 3) passes tools/ios-compile-paths.sh, the one rule, ios-compile counts like any check,
-#      and its absence refuses (8) too. That rule is a gate file: main's copy judges a PR that changes it.
+#      and its absence refuses (8) too, naming why it may not have started and the remedy. With --commit-checks
+#      the newest ios-compile.yml run on the sha stands in: none or unfinished refuses 8, not success 9. That rule
+#      is a gate file: main's copy judges a PR that changes it. A PR that changes .github/workflows/ios-compile.yml
+#      refuses (19) in both modes, with a note: its ios-compile result came from its own workflow, so the owner
+#      reviews that diff and merges by hand.
 #   6. generated files (US-64 AC34; PR 954 went green against an older main, then main went red). Pure git: it runs
 #      nothing but gh, git, jq and perl, never a command from the manifest or the PR (a row's `script` is only a
 #      pathspec). Step 3 fetched main (explicit refspec, so origin/main is fresh in a narrow-refspec clone) and the PR
@@ -48,7 +52,8 @@
 #      CI catches it right after the merge. The refusal says to merge main first and let CI run, naming the
 #      generator. CI's freshness tests do the real check. A failed fetch or diff, or no merge base, refuses (4):
 #      every PR fetches, so a failed fetch refuses every merge. Main is always refs/remotes/origin/main (a local
-#      branch named origin/main cannot shadow it) and paths come out unquoted (core.quotepath=false). A matched row
+#      branch named origin/main cannot shadow it) and paths come out unquoted (NUL-delimited, core.quotepath=false;
+#      a control character in a path becomes \001, which sends the PR to main's copy). A matched row
 #      whose output, script or generator is not a non-empty one-line string refuses (4).
 #      Staleness (AC35, a note, never a refusal): when main has commits past the merge base, one stderr line says
 #      how many; a failed rev-list gives no note. The merge base is the CI base: what a --commit-checks run
@@ -118,13 +123,13 @@ case "$changed" in ''|*[!0-9]*) die "unparsable files answer" 4 ;; esac
 # One line a file: its path, then its previous path when renamed (@tsv escapes tabs and newlines in a name).
 files=$(gh api --paginate "repos/{owner}/{repo}/pulls/$pr/files?per_page=100" --jq '.[] | [.filename, (.previous_filename // "")] | @tsv') \
   || die "gh api pulls/$pr/files failed" 4
-listed=0 names= gatefile=false ciyml=false
+listed=0 names= gatefile=false ciyml=false iosyml=false
 [ -z "$files" ] || while IFS='	' read -r new old; do listed=$((listed + 1)) names="$names
 $new
 $old"; done <<EOF
 $files
 EOF
-# Sets gatefile and ciyml from a newline-separated path list. Whole lines only: a near name (a trailing space,
+# Sets gatefile, ciyml and iosyml from a newline-separated path list. Whole lines only: a near name (a trailing space,
 # another folder, a suffix) never matches. Case is ignored (perl lc), failing closed: `Tools/Merge-Gated.sh`
 # counts as the gate file, since a case-insensitive disk collides the two. A path holding a non-ASCII byte is
 # judged by main's copy (gatefile=true); a failed check refuses 4.
@@ -147,6 +152,11 @@ $1
 " in *"
 .github/workflows/ci.yml
 "*) ciyml=true ;; esac
+  case "
+$1
+" in *"
+.github/workflows/ios-compile.yml
+"*) iosyml=true ;; esac
 }
 scan "$names"
 # Runs main's copy and exits with its code when a gate file changed; returns otherwise, or in main's copy itself.
@@ -169,10 +179,18 @@ bounded git fetch -q origin +refs/heads/main:refs/remotes/origin/main "refs/pull
   || die "cannot fetch main and PR $pr's head $sha" 4
 base=$(git merge-base refs/remotes/origin/main "$sha") || die "PR $pr's head $sha has no merge base with main" 4
 behind=$(git rev-list --count "$base..refs/remotes/origin/main") || behind=0
-paths=$(git -c core.quotepath=false diff --name-only --no-renames --no-relative "$base" "$sha") || die "git diff on PR $pr failed" 4
+# NUL-delimited (-z): git quotes a path holding `"`, `\` or a control character even with core.quotepath=false, and a
+# quoted path would match no rule. A control character in a path (a newline too) becomes \001, which scan sends
+# to main's copy and ios_compile_paths reads as required (AC43): such a path is never judged as plain text.
+paths=$(perl -e 'open(my $g, "-|", @ARGV) or exit 4; local $/ = "\0";
+  while (<$g>) { chomp; s/[\x00-\x1f\x7f]/\x01/g; print "$_\n" } close($g) or exit 4' \
+  git -c core.quotepath=false diff -z --name-only --no-renames --no-relative "$base" "$sha") || die "git diff on PR $pr failed" 4
 scan "$paths"
 to_main
 [ "$ciyml" = true ] && echo "merge-gated: note: PR $pr changes .github/workflows/ci.yml, so its own CI result came from the PR's workflow; the reviewer must have read that diff" >&2
+# AC43: ios-compile cannot vouch for a PR that changes its own workflow; workflow files are the owner's.
+[ "$iosyml" = true ] && { echo "merge-gated: note: PR $pr changes .github/workflows/ios-compile.yml, so its ios-compile result came from the PR's own workflow" >&2
+  die "PR $pr changes the ios-compile workflow, which judged itself: the owner reviews that diff and merges this PR by hand" 19; }
 [ "$changed" = "$listed" ] || die "PR $pr changes $changed files and gh lists $listed; cannot check them for gate files" 17
 # The folder holding this script, its manifest and its iOS path rule. $0 has no slash when run as
 # `sh merge-gated.sh` inside tools/ (T-12).
@@ -192,18 +210,21 @@ case "$verdict" in
   *) die "unparsable CI runs answer" 4 ;;
 esac
 
+# AC43: does the PR change what ios-compile builds? $iosreq is this script's own true/false, spliced into jq below.
+[ -r "$here/ios-compile-paths.sh" ] || die "cannot read $here/ios-compile-paths.sh" 4
+. "$here/ios-compile-paths.sh"
+printf '%s\n' "$paths" | ios_compile_paths
+case $? in
+  0) iosreq=true; echo "merge-gated: note: PR $pr changes iOS build files, so ios-compile is required" >&2 ;;
+  1) iosreq=false ;;
+  *) die "cannot check PR $pr's paths against $here/ios-compile-paths.sh" 4 ;;
+esac
+nostart="its workflow may not have started (GitHub's path filter is case-sensitive and reads only a diff's first 300 files): re-run it, or dispatch it (gh workflow run ios-compile.yml --ref <the PR's branch>) and merge with --commit-checks, which reads it by sha"
+
 if [ "$mode" = rollup ]; then
   # Line 1 is the verdict, from the non-advisory entries only. Any later lines name an advisory check (the literal
   # list below, exact names) that is pending or not green; they go to stderr and never refuse.
-  # The list is empty when the PR changes what ios-compile builds (AC43); $iosreq is this script's own true/false.
-  [ -r "$here/ios-compile-paths.sh" ] || die "cannot read $here/ios-compile-paths.sh" 4
-  . "$here/ios-compile-paths.sh"
-  printf '%s\n' "$paths" | ios_compile_paths
-  case $? in
-    0) iosreq=true; echo "merge-gated: note: PR $pr changes iOS build files, so ios-compile is required" >&2 ;;
-    1) iosreq=false ;;
-    *) die "cannot check PR $pr's paths against $here/ios-compile-paths.sh" 4 ;;
-  esac
+  # The list is empty when $iosreq (AC43).
   verdict=$(gh pr view "$pr" --json statusCheckRollup --jq '[.statusCheckRollup[]
       | {n: (.name // .context | if type == "string" then gsub("[\n\r]"; " ") else . end), s: (if .__typename == "StatusContext" then (if .state == "PENDING" or .state == "EXPECTED" then "PENDING" else "COMPLETED" end) else .status end),
          c: (if .__typename == "StatusContext" then .state else .conclusion end)}] as $all
@@ -211,7 +232,7 @@ if [ "$mode" = rollup ]; then
     | [$all[] | select(.n | IN($adv[]) | not)] as $a
     | (if ($a | length) == 0 then "7 the PR has no checks"
       elif any($a[]; .s != "COMPLETED") then "8 still running: \([$a[] | select(.s != "COMPLETED") | .n] | join(", "))"
-      elif $req and all($a[]; .n != "ios-compile") then "8 required check ios-compile has not reported yet"
+      elif $req and all($a[]; .n != "ios-compile") then "8 required check ios-compile has not reported"
       elif any($a[]; .c != "SUCCESS" and .c != "SKIPPED") then "9 not green: \([$a[] | select(.c != "SUCCESS" and .c != "SKIPPED") | "\(.n)=\(.c)"] | join(", "))"
       elif any($a[]; .n == "test" and .c == "SUCCESS") then "ok"
       else "10 no check named test succeeded" end),
@@ -222,8 +243,23 @@ if [ "$mode" = rollup ]; then
   verdict=$(printf '%s\n' "$verdict" | sed -n '1p')
   case "$verdict" in
     ok) ;;
+    "8 required check ios-compile has not reported") die "${verdict#* }; $nostart" 8 ;;
     7" "*|8" "*|9" "*|10" "*) die "${verdict#* }" "${verdict%% *}" ;;
     *) die "unparsable checks answer" 4 ;;
+  esac
+elif [ "$iosreq" = true ]; then
+  # --commit-checks skips the rollup, so a required ios-compile is read as its workflow's newest run on the sha.
+  verdict=$(gh run list --workflow ios-compile.yml --commit "$sha" --json databaseId,status,conclusion,createdAt --jq '
+    if length == 0 then "8 no ios-compile run on this sha"
+    else (sort_by(.createdAt, .databaseId) | last) as $r
+    | if $r.status != "completed" then "8 the newest ios-compile run \($r.databaseId) is \($r.status)"
+      elif $r.conclusion != "success" then "9 the newest ios-compile run \($r.databaseId) ended \($r.conclusion)"
+      else "ok" end end') || die "gh run list --workflow ios-compile.yml failed" 4
+  case "$verdict" in
+    ok) ;;
+    "8 no ios-compile run on this sha") die "${verdict#* }; $nostart" 8 ;;
+    8" "*|9" "*) die "${verdict#* }" "${verdict%% *}" ;;
+    *) die "unparsable ios-compile runs answer" 4 ;;
   esac
 fi
 

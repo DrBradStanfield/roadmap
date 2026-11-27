@@ -78,10 +78,12 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, the newest `ci.yml` run on
    that sha ended success, every rollup check finished green with a `test` check SUCCESS (except an advisory
    `ios-compile`, which only prints a note, Brad 2026-11-13; on a PR that changes what it builds it must be
-   there, finished and green, or the merge is refused, US-64 AC43), no generated file is out of step with main (below),
+   there, finished and green, or the merge is refused, US-64 AC43; if it never started, re-run or dispatch it as
+   the refusal says; a PR that changes `.github/workflows/ios-compile.yml` always refuses (19): the owner merges
+   it by hand), no generated file is out of step with main (below),
    main's own CI is not red (below) and no Deploy run is unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI
    was started by workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the
-   `ci.yml` run check. Generated files (US-64 AC34): when the PR touches a file listed in
+   `ci.yml` run check, plus the newest `ios-compile.yml` run on the sha when the PR changes what it builds. Generated files (US-64 AC34): when the PR touches a file listed in
    `tools/generated-files.json`, as an output or an input, and main has changed that output or its generator
    script since the PR's merge base, it refuses (9): merge main into the PR, let CI run, then merge. An input
    change on main alone does not refuse: main's CI already keeps main's output fresh. The PR's paths come from

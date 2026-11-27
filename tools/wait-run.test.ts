@@ -246,6 +246,14 @@ describe('wait-run.sh (US-64 AC26)', () => {
       expect(r.status).toBe(0);
       expect(r.stdout).toContain('pass=3 fail=0');
     });
+    it('agrees with merge-gated on names git would quote: a double quote, a backslash or a tab still waits', () => {
+      for (const filename of ['ios/HealthRoadmap/a"b.swift', 'ios/HealthRoadmap/a\\b.swift', 'docs/a\tb.md']) {
+        const r = run(['pr', '42'], { PR_FILES: JSON.stringify([{ filename }]), MERGE, ROLLUP: rollup([]), WAIT_RUN_MAX_MIN: '5' });
+        expect(status(r.stdout).wait_run, filename).toBe('timeout');
+      }
+      const plain = run(['pr', '42'], { PR_FILES: JSON.stringify([{ filename: 'docs/a b.md' }]), MERGE, ROLLUP: rollup([]) });
+      expect(status(plain.stdout).wait_run).toBe('success');
+    });
     it('a failed files read is a gh error: retried, then 10 in a row give up', () => {
       const r = run(['pr', '42'], { FILES_FAIL: '1' });
       expect(r.status).toBe(3);

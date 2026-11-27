@@ -218,12 +218,12 @@ fi
 
 # Does the PR change what ios-compile builds (US-64 AC43)? Then it is waited on and counted; otherwise advisory.
 # The one rule is tools/ios-compile-paths.sh beside this script; a missing or failing rule counts as yes. One REST read,
-# before the polls, retried like a poll.
+# before the polls, retried like a poll. A control character in a name becomes \001, which the rule reads as required.
 case "$0" in */*) here=${0%/*} ;; *) here=. ;; esac
 iosreq=true
 if [ -r "$here/ios-compile-paths.sh" ]; then
   . "$here/ios-compile-paths.sh"
-  until files=$(gh api --paginate "repos/{owner}/{repo}/pulls/$id/files?per_page=100" --jq '.[] | .filename, (.previous_filename // empty)' 2>/dev/null); do
+  until files=$(gh api --paginate "repos/{owner}/{repo}/pulls/$id/files?per_page=100" --jq '.[] | (.filename, (.previous_filename // empty)) | gsub("[\\x00-\\x1f\\x7f]"; "\u0001")' 2>/dev/null); do
     gh_error; give_up_if_late; nap
   done
   errors=0
