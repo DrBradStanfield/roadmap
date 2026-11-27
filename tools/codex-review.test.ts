@@ -28,7 +28,11 @@ let marker: string;
 let fakeDir: string;
 const sh = (cwd: string, cmd: string) => execFileSync('sh', ['-c', cmd], { cwd, encoding: 'utf8' });
 /** A wrapper child's whole environment: the system minimum plus the case's own keys. `--loop` collects every variable, so the runner's shell must never reach it. */
-const childEnv = (extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({ ...Object.fromEntries(['PATH', 'HOME', 'TMPDIR', 'LANG'].filter((k) => process.env[k]).map((k) => [k, process.env[k]])), ...extra });
+/** The suite's own HOME and CODEX_HOME (US-40 AC19, Codex R5 on PR 2222h): no child reads the developer's real Codex configuration. */
+const SUITE_HOME = mkdtempSync(join(process.env.TMPDIR!, 'cr-home-'));
+const SUITE_CODEX_HOME = join(SUITE_HOME, '.codex');
+mkdirSync(SUITE_CODEX_HOME);
+const childEnv = (extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({ ...Object.fromEntries(['PATH', 'TMPDIR', 'LANG'].filter((k) => process.env[k]).map((k) => [k, process.env[k]])), HOME: SUITE_HOME, CODEX_HOME: SUITE_CODEX_HOME, ...extra });
 
 /** The build where AC14 showed cached-only search (2026-10-03); the fake reports it unless a case says otherwise (US-40 AC19). */
 const VERIFIED_CACHED = 'codex-cli 0.159.0-alpha.12.1';
@@ -40,7 +44,7 @@ const FEATURES_0163 = resolve(__dirname, 'fixtures', 'codex-features-0.163.txt')
  * unknown name with exit 1, as the real CLI does); for `exec`, records argv, env and stdin, emits configured JSONL,
  * writes the -o file and exits as told.
  */
-function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop'; version?: string; versionExit?: number; login?: 'chatgpt' | 'api' | 'none'; loginV2?: 'chatgpt' | 'api' }) {
+function fake(config: { output?: unknown; exit?: number; events?: string[]; stderr?: string; during?: string; features?: string; extraEnabled?: string[]; failFeatures?: { code: number; stderr: string }; firstList?: string; checkList?: 'malformed' | 'duplicate' | 'drop'; version?: string; versionExit?: number; login?: 'chatgpt' | 'api' | 'none'; loginV2?: 'chatgpt' | 'api'; extraEnabledV2?: string[] }) {
   const dir = mkdtempSync(join(tmpdir(), 'fake-codex-'));
   writeFileSync(join(dir, 'config.json'), JSON.stringify({ exit: 0, events: [], stderr: '', features: FEATURES_0171, extraEnabled: [], version: VERIFIED_CACHED, versionExit: 0, ...config }));
   const bin = join(dir, 'codex');
@@ -69,7 +73,8 @@ if (all.at(-2) === 'features' && all.at(-1) === 'list') {
   if (cfg.failFeatures) { process.stderr.write(cfg.failFeatures.stderr); process.exit(cfg.failFeatures.code); }
   const check = all.includes('--disable');
   if (!check && cfg.firstList !== undefined) { process.stdout.write(cfg.firstList); process.exit(0); }
-  let lines = fs.readFileSync(cfg.features, 'utf8').split('\\n').filter(Boolean).concat(cfg.extraEnabled.map((n) => n + '  stable  true'));
+  const v2 = fs.readFileSync(process.argv[1], 'utf8').endsWith('// v2\\n');
+  let lines = fs.readFileSync(cfg.features, 'utf8').split('\\n').filter(Boolean).concat([...cfg.extraEnabled, ...(v2 && cfg.extraEnabledV2 ? cfg.extraEnabledV2 : [])].map((n) => n + '  stable  true'));
   const names = lines.map((l) => l.split(/\\s+/)[0]);
   const off = all.flatMap((a, i) => (a === '--disable' ? [all[i + 1]] : []));
   const unknown = off.find((n) => !names.includes(n));
@@ -2774,6 +2779,38 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
       expect(existsSync(join(f.dir, 'argv.json'))).toBe(false);
     }
   });
+  it('Codex R1 on PR 2222h: the credential-store guard sees a quoted, single-quoted or dotted key, and ignores a comment', () => {
+    const cases: [string, boolean][] = [
+      ['"cli_auth_credentials_store" = "keyring"\n', true], ["'cli_auth_credentials_store'='keyring'\n", true],
+      ['[profiles.x]\ncli_auth_credentials_store = "keyring"\n', true], ['profiles . x . "cli_auth_credentials_store" = "keyring"\n', true],
+      ['# cli_auth_credentials_store = "keyring"\nmodel = "x"  # not the store\n', false],
+    ];
+    for (const [config, stops] of cases) {
+      writeFileSync(join(repo, 'a.txt'), `store ${config.length}\n`);
+      const codexHome = mkdtempSync(join(tmpdir(), 'cr-codex-home-fixture-'));
+      writeFileSync(join(codexHome, 'config.toml'), config);
+      const f = fake({ output: CLEAN });
+      const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ CODEX_HOME: codexHome }) });
+      expect([config, r.status]).toEqual([config, stops ? 3 : 0]);
+      expect([config, r.stdout.includes('E_LOGIN_STORE')]).toEqual([config, stops]);
+    }
+  });
+  it('Codex R4 on PR 2222h: a replacement that changes the mode and fails its feature check reports its own mode and version', () => {
+    writeFileSync(join(repo, 'a.txt'), 'replacement fails\n');
+    const f = fake({ output: CLEAN, extraEnabledV2: ['shiny_new_tool'] });
+    const r = spawnSync('node', [WRAPPER, '--codex', f.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ PATH: `${archiveShim(swapIn(f.bin))}:${process.env.PATH}` }) });
+    expect(r.status).toBe(3);
+    expect(r.stdout).toContain('E_UNKNOWN_FEATURES');
+    expect(JSON.parse(readFileSync(outJson, 'utf8'))).toMatchObject({ web_access: 'disabled', codex_version: `${VERIFIED_CACHED}-v2` });
+  });
+  it('Codex R5 on PR 2222h: wrapper children get the suite HOME and CODEX_HOME, never the developer real ones', () => {
+    writeFileSync(join(repo, 'a.txt'), 'suite home\n');
+    const f = fake({ output: CLEAN });
+    expect(runWrapper(f.bin).status).toBe(0);
+    const env = JSON.parse(f.read('env.json'));
+    expect(env.HOME).toBe(SUITE_HOME);
+    expect(env.CODEX_HOME).toBe(SUITE_CODEX_HOME);
+  });
   it('Codex R1 on PR 2222g: login status runs with the launch -c settings, and a user config that moves the credential store stops the run', () => {
     writeFileSync(join(repo, 'a.txt'), 'store check\n');
     const f = fake({ output: CLEAN, version: 'codex-cli 0.171.0-alpha.13.2' });
@@ -2787,7 +2824,9 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
       mkdirSync(codexHome, { recursive: true });
       writeFileSync(join(codexHome, 'config.toml'), 'model = "x"\ncli_auth_credentials_store = "keyring"\n'); // the review ignores this file; login status would read it
       const g = fake({ output: CLEAN });
-      const r = spawnSync('node', [WRAPPER, '--codex', g.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env: childEnv({ HOME: home, ...(viaCodexHome ? { CODEX_HOME: codexHome } : {}) }) });
+      const env = childEnv({ HOME: home, ...(viaCodexHome ? { CODEX_HOME: codexHome } : {}) });
+      if (!viaCodexHome) delete env.CODEX_HOME; // the config under HOME/.codex
+      const r = spawnSync('node', [WRAPPER, '--codex', g.bin, '--out', outJson], { cwd: repo, encoding: 'utf8', env });
       expect([viaCodexHome, r.status]).toEqual([viaCodexHome, 3]);
       expect(r.stdout).toContain('E_LOGIN_STORE');
       expect(r.stdout).not.toContain('keyring');
@@ -2919,8 +2958,8 @@ describe('US-40 AC19 — --deep, the binary it launches, and the subscription lo
     expect(new Set(calls.map((c) => c.bin)).size).toBe(1); // a relative path would also fail the review spawn, whose cwd is the snapshot
     expect([f.bin, realpathSync(f.bin)]).toContain(calls[0].bin);
     for (const c of calls.slice(0, 3)) expect(c.codexHome).toMatch(/cr-codex-home-/);
-    expect(calls[3].codexHome).toBeNull(); // login status reads the CODEX_HOME the review will use
-    expect(calls[4].codexHome).toBeNull();
+    expect(calls[3].codexHome).toBe(SUITE_CODEX_HOME); // login status reads the CODEX_HOME the review will use
+    expect(calls[4].codexHome).toBe(SUITE_CODEX_HOME); // the same store the review uses
     expect(JSON.parse(readFileSync(outJson, 'utf8')).codex_bin).toBe(realpathSync(f.bin)); // resolved against the cwd, which node reports real
   });
   it('CLAUDE.md, the skill and the story name the same two models and --deep', () => {

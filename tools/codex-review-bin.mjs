@@ -135,7 +135,9 @@ export function recheckCodex(bin, probe, env, live, say, { reprobe = true } = {}
 export function checkLogin(bin, env, configArgs) {
   let config = "";
   try { config = readFileSync(join(env.CODEX_HOME || join(env.HOME ?? "", ".codex"), "config.toml"), "utf8"); } catch { /* no user config */ }
-  if (/^\s*cli_auth_credentials_store\s*=/m.test(config)) return "E_LOGIN_STORE: the user config sets cli_auth_credentials_store, which the review ignores (--ignore-user-config) and `login status` reads, so the two could see different logins; remove that setting to run a review";
+  // Fail closed (Codex R1, PR 2222h; no TOML parser in this repo): the key name anywhere before a line's first `#`, in
+  // any spelling (bare, quoted, dotted, in a table), stops the run.
+  if (/^[^#\n]*cli_auth_credentials_store/m.test(config)) return "E_LOGIN_STORE: the user config names cli_auth_credentials_store, which the review ignores (--ignore-user-config) and `login status` reads, so the two could see different logins; remove that setting to run a review";
   const r = spawnSync(bin, [...configArgs, "login", "status"], { encoding: "utf8", env, stdio: ["ignore", "pipe", "pipe"], timeout: 20_000, maxBuffer: 1 << 20 });
   if (r.error || r.signal || r.status !== 0) return `E_LOGIN_NOT_CHATGPT: \`login status\` ${failed({ code: r.error?.code, signal: r.signal, status: r.status })}`;
   const first = `${r.stdout ?? ""}\n${r.stderr ?? ""}`.split("\n").map((l) => l.trim()).find(Boolean);
