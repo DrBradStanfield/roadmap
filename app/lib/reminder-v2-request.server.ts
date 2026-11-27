@@ -2,8 +2,8 @@
  * v2 email reminders: the checks a reminder request goes through before
  * reminder-v2.server.ts acts on it (the schedule payload, the per-email
  * rate-limit key, the Google ID-token check). Moved out of that file as they
- * were, to keep it under the 500-line cap (US-64 AC23). It re-exports all
- * three, so callers and test mocks of reminder-v2.server are unchanged.
+ * were, to keep it under the 500-line cap (US-64 AC23). Callers import them
+ * from here, their one import path (S-14), not from reminder-v2.server.
  */
 import * as Sentry from '@sentry/react-router';
 import * as z from '../../packages/health-core/src/zod';

@@ -10,7 +10,7 @@ const sentry = vi.hoisted(() => ({ captureException: vi.fn(), captureMessage: vi
 vi.mock('@sentry/react-router', () => sentry);
 vi.mock('./supabase-client.server', () => ({ supabaseAdmin: {} }));
 
-import { verifyGoogleIdToken } from './reminder-v2.server';
+import { verifyGoogleIdToken } from './reminder-v2-request.server';
 
 const CLIENT = 'synthetic-client.apps.googleusercontent.com';
 const claims = (over: Record<string, string> = {}) =>

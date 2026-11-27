@@ -29,9 +29,6 @@ import { randomBytes } from 'node:crypto';
 import { APP_BASE_URL } from './email.server';
 import { supabaseAdmin } from './supabase-client.server';
 
-// The request rules and the Google ID-token check live in their own file (file-size cap).
-export { emailLimiterKey, scheduleSchema, verifyGoogleIdToken } from './reminder-v2-request.server';
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------

@@ -44,13 +44,12 @@ vi.mock('./supabase-client.server', () => ({
   supabaseAdmin: makeQuery(),
 }));
 
+import { emailLimiterKey, scheduleSchema } from './reminder-v2-request.server';
 import {
   cancelByToken,
-  emailLimiterKey,
   enrolByEmail,
   ensureAnnualFloor,
   inQuietPeriod,
-  scheduleSchema,
   unsubscribeByToken,
   updateScheduleByToken,
   purgeTombstones,

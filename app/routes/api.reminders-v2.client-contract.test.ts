@@ -49,10 +49,13 @@ const cancelByToken = vi.fn(async () => {});
 vi.mock('../lib/supabase-guest.server', () => ({ hashClientIp: (ip: string) => `h:${ip}` }));
 vi.mock('../lib/supabase-client.server', () => ({ supabaseAdmin: null }));
 vi.mock('../lib/klaviyo.server', () => ({ subscribeToKlaviyo: vi.fn(async () => {}) }));
+vi.mock('../lib/reminder-v2-request.server', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  verifyGoogleIdToken: async () => null,
+}));
 vi.mock('../lib/reminder-v2.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   cancelByToken: (...a: unknown[]) => cancelByToken(...(a as [])),
-  verifyGoogleIdToken: async () => null,
   enrolByEmail: async () => ({ token: 'tok-new', isNew: true }),
 }));
 vi.mock('../lib/email.server', async (importOriginal) => ({

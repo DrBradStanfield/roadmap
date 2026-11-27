@@ -126,7 +126,7 @@ describe('US-09 AC31: a stalled provider is abandoned at the deadline', () => {
   }
 
   it('Google tokeninfo (reminder opt-in) gives up at 10 s and reads as unverified', async () => {
-    const { verifyGoogleIdToken } = await import('./reminder-v2.server');
+    const { verifyGoogleIdToken } = await import('./reminder-v2-request.server');
     const { early, outcome } = await settleBy(verifyGoogleIdToken('synthetic-id-token'), 10_000);
     expect(early).toBe(false);
     expect(outcome).toBeNull();
