@@ -5,7 +5,7 @@ import { recordServerEvent } from '../lib/product-events.server';
 /**
  * One-click unsubscribe for v2 reminder emails (decision record §10 — THE
  * reason the capability token exists: clicked from an inbox where the user is
- * not cloud-authed, and it must work without any login).
+ * not cloud-authed, and it must work without any sign-in).
  *
  *  - GET  ?token=…  → tiny confirm page (a bare link click shouldn't nuke the
  *    opt-in — mail scanners prefetch GETs).

@@ -103,7 +103,7 @@ async function callGateway(path: string, payload: object, timeoutMs: number): Pr
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) {
-      // A 403 is a logged-out or unsigned customer: expected, not an error.
+      // A 403 is a signed-out customer or an unsigned request: expected, not an error.
       if (res.status !== 403) reportGatewayError(`Subscription gateway: HTTP ${res.status}`);
       return null;
     }
@@ -133,7 +133,7 @@ const expiresAtOf = (entry: { expiresAt: number }) => entry.expiresAt;
 sweepExpired(summaryCache, expiresAtOf, 5 * 60_000);
 const summaryRoom = boundedMap(summaryCache, expiresAtOf, { name: 'subscription summaries', maxKeys: SUMMARY_CACHE_MAX_KEYS });
 
-/** The logged-in customer's subscription summary, or null (off, logged out, or the gateway failed). Never throws. */
+/** The signed-in customer's subscription summary, or null (off, signed out, or the gateway failed). Never throws. */
 export async function getCachedSubscriptions(request: Request, customerId: string): Promise<SubscriptionSummary | null> {
   if (!subscriptionActionsEnabled()) return null;
   const cached = summaryCache.get(customerId);
@@ -261,7 +261,7 @@ export function subscriptionCard(summary: SubscriptionSummary | null, proposal: 
 
 /**
  * The customer's confirm, forwarded: the gateway's { status, code?, newDate? }.
- * A gateway that refused the request itself (4xx: unsigned, logged out) is a
+ * A gateway that refused the request itself (4xx: an unsigned request, a signed-out customer) is a
  * refusal, nothing written. A timeout, a network error or a 5xx is
  * `unconfirmed`: the gateway may have made the change and lost the answer.
  */
