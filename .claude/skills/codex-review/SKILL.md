@@ -1,6 +1,6 @@
 ---
 name: codex-review
-description: Independent adversarial review of the current change by a different model (Codex, gpt-6.1-sol) against docs/review-format.md. Run it beside every adversarial Claude check, and REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes whatever their size; skip ONLY outside those classes (doc/blog sweeps, one-liners). It runs only on Brad's Mac with his ChatGPT subscription, never an API key. Loops and cloud sessions never run, request or wait on it (Brad, 2026-10-11); CI stays Claude-only. Also whenever asked to "get Codex to review" or "cross-model review". Advisory only.
+description: Independent adversarial review of the current change by a different model (Codex, gpt-6.2-sol by default, gpt-6.2-astra with --deep for design notes and the high-risk classes) against docs/review-format.md. Run it beside every adversarial Claude check, and REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes whatever their size; skip ONLY outside those classes (doc/blog sweeps, one-liners). It runs only on Brad's Mac with his ChatGPT subscription, never an API key. Loops and cloud sessions never run, request or wait on it (Brad, 2026-10-11); CI stays Claude-only. Also whenever asked to "get Codex to review" or "cross-model review". Advisory only.
 ---
 
 # Codex review
@@ -18,6 +18,32 @@ Mac, signed in with his ChatGPT subscription, never an API key (Brad,
 cloud sessions and CI never run, request or wait on it (US-40 AC8; Brad,
 2026-10-11: no Codex for loops). `--loop` stays only for a review Brad chooses
 to run himself, under the contract's Tier 3 restrictions.
+
+**Which model** (Brad, 2026-11-27; US-40 AC19). Pass `--deep` (gpt-6.2-astra)
+for design notes and plans before code; clinical logic; merge, FHIR and record
+shape; erase and privacy paths; security surfaces; guards and agent contracts.
+Everything else runs the default, gpt-6.2-sol. Both at high reasoning effort.
+`--model <id>` names any other model, and `--deep --model` is a usage error.
+The wrapper launches the ChatGPT app's own CLI when it is installed (the
+Homebrew `codex` 0.163 refuses both 6.2 models on a ChatGPT login) and prints
+the binary and its version on the pre-flight line; `--codex <bin>` or
+`CODEX_BIN` overrides it. It forces no login method (forcing one can sign a
+stored login of the other kind out); API-key variables never reach it, and it stops (`E_LOGIN_NOT_CHATGPT`) unless `login status` reports a ChatGPT login.
+
+**Web search on the newer CLI.** Cached-only search is verified only on
+codex-cli 0.159.0-alpha.12.1, so on the app's CLI the wrapper turns hosted
+search off (the pre-flight line says `web search disabled`, the report
+`web_access: disabled`). A review that must check a cited study passes
+`--live`: our own changes only, never with `--record` or `--loop`, as AC14
+says. Without it, a source the reviewer cannot check offline is "not checked". Before the snapshot it reads the
+binary's `features list`, turns off every sub-agent, browser and automation
+feature it lists, and stops with `E_UNKNOWN_FEATURES` (incomplete) if any
+other feature is enabled that is not judged in `tools/codex-review-features.mjs`.
+That is what an updated ChatGPT app looks like: judge each named feature (or
+disable it) in that file, in its own PR; never bypass the check. The stop on an app update is intended. Until the
+features file is updated, an ORDINARY review can fall back to `--codex /opt/homebrew/bin/codex --model gpt-6.1-sol`
+(the older CLI and model). That build defaults to search disabled; keeping `--live` on the retry keeps live search under
+AC14's rules. A review that requires `--deep` has no fallback: it stays incomplete until the features file is updated.
 
 **How many, and when to start it.** Several Codex runs may go at once (Brad,
 2026-11-10: "You can run multiple codex agents"), at most two on this Mac.
@@ -106,6 +132,7 @@ On this Mac, prefix each line with `tools/mac-slot.sh codex --` (above).
 
 ```bash
 node tools/codex-review.mjs --out "$SCRATCH/codex-review.json"          # uncommitted work
+node tools/codex-review.mjs --deep --range main..HEAD --out "$SCRATCH/codex-review.json"  # gpt-6.2-astra: design notes and the high-risk classes (above)
 node tools/codex-review.mjs --commit <sha> --out "$SCRATCH/codex-review.json"
 node tools/codex-review.mjs --range main..HEAD --out "$SCRATCH/codex-review.json"
 node tools/codex-review.mjs --record --out "$SCRATCH/codex-review.json"     # + live scratch record, read-only
@@ -205,7 +232,7 @@ which is NOT a pass and NOT the plan-limit waiver (US-40 AC18).
    Brad decides. Unresolved after that re-check → Brad, both positions.
 4. **Drift** in the output means the tree changed mid-review; the verdict
    covers the snapshot only. Re-run before relying on it.
-5. Report the snapshot id and model with the verdict. Do not invoke this
+5. Report the snapshot id and model (the report's `model` and `deep`) with the verdict. Do not invoke this
    skill from inside another review; do not run it on another session's
    in-flight uncommitted work without saying whose it is.
 
