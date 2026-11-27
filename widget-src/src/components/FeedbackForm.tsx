@@ -32,9 +32,9 @@ function takeDroppedFocus(el: HTMLElement) {
   if (document.activeElement === document.body) el.focus({ preventScroll: true });
 }
 
-/** US-19 AC3a: one status region, mounted empty before any send and filled only when a send succeeds. */
+/** US-19 AC3a: one status region, there before any send, filled only when one succeeds. A nbsp holds it: a theme may hide p:empty. */
 function SentRegion({ sent }: { sent: boolean }) {
-  return <p className="hr-sr-only" role="status">{sent ? THANKS : ''}</p>;
+  return <p className="hr-sr-only" role="status">{sent ? THANKS : '\u00a0'}</p>;
 }
 
 interface FeedbackFormProps {

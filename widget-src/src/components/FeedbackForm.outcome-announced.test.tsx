@@ -31,11 +31,12 @@ async function send() {
   await act(async () => { fireEvent.click(button); });
 }
 
-/** The one status region, which must already be in the feedback section and empty. */
+/** The one status region, which must already be in the feedback section, live and empty but for a nbsp. */
 function emptyRegion(): HTMLElement {
   const region = screen.getByRole('status');
   expect(region.closest('.feedback-section')).not.toBeNull();
-  expect(region.textContent).toBe('');
+  expect([region.textContent?.trim(), region.matches(':empty')]).toEqual(['', false]); // a nbsp: a theme may hide p:empty
+  expect(region.getAttribute('aria-live') ?? 'polite').toBe('polite'); // role=status alone is polite; never aria-live="off"
   return region;
 }
 
@@ -79,8 +80,7 @@ describe('US-19 AC3a: the outcome of a send has an alert or a status role', () =
     const thanks = document.activeElement as HTMLElement;
     expect(thanks.className).toBe('feedback-success');
     expect(thanks.textContent).toBe(THANKS);
-    expect(thanks.getAttribute('role')).toBeNull(); // plain: not a status message itself
-    expect(thanks.closest('[role], [aria-live]')).toBeNull(); // and not inside a live region
+    expect(thanks.closest('[role], [aria-live], [aria-hidden]')).toBeNull(); // plain, in no live region, and not hidden
     expect(thanks.tabIndex).toBe(-1);
     expect(liveRegionsWithThanks()).toEqual([region]); // one live region holds the text
   });
