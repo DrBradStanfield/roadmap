@@ -15,7 +15,7 @@
  * - held: a remote change waits for the next profile save to settle. Only a
  *   form holding a value the re-read would replace holds it (`typing`); an
  *   out-of-range value, refused or half-typed, rides through the re-read with
- *   its error, so a form unsaved only in those applies at once (AC13).
+ *   its error, so it holds nothing (`free`, AC13).
  * Every whole re-read of the record goes through here, so a held change is applied
  * once (survey R8). `apply(remote, counts)`: `remote` says the re-read takes in
  * another writer's change; `counts` (by default, `remote`) that it counts.
@@ -30,9 +30,9 @@
  */
 export type HoldState = { phase: 'loading' | 'idle' } | { phase: 'loading-held' | 'held'; counts: boolean };
 
-/** The profile form as a change arrives: as saved; unsaved only in values the store refuses; or holding a value
- *  the re-read would replace (still to save, or this tab's unit switch). */
-export type ProfileForm = 'clean' | 'out-of-range' | 'typing';
+/** The profile form as a change arrives: `typing` holds a value the re-read would replace (an in-range value still
+ *  to save, or this tab's unit switch); `free` holds none (as saved, or unsaved only in out-of-range values). */
+export type ProfileForm = 'free' | 'typing';
 
 export type HoldEvent =
   /** A remote change arrived. `form`: the profile form then. `counts`: false for the late echo of an erase already shown. */

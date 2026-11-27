@@ -53,7 +53,7 @@ vi.mock('../lib/server-api', async original => {
   };
 });
 // The profile save refuses once when asked, as the store refuses a write (US-16 AC2a).
-const refuse = vi.hoisted(() => ({ next: false, gate: null as null | Promise<void> }));
+const refuse = vi.hoisted(() => ({ next: false, gate: null as null | Promise<void>, calls: 0 }));
 // How many times the page re-reads the record (survey R8: a held change applied twice).
 const reads = vi.hoisted(() => ({ count: 0 }));
 // The next medication (`gate`) or screening (`screening`) save waits on this when asked: true lands it, false refuses it (US-15 AC10).
@@ -66,6 +66,7 @@ vi.mock('../lib/roadmap-data', async original => {
     // The lab read fails on every call when asked: a lasting failure of the first read's mirror (PR 1155 review R1).
     loadLabValues: () => failMirror.always ? Promise.reject(new Error('Synthetic test: lab read failed')) : real.loadLabValues(),
     saveChangedMeasurements: (...args: Parameters<typeof real.saveChangedMeasurements>) => {
+      refuse.calls++;
       if (refuse.next) { refuse.next = false; return Promise.resolve({ ok: false }); }
       // Held on its way when asked: the store has taken the write, the page has not heard it land (US-34 AC8).
       const gate = refuse.gate;
@@ -1263,7 +1264,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
   const heightOnDisk = async () => (await recordOnDisk()).profile.heightCm;
   const heightError = (view: RenderResult) => { field(view, 'heightCm'); return q(view, '#heightCm')!.getAttribute('aria-invalid'); };
 
-  it('US-34 AC8 (H14): height 400 left, a remote birth year held; the height fixed and saved: the change shows once, the saved height kept', async () => {
+  it('US-34 AC8 (H14): height 400 left and a birth month still saving, a remote birth year held; the height fixed and saved: the change shows once, the saved height kept', async () => {
     await recordWithLdl();
     const view = await open();
     await heightOnItsWay(view);
@@ -1280,7 +1281,7 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     expect(reads.count).toBe(1);
   });
 
-  it('US-34 AC8 (H14): height 400 left, a remote birth year held; the next save is refused again: the change shows once, and 450 stays with its error', async () => {
+  it('US-34 AC8 (H14): height 400 left and a birth month still saving, a remote birth year held; the next save refuses 450: the change shows once, and 450 stays with its error', async () => {
     await recordWithLdl();
     const view = await open();
     await heightOnItsWay(view);
@@ -1293,6 +1294,29 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     expect(field(view, 'heightCm')).toBe('450');
     expect(heightError(view)).toBe('true');
     expect(await heightOnDisk()).toBe(170);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect(reads.count).toBe(1);
+  });
+
+  it('US-34 AC8 (H14): a remote height held behind a valid birth year still saving; the year then typed out of range (198) and its save refused: the hold ends, the height shows once, 198 keeps its error', async () => {
+    await recordWithLdl();
+    const view = await open();
+    refuse.gate = new Promise<void>(() => {}); // the year's save never lands: the saves after it go through
+    field(view, 'birthYear');
+    type(q(view, '#birthYear'), '1985');
+    await settle(600); // on its way: the form holds 1985, the page has not heard it land
+    reads.count = 0;
+    await anotherWriter(() => saveChangedMeasurements({ heightCm: 175 }, { heightCm: 170 }, getShownErase()));
+    await settle(50);
+    expect(field(view, 'heightCm')).toBe('170'); // held behind the year
+    expect(reads.count).toBe(0);
+    type(q(view, '#birthYear'), '198');
+    leave(q(view, '#birthYear'));
+    await waitFor(() => expect(field(view, 'heightCm')).toBe('175'), { timeout: 3000 });
+    await settle(800);
+    expect(field(view, 'birthYear')).toBe('198');
+    expect(q(view, '#birthYear')!.getAttribute('aria-invalid')).toBe('true');
+    expect((await recordOnDisk()).profile).toMatchObject({ heightCm: 175, birthYear: 1985 });
     expect(calls('remote_change_applied')).toHaveLength(1);
     expect(reads.count).toBe(1);
   });
@@ -1333,8 +1357,12 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     const writes: unknown[] = [];
     Object.defineProperty(height, 'value', { configurable: true, get() { return own.get!.call(this); }, set(v) { writes.push(v); own.set!.call(this, v); } });
     reads.count = 0;
+    refuse.calls = 0;
     await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }, getShownErase()));
-    await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement | null)?.value).toBe('1981'), { timeout: 3000 });
+    await settle(50);
+    // At once: shown before the height's 500 ms save has run (the only save so far is the other writer's).
+    expect(refuse.calls).toBe(1);
+    expect((q(view, '#birthYear') as HTMLInputElement).value).toBe('1981');
     Object.defineProperty(height, 'value', own);
     expect(writes).toEqual([]); // the apply never wrote the box: text and caret stand
     expect(reads.count).toBe(1);

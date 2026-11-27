@@ -65,7 +65,7 @@ function setup(loaded = true) {
     setInputs: vi.fn(),
     applyLists: vi.fn(),
     units: { shown: vi.fn(), offered: vi.fn(), pending: vi.fn((): undefined => undefined) },
-    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileForm: vi.fn((): ProfileForm => 'clean'), clearAnswered: vi.fn(), savedProfile: vi.fn(() => ({})) },
+    later: { markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileForm: vi.fn((): ProfileForm => 'free'), clearAnswered: vi.fn(), savedProfile: vi.fn(() => ({})) },
     reloadValues: vi.fn(async (): Promise<LatestMeasurementsResult | null> => {
       log.push('read');
       await Promise.resolve();
@@ -144,7 +144,7 @@ const PATHS: Path[] = [
     expect(p.reads()).toBe(0); // held
     await announced(B);
     // The erase's read showed the held change too: the save that cleans the profile reads nothing more.
-    p.fx.later.profileForm.mockReturnValue('clean');
+    p.fx.later.profileForm.mockReturnValue('free');
     act(() => { p.now().page.settled(); });
     await settle();
   }, { counted: 1, reads: 1 }],
@@ -232,7 +232,7 @@ describe('fix 4 (2b-3 R1, Fable): an arrival carrying the erase the machine show
     page.fx.later.profileForm.mockReturnValue('typing');
     await announced(B);
     expect(page.reads()).toBe(0); // held: the typing stays
-    page.fx.later.profileForm.mockReturnValue('clean');
+    page.fx.later.profileForm.mockReturnValue('free');
     act(() => { page.now().page.settled(); });
     await settle();
     expect({ counted: counted(), reads: page.reads() }).toEqual({ counted: 0, reads: 1 });

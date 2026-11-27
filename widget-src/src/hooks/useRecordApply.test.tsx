@@ -49,7 +49,7 @@ function setup(loaded = true) {
     // The erase machine as apply sees it: the screen shows 'erase-1'; `dispatch` records each read's erase.
     erase: { getSnapshot: () => ({ shown: 'erase-1' }) as EraseState, dispatch: vi.fn((): EraseEffect[] => []) },
     later: {
-      markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileForm: vi.fn((): ProfileForm => 'clean'), clearAnswered: vi.fn(),
+      markSaved: vi.fn(), flushPendingSave: vi.fn(), flushListSaves: vi.fn(), profileForm: vi.fn((): ProfileForm => 'free'), clearAnswered: vi.fn(),
       savedProfile: vi.fn(() => ({ heightCm: 170, birthYear: 1980 })),
     },
   };
@@ -240,7 +240,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
 
   it('US-34 AC13 (H14): a remote change on a form unsaved only in an out-of-range value applies at once, keeping it; a unit switch waiting still holds', async () => {
     const { fx, hook } = setup();
-    fx.later.profileForm.mockReturnValue('out-of-range');
+    fx.later.profileForm.mockReturnValue('free');
     await act(async () => { await hook.result.current.signal('remote'); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);

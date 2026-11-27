@@ -61,7 +61,7 @@ describe('US-34 AC4: clean releases a held remote change', () => {
   it('nothing to save: the relay is released and no write is made', async () => {
     const { view, relay } = setup({ heightCm: 170 });
     act(() => view.result.current.save.markSaved({ heightCm: 170 }));
-    expect(view.result.current.save.profileForm()).toBe('clean');
+    expect(view.result.current.save.profileForm()).toBe('free');
     await act(async () => { expect(await view.result.current.save.flushProfile(store.erase)).toBe(true); });
     expect(store.saves).toEqual([]);
     expect(relay.settled).toHaveBeenCalledTimes(1);
@@ -74,7 +74,7 @@ describe('US-34 AC4: clean releases a held remote change', () => {
     expect(view.result.current.save.profileForm()).toBe('typing');
     await act(async () => { await view.result.current.save.flushProfile('e1'); });
     expect(store.saves).toEqual([{ current: { heightCm: 172 }, previous: { heightCm: 170 }, erase: 'e1' }]);
-    expect(view.result.current.save.profileForm()).toBe('clean');
+    expect(view.result.current.save.profileForm()).toBe('free');
     expect(relay.settled).toHaveBeenCalledTimes(1);
   });
 });
@@ -143,7 +143,7 @@ describe('saving: what a save leaves behind', () => {
     act(() => view.result.current.save.markSaved({ heightCm: 170, sex: 'male' }));
     act(() => view.result.current.setInputs({ sex: 'male' }));
     await act(async () => { await view.result.current.save.flushProfile(store.erase); });
-    expect(view.result.current.save.profileForm()).toBe('clean');
+    expect(view.result.current.save.profileForm()).toBe('free');
     expect(mirror.patches).toEqual([{ profile: { sex: 'male' } }]);
   });
 
@@ -152,7 +152,7 @@ describe('saving: what a save leaves behind', () => {
     const record: Partial<HealthInputs> = { heightCm: 170 };
     act(() => view.result.current.save.markSaved(record));
     record.heightCm = 999;
-    expect(view.result.current.save.profileForm()).toBe('clean');
+    expect(view.result.current.save.profileForm()).toBe('free');
   });
 });
 
@@ -162,25 +162,25 @@ describe('kept: what the store refuses', () => {
     act(() => view.result.current.setInputs({ heightCm: 999 }));
     store.next = { ok: true, refused: { heightCm: 999 } };
     await act(async () => { await view.result.current.save.flushProfile(store.erase); });
-    expect(view.result.current.save.profileForm()).toBe('out-of-range');
+    expect(view.result.current.save.profileForm()).toBe('free');
     expect(view.result.current.inputs.heightCm).toBe(999);
     expect(relay.settled).toHaveBeenCalledTimes(1);
   });
 
-  it('US-34 AC13 (H14): a refused birth pair, put back, leaves the form clean', async () => {
+  it('US-34 AC13 (H14): a refused birth pair, put back, leaves the form free of an edit', async () => {
     const { view } = setup({ birthYear: 1980, birthMonth: 3 });
     act(() => view.result.current.save.markSaved({ birthYear: 1980, birthMonth: 3 }));
     act(() => view.result.current.setInputs({ birthYear: 2030, birthMonth: 1 }));
     store.next = { ok: true, birthRefused: { birthYear: 2030, birthMonth: 1 } };
     await act(async () => { await view.result.current.save.flushProfile(store.erase); });
-    expect(view.result.current.save.profileForm()).toBe('clean');
+    expect(view.result.current.save.profileForm()).toBe('free');
   });
 
   it('US-34 AC13 (H14): an out-of-range value beside a valid one still to save is an edit: `typing`; a cleared field too', () => {
     const { view } = setup({ heightCm: 170, birthYear: 1980 });
     act(() => view.result.current.save.markSaved({ heightCm: 170, birthYear: 1980 }));
     act(() => view.result.current.setInputs({ heightCm: 999, birthYear: 1980 }));
-    expect(view.result.current.save.profileForm()).toBe('out-of-range');
+    expect(view.result.current.save.profileForm()).toBe('free');
     act(() => view.result.current.setInputs({ heightCm: 999, birthYear: 1985 }));
     expect(view.result.current.save.profileForm()).toBe('typing');
     act(() => view.result.current.setInputs({ heightCm: 999 }));
