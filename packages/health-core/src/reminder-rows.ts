@@ -49,7 +49,8 @@ export function rowsOf(optIn: FileReminderOptIn | undefined): ReminderTokenRow[]
 export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileReminderOptIn | undefined, erasedAt?: string): FileReminderOptIn | undefined {
   if (!local && !remote) return undefined;
   const rows = mergeByKey(rowsOf(local), rowsOf(remote), (row) => row.token);
-  const stored = [local, remote].flatMap((o) => (o ? [ownRow(o)] : [])).concat(rows).reduce(newer);
+  // Remote first: an exact tie keeps the remote object, as `pickNewerOptional` did.
+  const stored = [remote, local].flatMap((o) => (o ? [ownRow(o)] : [])).concat(rows).reduce(newer);
   const tokens = rows.filter((row) => row.token !== stored.token && !beforeErase(row, erasedAt));
   return tokens.length > 0 ? { ...stored, tokens } : stored;
 }

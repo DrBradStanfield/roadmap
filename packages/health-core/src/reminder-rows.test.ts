@@ -90,6 +90,15 @@ describe('US-17 AC19: a file with one real token is what it is today, byte for b
     }
   });
 
+  it('on an exact tie that differs only in key order, keeps the remote object as pickNewerOptional did', () => {
+    const ordered = row('token-a', 'active', 0);
+    const reordered = { updatedAt: ordered.updatedAt, lamport: ordered.lamport, provider: ordered.provider, email: ordered.email, token: ordered.token, status: ordered.status } as FileReminderOptIn;
+    const [a, b] = [file(ordered), file(reordered)];
+    expect(JSON.stringify(merge(a, b).reminderOptIn)).toBe(JSON.stringify(pickNewerOptional(a.reminderOptIn, b.reminderOptIn)));
+    expect(JSON.stringify(merge(a, b).reminderOptIn)).toBe(JSON.stringify(reordered));
+    expect(JSON.stringify(merge(b, a).reminderOptIn)).toBe(JSON.stringify(ordered));
+  });
+
   it('drops a superseded erase marker, as today', () => {
     const marker = file({ ...row('token-a', 'cancelled', 0), token: '', email: '' });
     const live = file(row('token-a', 'active', 1));
