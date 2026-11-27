@@ -49,7 +49,7 @@ export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileRem
 /** True when a re-read lost an opt-in row this save wrote: merging ours into
  *  theirs, by the merge's own order, would change theirs. */
 export function optInBehind(ours: FileReminderOptIn | undefined, theirs: FileReminderOptIn | undefined): boolean {
-  return ours !== undefined && stableStringify(mergeOptIn(ours, theirs)) !== stableStringify(mergeOptIn(theirs, undefined) ?? null);
+  return ours !== undefined && stableStringify(mergeOptIn(ours, theirs)) !== stableStringify(mergeOptIn(theirs, undefined));
 }
 
 /** What the reminders control shows: the newest active row, or else the
