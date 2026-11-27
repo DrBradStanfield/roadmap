@@ -13,6 +13,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
+import { unquote } from './guide-front-matter.mjs';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
 
 const argv = process.argv.slice(2);
@@ -37,7 +38,7 @@ const fmRaw = fm[1];
 const meta = Object.fromEntries(
   fmRaw.split('\n').map((l) => {
     const i = l.indexOf(':');
-    return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, '')];
+    return [l.slice(0, i).trim(), unquote(l.slice(i + 1).trim())];
   }),
 );
 

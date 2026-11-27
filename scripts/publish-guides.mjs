@@ -17,6 +17,7 @@ import { execFileSync } from 'node:child_process';
 import { requireMergedCode } from '../tools/write-gate.mjs';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
 import { norm } from './guide-compare.mjs';
+import { unquote } from './guide-front-matter.mjs';
 
 const API = '2025-07';
 const publish = process.argv.includes('--publish');
@@ -85,14 +86,11 @@ for (const file of files) {
   // was: the builder's stderr would need a new line AND a capture here, which
   // is more code than one more regex.
   const md = readFileSync(mdPath, 'utf8');
-  // Take the whole line, then strip the quotes only when they wrap it. A
-  // one-character class would truncate `title: "The \"local-first\" guide"` at the
-  // first inner quote and publish half a title.
+  // Take the whole line, then unquote it. A one-character class would truncate
+  // `title: "The \"local-first\" guide"` at the first inner quote and publish half a title.
   const front = (key) => {
     const line = md.match(new RegExp(`^${key}:[ \\t]*(.*?)[ \\t]*$`, 'm'))?.[1];
-    if (!line) return undefined;
-    const quoted = line.match(/^"([\s\S]*)"$/);
-    return quoted ? quoted[1] : line;
+    return line ? unquote(line) : undefined;
   };
   const slug = front('slug');
   const title = front('title');
