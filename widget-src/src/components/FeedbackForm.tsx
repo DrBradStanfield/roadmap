@@ -25,6 +25,11 @@ export function feedbackTransition(state: FeedbackMode, event: FeedbackEvent): F
   return { kind: event.type === 'sendOk' ? 'sent' : 'failed' };
 }
 
+/** US-19 AC3a: the thank-you takes the focus the form left on the page itself, never focus held somewhere else. */
+function takeDroppedFocus(el: HTMLElement) {
+  if (document.activeElement === document.body) el.focus();
+}
+
 interface FeedbackFormProps {
   /** Start with the form expanded (no toggle button shown). */
   initialExpanded?: boolean;
@@ -45,6 +50,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
   // The latest onClose, so a parent's new callback each render does not restart the thank-you.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const thanksRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
     if (formShown) {
@@ -57,6 +63,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
   // A sent message empties the form; the thank-you closes it after 3 s and, gone with the form, never fires.
   useEffect(() => {
     if (mode.kind !== 'sent') return;
+    takeDroppedFocus(thanksRef.current!);
     setEmail('');
     setMessage('');
     const timer = setTimeout(() => { send({ type: 'thanked' }); onCloseRef.current?.(); }, 3000);
@@ -81,7 +88,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
   return (
     <div className="feedback-section" id={initialExpanded ? undefined : 'health-feedback'}>
       {mode.kind === 'sent' ? (
-        <p className="feedback-success">Thank you for your feedback!</p>
+        <p ref={thanksRef} className="feedback-success" role="status" tabIndex={-1}>Thank you for your feedback!</p>
       ) : !formShown ? (
         <div className="feedback-links">
           <button
@@ -133,7 +140,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
             <input type="text" name="website" tabIndex={-1} autoComplete="off" />
           </div>
           {mode.kind === 'failed' && (
-            <p className="feedback-error">Failed to send. Please try again.</p>
+            <p className="feedback-error" role="alert">Failed to send. Please try again.</p>
           )}
           <div className="feedback-actions">
             <button
