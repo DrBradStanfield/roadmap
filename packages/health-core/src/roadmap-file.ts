@@ -49,9 +49,10 @@ export const CURRENT_SCHEMA_VERSION = 3;
  * integer in [1, CURRENT], raised to 2 when it carries `erasedRows` or opt-in
  * `tokens` rows, and to 3 when it holds a core row. Never lowers a version.
  * Every migrate, merge, erase and edit stamps through it, so no writer saves a
- * core row below 3. A reader from before version 2 strips only the opt-in's
- * own `token` from what an agent sees, so it must refuse a file with
- * `tokens` (US-17 AC19).
+ * core row below 3. The `tokens` floor (US-17 AC19): readers from before
+ * 2 Oct 2026 strip only the opt-in's own `token` from what an agent sees;
+ * version 2 arrived on 20 Oct, so every reader from before 20 Oct refuses a
+ * file with `tokens`.
  */
 export function recordSchemaVersion(file: {
   schemaVersion?: unknown; erasedRows?: unknown; labValues?: readonly unknown[]; reminderOptIn?: { tokens?: readonly unknown[] };
