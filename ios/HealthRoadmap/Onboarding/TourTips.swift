@@ -101,8 +101,9 @@ final class TourGuide {
 
     /// Sends the due tip's event, if the list has one to give. Hidden tips (AC10) never look.
     private func look(after moment: TourSight.Moment = .moved) {
-        guard TourSetup.presents, !presenting(), let due,
-              let event = sight.look(due.step, bringing: due.bringing, after: moment) else { return }
+        // The window is read last: only when there is an event to send.
+        guard TourSetup.presents, let due, let event = sight.look(due.step, bringing: due.bringing, after: moment),
+              !presenting() else { return }
         send(event)
     }
 
@@ -133,8 +134,12 @@ final class TourGuide {
         changingSight { $0.bounds = bounds }
     }
 
-    /// My health's list width, which sizes every tip's card (`cardWidth`).
+    /// My health's list width, which sizes every tip's card (`cardWidth`). Kept here as well as in
+    /// `sight` because `sight` is not observed and the card must redraw when the width changes.
     private(set) var listWidth: CGFloat = 0
+
+    /// The tour has not finished: its anchors and the list still report to it.
+    var isLive: Bool { state != .finished }
 
     /// A tip card's width: the list's, less the popover's margins, at most 440 points (an iPad
     /// or a wide window). Never the anchor row's: at the largest text size the first row reports
@@ -222,7 +227,7 @@ private struct TourTipAnchor<T: TourTip>: ViewModifier {
     func body(content: Content) -> some View {
         let up = tour?.state == .showing(T.step)
         // A finished tour reads a constant, so no report fires on each scroll frame.
-        let running = tour.map { $0.state != .finished } ?? false
+        let running = tour?.isLive ?? false
         content
             .onGeometryChange(for: CGRect.self) { [rowTop] in
                 guard running else { return .null }

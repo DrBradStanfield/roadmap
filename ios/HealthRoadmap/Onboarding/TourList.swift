@@ -26,7 +26,7 @@ private struct TourList: ViewModifier {
         content
             // Already inside the status bar and the tab bar: the rect the list shows rows in (measured).
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { tour?.listBounds($0) }
-            .onScrollReports(running: tour.map { $0.state != .finished } ?? false) { tour?.listMoving($0) } scrolled: { tour?.listScrolled($0) }
+            .onScrollReports(running: tour?.isLive ?? false) { tour?.listMoving($0) } scrolled: { tour?.listScrolled($0) }
             .onAppear {
                 wire()
                 appeared = true
