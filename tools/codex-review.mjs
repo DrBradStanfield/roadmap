@@ -241,7 +241,8 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { fileURLToPath } from "node:url";
 import { externalSources, headBlob, LINK_POLICY, materialiseLinks } from "./codex-review-links.mjs";
 import { claimOut, stopReason, writeOut } from "./codex-review-out.mjs";
-import { configArgs, findCodex, isExecutableFile, launchEnv, probeCodex, resolveBin } from "./codex-review-bin.mjs";
+import { chooseCodex, configArgs, launchArgs, launchEnv, probeCodex, recheckCodex } from "./codex-review-bin.mjs";
+import { parseArgv, readers } from "./codex-review-args.mjs";
 import { eventMetadata, exitOneOutcome, searchDomains } from "./codex-review-events.mjs";
 import { includeHash, includeWalk, isHealthRecord, isInstructionName, readRegular } from "./codex-review-include.mjs";
 import { isSecretName, isSecretPath, SECRET_EXCLUDES } from "./codex-review-names.mjs";
@@ -249,15 +250,9 @@ import { mainOf, PATTERNS, realFolder } from "./secret-rules.mjs";
 import { COPY_SHAPES, isEnvPath, isPathValue, isPublic, isSecretKey, MIN_SECRET_KEY_VALUE, MIN_VALUE, PATTERN_HIT, PEM_ARMOUR, PUBLIC_SHAPES, removeSecrets, searcher, secretsUnder, SKIP_BINARY_OVER, SYSTEM_ENV } from "./codex-review-scan.mjs";
 import { ALLOWED_TOOLS, isFetch, payloadOk, pick, plainHost, READ_TOOLS, schema, urlHost, validate } from "./codex-review-verdict.mjs";
 
-const args = process.argv.slice(2);
-const VALUE_OPTIONS = ["--codex", "--commit", "--range", "--message", "--model", "--out", "--timeout-min", "--record-file", "--include", "--include-limit-mb", "--subject", "--baseline", "--context"]; // an option's VALUE is data, never a flag ("--message --live"; Codex R1, AC19)
-const at = (name) => args.findIndex((a, i) => a === name && !VALUE_OPTIONS.includes(args[i - 1]));
-const opt = (name, dflt) => { const i = at(name); return i === -1 ? dflt : args[i + 1]; };
-const has = (name) => at(name) !== -1;
+const PARSED = parseArgv(process.argv.slice(2)), { has, opt, many } = readers(PARSED); // parsed once: an option's value is data, never a flag (Codex R1)
 const DEFAULT_RECORD = join(process.env.HOME ?? "", ".codex-review", "scratch-record.json");
 const usage = (why) => { console.error(`codex-review: ${why}`); stopReason(`E_USAGE: ${why}`); process.exit(1); };
-/** Every value of a repeatable flag, in order ("" for a flag with nothing after it). */
-const many = (name) => args.flatMap((a, i) => (a === name && !VALUE_OPTIONS.includes(args[i - 1]) ? [args[i + 1] ?? ""] : []));
 const OUT = opt("--out"); // US-40 AC18: claimed before anything else can stop the run (tools/codex-review-out.mjs)
 // What the run reads: --include and the record (the default too, under --record) through links; --subject, --context and a --baseline other than none at resolve(given), as checkoutPath reads them. A --record-file without --record is named, never read.
 const READ_INPUTS = many("--include").concat(has("--record") ? [opt("--record-file", DEFAULT_RECORD)] : []).filter(Boolean), LEXICAL = [...many("--subject"), ...many("--baseline").filter((p) => p !== "none"), ...many("--context")].filter(Boolean);
@@ -266,8 +261,8 @@ if (outRefused) usage(outRefused);
 
 const ROOT = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
 const git = (a, o = {}) => execFileSync("git", a, { cwd: ROOT, encoding: "utf8", maxBuffer: 256 << 20, ...o });
-const CODEX = (opt("--codex") ?? process.env.CODEX_BIN) ? resolveBin(opt("--codex") ?? process.env.CODEX_BIN) : findCodex(); // AC19: one absolute path for every call; none given, the ChatGPT app's CLI first
-if (!CODEX || !isExecutableFile(CODEX)) usage(CODEX ? `codex binary ${JSON.stringify(CODEX)} is refused: it must be an executable file that neither group nor others can write` : "codex binary not found: pass --codex <path> or set CODEX_BIN");
+const { bin: CODEX, error: CODEX_ERROR } = chooseCodex(has("--codex") ? opt("--codex") ?? "" : process.env.CODEX_BIN); // AC19: one canonical path for every call
+if (CODEX_ERROR) usage(CODEX_ERROR);
 const DEEP = has("--deep"); // AC19 (Brad 2026-11-27): gpt-6.2-sol by default; gpt-6.2-astra for design notes and the high-risk classes
 if (has("--model") && !/^[^-]/.test(opt("--model") ?? "")) usage("--model needs a model id after it");
 if (DEEP && has("--model")) usage("--deep is refused with --model: --deep picks gpt-6.2-astra, --model names the model itself");
@@ -314,7 +309,7 @@ const isInstruction = (f) => f === "docs/review-format.md" || f.split("/").some(
  * name a JSON policy of the same shape; that override is logged and reported. Anything less and it is ignored.
  */
 const realOrSelf = (p) => { try { return realpathSync(p); } catch { return resolve(p); } };
-const TEST_RUN = process.env.VITEST && has("--codex") && realOrSelf(opt("--codex")).startsWith(realOrSelf(tmpdir()) + sep);
+const TEST_RUN = process.env.VITEST && has("--codex") && CODEX.startsWith(realOrSelf(tmpdir()) + sep); // the canonical executable (Codex R4)
 const TEST_LINK_POLICY = (TEST_RUN && process.env.CODEX_REVIEW_TEST_LINK_POLICY) || null;
 /** Pinned --include roots (US-40 AC13); CODEX_REVIEW_TEST_INCLUDE_POLICY replaces the file under the same test gate. */
 const TEST_INCLUDE_POLICY = (TEST_RUN && process.env.CODEX_REVIEW_TEST_INCLUDE_POLICY) || null;
@@ -502,12 +497,12 @@ const rootIn = (roots, p) => {
 };
 /** Every --subject in order, each with the --baseline that follows it (adversary R7); `none` = review it as a new file. */
 const SUBJECT_ARGS = [];
-for (let i = 0; i < args.length; i++) {
-  if (args[i] === "--subject") SUBJECT_ARGS.push({ given: args[i + 1] ?? "", baseline: undefined });
-  else if (args[i] === "--baseline") {
+for (const { name, value = "" } of PARSED) {
+  if (name === "--subject") SUBJECT_ARGS.push({ given: value, baseline: undefined });
+  else if (name === "--baseline") {
     const last = SUBJECT_ARGS.at(-1);
-    if (!last || last.baseline !== undefined) usage(`--baseline ${JSON.stringify(args[i + 1] ?? "")}: a baseline pairs with the --subject just before it, and there is no unpaired --subject before this one`);
-    last.baseline = args[i + 1] ?? "";
+    if (!last || last.baseline !== undefined) usage(`--baseline ${JSON.stringify(value)}: a baseline pairs with the --subject just before it, and there is no unpaired --subject before this one`);
+    last.baseline = value;
   }
 }
 const contextArgs = many("--context");
@@ -991,6 +986,23 @@ function collectCredentialValues(root = ROOT, name = null, extra = []) {
 }
 const namesOf = (vals) => [...new Set([...vals].flatMap((v) => [...credValues.get(v).names]))].sort();
 
+// --record: verify the local record BEFORE anything can read it, and before any codex call (AC6; Codex R7 on AC19): a wrong
+// account must never be disclosed, not merely detected afterwards. One read: the verified bytes are the bytes staged.
+let recordBytes = null;
+if (RECORD) {
+  const how = `Download health-roadmap.json from Brad's scratch account's Dropbox (Apps/Health Roadmap; which account: docs/claude-codex.md, "The record is always the scratch one") to ${SCRATCH_RECORD.path}.`;
+  if (!existsSync(SCRATCH_RECORD.path)) finish(incomplete(`E_NO_SCRATCH_RECORD: no local scratch record. ${how}`), "0.0");
+  let stamp; // a directory, an unreadable file, or non-JSON is a bounded incomplete, not a crash
+  try {
+    if (!statSync(SCRATCH_RECORD.path).isFile()) throw new Error("not a file");
+    recordBytes = readFileSync(SCRATCH_RECORD.path);
+    stamp = JSON.parse(recordBytes.toString("utf8"))?.meta?.createdAt;
+  } catch { stamp = undefined; }
+  if (typeof stamp !== "string") finish(incomplete(`E_BAD_SCRATCH_RECORD: the local record is not a readable roadmap file. ${how}`), "0.0");
+  if (stamp !== SCRATCH_RECORD.createdAt) finish(incomplete(`E_WRONG_RECORD: the local record is not the designated test record (its creation stamp differs). ${how} If that record was erased and recreated, re-pin SCRATCH_RECORD.`), "0.0");
+  // The server runtime is the checkout's own pinned tsx, never a launcher that can fetch (no network, US-40 AC6).
+  if (!existsSync(TSX)) finish(incomplete("E_NO_TSX: node_modules/.bin/tsx is missing in this checkout; run npm install"), "0.0");
+}
 // --- 1c. What the binary can do (AC19), before the snapshot; the yield first, so a queued signal stops the run before any codex call.
 await new Promise(setImmediate);
 const env = launchEnv(process.env), CONFIG_ARGS = configArgs(WEB_ACCESS); // the CR2 allow-list; the -c settings, the forced ChatGPT login among them
@@ -1010,27 +1022,11 @@ if (probe.stop) finish(incomplete(`${probe.stop}; the reviewer was not started`)
   }
 }
 work = mkdtempSync(join(tmpdir(), "codex-review-"));
-// --record: verify the local record BEFORE anything can read it (a wrong
-// account must never be disclosed, not merely detected afterwards).
-if (RECORD) {
-  const how = `Download health-roadmap.json from Brad's scratch account's Dropbox (Apps/Health Roadmap; which account: docs/claude-codex.md, "The record is always the scratch one") to ${SCRATCH_RECORD.path}.`;
-  if (!existsSync(SCRATCH_RECORD.path)) finish(incomplete(`E_NO_SCRATCH_RECORD: no local scratch record. ${how}`), "0.0");
-  // One read: the bytes that are verified are the bytes that are served. A
-  // directory, an unreadable file, or non-JSON is a bounded incomplete, not a crash.
-  let bytes, stamp;
-  try {
-    if (!statSync(SCRATCH_RECORD.path).isFile()) throw new Error("not a file");
-    bytes = readFileSync(SCRATCH_RECORD.path);
-    stamp = JSON.parse(bytes.toString("utf8"))?.meta?.createdAt;
-  } catch { stamp = undefined; }
-  if (typeof stamp !== "string") finish(incomplete(`E_BAD_SCRATCH_RECORD: the local record is not a readable roadmap file. ${how}`), "0.0");
-  if (stamp !== SCRATCH_RECORD.createdAt) finish(incomplete(`E_WRONG_RECORD: the local record is not the designated test record (its creation stamp differs). ${how} If that record was erased and recreated, re-pin SCRATCH_RECORD.`), "0.0");
-  // The server runtime is the checkout's own pinned tsx, never a launcher that can fetch (no network, US-40 AC6).
-  if (!existsSync(TSX)) finish(incomplete("E_NO_TSX: node_modules/.bin/tsx is missing in this checkout; run npm install"), "0.0");
+if (RECORD) { // the bytes verified above, staged
   // Set BEFORE the write, so the exit handler removes a partial copy from a failed write too (US-40 AC5).
   recordCopy = join(work, "record.json");
   try {
-    writeFileSync(recordCopy, bytes, { flag: "wx" });
+    writeFileSync(recordCopy, recordBytes, { flag: "wx" });
   } catch {
     rmSync(recordCopy, { force: true });
     finish(incomplete("E_COPY_FAILED: the scratch record could not be staged for the reviewer"), "0.0");
@@ -1285,15 +1281,7 @@ const RECORD_ARGS = RECORD
       "-c", 'mcp_servers.health.enabled_tools=["read_record","get_plan"]',
     ]
   : [];
-const codexArgs = [
-  "exec", "--ignore-user-config", "--strict-config", "--json", "--ephemeral", "--skip-git-repo-check",
-  "--sandbox", "read-only",
-  ...probe.disable, // AC3's eight, plus every sub-agent, browser and automation feature this binary lists (AC19)
-  // Hosted search (AC14): "cached" (index only) by default, "live" under --live; never "indexed", never --search; the shell's sandbox network stays off.
-  ...CONFIG_ARGS,
-  "--model", MODEL, ...RECORD_ARGS,
-  "-C", src, "--output-schema", schemaPath, "-o", outPath, "--color", "never", "-",
-];
+const codexArgs = () => launchArgs({ disable: probe.disable, configArgs: CONFIG_ARGS, model: MODEL, recordArgs: RECORD_ARGS, src, schemaPath, outPath });
 // Last check before anything leaves this machine (US-40 AC11): no credential
 // file anywhere in the work dir, and none named in the patch. Fail closed.
 guard("final credential check", () => {
@@ -1348,10 +1336,12 @@ console.error(`codex-review: ${label} → snapshot ${snapshotId} (${files.length
 // Everything above is synchronous, so a signal that arrived during it has only been queued: one turn of the event loop
 // runs its handler (exit 130, the work dir deleted) before Codex can be spawned.
 await new Promise(setImmediate);
+probe = recheckCodex(CODEX, probe, env, CONFIG_ARGS, (m) => console.error(`codex-review: ${m}`)); // Codex R5: the probed file, or one fresh probe
+if (probe.stop) finish(incomplete(`${probe.stop}; the reviewer was not started`), "0.0");
 const started = Date.now();
 const run = await new Promise((resolve) => {
   let stdout = "", stderr = "";
-  const child = spawn(CODEX, codexArgs, { cwd: src, stdio: ["pipe", "pipe", "pipe"], env });
+  const child = spawn(CODEX, codexArgs(), { cwd: src, stdio: ["pipe", "pipe", "pipe"], env });
   child.stdout.on("data", (d) => { stdout += d; });
   child.stderr.on("data", (d) => { stderr += d; });
   const timer = setTimeout(() => { child.kill("SIGKILL"); resolve({ code: null, timedOut: true, stdout, stderr }); }, TIMEOUT_MS);

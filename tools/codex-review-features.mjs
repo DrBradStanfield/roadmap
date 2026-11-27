@@ -19,11 +19,10 @@ export const DISABLE_IF_LISTED = [
 ];
 
 const REMOVED = "stage removed in 0.171: accepted for old configs, no effect";
-const STUCK = "cannot be disabled on 0.171.0-alpha.13.2: stage removed, still true after --disable (it is disabled on 0.163)";
 const TUI = "interactive TUI or desktop app only; codex exec has no UI";
 /**
  * Features allowed to stay enabled, each with why. Seeded 2026-11-27 from codex-cli 0.171.0-alpha.13.2 after the disables
- * above (0.163.0's enabled set is a subset); two of them are named in DISABLE_IF_LISTED too, but 0.171 keeps them on. "Judged" is a reading of the name and stage, not a probe of what it does.
+ * above (0.163.0's enabled set is a subset). "Judged" is a reading of the name and stage, not a probe of what it does.
  */
 export const INERT = {
   api_key_cyber_access_programs: "API-key accounts only; the run is forced to the ChatGPT login",
@@ -50,7 +49,6 @@ export const INERT = {
   mcp_oauth_refresh_coordination: "OAuth refresh for MCP servers; only the --record stdio server is configured",
   mentions_v2: "@-mentions in the composer",
   prediction_preserve_parent_tools: "tool list bookkeeping",
-  realtime_conversation: STUCK,
   reasoning_effort_override: "lets the -c model_reasoning_effort setting apply",
   resize_all_images: REMOVED,
   retain_client_tool_outputs: "keeps tool outputs in context",
@@ -73,8 +71,16 @@ export const INERT = {
   untrusted_as_tool_output: "marks untrusted text as tool output",
   view_image: "reads an image file the sandbox can already read",
   workspace_dependencies: "reads workspace dependency metadata; same sandbox",
-  worktrees: STUCK,
   write_stdin_approval: "approval before writing to a running command's stdin",
+};
+
+/**
+ * Named in DISABLE_IF_LISTED, yet still enabled after --disable: allowed ONLY on the version and at the stage where that
+ * was seen (2026-11-27, `features list` under the wrapper's flags; both are disabled on 0.163.0). Anywhere else, refused.
+ */
+export const CANNOT_DISABLE = {
+  realtime_conversation: { version: "codex-cli 0.171.0-alpha.13.2", stage: "removed" },
+  worktrees: { version: "codex-cli 0.171.0-alpha.13.2", stage: "removed" },
 };
 
 /** The child's whole environment (CR2): only what the CLI needs to find itself and its login; never an API-key variable. */
@@ -84,11 +90,27 @@ export const launchEnv = (parent) => ({ ...Object.fromEntries(["PATH", "HOME", "
 export const configArgs = (webAccess) => ["-c", `web_search="${webAccess}"`, "-c", 'shell_environment_policy.inherit="core"', "-c", 'model_reasoning_effort="high"',
   "-c", "project_doc_max_bytes=0", "-c", "project_doc_fallback_filenames=[]", "-c", 'forced_login_method="chatgpt"'];
 
-/** `features list` text as [{ name, enabled }]; a line that is not `<name> <stage...> true|false` is skipped. */
-export const parseFeatures = (text) => text.split("\n").map((l) => l.trim().split(/\s+/)).filter((p) => p.length >= 3 && /^(true|false)$/.test(p.at(-1))).map((p) => ({ name: p[0], enabled: p.at(-1) === "true" }));
+/**
+ * `features list` text as { features: [{ name, stage, enabled }] }, or { error } when any non-blank row is not exactly
+ * `<name> <stage> true|false`, a name repeats, or there is no row (Codex R2: a row the parser cannot read is never skipped).
+ * The error names a row by number only: the CLI's own text never reaches the report.
+ */
+export function parseFeatures(text) {
+  const rows = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const features = [];
+  for (const [i, row] of rows.entries()) {
+    const m = /^([a-z0-9_.]+)\s+([a-z][a-z ]*?)\s+(true|false)$/.exec(row);
+    if (!m) return { error: `row ${i + 1} is not "<name> <stage> true|false"` };
+    features.push({ name: m[1], stage: m[2], enabled: m[3] === "true" });
+  }
+  if (!features.length) return { error: "no rows" };
+  if (new Set(features.map((f) => f.name)).size !== features.length) return { error: "a feature is listed twice" };
+  return { features };
+}
 
 /** The --disable arguments for a binary that lists `names`. */
 export const disableArgs = (names) => [...DISABLE_ALWAYS, ...DISABLE_IF_LISTED.filter((n) => names.includes(n))].flatMap((n) => ["--disable", n]);
 
-/** Enabled features no one has judged, sorted. */
-export const unjudged = (features) => features.filter((f) => f.enabled && !Object.hasOwn(INERT, f.name)).map((f) => f.name).sort();
+/** Enabled features no one has judged, sorted; a CANNOT_DISABLE entry counts as judged only on its own version and stage. */
+export const unjudged = (features, version) => features.filter((f) => f.enabled && !Object.hasOwn(INERT, f.name)
+  && !(Object.hasOwn(CANNOT_DISABLE, f.name) && CANNOT_DISABLE[f.name].version === version && CANNOT_DISABLE[f.name].stage === f.stage)).map((f) => f.name).sort();
