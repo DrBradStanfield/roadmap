@@ -13,7 +13,7 @@
  * drift on the tool name, the field enum, or the unit-resolution rules.
  *
  * Three tools:
- *  - propose_field_edit       — longitudinal measurements (weight, LDL, BP, …).
+ *  - propose_field_edit       — longitudinal values (weight, LDL, BP, …).
  *                               Pre-fills the real form cell; the user Saves.
  *  - propose_medication_edit  — medications (statin, ezetimibe, …). These
  *                               auto-save today, so the chat states the change;
@@ -81,7 +81,7 @@ const STATIN_BRANDS: Array<[string, string]> = ([
 /** An answer as a token: trimmed, lower case, no apostrophes, runs of spaces or hyphens as '_' ("Not yet" is not_yet). */
 const tokenOf = (text: string) => text.trim().toLowerCase().replace(/['\u2019]/g, '').replace(/[\s-]+/g, '_');
 /** The brands an option's own label names, each to the option's value: the single words in its parentheses
- *  ("Semaglutide injection (Ozempic/Wegovy)") and a one-word name before them ("Nexletol (bempedoic acid
+ *  ("Semaglutide injection (Ozempic/Wegovy)") and a one-word name before them ("Nexletol (Bempedoic acid
  *  180mg)"), never a word of the value itself (US-16 AC3, review R2). */
 const brandsOf = ({ value, label }: { value: string; label: string }): Array<[string, string]> => {
   const paren = /^(.*?) \((.*)\)$/.exec(label);
@@ -135,7 +135,7 @@ function answersText(key: MedicationKey): string {
 /**
  * Tool: propose a single longitudinal-measurement edit. The model emits the
  * user's stated value + unit (NEVER SI) + an optional ISO date. Multiple
- * measurements from one lab draw should be emitted as multiple tool_use blocks
+ * values from one lab draw should be emitted as multiple tool_use blocks
  * sharing the same `date` — the widget batches same-date edits into one Save.
  */
 export const PROPOSE_FIELD_EDIT_TOOL = {
@@ -286,7 +286,7 @@ export const APP_CHAT_EDIT_TOOLS = [
 ];
 
 /**
- * Shown in the chat thread when the model proposed a form edit but returned no
+ * Shown in the conversation when the model proposed a form edit but returned no
  * prose. Shared by both transports so the two surfaces can't drift. A
  * measurement waits for Save; a medication saves at once, and no line promises an Undo (US-67 N3);
  * a profile change waits for its own banner's Save, so a mixed turn says so

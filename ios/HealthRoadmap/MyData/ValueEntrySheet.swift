@@ -90,7 +90,7 @@ struct ValueEntrySheet: View {
                     write(.confirmed(held)) { await replace(held.id, held.value) }
                 }
             } message: { _ in
-                Text("The old value stays in your record, marked as entered in error.")
+                Text("The old value stays in your record, kept as a mistake.")
             }
             .onAppear { focused = true }
         }

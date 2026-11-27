@@ -8,7 +8,7 @@
  * Housekeeping (no user-facing behaviour). Each case checks what the harness sees: the hook's JSON
  * decision, or the script's exit code and what it left on disk.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { spawn, spawnSync } from 'node:child_process';
 import {
   chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync,
@@ -161,22 +161,30 @@ describe('worktree-guard.cjs: edits (US-64 AC1)', () => {
 });
 
 describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US-64 AC2-AC4)', () => {
+  // Each test makes its own worktree and takes it as far along as it needs (changed, committed,
+  // pushed): a shared one carried each test's commits, push and merge into the next, in any order.
   let WT: string;
-  beforeAll(() => {
-    const r = newWorktree('feat');
-    expect(r.status).toBe(0);
+  let name: string;
+  let made = 0;
+  beforeEach(() => {
+    name = `feat${++made}`;
+    const r = newWorktree(name);
+    expect(r.status, r.stderr).toBe(0);
     WT = r.path;
   }, 60_000);
+  const changeTracked = () => writeFileSync(join(WT, 'tracked.txt'), `changed in ${name}\n`);
+  const commitChange = () => { changeTracked(); sh(WT, `git commit -q -am ${name}`); };
+  const pushChange = () => { commitChange(); sh(WT, `git push -q -u origin claude/${name}`); };
 
   it('makes a locked worktree on claude/<name> from origin/main, tracking nothing', () => {
-    expect(WT).toBe(join(MAIN, '.claude/worktrees/feat'));
-    expect(sh(WT, 'git rev-parse --abbrev-ref HEAD')).toBe('claude/feat');
+    expect(WT).toBe(join(MAIN, `.claude/worktrees/${name}`));
+    expect(sh(WT, 'git rev-parse --abbrev-ref HEAD')).toBe(`claude/${name}`);
     expect(sh(WT, 'git rev-parse HEAD')).toBe(sh(MAIN, 'git rev-parse origin/main'));
     expect(spawnSync('git', ['-C', WT, 'rev-parse', '--abbrev-ref', '@{u}'], { env: ENV }).status).not.toBe(0);
     expect(existsSync(join(sh(WT, 'git rev-parse --absolute-git-dir'), 'locked'))).toBe(true);
   });
   it('refuses a taken name and a bad name', () => {
-    expect(newWorktree('feat').status).not.toBe(0);
+    expect(newWorktree(name).status).not.toBe(0);
     expect(newWorktree('a/b').status).not.toBe(0);
   });
   it('allows edits inside the worktree', () => {
@@ -197,10 +205,12 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(sh(WT, 'git status --porcelain')).toBe('');
   });
   it("the clone resolves workspace packages to the worktree's own source (US-64 AC3)", () => {
+    expect(bash(WT, 'ls')).toBeNull();
     const resolved = createRequire(join(WT, 'x.js')).resolve('@roadmap/health-core');
     expect(realpathSync(resolved)).toBe(join(WT, 'packages/health-core/index.js'));
   });
   it('npm ci or rm -rf through the link empties only the clone, and the next call re-clones (US-64 AC3)', () => {
+    expect(bash(WT, 'ls')).toBeNull();
     sh(WT, 'rm -rf node_modules/'); // follows the link, as npm ci does
     expect(existsSync(join(MAIN, 'node_modules/pkg'))).toBe(true);
     sh(WT, 'rm -rf "$(readlink node_modules)"'); // the clone itself gone
@@ -222,7 +232,7 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(stop(MAIN)).toBeNull();
   });
   it('Stop blocks uncommitted work, once, even from a cwd outside the repo (US-64 AC2)', () => {
-    writeFileSync(join(WT, 'tracked.txt'), 'two\n');
+    changeTracked();
     expect(stop(WT)?.decision).toBe('block');
     // A session started in the worktree runs the worktree's own copy of the hook; its cwd may wander off.
     expect(stop(S, {}, false, installGuard(WT))?.decision).toBe('block');
@@ -230,6 +240,7 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(stop(WT, { CLAUDE_CODE_REMOTE: 'true' })).toBeNull();
   });
   it('Stop skips uncommitted files while a background subagent of this session runs (US-64 AC25)', () => {
+    changeTracked();
     const tasks = (type: string, status: string) => hook({ hook_event_name: 'Stop', cwd: WT, stop_hook_active: false,
       background_tasks: [{ id: 't1', type, status, description: 'x' }] });
     expect(tasks('subagent', 'running')).toBeNull();
@@ -245,12 +256,13 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(hook({ hook_event_name: 'Stop', cwd: WT, background_tasks: 'junk' })?.reason).toMatch(/uncommitted/);
   });
   it('worktree-done refuses uncommitted work', () => {
-    const r = done('feat');
+    changeTracked();
+    const r = done(name);
     expect(r.status).not.toBe(0);
     expect(r.stdout).toMatch(/uncommitted/);
   });
   it('Stop blocks an unpushed commit', () => {
-    sh(WT, 'git commit -q -am two');
+    commitChange();
     expect(stop(WT)?.reason).toMatch(/not pushed/);
     // A running subagent hides only uncommitted files, never an unpushed commit (US-64 AC25).
     writeFileSync(join(WT, 'wip.txt'), 'half\n');
@@ -260,28 +272,34 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     rmSync(join(WT, 'wip.txt'));
   });
   it('worktree-done refuses an unpushed commit', () => {
-    expect(done('feat').stdout).toMatch(/on no remote branch/);
+    commitChange();
+    expect(done(name).stdout).toMatch(/on no remote branch/);
   });
   it('Stop blocks a pushed branch with no open PR, and allows one with a PR', () => {
-    sh(WT, 'git push -q -u origin claude/feat');
+    pushChange();
     expect(stop(WT, { GH_COUNT: '0' })?.reason).toMatch(/no open PR/);
     expect(stop(WT, { GH_COUNT: '1' })).toBeNull();
     expect(stop(WT, { GH_FAIL: '1' })).toBeNull(); // gh missing or failing: fail open, the GitHub watches back it up
   });
   it('worktree-done refuses work whose PR is still open', () => {
-    expect(done('feat', { GH_STATE: 'OPEN' }).stdout).toMatch(/PR OPEN; merge or close it first/);
+    pushChange();
+    expect(done(name, { GH_STATE: 'OPEN' }).stdout).toMatch(/PR OPEN; merge or close it first/);
   });
   it('SessionStart lists the worktree with unlanded work and the dirty main checkout', () => {
+    pushChange();
     writeFileSync(join(MAIN, 'stray.txt'), 'x\n');
     const o = hook({ hook_event_name: 'SessionStart', cwd: MAIN });
     const ctx = o.hookSpecificOutput.additionalContext as string;
-    expect(ctx).toMatch(/\.claude\/worktrees\/feat \[claude\/feat\]: 0 uncommitted file\(s\), 0 unpushed commit\(s\), 1 not on origin\/main/);
+    expect(ctx).toContain(`.claude/worktrees/${name} [claude/${name}]: 0 uncommitted file(s), 0 unpushed commit(s), 1 not on origin/main`);
     expect(ctx).toMatch(/main checkout: 1 uncommitted file\(s\), e\.g\. stray\.txt/);
     rmSync(join(MAIN, 'stray.txt'));
   });
   it('once merged, worktree-done copies gitignored output back, removes the links (never their targets), the worktree and branch', () => {
+    expect(bash(WT, 'ls')).toBeNull(); // the package clones, made by a Bash call
+    pushChange();
+    mkdirSync(join(WT, '.claude'), { recursive: true });
     mkdirSync(join(WT, 'tmp'));
-    writeFileSync(join(WT, 'tmp/result.txt'), 'made in the worktree\n');
+    writeFileSync(join(WT, `tmp/${name}.txt`), 'made in the worktree\n');
     writeFileSync(join(WT, '.claude/settings.local.json'), '{}\n'); // gitignored, but never copied back
     writeFileSync(join(WT, 'run.log'), 'a log\n'); // copied back, not dropped (review R8)
     // ios/scripts/build-engine.mjs rebuilds the engine bundle, its sidecar and the parity fixtures in each
@@ -297,11 +315,11 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     writeFileSync(join(WT, 'ios/HealthRoadmapTests/Fixtures/only-here.auckland.golden.json'), 'worktree build');
     const clones = cacheDir(WT);
     expect(existsSync(clones)).toBe(true);
-    sh(MAIN, 'git pull -q --ff-only && git merge -q --no-edit origin/claude/feat && git push -q origin main');
-    const r = done('feat');
+    sh(MAIN, `git pull -q --ff-only && git merge -q --no-edit origin/claude/${name} && git push -q origin main`);
+    const r = done(name);
     expect(r.status).toBe(0);
     expect(r.stdout).toMatch(/^done/m);
-    expect(readFileSync(join(MAIN, 'tmp/result.txt'), 'utf8')).toBe('made in the worktree\n');
+    expect(readFileSync(join(MAIN, `tmp/${name}.txt`), 'utf8')).toBe('made in the worktree\n');
     expect(existsSync(join(MAIN, '.claude/settings.local.json'))).toBe(false);
     expect(r.stdout).toMatch(/not copied back[\s\S]*\.claude\/settings\.local\.json/);
     expect(readFileSync(join(MAIN, 'run.log'), 'utf8')).toBe('a log\n');
@@ -311,17 +329,18 @@ describe('worktree-new.sh, the guard inside a worktree, and worktree-done.sh (US
     expect(existsSync(clones)).toBe(false); // its clones are deleted too
     expect(readlinkSync(join(MAIN, 'abs-link'))).toBe(join(MAIN, 'tracked.txt'));
     expect(existsSync(WT)).toBe(false);
-    expect(spawnSync('git', ['-C', MAIN, 'show-ref', '-q', '--verify', 'refs/heads/claude/feat'], { env: ENV }).status).not.toBe(0);
+    expect(spawnSync('git', ['-C', MAIN, 'show-ref', '-q', '--verify', `refs/heads/claude/${name}`], { env: ENV }).status).not.toBe(0);
   });
   it('a gitignored file that differs from the main checkout keeps the worktree for a human', () => {
-    const w = newWorktree('clash').path;
-    mkdirSync(join(w, 'tmp'));
-    writeFileSync(join(w, 'tmp/result.txt'), 'a different copy\n');
-    const r = done('clash');
+    mkdirSync(join(MAIN, 'tmp'), { recursive: true });
+    writeFileSync(join(MAIN, `tmp/${name}.txt`), 'made in the worktree\n');
+    mkdirSync(join(WT, 'tmp'));
+    writeFileSync(join(WT, `tmp/${name}.txt`), 'a different copy\n');
+    const r = done(name);
     expect(r.status).not.toBe(0);
-    expect(r.stdout).toMatch(/differ from the main checkout's copy[\s\S]*tmp\/result\.txt/);
-    expect(existsSync(w)).toBe(true);
-    expect(readFileSync(join(MAIN, 'tmp/result.txt'), 'utf8')).toBe('made in the worktree\n');
+    expect(r.stdout).toMatch(new RegExp(`differ from the main checkout's copy[\\s\\S]*tmp/${name}\\.txt`));
+    expect(existsSync(WT)).toBe(true);
+    expect(readFileSync(join(MAIN, `tmp/${name}.txt`), 'utf8')).toBe('made in the worktree\n');
   });
 });
 

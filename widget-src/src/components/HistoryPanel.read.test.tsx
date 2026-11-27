@@ -72,7 +72,7 @@ describe('US-06 AC4: the history lightbox once its reads land together (pins)', 
     expect(view.queryByText('Loading history...')).toBeNull();
     expect(ticked(view)).toEqual(['LDL Cholesterol', 'Weight', 'Zonulin']);
     expect(view.container.querySelectorAll('.metric-chart-container h3')).toHaveLength(3);
-    expect(view.getByText('Additional Lab Results')).toBeTruthy();
+    expect(view.getByText('Additional Blood Tests')).toBeTruthy();
   });
 
   it('opened on one metric: only that vital is ticked; every lab test is ticked', async () => {
@@ -123,7 +123,7 @@ describe('US-06 AC4: the history lightbox once its reads land together (pins)', 
     const view = render(<HistoryPanel />);
     await act(async () => { reads.vitals.resolve(VITALS); reads.labs.reject(new Error('read failed')); reads.meds.resolve([]); });
     expect(ticked(view)).toEqual(['LDL Cholesterol', 'Weight']);
-    expect(view.queryByText('Additional Lab Results')).toBeNull();
+    expect(view.queryByText('Additional Blood Tests')).toBeNull();
     expect(mocks.captureException).toHaveBeenCalledOnce();
   });
 
@@ -174,5 +174,17 @@ describe('US-21 AC3c: the ticks on open do not depend on which read lands last',
     await land('meds', []);
     await land('labs', LABS);
     expect(view.container.querySelectorAll('.metric-chart-container h3')).toHaveLength(3);
+  });
+});
+
+describe('US-21 AC3d: a lab test named like a built-in object property', () => {
+  it('"constructor", "__proto__" and "toString" open the history window, each ticked and charted', async () => {
+    const labs = ['constructor', '__proto__', 'toString'].map((metricName, i) =>
+      ({ id: `b${i}`, metricName, value: 40 + i, unit: 'ng/mL', recordedAt: '2026-08-01' }));
+    const view = render(<HistoryPanel />);
+    await landAll(VITALS, [...LABS, ...labs]);
+    expect(view.queryByText('Loading history...')).toBeNull();
+    for (const name of ['Constructor', 'Proto', 'ToString', 'Zonulin']) expect(box(view, name).checked).toBe(true);
+    expect(view.container.querySelectorAll('.metric-chart-container h3')).toHaveLength(6);
   });
 });

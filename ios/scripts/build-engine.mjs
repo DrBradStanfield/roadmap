@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds the engine bundle the iOS app loads, and the parity goldens its tests
+// Builds the engine bundle the iPhone app loads, and the parity goldens its tests
 // compare against (US-25 AC1). Run before any Xcode build:
 //   node ios/scripts/build-engine.mjs
 // Outputs are generated, not committed (ios/.gitignore).

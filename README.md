@@ -148,7 +148,7 @@ environment. Manual and emergency steps, plus the two-app Fly split, are in
 You do not have to take the code's word for it. Open the site with the DevTools
 network tab recording and use the widget.
 
-- Saving a metric produces no request to our server. The record file is written
+- Saving a metric produces no request to our server. The health record is written
   only by the adapters in `widget-src/src/storage/` (`dropbox.ts`, `drive.ts`,
   `github.ts`, `webdav.ts`, `local-storage-adapter.ts`), so the write goes to
   your own Dropbox, Google Drive, GitHub, WebDAV server, or localStorage. No
@@ -222,7 +222,7 @@ network tab recording and use the widget.
 - Two devices editing apart converge without a conversation. If both record the same
   measurement for the same day while apart, the newer entry becomes that day's value;
   the other stays in your history marked entered-in-error. Nothing is deleted. The
-  record file is the trust root: anything that can write it can already delete it
+  health record is the trust root: anything that can write it can already delete it
   outright, and a file carrying a later erase wins on every device. Recovery is your
   provider's version history.
 - Telemetry is a closed allow-list of event names in
@@ -245,7 +245,7 @@ network tab recording and use the widget.
   that same schedule.
 - Feedback you type into the widget's feedback box is stored and emailed. The
   route takes your email address and up to 2000 characters of free text, adds
-  your Shopify customer id when you are logged in, writes the row to
+  your Shopify customer id when you are signed in, writes the row to
   `feedback_submissions` and sends the same thing to Brad through Resend
   (`app/routes/api.feedback.ts`, `recordFeedbackSubmission` in
   `app/lib/product-events.server.ts`). Nothing scrubs that text and nothing

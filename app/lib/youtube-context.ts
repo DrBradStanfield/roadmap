@@ -1,21 +1,10 @@
-// The YouTube bot's platform context: its prompt, the video's post and the
-// topic masters' current views. Sentry-free, so tools/youtube-comment-dryrun.ts
+// The YouTube bot's platform context: its prompt (a chat doc, US-15 AC82), the
+// video's post and the topic masters' current views. tools/youtube-comment-dryrun.ts
 // builds the same context under tsx.
-import fs from 'fs';
-import path from 'path';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { requireChatDocs } from './chat-system-prompt.server';
 import { loadBlogArticle, contentHeader } from './matched-content';
 import { parseFrontmatter, stripFrontmatter } from './frontmatter';
-
-/** Empty when the file is missing; the bot then refuses to start. */
-export const YOUTUBE_PROMPT_TEMPLATE = (() => {
-  try {
-    return fs.readFileSync(path.join(process.cwd(), 'app/lib/chat-youtube-prompt.md'), 'utf-8');
-  } catch {
-    console.warn('YouTube bot: chat-youtube-prompt.md not found — bot will not start');
-    return '';
-  }
-})();
 
 // ---------------------------------------------------------------------------
 // Platform-context construction — substitutes the video's blog post (looked up
@@ -35,7 +24,7 @@ FOLLOW-UP TURN: You already replied once in this comment thread (see the convers
 
 export function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEntry, body: string, loaded: string[], isFollowUp = false): string {
   const views = masterViews(entry.topics, loaded);
-  const base = YOUTUBE_PROMPT_TEMPLATE
+  const base = requireChatDocs().youtubePrompt
     .replace('{{VIDEO_TITLE}}', entry.title)
     .replace('{{VIDEO_URL}}', `https://youtu.be/${videoId}`)
     .replace('{{VIDEO_PUBLISHED}}', entry.publishedAt?.slice(0, 10) || 'unknown')

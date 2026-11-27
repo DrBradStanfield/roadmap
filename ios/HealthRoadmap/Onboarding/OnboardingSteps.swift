@@ -1,7 +1,7 @@
 import Foundation
 
 /// The new-user flow (US-54): Apple Health, then four questions, less those Health
-/// answered, which the last step lists (AC3b), then My plan.
+/// answered, which the last step lists (AC3b), then My health.
 /// Pure, so the rules are tested without screens (OnboardingStepsTests).
 enum OnboardingStep: Int, CaseIterable, Comparable {
     case health, sex, birth, height, weight, review

@@ -9,7 +9,7 @@ import { getBackendKind, getEraseIdentity } from '../lib/roadmap-data';
 import { trackProductEvent } from '../lib/server-api';
 import { Sentry } from '../lib/sentry';
 import { loadFromLocalStorage } from '../lib/storage';
-import { createRemoteChangeRelay } from '../lib/remote-replay';
+import { createRemoteChangeRelay, type ProfileForm } from '../lib/remote-replay';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 import type { RemoteChange } from '@roadmap/health-core/record-host';
 import type { useRecordState } from './useRecordState';
@@ -27,8 +27,9 @@ type ReadPolicy = { read: 'record'; relay: 'arrive' | 'reread'; spends: boolean 
 
 /**
  * Each re-read reason's effects (US-34 AC4, AC4a). A held change ends only
- * through a `record` read; `remote` is held while the profile is dirty or a
- * unit switch waits (that test is read in `signal`). A held `remote` does
+ * through a `record` read; `remote` is held while the profile holds an edit or a
+ * unit switch waits (`form`, read in `signal`); an out-of-range value is no
+ * edit: it rides through, so the change applies (AC13). A held `remote` does
  * nothing until the next profile save settles, landed or refused (AC8). An erase the screen does not
  * yet show never enters the relay: REMOTE_CHANGED with one goes to the erase
  * machine (`arrived`), whose read (`shows`) ends a hold, clears the answer
@@ -69,7 +70,7 @@ interface Later {
   markSaved: (inputs: Partial<HealthInputs>) => void;
   flushPendingSave: () => void;
   flushListSaves: () => void;
-  profileDirty: () => boolean;
+  profileForm: () => ProfileForm;
   clearAnswered: (spend?: boolean) => void;
   savedProfile: () => Partial<HealthInputs>;
 }
@@ -181,7 +182,8 @@ export function useRecordApply(args: {
     return read;
   }));
 
-  const dirty = useCallback(() => latest.current.later().profileDirty() || !!latest.current.units.pending(), []);
+  // This tab's unsaved unit switch is an edit the re-read would undo (US-34 AC7a, H2).
+  const form = useCallback((): ProfileForm => (latest.current.units.pending() ? 'typing' : latest.current.later().profileForm()), []);
   const signal = useCallback((reason: ReadReason): Promise<void> | void => {
     const { later } = latest.current;
     const policy = READ_POLICY[reason];
@@ -208,10 +210,10 @@ export function useRecordApply(args: {
     // switch holds it too: applied now, the record's units would undo it
     // (US-34 AC7a, H2). A page that cannot save never keeps a switch pending
     // (useProfileSave). Another writer's erase never comes here (the listener).
-    if (policy.relay === 'arrive') return relay.arrived(dirty());
+    if (policy.relay === 'arrive') return relay.arrived(form());
     if (policy.spends) later().clearAnswered(true); // a refusal: not an answer given here (US-62 AC13); spends a waiting landing (AC25b)
     return relay.reread();
-  }, [relay, dirty]);
+  }, [relay, form]);
 
   // The page's own save re-reads through the table; awaiting it types the read as Promise<void> with no cast.
   const ownSave = useCallback(async () => { await signal('own-save'); }, [signal]);
@@ -242,11 +244,11 @@ export function useRecordApply(args: {
       // An erase arrival only when the machine does not show it yet. Its snapshot, not the store's mark: the snapshot
       // leads the mark until the commit, so a read already dispatched for this erase counts it there (R1, Fable).
       else if (erase !== machine.getSnapshot().shown) machine.dispatch({ type: 'arrived', identity: erase });
-      else relay.arrived(dirty(), false); // its late echo: a remote change, held like any, counting nothing
+      else relay.arrived(form(), false); // its late echo: a remote change, held like any, counting nothing
     };
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
-  }, [signal, relay, dirty]);
+  }, [signal, relay, form]);
 
   return { showRecord, signal, ownSave, shows, settled: relay.settled, firstReadShown, firstReadFailed };
 }

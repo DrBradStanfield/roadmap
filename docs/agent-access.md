@@ -17,7 +17,8 @@ Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-recor
   `https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json`
 - Current `schemaVersion`: **3**, the highest the app reads. A file holding a core blood row
   (a `labValues` row with `core: true`, any status) is **3** (US-66 AC15). One with no core row
-  that carries `erasedRows` (rule 6) is **2** (US-09 AC23). Any other file is **1**. The app
+  that carries `erasedRows` (rule 6), or a `reminderOptIn.tokens` row (rule 12, US-17 AC19), is
+  **2** (US-09 AC23). Any other file is **1**. The app
   stamps the version; it never lowers one. A copy of this repo or its CLI from before November
   2026 refuses a version-3 file and writes nothing: update it (`git pull`).
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
@@ -52,8 +53,9 @@ document has `fileRef: ""`.
 1. Parse the JSON.
 2. Check `schemaVersion`. If it is greater than 3, stop, a newer app wrote this file and
    you may not understand every field. Read if you like; do not write. A file at 2 carries
-   `erasedRows` (rule 6), and a file at 3 holds core blood rows in `labValues`: if your tool
-   predates either, do not write that file. If you add the first `core: true` row to a file
+   `erasedRows` (rule 6) or nested reminder rows in `reminderOptIn.tokens` (rule 12), and a
+   file at 3 holds core blood rows in `labValues`: if your tool predates either, do not write
+   that file. A file stated at a higher version than its contents need keeps that version. If you add the first `core: true` row to a file
    below 3, set `schemaVersion` to 3 in the same write.
 3. Current values live in the arrays, not in a separate "current" object.
    - `labValues` (every blood test) and `measurements` (weight, waist and blood pressure) are
@@ -224,7 +226,8 @@ someone's medical history, or lose their data at the next device sync.
 11. **Deleting a document** means setting `deleted: true` on its row. A removed row comes
     straight back from any other device.
 12. **`reminderOptIn.token` is a capability secret.** Leave it where it is; never copy it
-    out of the file.
+    out of the file. So is every `token` in `reminderOptIn.tokens`, the rows of the
+    record's other tokens (US-17 AC19).
 13. **Never write `fieldStamps`** on `profile` or `screenings` (US-10 AC6). They say when
     each field was last written, so the merge can take each field's newest write
     instead of the newest whole object. To change a field by hand, change it, set that
@@ -259,7 +262,7 @@ Validate your result against the schema before you write it back.
 ## Caveats: read these before you automate anything
 
 - **A write you make is now visible almost at once in an open browser tab** (US-34, 2026-09-02). The widget no longer waits for a timer: on Dropbox it holds a `list_folder/longpoll` open on the app folder and re-reads within about a second of your write; on Google Drive it walks the changes feed every 3 seconds. That is a reason to write the whole record in one go rather than in pieces, a half-finished sequence is on the user's screen while you are still writing it.
-- **There is no lock and no version guard on a filesystem write.** The web app writes
+- **There is no lock and no version guard on a filesystem write.** The website writes
   with an optimistic-concurrency check; you do not have one. Read, modify, and write back
   promptly. Do not hold the file open across a long task, and do not write while the user
   has the app open in a browser tab.

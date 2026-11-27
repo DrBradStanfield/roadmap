@@ -18,6 +18,8 @@
  */
 import { useEffect, useReducer, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
+import { activeAddresses, shownOptIn } from '@roadmap/health-core/reminder-rows';
+import { joinWithAnd } from '@roadmap/health-core/suggestions';
 import { EMAIL_REGEX } from '../src/lib/email';
 import { REMOTE_CHANGED_EVENT } from '../src/storage/roadmap-store';
 import { cancelReminders, ENROL_NOTICE_KEY, optInToReminders, ReminderEmailNeeded, remindersSupported } from './reminders';
@@ -38,7 +40,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
   useEffect(() => {
     const onChange = () => {
       setVersion((v) => v + 1);
-      if (getReminderOptIn()?.status === 'active') send({ type: 'recordOn' });
+      if (shownOptIn({ reminderOptIn: getReminderOptIn() })?.status === 'active') send({ type: 'recordOn' });
     };
     window.addEventListener('hr:reminders-changed', onChange);
     window.addEventListener(REMOTE_CHANGED_EVENT, onChange);
@@ -49,8 +51,10 @@ export function RemindersControl({ backend }: { backend: Backend }) {
   }, []);
 
   if (!remindersSupported(backend)) return null;
-  const optIn = getReminderOptIn();
-  const active = optIn?.status === 'active';
+  // On when any row is; every active address the record holds, the shown one first (US-17 AC19).
+  const optIn = { reminderOptIn: getReminderOptIn() };
+  const active = shownOptIn(optIn)?.status === 'active';
+  const addresses = activeAddresses(optIn);
 
   const busy = isBusy(step);
   const view = shown(step);
@@ -87,7 +91,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
     <div className="hr-reminders">
       {active ? (
         <>
-          <span className="hr-sync-status">✓ Email health reminders on → {optIn!.email}</span>
+          <span className="hr-sync-status">✓ Email health reminders on{addresses.length > 0 ? ` → ${joinWithAnd(addresses)}` : ''}</span>
           <button className="hr-sync-link" disabled={busy} onClick={() => void turnOff()}>
             {step.phase === 'turningOn' ? 'Setting up…' : busy ? 'Turning off…' : 'Turn off'}
           </button>

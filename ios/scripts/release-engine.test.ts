@@ -7,7 +7,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { bridgeId } from './build-engine.mjs';
 import { canonicalManifest, DOMAIN, publicKeyOf, signManifest, verifyManifest } from './engine-signing.mjs';
 
@@ -22,8 +22,13 @@ function newSeed(): Buffer {
 const seed = newSeed();
 const pinsFile = join(work, 'pins.json');
 writeFileSync(pinsFile, JSON.stringify({ daily: publicKeyOf(seed).toString('base64') }));
-const out = join(work, 'out');
-const dir = join(out, `bridge-${bridgeId()}`);
+/** Each test's own release folder, so no test reads a release another one made. */
+let out = '';
+let dir = '';
+beforeEach(() => {
+  out = mkdtempSync(join(work, 'out-'));
+  dir = join(out, `bridge-${bridgeId()}`);
+});
 /** A floor of 1, so these tests choose any build; the committed floor has its own test below. */
 const floorFile = join(work, 'floor.json');
 writeFileSync(floorFile, JSON.stringify({ minAppBuild: 1 }));
@@ -65,6 +70,11 @@ function release(now: string, extra: string[] = []) {
 
 const manifestBytes = () => readFileSync(join(dir, 'manifest.json'));
 const manifest = () => JSON.parse(manifestBytes().toString());
+/** The signed release a later test starts from: 03:15, for app builds 3 and up. */
+function firstRelease() {
+  const run = release('2026-10-22T03:15:42Z', ['--min-app-build', '3']);
+  expect(run.status, run.stderr).toBe(0);
+}
 
 describe('release-engine (US-25 AC18)', () => {
   it('refuses a key id the app does not pin, before building', () => {
@@ -156,6 +166,7 @@ export async function resolve(specifier, context, next) {
   }, 120_000);
 
   it('refuses a second release in the same minute: versions only rise', () => {
+    firstRelease();
     const before = manifestBytes();
     const run = build('2026-10-22T03:15:59Z');
     expect(run.status).not.toBe(0);
@@ -164,6 +175,7 @@ export async function resolve(specifier, context, next) {
   });
 
   it('--if-changed releases nothing for an unchanged engine', () => {
+    firstRelease();
     const before = manifestBytes();
     const run = build('2026-10-22T04:00:00Z', ['--if-changed']);
     expect(run.status, run.stderr).toBe(0);
@@ -173,6 +185,7 @@ export async function resolve(specifier, context, next) {
   }, 120_000);
 
   it('a later release rises, keeps the floor and the build, and keeps only the previous bundle', () => {
+    firstRelease();
     const first = manifest();
     writeFileSync(join(dir, 'stale.js'), 'old');
     const run = build('2026-10-22T05:00:00Z');
@@ -200,6 +213,7 @@ export async function resolve(specifier, context, next) {
   it('refuses a manifest whose minAppBuild is below the committed floor, and keeps the last one', () => {
     const committed = join(__dirname, '..', 'engine-floor.json');
     expect(JSON.parse(readFileSync(committed, 'utf8')).minAppBuild).toBe(11);
+    firstRelease();
     const before = manifestBytes();
     expect(manifest().minAppBuild).toBe(3);
     const carried = probedBuild('2026-10-22T08:00:00Z', ['--floor', committed]);
@@ -219,6 +233,7 @@ export async function resolve(specifier, context, next) {
   // PR 1218 R3: a floor file the build cannot read as a whole number fails closed, never passes.
   // A floor below 1 too (PR 1218 re-check N2, lead H29): no app build is below it, so it guards nothing.
   it('refuses a floor file without a whole-number minAppBuild of at least 1, and keeps the last manifest', () => {
+    firstRelease();
     const before = manifestBytes();
     for (const [i, bad] of [{}, { minAppBuild: '11' }, { minAppBuild: 11.5 }, { minAppBuild: null }, { minAppBuild: 0 }].entries()) {
       const file = join(work, `bad-floor-${i}.json`);
@@ -233,6 +248,7 @@ export async function resolve(specifier, context, next) {
 
   // TA-C01: the option checks run before the build, so a bad option starts no process at all.
   it('refuses a --min-version above this release, before building', () => {
+    firstRelease();
     const before = manifestBytes();
     const { run, spawned } = probedBuild('2026-10-22T10:00:00Z', ['--min-version', '999999999999']);
     expect(run.status).not.toBe(0);
@@ -242,6 +258,7 @@ export async function resolve(specifier, context, next) {
   }, 120_000);
 
   it('refuses a --min-app-build below 1, before building', () => {
+    firstRelease();
     const before = manifestBytes();
     const { run, spawned } = probedBuild('2026-10-22T10:01:00Z', ['--min-app-build', '0']);
     expect(run.status).not.toBe(0);
@@ -267,6 +284,7 @@ export async function resolve(specifier, context, next) {
 
   // TA-C16: without --allow-dirty, uncommitted engine source stops the release.
   it('refuses uncommitted engine source without --allow-dirty', () => {
+    firstRelease();
     const before = manifestBytes();
     const { run, asked } = withStubGit('2026-10-22T11:00:00Z', ' M ios/engine/entry.ts\n');
     expect(run.status).not.toBe(0);

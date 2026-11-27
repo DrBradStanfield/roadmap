@@ -8,13 +8,13 @@ stories: ["US-30", "US-31", "US-33"]
 
 Your record from the Health by Dr Brad tool is one file, `health-roadmap.json`, in your own cloud storage. This repo carries two commands that work on it directly. `get-plan` reads the file and prints the same plan the web tool would, on your machine, with no network call and no AI model in the loop. `edit-record` files a new value into it, keeping the rules that stop a health record from being quietly rewritten.
 
-This guide is for someone comfortable in a terminal. It also reads as instructions for an AI coding agent working on your behalf: point it here and it can run every command below.
+This guide is for someone comfortable in a terminal. It also reads as instructions for your AI assistant, working in your terminal on your behalf: point it here and it can run every command below.
 
-## First, find your file
+## First, find your record
 
-There is no command that creates a record. The app writes it the first time you save a value with a cloud provider connected, and the tools here only read and change a file that already exists. Point them at a path that does not exist and they refuse, without creating anything.
+There is no command that creates a record. The app writes it the first time you save a value with your cloud storage connected, and the tools here only read and change a file that already exists. Point them at a path that does not exist and they refuse, without creating anything.
 
-Where it sits depends on the provider you connected. Dropbox keeps it in an app folder. New connections get `~/Dropbox/Apps/Health Plan by Dr Brad/health-roadmap.json`; a connection made before the app was renamed keeps its original folder, `~/Dropbox/Apps/Health Roadmap by Dr Brad/`. On a synced Mac or PC the file is at that path. Google Drive keeps it in a folder called `Health Plan by Dr Brad` in My Drive, wherever Drive for desktop mounts My Drive; mark that folder available offline first, or Drive streams the file instead of storing it. GitHub keeps it at the root of the one repo your token is scoped to, so in your clone it is just `health-roadmap.json`. If you never connected a provider, your record is in your browser and there is no file on disk at all: connect Dropbox or Google Drive in the tool first, and it moves your record there. [Find your record file](/blogs/guides/find-your-record) has the detail.
+Where it sits depends on the cloud storage you connected. Dropbox keeps it in an app folder. New connections get `~/Dropbox/Apps/Health Plan by Dr Brad/health-roadmap.json`; a connection made before the app was renamed keeps its original folder, `~/Dropbox/Apps/Health Roadmap by Dr Brad/`. On a synced Mac or PC the file is at that path. Google Drive keeps it in a folder called `Health Plan by Dr Brad` in My Drive, wherever Drive for desktop mounts My Drive; mark that folder available offline first, or Drive streams the file instead of storing it. GitHub keeps it at the root of the one repo your token is scoped to, so in your clone it is just `health-roadmap.json`. If you never connected any cloud storage, your record is in your browser and there is no file on disk at all: connect Dropbox or Google Drive on the website first, and it moves your record there. [Find your record](/blogs/guides/find-your-record) has the detail.
 
 ## Or start with the sample
 
@@ -40,7 +40,7 @@ Run the commands from the root of the clone.
 
 That prints your profile line, your current values with the date each was taken, what is due and when, and the suggestions grouped by priority, each with the reason behind it and the papers it rests on. It is educational, not medical advice, and the output says so.
 
-Two other forms. For an AI agent, or anything that wants to read the plan as data rather than prose:
+Two other forms. For your AI assistant, or anything that wants to read the plan as data rather than prose:
 
 `npx tsx tools/get-plan.ts ~/health-roadmap.json --json`
 
@@ -62,7 +62,7 @@ echo '{"sex":"male","age":52,"heightCm":178,"values":[{"metric":"ldl","value":3.
 
 It prints the same plan as above (add `--json` or `--html <out>` as before). The record exists only in memory: nothing is written, nothing is sent, and the numbers are gone when the command ends.
 
-`heightCm` is required. `sex` is optional: without it the plan leaves out the parts that depend on sex, as above. Give `age`, or `birthYear` with an optional `birthMonth`: without either, the plan leaves out every age-based step, and age alone can be a year off near a birthday. Add `"unitSystem":"conventional"` to see mg/dL instead of mmol/L. Each value is a core `metric` (`ldl`, `hba1c`, `weight`, …) or any other blood `test`, with an optional `date` (default today). A metric with two units needs its `unit`: LDL without one stops with `ldl needs a unit (mmol/L or mg/dL)` rather than guess. Values go through the same range checks as `edit-record`. To keep the numbers, enter them in the app; no command here creates a record file.
+`heightCm` is required. `sex` is optional: without it the plan leaves out the parts that depend on sex, as above. Give `age`, or `birthYear` with an optional `birthMonth`: without either, the plan leaves out every age-based step, and age alone can be a year off near a birthday. Add `"unitSystem":"conventional"` to see mg/dL instead of mmol/L. Each value is a core `metric` (`ldl`, `hba1c`, `weight`, …) or any other blood `test`, with an optional `date` (default today). A test or measurement that comes in two units needs its `unit`: LDL without one stops with `ldl needs a unit (mmol/L or mg/dL)` rather than guess. Values go through the same range checks as `edit-record`. To keep the numbers, enter them in the app; no command here creates a health record.
 
 ## Add a value
 
@@ -74,11 +74,11 @@ It answers with what it wrote and the id of the new row:
 
 `Added weight 67.8 kg on 2026-08-25 — new row e8ab7e79-a2b3-4d30-903f-1a4f0fc40901`
 
-Core metrics are stored in SI units. Give a value in the other system and add `--unit`, and it converts before storing: `--value 120 --unit mg/dL` on LDL lands as 3.1 mmol/L. Leave `--date` off and it uses today. A future date is refused, and so is a value outside the plausible range for that metric, with the range in the message. A blood test given with `--test` meets its own plausible range where the app keeps one (glucose, ferritin, TSH and others): `--test glucose --value 5.5 --unit mg/dL` is refused, because 5.5 mg/dL is 0.31 mmol/L, almost certainly a typing or unit mistake. `get-plan.ts --from-values` refuses it the same way.
+Core values are stored in metric units. Give a value in the other system and add `--unit`, and it converts before storing: `--value 120 --unit mg/dL` on LDL lands as 3.1 mmol/L. Leave `--date` off and it uses today. A future date is refused, and so is a value outside its plausible range, with the range in the message. A blood test given with `--test` meets its own plausible range where the app keeps one (glucose, ferritin, TSH and others): `--test glucose --value 5.5 --unit mg/dL` is refused, because 5.5 mg/dL is 0.31 mmol/L, almost certainly a typing or unit mistake. `get-plan.ts --from-values` refuses it the same way.
 
 ## When the day is already taken
 
-A record holds one value per metric per day. Try to add a second and it refuses rather than choosing for you:
+A record holds one value per test or measurement per day. Try to add a second and it refuses rather than choosing for you:
 
 `npx tsx tools/edit-record.ts add ~/health-roadmap.json --metric ldl --value 3.1 --date 2026-05-12`
 
@@ -104,7 +104,7 @@ Every blood test is a lab value. A catalogued test is filed under its catalogue 
 
 `--unit` is required here. Lab values show in your plan under their own heading; they are informational, and no suggestion is computed from them.
 
-## The backups beside your file
+## The backups beside your record
 
 Before every write, the record is copied next to itself as `health-roadmap.json.bak-` plus a timestamp. The newest three are kept and older ones are deleted. If a write files something you did not mean, the copy from just before it is sitting in the same folder.
 
@@ -128,15 +128,15 @@ Everything it prints is educational, not medical advice, and names the handle so
 
 ## What these commands will not do
 
-They never delete anything. There is no delete command, and no row is ever removed or edited in place. Erasing your data stays something you do in the app.
+They never delete anything. There is no delete command, and no row is ever removed or edited in place. Deleting your data stays something you do in the app.
 
 They never touch your medications, supplements, screenings or profile. Those are current-state fields that a second writer can silently overwrite, so this version leaves them alone.
 
 They never reach the network. No server, no AI model, no analytics. Your record and its backups are the only files touched, and the plan is computed from the numbers in front of it.
 
-## Getting an AI agent to do this for you
+## Getting your AI assistant to do this for you
 
-Paste this into an AI with access to your terminal.
+Paste this into your AI assistant, if it can use your terminal.
 
 ```bootstrap-prompt
 I have cloned https://github.com/DrBradStanfield/roadmap and my health record is a JSON file in my own cloud folder. Read docs/guides/command-line.md in the clone, then work only through the two commands it describes.
@@ -163,18 +163,18 @@ gemini mcp add -s user --transport http drstanfield https://mcp.drstanfield.com/
 
 A browser opens, you approve the connection and pick your cloud folder, and the
 assistant holds the connection from then on. It reads and writes the same file the
-commands above do, under the same rules. You cancel it at your cloud provider's
-connected-apps page.
+commands above do, under the same rules. You cancel it on the connected-apps page of Dropbox
+or Google Drive.
 
 One difference is worth knowing before you choose it. On this route our server unseals
 the cloud credential your assistant holds, opens your folder with it, and holds your
 record in server memory for as long as one request takes. It stores none of it and keeps
 no copy, but it does read it. The commands at the top of this page never do: they run on
-your machine against your file and reach no network at all. The same is true of
+your machine against your record and reach no network at all. The same is true of
 `tools/mcp-server.ts`, which gives an assistant the same tools over that local file with
 no server of ours involved. If you do not want a server reading your record, stay on
 those.
 
 ## If something goes wrong
 
-Run either command with `--help` for the full list of options. If a command fails in a way this guide does not explain, or the output is wrong, open an issue at https://github.com/DrBradStanfield/roadmap/issues. Issues are public, so describe what went wrong in your own words and paste only the error message. Leave out your values, your plan's output, file paths and any command that carries a value. If you can, show the problem with `docs/examples/health-roadmap.sample.json`, an invented record, instead of your own. The `schemaVersion` at the top of your file is all we need from it.
+Run either command with `--help` for the full list of options. If a command fails in a way this guide does not explain, or the output is wrong, open an issue at https://github.com/DrBradStanfield/roadmap/issues. Issues are public, so describe what went wrong in your own words and paste only the error message. Leave out your values, your plan's output, file paths and any command that carries a value. If you can, show the problem with `docs/examples/health-roadmap.sample.json`, an invented record, instead of your own. The `schemaVersion` at the top of your record is all we need from it.

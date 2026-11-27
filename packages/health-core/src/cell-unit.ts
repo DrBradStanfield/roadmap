@@ -1,7 +1,7 @@
 // The unit a core value is shown and typed in (US-05 AC2): one of its metric's
 // two systems, or, for Lp(a), one of the three units its field takes, read
 // through the unit table (mg/L is a tenth of mg/dL). The website's matrices and
-// the iPhone app's My data both read and write through these.
+// the iPhone app's My health both read and write through these.
 
 import {
   LPA_UNITS, UNIT_DEFS, canonicalToReported, formatDisplayValue, fromCanonicalValue, getDisplayLabel, getDisplayRange,

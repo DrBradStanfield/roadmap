@@ -12,6 +12,7 @@
  */
 import { fieldsBehind, mergeFiles, rootIdOf, rowRootIds } from './merge';
 import { isObject, migrateFile, RecordShapeError } from './migrate';
+import { optInBehind } from './reminder-rows';
 import { APPEND_ONLY_ARRAYS, ROW_ARRAYS, type RoadmapFile } from './roadmap-file';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { SyncManager, type DocumentSpec, type SyncContext } from './sync-manager';
@@ -70,6 +71,9 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
     // then bring that row back (Codex review of PR #299).
     const kept = new Set(parsed.erasedRows?.ids);
     if ([...listed].some((id) => !kept.has(id))) return 'the erased list this save wrote';
+    // The opt-in this save wrote, every token's row (US-17 AC19). Past a newer
+    // erase it is reported too, as the fields below are, so the retry takes the erase in.
+    if (optInBehind(ours.reminderOptIn, parsed.reminderOptIn)) return 'the reminders opt-in this save wrote';
     // Past a newer erase this reports our fields too, and the retry takes the
     // erase in: mergeFiles lets the higher epoch decide them.
     const behind = fieldsBehind(ours.profile, parsed.profile).length + fieldsBehind(ours.screenings, parsed.screenings).length;
@@ -83,3 +87,4 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
 export function recordSync(adapter: StorageAdapter, deviceId: string, now: string | (() => string)): SyncManager<RoadmapFile> {
   return new SyncManager<RoadmapFile>(adapter, deviceId, ROADMAP_DOC, { now: typeof now === 'string' ? () => now : now });
 }
+

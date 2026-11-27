@@ -82,7 +82,7 @@ describe('US-09 AC16a: the chat runs without cross-tab sync where the browser re
     expect(posted).toEqual([{ instanceId: 'a', type: 'thread-new', payload: {}, ts: 0 }]);
   });
 
-  it('control: a working channel delivers to a subscriber until it unsubscribes, and closes on page unload', async () => {
+  it('control: a working channel delivers to a subscriber until it unsubscribes, and closes as the page goes', async () => {
     let channel: RecordingChannel | undefined;
     vi.stubGlobal('BroadcastChannel', class extends RecordingChannel { constructor() { super(); channel = this; } });
     const { sync } = await freshModules();
@@ -92,7 +92,7 @@ describe('US-09 AC16a: the chat runs without cross-tab sync where the browser re
     unsubscribe();
     channel!.listeners.forEach((fn) => fn({ data: 'after unsubscribe' }));
     expect(got).toEqual(['from another tab']);
-    window.dispatchEvent(new Event('beforeunload'));
+    window.dispatchEvent(new Event('pagehide'));
     expect(channel!.isClosed).toBe(true);
     const before = opened;
     sync.postSync({ instanceId: 'a', type: 'thread-new', payload: {}, ts: 0 });

@@ -85,6 +85,7 @@ describe('bridge contract (US-25 AC18)', () => {
   // `words`: a door answering a Promise of one bare word, never JSON (S50b).
   const FROZEN_OPTIONAL_DOORS: Record<string, { args: string[]; call: unknown[]; shape?: unknown; bytes?: true; words?: string[] }> = {
     labSearchJson: { args: ['text'], call: ['ferr'], shape: [{ name: 'string', key: 'string', kind: 'string', units: ['string'] }] },
+    bpSysAdvance: { args: ['systolic', 'diastolic'], call: ['120', ''], words: ['advance', 'defer', 'stay'] }, // US-02 AC12
     documentOriginal: { args: ['id'], call: ['doc-1'], bytes: true },
     cloudOnline: { args: [], call: [], shape: {} }, // US-09 AC30: '{}', nothing to read
     // US-13 AC13: one sure LDL on an empty record (no record text), ticked.

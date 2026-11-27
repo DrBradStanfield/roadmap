@@ -2,7 +2,7 @@
  * US-15 AC65, AC72, AC80: every chat doc is one load state. The required docs
  * (system prompt, algorithm, products, both postures) make it 'missing' when any
  * is absent, unreadable or blank: it names the files and carries no text. The
- * optional ones (writing style, answer bank, router and classifier prompts, blog index) make it
+ * optional ones (writing style, answer bank, router, classifier and YouTube prompts, blog index) make it
  * 'degraded', naming them: chat answers without them. Nothing is read at import;
  * the first chatDocs() call reads once and reports once.
  */
@@ -35,7 +35,7 @@ const REQUIRED = [
   'app/lib/chat-posture-doctor.md',
   'app/lib/chat-posture-brand.md',
 ] as const;
-const OPTIONAL = ['docs/writing-style.md', 'docs/chatbot/answer-bank.md', 'app/lib/chat-router-prompt.md', 'app/lib/chat-classifier-prompt.md'] as const;
+const OPTIONAL = ['docs/writing-style.md', 'docs/chatbot/answer-bank.md', 'app/lib/chat-router-prompt.md', 'app/lib/chat-classifier-prompt.md', 'app/lib/chat-youtube-prompt.md'] as const;
 const INDEX = 'docs/blog/index.json';
 
 const ENTRIES: BlogIndexEntry[] = [
@@ -76,6 +76,7 @@ describe('US-15 AC80: transition table', () => {
     expect(next.docs.knowledgeOverview).toContain('- Sleep — Sleep well.');
     expect(next.docs.evidence.startsWith('# Clinical Evidence Reference\n')).toBe(true);
     expect(next.docs.classifierPrompt).toBe('text of app/lib/chat-classifier-prompt.md'); // US-15 AC81
+    expect(next.docs.youtubePrompt).toBe('text of app/lib/chat-youtube-prompt.md'); // US-15 AC82
   });
 
   const requiredCases = REQUIRED.flatMap((file) => ([['absent or unreadable', null], ['empty', ''], ['whitespace only', ' \n\t\n']] as const)
@@ -96,6 +97,7 @@ describe('US-15 AC80: transition table', () => {
     ['answer bank blank', { 'docs/chatbot/answer-bank.md': '  \n' }, ENTRIES, ['docs/chatbot/answer-bank.md']],
     ['router prompt absent', { 'app/lib/chat-router-prompt.md': null }, ENTRIES, ['app/lib/chat-router-prompt.md']],
     ['classifier prompt blank (US-15 AC81)', { 'app/lib/chat-classifier-prompt.md': ' \n' }, ENTRIES, ['app/lib/chat-classifier-prompt.md']],
+    ['YouTube prompt blank (US-15 AC82)', { 'app/lib/chat-youtube-prompt.md': '\n' }, ENTRIES, ['app/lib/chat-youtube-prompt.md']],
     ['blog index empty', {}, [], [INDEX]],
     ['writing style and blog index', { 'docs/writing-style.md': '' }, [], ['docs/writing-style.md', INDEX]],
   ])('unread + read, %s: degraded, naming what chat answers without', async (_case, over, index, absent) => {
@@ -114,6 +116,8 @@ describe('US-15 AC80: transition table', () => {
     expect(noRouter.kind === 'degraded' && noRouter.docs.router.prompt).toBe('');
     const noClassifier = transition({ kind: 'unread' }, read({ 'app/lib/chat-classifier-prompt.md': null }));
     expect(noClassifier.kind === 'degraded' && noClassifier.docs.classifierPrompt).toBe('');
+    const noYouTube = transition({ kind: 'unread' }, read({ 'app/lib/chat-youtube-prompt.md': null }));
+    expect(noYouTube.kind === 'degraded' && noYouTube.docs.youtubePrompt).toBe('');
   });
 
   it.each(['loaded', 'degraded', 'missing'] as const)('%s + read: unchanged, the docs are read once per process', async (kind) => {
@@ -203,6 +207,7 @@ describe('US-15 AC80: createChatDocs(root)', () => {
     ['answer bank blank (was silent)', [], { 'docs/chatbot/answer-bank.md': '\n' }, ['docs/chatbot/answer-bank.md']],
     ['router prompt absent (was a console line)', ['app/lib/chat-router-prompt.md'], {}, ['app/lib/chat-router-prompt.md']],
     ['classifier prompt absent (was its own Sentry message, US-15 AC81)', ['app/lib/chat-classifier-prompt.md'], {}, ['app/lib/chat-classifier-prompt.md']],
+    ['YouTube prompt absent (was a console line, US-15 AC82)', ['app/lib/chat-youtube-prompt.md'], {}, ['app/lib/chat-youtube-prompt.md']],
     ['blog index absent (was a console line)', [INDEX], {}, [INDEX]],
   ])('%s: degraded, one Sentry error per absent file, however often it is read', async (_case, skip, over, absent) => {
     const captureMessage = await sentry();
@@ -229,6 +234,7 @@ describe('US-15 AC80: no chat doc is read at import', () => {
     await import('./chat.server');
     await import('./chat-router.server');
     await import('./chat-classifier.server');
+    await import('./youtube-context'); // US-15 AC82
     expect(docsRead()).toEqual([]);
     expect(chatDocs().kind).toBe('loaded');
     expect(docsRead().length).toBeGreaterThanOrEqual(REQUIRED.length + OPTIONAL.length);

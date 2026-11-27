@@ -1021,6 +1021,30 @@ describe('US-02 AC11: feet and inches keep what is typed', () => {
     await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
     await waitFor(() => expect([feet.value, inchesBox(view).value]).toEqual(['5', '3']), { timeout: 3000 });
   });
+
+  // US-02 AC11b: the boxes stop skipping the height they typed once another height replaced it.
+  it('US-02 AC11b: another device sets 5 ft 7 in, then back to the 5 ft 10 in typed here: the boxes show each, and typing after it stays as typed', async () => {
+    const view = await open();
+    const feet = await toFeetInches(view);
+    type(feet, '5');
+    key(inchesBox(view), '1');
+    key(inchesBox(view), '0');
+    await wait(900); // the profile's 500 ms save
+    const typed = (await recordOnDisk()).profile.heightCm;
+    const fromElsewhere = async (heightCm: number | undefined, was: number | undefined) => {
+      await saveChangedMeasurements({ heightCm }, { heightCm: was }, getShownErase()); // another device
+      await flushRoadmapStore();
+      await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); });
+    };
+    await fromElsewhere(170.18, typed); // 5 ft 7 in
+    await waitFor(() => expect([feet.value, inchesBox(view).value]).toEqual(['5', '7']), { timeout: 3000 });
+    await fromElsewhere(typed, 170.18); // back to 5 ft 10 in
+    await waitFor(() => expect([feet.value, inchesBox(view).value]).toEqual(['5', '10']), { timeout: 3000 });
+    type(inchesBox(view), ''); // AC11 still holds for the boxes' own edits: no "0" written back
+    expect([feet.value, inchesBox(view).value]).toEqual(['5', '']);
+    key(inchesBox(view), '1');
+    expect([feet.value, inchesBox(view).value]).toEqual(['5', '1']);
+  });
 });
 
 describe('US-02 AC5: an out-of-range value stays in its field, its error shown, and is never written', () => {
@@ -1177,7 +1201,7 @@ describe('PR 518 Codex re-check', () => {
 });
 
 describe('PR 518 adversary re-check', () => {
-  it('N1 (US-34 AC4): a refused birth year, then cleared, releases the remote change it held', async () => {
+  it('N1 (US-34 AC4, AC13): a refused birth year, its save settled, holds no remote change: it shows at once, 1850 stays; clearing it then keeps the change', async () => {
     await saveChangedMeasurements({ heightCm: 170, sex: 'female' }, {}, getShownErase());
     await addMeasurement('weight', 70, '2026-09-01', getShownErase());
     await flushRoadmapStore();
@@ -1190,10 +1214,12 @@ describe('PR 518 adversary re-check', () => {
     await wait(700); // refused
     await saveChangedMeasurements({ heightCm: 171, sex: 'female' }, { heightCm: 170, sex: 'female' }, getShownErase()); // another writer
     await flushRoadmapStore();
-    await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); }); // held: the form holds 1850
-    expect((q(view, '#heightCm') as HTMLInputElement).value).toBe('170');
-    type(year, '');
+    await act(async () => { window.dispatchEvent(new Event(REMOTE_CHANGED_EVENT)); }); // was held while the form held 1850
     await waitFor(() => expect((q(view, '#heightCm') as HTMLInputElement).value).toBe('171'), { timeout: 2000 });
+    expect(year.value).toBe('1850'); // refused, it rides through the re-read
+    type(year, '');
+    await wait(700);
+    expect((q(view, '#heightCm') as HTMLInputElement).value).toBe('171');
   });
 
   it('N4 (US-62 AC12): after a press inside the card that left nothing focused, the next press outside moves About you; a cancelled press (a scroll) does not hold it', async () => {

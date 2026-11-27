@@ -7,14 +7,15 @@
  * a RecordHost.
  * No DOM and no Node: engine-portability.test.ts checks.
  */
-import { ROADMAP_FILE_NAME, StorageError, type StorageAdapter } from './adapter';
+import { ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { clearOwed, eraseIdentityOf } from './erase-identity';
 import { mergeFiles } from './merge';
+import { mergeOptIn } from './reminder-rows';
 import { SchemaTooNewError } from './migrate';
 import { announce, clearedAtOpen, clearOffFile, keepCleared, laterChange, liftMissed, reportSaveFailure, tellSaveStatus, type DeviceMirror, type SaveReportKey, type RecordHost, type RemoteChange, type SaveTold, type SyncStorage } from './record-host';
 import { contentOf, visibleContentOf } from './record-session-content';
 import { deleteAllDataSession, eraseSession, replaceUnreadableSession, type EraseResult, type EraseSteps } from './record-session-erase';
-import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, mirrorNowSession, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
+import { coveredCopySession, deviceCopyHoldsErase, deviceCopyRevision, landedOf, mirrorNowSession, saveRecordInto, releaseErasedCopySession, releaseMarkerSession } from './record-session-mirror';
 import { refreshDue, type RefreshReason } from './refresh-pause';
 import { recordSync, ROADMAP_DOC } from './roadmap-doc';
 import { changesOf, retryOwed, SAVE_START, saveFailureCause, saveStatus, transition, unsaved, writePending, writtenNowhere, type SaveEvent, type SaveState, type SaveStatus } from './save-state';
@@ -43,14 +44,7 @@ export { ERASE_BUSY, ERASE_STALE_TAB, ERASE_UNREACHABLE, type EraseResult, type 
 /** What an awaited save that failed says. */
 const SAVE_FAILED = 'Cloud sync failed — your latest changes are still on this device.';
 
-/**
- * Merge a raw record body into `target` (migrate + read-merge-write). The one
- * cross-store transfer: the failure mirror, the connect-time lift-up and the
- * pre-switch copy-down all go through it.
- */
-export async function saveRecordInto(target: StorageAdapter, body: unknown, ctx: SyncContext): Promise<void> {
-  await recordSync(target, ctx.deviceId, ctx.now).save(ROADMAP_DOC.migrate(body, ctx));
-}
+export { saveRecordInto } from './record-session-mirror';
 
 /**
  * Model: edits change the working copy at once and schedule a debounced,
@@ -60,6 +54,10 @@ export async function saveRecordInto(target: StorageAdapter, body: unknown, ctx:
  */
 export class RecordSession {
   /** @internal */ current!: RoadmapFile; // set by open()
+  /** @internal The erase epoch and opt-in of the copy this session's last write landed in, as read back
+   *  (the cloud's check, or the device copy's merge). Only an erase's teardown reads it (US-11 AC15). */
+  landedOptIn: { epoch: number; optIn: RoadmapFile['reminderOptIn'] } | undefined;
+  /** @internal An erase's observed opt-in rows, from its start to its swap (I1, record-session-erase.ts); else null. */ eraseSeen: { optIn: RoadmapFile['reminderOptIn'] } | null = null;
   /** The save mode (lead A1), changed only by `dispatch`; below, the debounce
    *  handle, and `running`, the claim set and cleared with the saving mode. */
   private mode: SaveState = SAVE_START;
@@ -362,6 +360,7 @@ export class RecordSession {
     // merge, and a clear that throws never leaves the pre-erase copy nor
     // hides the erase from the page (US-11 AC7).
     this.current = merged;
+    if (this.eraseSeen) this.eraseSeen.optIn = mergeOptIn(this.eraseSeen.optIn, merged.reminderOptIn);
     this.settleClear();
     // Nor a full pre-erase copy of the record on this device (US-06 AC13).
     if (erasedElsewhere && this.host.tier === 'cloud' && !unsaved(this.mode)) this.releaseErasedCopy(this.host.mirror);
@@ -440,6 +439,7 @@ export class RecordSession {
         // Fold remote changes back in without dropping edits made during the
         // await; merge is the source of truth for combining the two.
         remoteFolded = laterChange(remoteFolded, this.adopt(mergeFiles(this.current, result.file, this.ctx())));
+        this.landedOptIn = landedOf(result.verified ?? result.file);
         pass = next;
       }
       announce(this.host, remoteFolded);
@@ -484,7 +484,8 @@ export class RecordSession {
           const ctx = this.ctx();
           if (ctx.now > this.current.meta.updatedAt) this.current.meta.updatedAt = ctx.now;
           const write = () => saveRecordInto(mirror.adapter, this.current, ctx);
-          await write().catch(write); // one retry: a passing refusal (lead S54)
+          const landed = await write().catch(write); // one retry: a passing refusal (lead S54)
+          this.landedOptIn = landedOf(landed.verified ?? landed.file);
           this.dispatch({ type: 'mirrored', changes: held });
           this.deviceCopySeen = deviceCopyRevision(this.host);
         } catch {

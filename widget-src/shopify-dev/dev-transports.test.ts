@@ -37,7 +37,7 @@ describe('US-20 AC5: dev:shopify keeps every call to Brad\'s server local', () =
     expect(devOrigin).toContain(`BRAD_SERVER_ORIGIN = '${LOCAL_BRAD_SERVER}'`);
 
     // Both calls build their URL from it, and name no server of their own.
-    for (const [file, path] of [['standalone/reminders.ts', '/api/reminders-v2'], ['standalone/google-config.ts', '/api/google-token']]) {
+    for (const [file, path] of [['standalone/reminders-post.ts', '/api/reminders-v2'], ['standalone/google-config.ts', '/api/google-token']]) {
       const source = readFileSync(resolve(root, file), 'utf8');
       expect(source).toContain(`\${BRAD_SERVER_ORIGIN}${path}`);
       expect(source).not.toContain('fly.dev');
