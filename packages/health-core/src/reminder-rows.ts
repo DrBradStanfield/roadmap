@@ -19,13 +19,22 @@ export function ownRow<T extends object>(row: T): Omit<T, 'tokens'> {
 
 const newer = (a: ReminderTokenRow, b: ReminderTokenRow) => (stampIsNewer(b, a) ? b : a);
 
+/** A row as the merge compares it: its own fields, a missing or non-string
+ *  address read as the empty string, so every grouping meets one form (review
+ *  R3) and a nested row survives migrate. A row already in that form is
+ *  unchanged, so a file with string addresses keeps its bytes. */
+function canonical(row: FileReminderOptIn | ReminderTokenRow): ReminderTokenRow {
+  const own = ownRow(row as FileReminderOptIn);
+  return typeof own.email === 'string' ? own : { ...own, email: '' };
+}
+
 /** The object's own row and every `tokens` row, one per token, the newest.
  *  A row whose token is empty or not a string (the erase's marker) is skipped. */
 export function rowsOf(optIn: FileReminderOptIn | undefined): ReminderTokenRow[] {
   if (!optIn) return [];
   const rows = [optIn, ...(Array.isArray(optIn.tokens) ? optIn.tokens : [])]
     .filter((row) => typeof row?.token === 'string' && row.token !== '')
-    .map((row) => ownRow(row));
+    .map(canonical);
   return mergeByKey(rows, [], (row) => row.token);
 }
 
@@ -41,10 +50,8 @@ export function mergeOptIn(local: FileReminderOptIn | undefined, remote: FileRem
   if (!local && !remote) return undefined;
   const rows = mergeByKey(rowsOf(local), rowsOf(remote), (row) => row.token);
   // Remote first: an exact tie keeps the remote object, as `pickNewerOptional` did.
-  const stored = [remote, local].flatMap((o) => (o ? [ownRow(o)] : [])).concat(rows).reduce(newer);
-  // A nested row needs a string address to survive migrate: one that had none
-  // keeps its token with an empty address, which the control names as none (review R6).
-  const tokens = rows.filter((row) => row.token !== stored.token).map((row) => (typeof row.email === 'string' ? row : { ...row, email: '' }));
+  const stored = [remote, local].flatMap((o) => (o ? [canonical(o)] : [])).concat(rows).reduce(newer);
+  const tokens = rows.filter((row) => row.token !== stored.token);
   return tokens.length > 0 ? { ...stored, tokens } : stored;
 }
 

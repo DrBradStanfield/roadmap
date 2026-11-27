@@ -90,6 +90,9 @@ describe('US-17 AC19: the TurnOff transition', () => {
     ['a refused write ends with its words, counted nothing', writing(['token-a']), { type: 'written', wrote: [], refused: 'refused words' }, { kind: 'ended', error: 'refused words', counts: null }],
     ['stopped with something landed: writing, with the refusal\'s words', posting(['token-b'], ['token-a']), { type: 'stopped', refused: 'refused words' }, writing(['token-a'], 'refused words')],
     ['stopped with nothing landed: ended with the refusal\'s words', posting(['token-a', 'token-b'], []), { type: 'stopped', refused: 'refused words' }, { kind: 'ended', error: 'refused words', counts: null }],
+    ['skipped leaves the queue, neither posted nor landed', posting(['token-a', 'token-b'], []), { type: 'skipped', token: 'token-b' }, posting(['token-a'], [])],
+    ['skipped as the last owed, something landed: writing', posting(['token-b'], ['token-a']), { type: 'skipped', token: 'token-b' }, writing(['token-a'])],
+    ['skipped as the last owed, nothing landed: ended with nothing to say', posting(['token-b'], []), { type: 'skipped', token: 'token-b' }, { kind: 'ended', error: null, counts: null }],
     ['stopped outside posting changes nothing', writing(['token-a']), { type: 'stopped', refused: 'refused words' }, writing(['token-a'])],
     ['written outside writing changes nothing', { kind: 'idle' }, { type: 'written', wrote: ['token-a'], refused: null }, { kind: 'idle' }],
   ];
@@ -185,6 +188,25 @@ describe('US-17 AC19: Turn off cancels every token, in one edit', () => {
     expect(posts.map((p) => p.token)).toEqual(['token-a']);
     expect(statusOf()).toEqual({ 'token-a': 'active', 'token-b': 'active' });
     expect(trackProductEvent).not.toHaveBeenCalled(); // one cancel posted, no row written
+  });
+
+  it('a row re-enrolled while an earlier cancel is out gets no cancel of its own (review R1)', async () => {
+    file.reminderOptIn = optIn(row('token-a', 'active', 2), row('token-b', 'active', 1));
+    let release!: () => void;
+    const held = new Promise<void>((r) => { release = r; });
+    server(async (token) => {
+      if (token === 'token-a') await held;
+      return 200;
+    });
+    const turningOff = cancelReminders();
+    await vi.waitFor(() => expect(posts).toHaveLength(1));
+    // Another device re-enrols token-b, and this tab takes it in while token-a's answer is out.
+    file = setReminderRow(file, { status: 'active', token: 'token-b', email: 'token-b@example.test', provider: 'github' }, '2026-11-27T11:00:00.000Z');
+    release();
+    await turningOff;
+    expect(posts.map((p) => p.token)).toEqual(['token-a']);
+    expect(statusOf()).toEqual({ 'token-a': 'cancelled', 'token-b': 'active' });
+    expect(trackProductEvent.mock.calls.map(([name]) => name)).toEqual(['reminder_optout']); // one cancel posted
   });
 
   it('a tab leaving (keepalive) sends every cancel at once, before any answer', async () => {

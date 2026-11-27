@@ -252,6 +252,33 @@ describe('US-11 AC15: an erase cancels every active row of every copy it reads',
     expect(t.cancels()).toEqual([]);
   });
 
+  it('a refused cloud write whose device writes also fail, with a readable device copy at the erase, spares the token re-enrolled there (review R2)', async () => {
+    const t = await setUp(row(A, 'active', 1, { provider: 'google-drive' }));
+    const { StorageError } = await import('@roadmap/health-core/adapter');
+    const { LocalStorageAdapter } = await import('../src/storage/local-storage-adapter');
+    const refuse = () => { throw new StorageError('write failed (403)', undefined, undefined, 403, undefined, 'refused'); };
+    const write = MemoryAdapter.prototype.write;
+    vi.spyOn(MemoryAdapter.prototype, 'write').mockImplementation(async function (this: MemoryAdapter, ...args) {
+      if ((args[1] as RoadmapFile).meta.eraseEpoch === 1) refuse();
+      return write.apply(this, args);
+    });
+    vi.spyOn(LocalStorageAdapter.prototype, 'write').mockImplementation(async () => refuse());
+    t.proof.mockImplementation(async () => {
+      // Another tab, after this erase read the device copy: its own erase to the same epoch, then token A on again.
+      const tab = createEmptyFile({ deviceId: 'dev_tab', now: T(5) });
+      Object.assign(tab, { schemaVersion: 2, erasedRows: { fromEpoch: 1, ids: [] } });
+      tab.meta.eraseEpoch = 1;
+      tab.meta.erasedAt = T(5);
+      tab.reminderOptIn = row(A, 'active', 1, { provider: 'google-drive', updatedAt: '2026-12-01T00:00:00.000Z', lamport: 9 });
+      localStorage.setItem('health_roadmap_file_v2', JSON.stringify(tab));
+      return null;
+    });
+    const before = t.data.getEraseIdentity();
+    await t.data.deleteUserData();
+    expect(t.data.getEraseIdentity()).not.toBe(before); // held: the device copy carries the erase
+    expect(t.cancels()).toEqual([]);
+  });
+
   it('a nested active token present only in the cloud copy is cancelled', async () => {
     const t = await setUp(row(A, 'cancelled', 2));
     t.cloudWrites(nest(row(A, 'cancelled', 2), row(C, 'active', 1)));

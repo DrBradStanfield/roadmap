@@ -383,11 +383,14 @@ function rng(seed: number): () => number {
 /** One instant spelled two ways, so rows tie on the clock and differ only by content. */
 const STAMPS = [T[0], T[1], '2026-05-02T10:00:00Z', T[2]];
 
-/** A random row: three tokens, both statuses, four stamps, two lamports and two addresses. */
+/** A random row: three tokens, both statuses, four stamps, two lamports, and an address that is
+ *  one of two strings, the empty string, absent, null or not a string (review R3). */
 function randomRow(r: () => number): ReminderTokenRow {
   const pick = <T>(xs: readonly T[]) => xs[Math.floor(r() * xs.length)];
-  const base = row(pick(TOKENS), r() < 0.5 ? 'active' : 'cancelled', 0, Math.floor(r() * 2), pick(['x@example.test', 'y@example.test']));
-  return { ...base, updatedAt: pick(STAMPS) };
+  const base = row(pick(TOKENS), r() < 0.5 ? 'active' : 'cancelled', 0, Math.floor(r() * 2));
+  const email = pick<unknown>(['x@example.test', 'y@example.test', '', 'absent', null, 7]);
+  const { email: _e, ...rest } = base;
+  return { ...rest, ...(email === 'absent' ? {} : { email }), updatedAt: pick(STAMPS) } as ReminderTokenRow;
 }
 
 /** A random opt-in: absent, an erase marker, or a row with a list that may be
@@ -421,7 +424,8 @@ function expectedOptIn(copies: RoadmapFile[]): FileReminderOptIn | undefined {
   const top = Math.max(...copies.map((f) => f.meta.eraseEpoch ?? 0));
   const live = copies.filter((c) => (c.meta.eraseEpoch ?? 0) === top);
   if (live.length === 1) return live[0].reminderOptIn;
-  const strip = (x: object) => { const { tokens: _t, ...rest } = x as FileReminderOptIn; return rest as ReminderTokenRow; };
+  // One address form in every comparison: a missing or non-string one reads as the empty string (review R3).
+  const strip = (x: object) => { const { tokens: _t, ...rest } = x as FileReminderOptIn; return { ...rest, email: typeof rest.email === 'string' ? rest.email : '' } as ReminderTokenRow; };
   const tops: ReminderTokenRow[] = [];
   const real: Record<string, ReminderTokenRow> = {};
   for (const o of live.map((c) => c.reminderOptIn)) {
@@ -472,6 +476,18 @@ describe('US-17 AC19: the opt-in merge is a semilattice (seeded, real mergeFiles
       // The oracle, from the raw rows.
       expect(optKey(left), `oracle ${seed}`).toBe(key(expectedOptIn([a, b, c])));
     }
+  });
+
+  it('review R3: an addressless active row, its addressed cancelled twin at the same clock, and a newer other token agree in every grouping', () => {
+    const { email: _none, ...addressless } = row('token-t', 'active', 0, 1);
+    const a = file(addressless as ReminderTokenRow);
+    const b = file(row('token-t', 'cancelled', 0, 1));
+    const c = file(row('token-c', 'cancelled', 2, 1));
+    const orders = [[a, b, c], [a, c, b], [b, a, c], [b, c, a], [c, a, b], [c, b, a]];
+    const ends = orders.flatMap(([x, y, z]) => [merge(merge(x, y), z), merge(x, merge(y, z))]);
+    const statusOfT = (f: RoadmapFile) => rowsOf(f.reminderOptIn).find((r) => r.token === 'token-t')?.status;
+    expect(new Set(ends.map(statusOfT)).size).toBe(1);
+    expect(new Set(ends.map(optKey)).size).toBe(1);
   });
 
   it('the erase time and the erase list never change the merged opt-in', () => {

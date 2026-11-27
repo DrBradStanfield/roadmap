@@ -431,6 +431,16 @@ describe('US-17 — switching clouds moves the reminders, it does not duplicate 
     expect(postedBody(f, 1).provider).toBe('dropbox');
   });
 
+  // US-17 AC19 (review R4): a stored row with no address is never the same inbox; the switch goes ahead.
+  it.each([['absent', undefined], ['null', null], ['empty', '']] as const)('an addressless stored row (%s) switches to a cloud with a known address', async (_case, email) => {
+    getReminderOptIn.mockReturnValue({ ...ACTIVE, email: email as unknown as string });
+    const f = mockFetchOk();
+    const { autoEnrolReminders } = await loadReminders();
+    await autoEnrolReminders('dropbox');
+    expect(postedBody(f, 0)).toEqual({ op: 'cancel', token: 'cap-token', idToken: 'signed-id-token' });
+    expect(postedBody(f, 1)).toMatchObject({ op: 'optin', provider: 'dropbox', email: 'dbx@example.com' });
+  });
+
   it('does not count the switch as an opt-out (it would poison the kill criterion)', async () => {
     getReminderOptIn.mockReturnValue(ACTIVE);
     mockFetchOk();
@@ -1192,7 +1202,8 @@ describe('US-17 AC17 — a Turn off acts only on the opt-in it read', () => {
     ['10 the server answers 500: throws, no write, no count', { asked: T1, now: T1, status: 500, posts: true, writes: false, counts: false, throws: 'Could not turn reminders off (500). Please retry.' }],
   ];
   it.each(rows)('%s', async (_name, row) => {
-    getReminderOptIn.mockReturnValueOnce(row.asked).mockReturnValue('now' in row ? row.now : row.asked);
+    // Read at the Turn off and again just before its POST (US-17 AC19, review R1); `now` is the record once the cancel answers.
+    getReminderOptIn.mockReturnValueOnce(row.asked).mockReturnValueOnce(row.asked).mockReturnValue('now' in row ? row.now : row.asked);
     if (row.refused) setReminderOptIn.mockReturnValueOnce(false);
     if (row.erasedTo) getEraseIdentity.mockReturnValue(row.erasedTo);
     if (row.unshown) stillShown.mockReturnValue(false);

@@ -134,9 +134,10 @@ function sameOptIn(a: FileReminderOptIn | undefined, b: FileReminderOptIn | unde
   return a?.status === b?.status && a?.token === b?.token && a?.provider === b?.provider;
 }
 
-/** One address, however the provider cased or padded it. */
-function sameAddress(a: string, b: string): boolean {
-  return addressKey(a) === addressKey(b);
+/** One inbox, however the provider cased or padded it; a missing or blank
+ *  address names none, so it is never the same as another (review R4). */
+function sameAddress(a: unknown, b: unknown): boolean {
+  return typeof a === 'string' && typeof b === 'string' && a.trim() !== '' && addressKey(a) === addressKey(b);
 }
 
 export interface OptInResult {

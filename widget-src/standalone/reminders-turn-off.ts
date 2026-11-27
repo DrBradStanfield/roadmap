@@ -31,6 +31,8 @@ export type TurnOffEvent =
   | { type: 'posted'; read: ReminderTokenRow[] }
   /** A cancel answered; `failure` is its words when it did not land. */
   | { type: 'answered'; token: string; failure: string | null }
+  /** This token's row changed after the read, before its cancel left: it leaves the queue, neither posted nor landed (review R1). */
+  | { type: 'skipped'; token: string }
   /** The record's erase moved before the next cancel left: none of the owed go, for these words (US-11 AC4b). */
   | { type: 'stopped'; refused: string }
   /** The edit ran: the tokens whose rows it wrote, or why the record refused it. */
@@ -59,6 +61,9 @@ export function turnOffTransition(state: TurnOff, event: TurnOffEvent): TurnOff 
       const wasActive = state.read.some((row) => row.token === event.token && row.status === 'active');
       return settled({ ...state, owed, failure: state.failure ?? (wasActive ? event.failure : null) });
     }
+    case 'skipped':
+      if (state.kind !== 'posting' || !state.owed.includes(event.token)) return state;
+      return settled({ ...state, owed: state.owed.filter((token) => token !== event.token) });
     case 'stopped':
       // What already landed is still written (and refused there); nothing else leaves.
       return state.kind === 'posting' ? settled({ ...state, owed: [], failure: event.refused }) : state;
@@ -120,24 +125,34 @@ export async function cancelReminders({ count = true, keepalive = false } = {}):
     (res) => (res.ok ? null : `Could not turn reminders off (${res.status}). Please retry.`),
     (error: unknown) => (error instanceof Error ? error.message : String(error)),
   );
+  // A write that would be refused is refused before its POST, so no row is cancelled under a switch
+  // that stays on (US-11 AC4b, lead S59b).
+  const stopped = () => { state = turnOffTransition(state, { type: 'stopped', refused: refusedWhy(erase) }); };
   let posted = 0;
-  for (const { token, provider } of read) {
-    // A write that would be refused is refused before its POST, so no row is cancelled under a switch
-    // that stays on (US-11 AC4b, lead S59b); checked before each, so an erase begun meanwhile stops the rest (review R4).
-    if (!stillShown(erase)) {
-      state = turnOffTransition(state, { type: 'stopped', refused: refusedWhy(erase) });
-      break;
-    }
-    if (keepalive) {
-      // The tab is leaving: every cancel goes now, in this task, so none waits on an answer
-      // the closing page may never get. The one check above covers them all.
+  if (keepalive) {
+    // The tab is leaving: every cancel goes now, in this task, after one check, so none waits on an
+    // answer the closing page may never get.
+    if (!stillShown(erase)) stopped();
+    else {
       posted = read.length;
       const answers = await Promise.all(read.map((row) => send(row.token, row.provider).then((failure) => ({ type: 'answered' as const, token: row.token, failure }))));
       state = answers.reduce(turnOffTransition, state as TurnOff);
-      break;
     }
-    posted += 1;
-    state = turnOffTransition(state, { type: 'answered', token, failure: await send(token, provider) });
+  } else {
+    for (const row of read) {
+      // Checked before each: an erase begun meanwhile stops the rest (review R4), and a row another
+      // device or tab changed since the read (a re-enrolment, say) stands, with no cancel (review R1).
+      if (!stillShown(erase)) {
+        stopped();
+        break;
+      }
+      if (!unchangedSince(row, getReminderOptIn())) {
+        state = turnOffTransition(state, { type: 'skipped', token: row.token });
+        continue;
+      }
+      posted += 1;
+      state = turnOffTransition(state, { type: 'answered', token: row.token, failure: await send(row.token, row.provider) });
+    }
   }
   // How often a Turn off reaches more than one token, landed or not: counts only (US-17 AC19).
   if (count && posted > 1) trackProductEvent('reminder_cancel_many', { provider: closedProvider(read[0].provider), count: posted });

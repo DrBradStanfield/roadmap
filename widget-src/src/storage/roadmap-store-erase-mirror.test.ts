@@ -394,7 +394,8 @@ describe('S69 R2, US-11 AC4c: a cloud erase is kept, and the cancel sent, only w
   it('another tab wrote a later erase to the device copy and this write stored nothing: held, cancel sent', async () => {
     const posts = await cloudWithOptIn();
     const before = getEraseIdentity();
-    const later = { ...deviceFile(), measurements: [], meta: { ...deviceFile().meta, eraseEpoch: 2 } };
+    // A later erase holds no live token (since US-11 AC15 the commit spares a token active in the copy holding the erase).
+    const later = { ...deviceFile(), measurements: [], reminderOptIn: undefined, meta: { ...deviceFile().meta, eraseEpoch: 2 } };
     const setItem = Storage.prototype.setItem;
     let otherTabWrote = false;
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
