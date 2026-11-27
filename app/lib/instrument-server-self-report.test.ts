@@ -118,6 +118,9 @@ beforeEach(() => {
   built.length = 0;
   ownCaptures.length = 0;
   Object.assign(plan, { lock: false, freeze: false, throwingGetter: false });
+  // The process session the SDK starts at init sends one update, on the first error, wherever a
+  // release is set (CI's GITHUB_SHA): it landed in whichever test ran first. No test starts with one.
+  Sentry.getIsolationScope().setSession();
 });
 
 beforeAll(async () => {

@@ -166,6 +166,14 @@ function serialise(el: Element, depth = 0): string {
   return [`${pad}<${el.tagName.toLowerCase()}${attrs ? ` ${attrs}` : ''}>`, ...kids].join('\n');
 }
 
+/** React's useId values count every render earlier in the file, so the order the tests run in
+ *  shifted them: each is named by its first use on the page, the same name wherever it is used. */
+function stableIds(page: string): string {
+  const names = new Map<string, string>();
+  const name = (id: string) => names.get(id) ?? (names.set(id, `id${names.size}`), names.get(id)!);
+  return page.replace(/:(r[0-9a-z]+):|md-fill(r[0-9a-z]+)/g, (_, colon?: string, fill?: string) => (colon ? `:${name(colon)}:` : `md-fill${name(fill!)}`));
+}
+
 /** A spread of records: the first seed of each kind, so the page snapshots reach every part. */
 const KINDS: Array<[string, (w: World) => boolean]> = [
   ['form not full', w => !w.facts.formFull],
@@ -226,10 +234,10 @@ describe("US-62 AC40: the web's My health, pinned before and after it draws plan
   });
 
   it.each(spread)('the page for %s (seed %i)', (_, seed) => {
-    expect(serialise(draw(genWorld(seed), PLAIN).querySelector('.mh-page')!)).toMatchSnapshot();
+    expect(stableIds(serialise(draw(genWorld(seed), PLAIN).querySelector('.mh-page')!))).toMatchSnapshot();
   });
 
   it.each(variedSpread)('the page for %s (seed %i)', (_, seed, v) => {
-    expect(serialise(draw(vary(genWorld(seed), v, seed), v).querySelector('.mh-page')!)).toMatchSnapshot();
+    expect(stableIds(serialise(draw(vary(genWorld(seed), v, seed), v).querySelector('.mh-page')!))).toMatchSnapshot();
   });
 });

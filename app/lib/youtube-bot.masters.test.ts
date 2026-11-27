@@ -481,20 +481,28 @@ describe('runPipeline: the reply-or-skip input (US-50 AC6)', () => {
   });
 });
 
-// US-50 AC11: the assembled YouTube and Discord prompts both carry the omega-3
-// affiliate disclosure; on YouTube it is exempt from the do-not-copy rule and
-// the length limits.
-describe('omega-3 affiliate disclosure in the assembled platform prompts (US-50 AC11)', () => {
+// US-50 AC11: the assembled Discord prompt carries the omega-3 brand, link and affiliate disclosure.
+// US-15 AC79 (Brad 2026-11-27, option b): YouTube shares none of them; its platform prompt, which outranks
+// the shared omega-3 rule there, gives the research only.
+describe('omega-3 in the assembled platform prompts (US-50 AC11, US-15 AC79)', () => {
   const DISCLOSURE = 'Brad earns a small commission through this Amazon link.';
   const lastSystem = () => (vi.mocked(getChatCompletion).mock.calls.at(-1)![0] as Array<{ text: string }>).map(b => b.text).join('\n\n');
 
-  it('YouTube: the reply rule names the exact sentence and its exemptions', async () => {
+  it('YouTube: the platform prompt forbids the brand and the link and carries no commission sentence', async () => {
     fakeFiles();
     await runPipeline({ topLevelCommentId: 'c9', videoId: 'vid9', authorDisplayName: 'V', authorChannelId: null, text: 'Which fish oil does Brad take?', publishedAt: '2026-10-20T00:00:00Z' },
       { title: 'Omega-3 video', handle: 'omega-video', url: 'u', tags: [], publishedAt: '2025-03-12T00:00:00Z' }, 'The video body.');
-    const prompt = lastSystem();
-    expect(prompt).toContain(`- **Omega-3 affiliate disclosure:** when a reply shares the omega-3 Amazon link, it must include this exact sentence: "${DISCLOSURE}" This sentence is exempt from the do-not-copy rule above and does not count toward the sentence or word limits.`);
-    expect(prompt).toContain(`say: "${DISCLOSURE}"`);
+    const blocks = vi.mocked(getChatCompletion).mock.calls.at(-1)![0] as Array<{ text: string }>;
+    // The platform context rides in the per-user block (buildSystemBlocks), after its heading.
+    const platformBlock = blocks.find(b => b.text.includes('Platform: YouTube — you are Dr Brad Stanfield'))!.text;
+    const platform = platformBlock.slice(platformBlock.indexOf('Platform: YouTube'));
+    expect(platform).toContain('Omega-3 questions get research only (EPA and DHA content per serving), never a brand or the Amazon link.');
+    expect(platform).toContain('No third-party seller link at all.');
+    expect(platform).not.toMatch(/UnoCardio|WHC|amzn\.to|commission|Omega-3 affiliate disclosure/i);
+    // The override sits in the block that outranks the SURFACE CONTEXT and every other rule.
+    expect(platform.indexOf('never a brand or the Amazon link')).toBeLessThan(platform.indexOf('## Your output:'));
+    // The shared layers still carry the doctor-surface rule, unchanged, for the web chat and Discord.
+    expect(lastSystem()).toContain(`say: "${DISCLOSURE}"`);
   });
 
   it('Discord: the doctor posture and system prompt carry the disclosure', async () => {
