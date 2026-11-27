@@ -93,7 +93,7 @@ async function observe(reason: ReadReason, held: boolean): Promise<Seen> {
   };
   // The save that cleans the profile: a change still held applies now, read and counted once.
   vi.clearAllMocks();
-  await act(async () => { hook.result.current.settled('clear'); });
+  await act(async () => { hook.result.current.settled(); });
   await settle();
   return { ...seen, holdLeft: counted() === 1 && fx.reloadValues.mock.calls.length === 1 };
 }
@@ -159,7 +159,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     await act(async () => { await hook.result.current.ownSave(); });
     expect(mirrored()).toEqual([{ inputs: { heightCm: 170, birthYear: 1980 }, ...MIRRORED }]); // never the page's lists, which can hold an unsaved edit
     fx.reloadValues.mockClear();
-    await act(async () => { hook.result.current.settled('clear'); });
+    await act(async () => { hook.result.current.settled(); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(mirrored()).toEqual([undefined]); // the hold's read: the record's
@@ -207,7 +207,7 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(fx.later.clearAnswered.mock.calls).toEqual([[]]);
     expect(counted()).toBe(0); // the machine counts the erase
     // The hold is over: the save that cleans the profile reads nothing more.
-    await act(async () => { hook.result.current.settled('clear'); });
+    await act(async () => { hook.result.current.settled(); });
     await settle();
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(counted()).toBe(0);
@@ -238,19 +238,12 @@ describe('US-34 AC4, AC4a: the re-read policy, by reason', () => {
     expect(fx.reloadValues).toHaveBeenCalledTimes(1);
   });
 
-  it('US-34 AC13 (H14): an out-of-range value still being typed holds a remote change; once its save settles refused, the next change applies at once, keeping it; a unit switch waiting still holds', async () => {
+  it('US-34 AC13 (H14): a remote change on a form unsaved only in an out-of-range value applies at once, keeping it; a unit switch waiting still holds', async () => {
     const { fx, hook } = setup();
     fx.later.profileForm.mockReturnValue('out-of-range');
     await act(async () => { await hook.result.current.signal('remote'); });
     await settle();
-    expect(fx.reloadValues).not.toHaveBeenCalled(); // half-typed: held for its save
-    await act(async () => { hook.result.current.settled('refused'); });
-    await settle();
-    expect(fx.reloadValues).toHaveBeenCalledTimes(1); // the save settled: the held change shows (AC8)
-    vi.clearAllMocks();
-    await act(async () => { await hook.result.current.signal('remote'); });
-    await settle();
-    expect(fx.reloadValues).toHaveBeenCalledTimes(1); // refused and left: the next change shows at once
+    expect(fx.reloadValues).toHaveBeenCalledTimes(1);
     expect(counted()).toBe(1);
     const form = fx.setInputs.mock.calls[0][0] as (prev: Record<string, unknown>) => Record<string, unknown>;
     expect(form({ heightCm: 400, birthYear: 1980 })).toMatchObject({ heightCm: 400, birthYear: 1981 }); // the refused height rides through

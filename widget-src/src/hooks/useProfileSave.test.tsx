@@ -157,25 +157,22 @@ describe('saving: what a save leaves behind', () => {
 });
 
 describe('kept: what the store refuses', () => {
-  it('US-02 AC5, US-34 AC8, AC13 (H14): an out-of-range value stays unsaved and in the form; the save still settles, ending a hold, and says it refused', async () => {
+  it('US-02 AC5, US-34 AC8, AC13 (H14): an out-of-range value stays unsaved and in the form; the save still settles, ending a hold', async () => {
     const { view, relay } = setup({});
     act(() => view.result.current.setInputs({ heightCm: 999 }));
     store.next = { ok: true, refused: { heightCm: 999 } };
     await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     expect(view.result.current.save.profileForm()).toBe('out-of-range');
     expect(view.result.current.inputs.heightCm).toBe(999);
-    expect(relay.settled.mock.calls).toEqual([['refused']]);
+    expect(relay.settled).toHaveBeenCalledTimes(1);
   });
 
-  it('US-34 AC13 (H14): a save that lands says so; a refused birth pair, put back, leaves nothing refused', async () => {
-    const { view, relay } = setup({ birthYear: 1980, birthMonth: 3 });
+  it('US-34 AC13 (H14): a refused birth pair, put back, leaves the form clean', async () => {
+    const { view } = setup({ birthYear: 1980, birthMonth: 3 });
     act(() => view.result.current.save.markSaved({ birthYear: 1980, birthMonth: 3 }));
-    act(() => view.result.current.setInputs({ birthYear: 1981, birthMonth: 3 }));
-    await act(async () => { await view.result.current.save.flushProfile(store.erase); });
     act(() => view.result.current.setInputs({ birthYear: 2030, birthMonth: 1 }));
     store.next = { ok: true, birthRefused: { birthYear: 2030, birthMonth: 1 } };
     await act(async () => { await view.result.current.save.flushProfile(store.erase); });
-    expect(relay.settled.mock.calls).toEqual([['clear'], ['clear']]);
     expect(view.result.current.save.profileForm()).toBe('clean');
   });
 

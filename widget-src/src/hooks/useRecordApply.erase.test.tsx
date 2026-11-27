@@ -145,7 +145,7 @@ const PATHS: Path[] = [
     await announced(B);
     // The erase's read showed the held change too: the save that cleans the profile reads nothing more.
     p.fx.later.profileForm.mockReturnValue('clean');
-    act(() => { p.now().page.settled('clear'); });
+    act(() => { p.now().page.settled(); });
     await settle();
   }, { counted: 1, reads: 1 }],
   ['it arrives during this tab\'s erase, and wins (own-end at it)', async (p) => {
@@ -233,7 +233,7 @@ describe('fix 4 (2b-3 R1, Fable): an arrival carrying the erase the machine show
     await announced(B);
     expect(page.reads()).toBe(0); // held: the typing stays
     page.fx.later.profileForm.mockReturnValue('clean');
-    act(() => { page.now().page.settled('clear'); });
+    act(() => { page.now().page.settled(); });
     await settle();
     expect({ counted: counted(), reads: page.reads() }).toEqual({ counted: 0, reads: 1 });
   });

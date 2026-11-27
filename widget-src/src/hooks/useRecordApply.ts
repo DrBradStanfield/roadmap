@@ -28,8 +28,8 @@ type ReadPolicy = { read: 'record'; relay: 'arrive' | 'reread'; spends: boolean 
 /**
  * Each re-read reason's effects (US-34 AC4, AC4a). A held change ends only
  * through a `record` read; `remote` is held while the profile holds an edit or a
- * unit switch waits (`form`, read in `signal`); a value whose save the store
- * refused is no edit: it rides through, so the change applies (AC13). A held `remote` does
+ * unit switch waits (`form`, read in `signal`); an out-of-range value is no
+ * edit: it rides through, so the change applies (AC13). A held `remote` does
  * nothing until the next profile save settles, landed or refused (AC8). An erase the screen does not
  * yet show never enters the relay: REMOTE_CHANGED with one goes to the erase
  * machine (`arrived`), whose read (`shows`) ends a hold, clears the answer

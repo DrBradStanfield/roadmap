@@ -26,7 +26,7 @@ part done, open (can start), held (built, PR open with `hold`), blocked (waits o
 | R8 | The unsent erase is one persisted owed state | open | leads H119, H120 (H121 waits on words); iPhone erase series | none | |
 | R12 | Clear pending reminder notifications after an erase | open | lead S68, design note first; iPhone erase series | none | |
 | R9 | Opt-in merge: a cancel beats an opt-in only for its own token | open | lead H115: design note with a convergence proof first | none | orchestrator's call (merge) |
-| R13 | One record-apply hold state | held | H14's follow-up built: a refused value told apart from a half-typed one (US-34 AC13, a `refused` phase) | 2084, 2110, 2113, 2117, 2119 merged; 2218 held | PR 2218 |
+| R13 | One record-apply hold state | held | H14's follow-up built: an out-of-range value, refused or half-typed, holds no remote change (US-34 AC13, the form alone) | 2084, 2110, 2113, 2117, 2119 merged; 2218 held | PR 2218 |
 | R14 | A malformed Observation date is refused or flagged | done | nothing (lead H35) | 2181 | |
 | R22 | Value page Add fields read-only while saving | done | nothing (lead H301, US-03 AC2b) | 2060 | |
 | R10 | Delete all my data and Log off from every failure screen | part done | H122 (design first, iPhone erase series); H123a, the iPhone's cannot-start screen (decided, after App Store review) | 2158 (H123, the web crash screen) | H123a: App Store review |

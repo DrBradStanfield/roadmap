@@ -959,11 +959,14 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     await settle(700);
     expect(field(view, 'heightCm')).toBe('400');
   }
-  /** As heightOutOfRange, its save still on its way: until it settles the height is being typed, so a remote
-   *  change holds (US-34 AC13). The next profile save, or a re-read, ends the hold as before. */
+  /** As heightOutOfRange, then a valid birth month whose save is still on its way: a remote change holds behind
+   *  it (an out-of-range value alone holds nothing, US-34 AC13). The next profile save, or a re-read, ends the hold. */
   async function heightOnItsWay(view: RenderResult) {
-    refuse.gate = new Promise<void>(() => {}); // never lands: the saves after it go through
     await heightOutOfRange(view);
+    refuse.gate = new Promise<void>(() => {}); // never lands: the saves after it go through
+    field(view, 'birthMonth');
+    fireEvent.change(q(view, '#birthMonth')!, { target: { value: '4' } });
+    await settle(600);
   }
   /** Another writer changes the birth year: held behind the profile still being saved. */
   async function heldBirthYear(view: RenderResult) {
@@ -1315,6 +1318,39 @@ describe('US-34 AC4a: the page\'s own save re-reads the values, and a held chang
     expect(await heightOnDisk()).toBe(175);
     expect(calls('remote_change_applied')).toHaveLength(1);
     expect(reads.count).toBe(1);
+  });
+
+  // US-34 AC13: what a hold for a half-typed out-of-range value would have protected, and the apply keeps anyway.
+  it('US-34 AC13 (H14): mid-typing "1" on the way to 170, a remote birth year applies at once; the height keeps its text, focus and caret, and the next keystrokes land and save', async () => {
+    await recordWithLdl();
+    const view = await open();
+    field(view, 'heightCm');
+    const height = q(view, '#heightCm') as HTMLInputElement;
+    type(height, '1'); // focused, out of range, its save still waiting
+    // The metric box is type=number: browsers give it no selection API (jsdom throws, as Chrome and WebKit do), so
+    // its caret is the browser's own, kept while nothing writes the box's value. Record every write the page makes.
+    const own = Object.getOwnPropertyDescriptor(height, 'value')!; // React's value tracker on the node
+    const writes: unknown[] = [];
+    Object.defineProperty(height, 'value', { configurable: true, get() { return own.get!.call(this); }, set(v) { writes.push(v); own.set!.call(this, v); } });
+    reads.count = 0;
+    await anotherWriter(() => saveChangedMeasurements({ birthYear: 1981 }, { birthYear: 1980 }, getShownErase()));
+    await waitFor(() => expect((q(view, '#birthYear') as HTMLInputElement | null)?.value).toBe('1981'), { timeout: 3000 });
+    Object.defineProperty(height, 'value', own);
+    expect(writes).toEqual([]); // the apply never wrote the box: text and caret stand
+    expect(reads.count).toBe(1);
+    expect(calls('remote_change_applied')).toHaveLength(1);
+    expect(q(view, '#heightCm')).toBe(height); // the same field, not one drawn again
+    expect(height.value).toBe('1');
+    expect(document.activeElement).toBe(height);
+    fireEvent.change(height, { target: { value: '17' } });
+    fireEvent.change(height, { target: { value: '170' } });
+    expect(height.value).toBe('170');
+    fireEvent.change(height, { target: { value: '172' } });
+    leave(height);
+    await waitFor(async () => expect(await heightOnDisk()).toBe(172), { timeout: 3000 });
+    expect(field(view, 'heightCm')).toBe('172');
+    expect((await recordOnDisk()).profile.birthYear).toBe(1981);
+    expect(calls('remote_change_applied')).toHaveLength(1);
   });
 
   // US-34 AC13 (H14 follow-up): a refused value is told apart from a half-typed one. Nothing typed is at risk.
