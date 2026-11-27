@@ -1,4 +1,4 @@
-// The engine the iOS app runs in JavaScriptCore (ios/architecture.md D2).
+// The engine the iPhone app runs in JavaScriptCore (ios/architecture.md D2).
 // The same health-core the web runs; this file only gives Swift a
 // string-in, string-out door, because JSON is the one shape both sides share.
 // Its door list is bridge-contract.json; bridge.test.ts holds the two together.
@@ -85,7 +85,7 @@ export function sectionsJson(planJsonText: string): string {
   return JSON.stringify(planSections(plan.results.suggestions));
 }
 
-// The My data tab (my-data.ts). A record from disk is read as the plan's is,
+// My health and Settings (my-data.ts). A record from disk is read as the plan's is,
 // migrated, so a record the web wrote in an older shape reads the same.
 
 /** A first-launch record, as JSON. */
@@ -95,14 +95,14 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
 }
 
 /** What the app shows for a record, as JSON: `{myData, plan}`, from one read and one
- *  computePlan, so My data and the Plan tab always show the same record (US-25 AC2).
+ *  computePlan, so My health's rows and its plan always show the same record (US-25 AC2).
  *  `plan` is `{sections, tiles, ms}`: the layout sectionsJson gives and the summary tiles
  *  above it, the web's Quick Stats (health-core stat-tiles.ts, US-25 AC22), in the
  *  phone's per-test units, and the milliseconds from computePlan through the tiles and the
  *  layout (D2's plan budget; whole ms, the engine's only clock). A tile that cannot be drawn never
  *  blanks the plan (adversary R7): no tiles instead. A record that cannot be planned gives
  *  `{error, planError}`, `planError` true for health-core's PlanError (no usable height; a
- *  record with no sex is planned without the parts that need it, US-07 AC8), and never blanks My data. My data that cannot be drawn throws the whole call.
+ *  record with no sex is planned without the parts that need it, US-07 AC8), and never blanks My health. My health's rows that cannot be drawn throw the whole call.
  *  `isUS`: the App Store storefront is the US (US-61). `plan.usProducts` is then the sections
  *  ready to draw with Dr Brad's products on the supplement cards of a known adult
  *  (us-products.ts, the web's own overlay); left out when none shows. Anything but `true`,
@@ -111,7 +111,7 @@ export function newRecordJson(nowIso: string, deviceId: string, locale: string, 
  *  one table (US-66 AC14); the app writes it to the phone's file once, as it opens it. Left
  *  out when nothing moved, so the written record never gives it again.
  *  `plan.topics`: the same cards by topic for My health (health-core topicSections, US-73 AC3),
- *  from `usProducts` when it shows, else `sections`, placed against My data's own questions. */
+ *  from `usProducts` when it shows, else `sections`, placed against My health's own questions. */
 export function screenJson(recordJson: string, nowIso: string, deviceId: string, unitsJson?: string, isUS?: boolean): string {
   checkArgs('screenJson', arguments);
   const file = readView(recordJson, nowIso, deviceId);
