@@ -1,7 +1,7 @@
 /**
  * How a plan's suggestions are laid out on screen: five sections, cards in a
  * fixed category order, and some categories merged into one grouped card.
- * One function, so the web's results panel and the iOS app show the same plan
+ * One function, so the web's results panel and the iPhone app show the same plan
  * in the same order (US-25 AC2). Layout only; it changes no suggestion.
  * `topicSections` lays the same cards out by topic, for the iPhone's My health (US-73).
  */

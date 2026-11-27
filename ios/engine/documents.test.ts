@@ -55,7 +55,7 @@ describe('My health documents (US-73 AC12)', () => {
     ]);
     expect(others[0]).toEqual({
       id: 'with', title: 'Cardiology follow-up', typeLabel: 'Clinic Letter', day: '2026-09-14', content: '# Letter', sourceFileName: 'Letter.pdf',
-      original: { name: '2026-09-14 Cardiology follow-up.pdf', mimeType: 'application/pdf' },
+      original: { name: '2026-09-14 Cardiology follow-up.pdf', mimeType: 'application/pdf', previewName: '2026-09-14 Cardiology follow-up.pdf' },
     });
     expect(others[1]).toMatchObject({ original: null, sourceFileName: null });
   });
@@ -87,6 +87,20 @@ describe('My health documents (US-73 AC12)', () => {
     expect(others.map((d) => d.id)).toEqual(['valid', 'mistyped']);
     expect(others[1]).toEqual({ id: 'mistyped', title: '', typeLabel: 'Document', day: null, content: '', sourceFileName: null, original: null });
     expect(() => JSON.stringify(others)).not.toThrow();
+  });
+
+  // US-14 AC14: the engine serves health-core's one rule, so Swift keeps no table of its own.
+  it('US-14 AC14: each original carries the name Quick Look may open it under, or null to keep it closed', () => {
+    const at = (fileRef: string, mimeType: string) => doc(fileRef, { fileRef: `Other documents/${fileRef}`, mimeType });
+    const { others } = shelf([
+      at('Letter.PDF', ''), at('Scan', 'Image/PNG; charset=binary'), at('Photo', 'image/jpeg'),
+      at('Chart.svg', 'image/svg+xml'), at('Page', 'text/html'), at('Untyped', ''), at('Letter.pdf', 'text/html'), at('Diagram.svg', 'image/png'), at('Scan.jpg', 'image/jpg'),
+    ]);
+    const names = Object.fromEntries(others.map((d) => [d.id, (d.original as { previewName: string | null }).previewName]));
+    expect(names).toEqual({
+      'Letter.PDF': 'Letter.PDF', Scan: 'Scan.png', Photo: 'Photo.jpeg',
+      'Chart.svg': null, Page: null, Untyped: null, 'Letter.pdf': null, 'Diagram.svg': null, 'Scan.jpg': null,
+    });
   });
 
   it('an empty record lists none', () => {

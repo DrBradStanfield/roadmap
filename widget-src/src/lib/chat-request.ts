@@ -68,7 +68,7 @@ export function chatQueryParts(): string[] {
 
 /** Body fields shared by the POST/DELETE endpoints — the JSON twin of
  *  chatQueryParts(). localFirst tells the server to use the client-supplied
- *  context even if the visitor happens to be a logged-in Shopify customer
+ *  context even if the visitor happens to be a signed-in Shopify customer
  *  (local-first builds have no DB record to read). Brad still pays. */
 export function chatBodyParts(sessionToken = getGuestSessionToken()): Record<string, unknown> {
   return {

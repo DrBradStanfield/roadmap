@@ -3,7 +3,7 @@
 Context for Claude Code in this repo. Depth lives in on-demand docs: [docs/reference.md](docs/reference.md) (FHIR detail,
 file inventory, data model, A/B, endpoints) · [docs/gotchas.md](docs/gotchas.md) (gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md) (manual deploy, build flags, two-app split, env vars, scaling) ·
 [docs/architecture-v2.md](docs/architecture-v2.md) (visual system map; the entry point for new threads) ·
-[docs/ai-discoverability.md](docs/ai-discoverability.md) (AI visibility: what's live, listings, rules; update it with every change).
+[docs/ai-discoverability.md](docs/ai-discoverability.md) (AI visibility: what's live, listings, rules; update it with every change) · [docs/glossary.md](docs/glossary.md) (one word per concept, for copy, docs and code names).
 
 ## Project Overview
 
@@ -213,7 +213,7 @@ test. Miss a step = the value silently fails to round-trip.
   `model`; never set `CLAUDE_CODE_SUBAGENT_MODEL`. The newest Haiku is allowed (2026-10-12; first use: customer-service
   email triage). Loops: docs/loops/LOOP.md.
 - **Every adversarial Claude check gets a Codex one beside it** (Brad, 2026-09-21): a fresh
-  Opus 5.5 `adversary` plus Codex on `gpt-6.1-sol`, high effort (default since 2026-10-02).
+  Opus 5.5 `adversary` plus Codex on `gpt-6.2-sol`, high effort; `gpt-6.2-astra` (`--deep`) for design notes and the high-risk classes (Brad 2026-11-27).
   `node tools/codex-review.mjs`, skill `codex-review`, contract docs/review-format.md, spec US-40.
   REQUIRED before committing clinical, merge/FHIR, security or agent-contract changes WHATEVER their
   size; skip ONLY outside those classes (doc/blog sweeps, one-liners). Incomplete is never a pass,

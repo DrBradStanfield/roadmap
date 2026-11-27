@@ -46,15 +46,19 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    commits and a missing PR still block. **Add the `hold` label** (`gh pr edit <n> --add-label hold`) to any PR that waits on Brad,
    on more fixes or a review, or whose merge order you are managing (shared files, a deploy in flight):
    auto-ship merges any `claude/` PR 30 minutes after a Claude Review approval and a green `test` unless it
-   carries `hold` (PRs 677 and 734 merged early, 2026-11-02/03; PR 850 mid-deploy, 2026-11-05). Remove it, or
+   carries `hold` (PRs 677 and 734 merged early, 2026-11-02/03; PR 850 mid-deploy, 2026-11-05). It never merges
+   a PR that touches any path under `ios/`, in any case (Brad 2026-11-27, US-46 AC20): that PR is merged by hand
+   through the session merge gate, and the simulator run comes at the checkpoint; the auto-ship run says so in its log. Remove `hold`, or
    merge with it on, when you merge by hand. A PR that carries `hold` gets no automatic Claude Review (its run ends green
    at once); adding or removing a label never starts or cancels one. It needs none (Brad 2026-11-13, PR 1533): the
    fresh adversary, plus Codex where the class needs it (§ Reviews below), is its review.
    Prefer PRs under 100 changed files where a change splits cleanly; orphaned code still dies in the same PR (CLAUDE.md).
 4. **Merge** it yourself when the work is done and its gates have passed. **The gate per PR** (Brad 2026-11-13):
    - unit tests written with the change;
-   - CI green on the exact head sha. `ios-compile` is advisory to `tools/merge-gated.sh` and `tools/wait-run.sh`,
-     but a red one is a real compile error: fix it before asking for a merge word;
+   - CI green on the exact head sha. `ios-compile` is required when the PR changes what it builds (any Swift file
+     under `ios/`, the Xcode project, the app and test folders, the Info.plist or entitlements; the one rule is
+     `tools/ios-compile-paths.sh`, US-64 AC43) and advisory otherwise, to both `tools/merge-gated.sh` and
+     `tools/wait-run.sh`. Even advisory, a red one is a real compile error: fix it before asking for a merge word;
    - one review where the class needs one (§ Reviews below), and clinical citation numbering checked;
    - the owner thread's word on that sha. A conditional word counts ("merge if the prod diff is exactly X and CI
      is green").
@@ -74,11 +78,14 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    left open, or a draft private security advisory for a security or privacy one (docs/review-format.md).
    **Merge by hand with `sh tools/merge-gated.sh <pr> <full sha>`**, never a scratch script of your own (US-64
    AC32): in one run it checks the sha is 40 hex, the PR is open at exactly that head, the newest `ci.yml` run on
-   that sha ended success, every rollup check finished green with a `test` check SUCCESS (except the advisory
-   `ios-compile`, which only prints a note, Brad 2026-11-13), no generated file is out of step with main (below),
+   that sha ended success, every rollup check finished green with a `test` check SUCCESS (except an advisory
+   `ios-compile`, which only prints a note, Brad 2026-11-13; on a PR that changes what it builds it must be
+   there, finished and green, or the merge is refused, US-64 AC43; if it never started, re-run or dispatch it as
+   the refusal says; a PR that changes `.github/workflows/ios-compile.yml` always refuses (19): the owner merges
+   it by hand), no generated file is out of step with main (below),
    main's own CI is not red (below) and no Deploy run is unfinished, then runs the one allowed merge form above. Add `--commit-checks` only when CI
    was started by workflow_dispatch (its runs never reach the PR's rollup): it skips the rollup and keeps the
-   `ci.yml` run check. Generated files (US-64 AC34): when the PR touches a file listed in
+   `ci.yml` run check, plus the newest `ios-compile.yml` run on the sha when the PR changes what it builds. Generated files (US-64 AC34): when the PR touches a file listed in
    `tools/generated-files.json`, as an output or an input, and main has changed that output or its generator
    script since the PR's merge base, it refuses (9): merge main into the PR, let CI run, then merge. An input
    change on main alone does not refuse: main's CI already keeps main's output fresh. The PR's paths come from
@@ -97,8 +104,8 @@ Separate worktrees fix the overwrite problem. PRs plus the checks below stop wor
    red or re-running. When main has
    moved since the PR's merge base, it prints one note with how many commits; it never refuses for that, but
    read the note: CI may have tested an older main.
-   A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json` or
-   `.github/workflows/ci.yml`) needs nothing different from you: the script fetches main and lets main's copies
+   A PR that changes a gate file (`tools/merge-gated.sh`, `tools/generated-files.json`,
+   `tools/ios-compile-paths.sh` or `.github/workflows/ci.yml`) needs nothing different from you: the script fetches main and lets main's copies
    judge it, and refuses (16) when main has no copy, so the owner merges that PR by hand. A `ci.yml` PR also prints
    a note: its own CI ran the PR's workflow, so read that diff before merging. Every gh call and the fetch are
    killed after 60 s; a merge cut off that way has an unknown outcome, so check the PR. Each kind of refusal has
@@ -193,6 +200,14 @@ every 2 to 3 days, and whenever Apple answers on a build. It is:
 engine-path PR that is review-ready within about an hour merges first, and one iPhone suite, one Deploy and one
 signing cover both. Never merge an engine-path PR while a release waits at signing.
 
+**When an engine release is skipped** (2026-11-27). Engine release starts only after a Deploy run that ended
+success, so a red Deploy, even one whose deploy went live, releases nothing (its run shows as skipped). Its
+verify step also refuses when main's engine inputs moved after the Deploy's commit: `packages/health-core`,
+`ios/engine`, `ios/scripts`, the Xcode project file, `package.json`, `package-lock.json`, `.npmrc` and
+`tsconfig*` files (`.github/workflows/engine-release.yml`, "main moved since this Deploy"). In both cases run a
+fresh Deploy, so the server and the engine ship from the same main. Read each job's conclusion
+(`gh run view <id> --json jobs`) before reporting a release.
+
 **One Deploy per batch, at the checkpoint, never one per fix.** Auto-ship still deploys each merge it makes
 itself, so a held checkpoint Deploy does not hold auto-ship's.
 
@@ -252,7 +267,10 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    it merged.
 3. **Build the batch from PRs that pass the batching test** in `.claude/skills/untangle/SKILL.md` (every other PR is reviewed and merged on its own gate).
    `sh tools/worktree-new.sh batch-<date>-<n>`, write a list file (`<pr> <full reviewed head sha>` per line),
-   run `node tools/merge-batch.mjs <list-file>` in the worktree. To drop a rejected PR, keep the list file and
+   run `node tools/merge-batch.mjs <list-file>` in the worktree. The tool merges into the git checkout of the
+   process's current directory (`git rev-parse --show-toplevel`), whatever folder the list file sits in. So an
+   agent that builds a batch is spawned with its own isolated worktree as its working directory, and runs the
+   tool there (2026-11-27). To drop a rejected PR, keep the list file and
    rebuild on a fresh worktree: `node tools/merge-batch.mjs <list-file> --skip <pr>[,<pr>...]`. It stops
    (exit 1) on a skipped number not in the list, on skipping every PR, and on a kept PR that shares a commit
    with a skipped one that main lacks (built on its head or a middle commit: skip both, or neither); a skipped
@@ -287,6 +305,9 @@ and Brad merges them. One at a time, each merge made the rest conflict and re-ru
    checkpoint's Deploy, which starts only after any running Deploy finishes (deploy.yml's later jobs check out
    main by name). If CI fails, find the PR by halves (rebuild the batch without half, re-run) rather than re-running
    each PR alone.
+6. **Our own held PRs batch too** (2026-11-27, PR 2249). When held PRs conflict with each other only in a shared
+   ledger file, build one batch PR rather than merging them one by one. A batch that includes Swift gets one
+   combined simulator run; if main's engine inputs move before it merges, rerun the unit tests only.
 
 Rough cost (2026-11-04): one PR at a time paid about 9 min of CI, 8 min of local tests and its own review and
 deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run and one review round.
@@ -297,6 +318,10 @@ deploy, repeated for every PR after each conflict. A batch pays one 3 min CI run
 - Never use secret-shaped test values (keys, tokens, PATs, a `key = 'x1y2…'` line); assemble any such
   fixture at run time.
 - Run its own adversarial pass against docs/review-format.md before opening.
+
+**While an iPhone build is being cut** (2026-11-27), contributor PRs that touch `ios/` or an engine path wait:
+none merges, alone or in a batch, until the build is uploaded. Why: the build must carry exactly what was
+checked on the simulator.
 
 ## What enforces it
 

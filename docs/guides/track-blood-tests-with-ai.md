@@ -18,7 +18,7 @@ Three things read and write that same file:
 
 - [The web tool](https://drstanfield.com/pages/roadmap), where you can type values, upload a lab report and see your plan.
 - ChatGPT or Claude in a browser, through a connector we run at `mcp.drstanfield.com`.
-- An AI on your own computer, such as Claude Desktop or Claude Code, which opens the file directly.
+- An AI assistant on your own computer, such as Claude Desktop or Claude Code, which opens the file directly.
 
 Your plan is worked out from the record: suggestions drawn from published guidelines, each with its reason and citations. The web tool and the connector show the same plan.
 
@@ -26,9 +26,9 @@ It is free, and you do not create an account. The code is public under the MIT l
 
 ## Step 1: Start your record
 
-Open [the tool](https://drstanfield.com/pages/roadmap) and answer its first questions: your height, weight and sex. Then find the button that says "Keep my record in Dropbox or Google Drive". On a phone it heads the Account tab. On a computer it sits at the foot of My health and in Settings, and the Sign in button beside the My health title opens the same choice. Click it and pick Dropbox or Google Drive. When the cloud connects, the tool copies what you entered into a new file in your cloud folder.
+Open [the website](https://drstanfield.com/pages/roadmap) and answer its first questions: your height, weight and sex. Then find the button that says "Keep my record in Dropbox or Google Drive". On a phone it heads the Account tab. On a computer it sits at the foot of My health and in Settings, and the Sign in button beside the My health title opens the same choice. Click it and pick Dropbox or Google Drive. When the cloud connects, the website copies what you entered into a new file in your cloud folder.
 
-Until you connect a cloud, the tool keeps your record in your browser only, and no assistant can reach it. [Find your health record file](/blogs/guides/find-your-record) shows where the file lands in each cloud.
+Until you connect a cloud, the website keeps your record in your browser only, and no assistant can reach it. [Find your health record](/blogs/guides/find-your-record) shows where the file lands in each cloud.
 
 ## Step 2: Connect your assistant
 
@@ -77,13 +77,13 @@ The assistant reads every value in the file, including ones the web tool does no
 
 ## Step 5: Get your plan
 
-Ask "what does my plan say?" or "what does my plan say about my LDL?". The assistant works out the same plan the web tool shows, with the reason and the citations behind each suggestion. You can also see it any time on [the tool page](https://drstanfield.com/pages/roadmap).
+Ask "what does my plan say?" or "what does my plan say about my LDL?". The assistant works out the same plan the website shows, with the reason and the citations behind each suggestion. You can also see it any time on [the website](https://drstanfield.com/pages/roadmap).
 
 The plan is educational information, not medical advice. It does not replace your doctor, and it is not a diagnosis.
 
 ## What it will not do
 
-It never deletes a value. There is no delete tool. If a number went in wrong, the assistant adds the right number as a new entry and marks the old one as entered in error. Both stay in your file, so you can always see what was there before. The connector corrects only values from the last 90 days. You fix an older one on the website, the same way: [how to fix a value](/blogs/guides/upload-lab-report#fix-a-value-after-saving).
+It never deletes a value. There is no delete tool. If a number went in wrong, the assistant adds the right number as a new value and keeps the old one, marked as a mistake. Both stay in your record, so you can always see what was there before. The connector corrects only values from the last 90 days. You correct an older one on the website, the same way: [how to correct a value](/blogs/guides/upload-lab-report#fix-a-value-after-saving).
 
 It holds one value per test per day. Asking for a second LDL on a day that already has one is refused, and the assistant is told to make a correction instead.
 
@@ -93,8 +93,8 @@ A Google Drive record works with files dropped into the chat and with the websit
 
 ## What our server sees
 
-To answer one request, the connector opens your folder with the credential you approved and holds your record in memory for that request. It reads it, but it stores none of it and keeps no copy. You cancel it in your own cloud settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) or [myaccount.google.com/connections](https://myaccount.google.com/connections). The connector and the website use the same app at your provider, so cancelling it there also disconnects this website from your record. The tool asks you to connect again next time you open it. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) has the detail.
+To answer one request, the connector opens your folder with the credential you approved and holds your record in memory for that request. It reads it, but it stores none of it and keeps no copy. You cancel it in your own cloud settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) or [myaccount.google.com/connections](https://myaccount.google.com/connections). The connector and the website use the same app at Dropbox or Google Drive, so cancelling it there also disconnects this website from your record. The website asks you to connect again next time you open it. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) has the detail.
 
 ## If you get stuck
 
-Ask the chat on [the tool page](https://drstanfield.com/pages/roadmap). On a phone it is the Chat tab. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues). Issues are public, so leave out your values.
+Ask Chat on [the website](https://drstanfield.com/pages/roadmap). On a phone it is the Chat tab. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues). Issues are public, so leave out your values.

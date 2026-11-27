@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+T42,glossary,Run the retired-word check over the repo in a test with an AC,lead,not started,"Filed 2026-11-27. scripts/glossary-words.mjs compares retired-word counts with scripts/glossary-words-baseline.json, but nothing runs it on a push: scripts/glossary-words.test.ts tests the script on fixtures only, and no workflow calls it. A test that runs the check on the tracked files, with an AC in the glossary story, makes the baseline hold.",,no

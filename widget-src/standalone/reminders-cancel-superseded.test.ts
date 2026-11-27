@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core/memory-adapter';
 import { ROADMAP_FILE_NAME } from '@roadmap/health-core/adapter';
 import type { RoadmapFile } from '@roadmap/health-core/roadmap-file';
+import { rowsOf, shownOptIn } from '@roadmap/health-core/reminder-rows';
 import { ERASE_IN_PROGRESS, RECORD_CHANGED_SINCE_ASKED } from '@roadmap/health-core/erase';
 
 vi.mock('../src/lib/sentry', () => ({ Sentry: { captureException: vi.fn() } }));
@@ -19,6 +20,7 @@ vi.mock('../src/lib/server-api', () => ({ trackProductEvent: vi.fn() }));
 const ADDRESS = 'synthetic-person@example.com';
 
 beforeEach(() => {
+  vi.clearAllMocks();
   localStorage.clear();
   localStorage.setItem('health_roadmap_backend', 'memory');
 });
@@ -28,13 +30,14 @@ afterEach(() => {
 });
 
 describe('US-17 AC17: a Turn off acts only on the opt-in it read', () => {
-  it('an opt-in written while the cancel request is out stays active, with no opt-out counted', async () => {
+  // US-17 AC19: the Turn off writes only the row it read; the new token's row stays on and is the one shown.
+  it('an opt-in written while the cancel request is out stays on; the token it read is cancelled and counted once', async () => {
     const data = await import('../src/lib/roadmap-data');
     const { cancelReminders } = await import('./reminders');
     const { trackProductEvent } = await import('../src/lib/server-api');
     const cloud = new MemoryCloud();
     await data.initRoadmapStore(new MemoryAdapter(cloud));
-    expect(data.setReminderOptIn({ status: 'active', token: 'test-token-old', email: ADDRESS, provider: 'dropbox' }, data.getShownErase())).toBe(true);
+    expect(data.setReminderRows([{ status: 'active', token: 'test-token-old', email: ADDRESS, provider: 'dropbox' }], data.getShownErase())).toBe(true);
     await data.flushRoadmapStore();
 
     let release!: () => void;
@@ -49,18 +52,18 @@ describe('US-17 AC17: a Turn off acts only on the opt-in it read', () => {
     const turningOff = cancelReminders();
     await cancelSent;
     // Another device's Turn on, merged in while the cancel is out.
-    expect(data.setReminderOptIn({ status: 'active', token: 'test-token-new', email: ADDRESS, provider: 'dropbox' }, data.getShownErase())).toBe(true);
+    expect(data.setReminderRows([{ status: 'active', token: 'test-token-new', email: ADDRESS, provider: 'dropbox' }], data.getShownErase())).toBe(true);
     release();
     await turningOff;
     await data.flushRoadmapStore();
 
-    const optIn = data.getReminderOptIn();
-    expect(optIn?.status).toBe('active');
-    expect(optIn?.token).toBe('test-token-new');
     const stored = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
-    expect(stored.reminderOptIn?.status).toBe('active');
-    expect(stored.reminderOptIn?.token).toBe('test-token-new');
-    expect(trackProductEvent).not.toHaveBeenCalledWith('reminder_optout', expect.anything());
+    for (const file of [{ reminderOptIn: data.getReminderOptIn() }, stored]) {
+      expect(shownOptIn(file)).toMatchObject({ status: 'active', token: 'test-token-new' });
+      expect(rowsOf(file.reminderOptIn).map(({ token, status }) => [token, status])).toEqual([['test-token-new', 'active'], ['test-token-old', 'cancelled']]);
+    }
+    expect(trackProductEvent).toHaveBeenCalledTimes(1);
+    expect(trackProductEvent).toHaveBeenCalledWith('reminder_optout', { provider: 'dropbox' });
   });
   // F2 (PR 1735 review): the record is at another erase than the page shows
   // (an erase landed, the page has not marked it shown) and holds an active
@@ -76,7 +79,7 @@ describe('US-17 AC17: a Turn off acts only on the opt-in it read', () => {
     expect((await data.deleteUserData()).success).toBe(true);
     expect(data.getEraseIdentity()).not.toBe(before);
     expect(data.getShownErase()).toBe(before);
-    expect(data.setReminderOptIn({ status: 'active', token: 'test-token-new', email: ADDRESS, provider: 'dropbox' }, data.getEraseIdentity())).toBe(true);
+    expect(data.setReminderRows([{ status: 'active', token: 'test-token-new', email: ADDRESS, provider: 'dropbox' }], data.getEraseIdentity())).toBe(true);
     await data.flushRoadmapStore();
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })));
 
@@ -97,7 +100,7 @@ describe('US-17 AC17: a Turn off acts only on the opt-in it read', () => {
     const { ChatSession } = await import('@roadmap/health-core/chat-session');
     const cloud = new MemoryCloud();
     await data.initRoadmapStore(new MemoryAdapter(cloud));
-    expect(data.setReminderOptIn({ status: 'active', token: 'test-token-old', email: ADDRESS, provider: 'dropbox' }, data.getShownErase())).toBe(true);
+    expect(data.setReminderRows([{ status: 'active', token: 'test-token-old', email: ADDRESS, provider: 'dropbox' }], data.getShownErase())).toBe(true);
     await data.flushRoadmapStore();
     const f = vi.fn(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', f);

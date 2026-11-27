@@ -41,7 +41,7 @@ flowchart LR
   C1["Chat / uploads"] --> C2["Shopify transport OR Pages BYOK transport"]
 ```
 
-The local data module owns reads, writes, record lifecycle, reminder schedule computation and client-side report generation. Its Shopify-only `sendGuestReport(email)` submits the address and computed reminder calendar, never health measurements. [server-api.ts](../../widget-src/src/lib/server-api.ts) owns proxy parsing, feedback and A/B/product tracking. `document-format.ts` owns display labels and date formatting.
+The local data module owns reads, writes, record lifecycle, reminder schedule computation and client-side report generation. Its Shopify-only `sendGuestReport(email)` submits the address and computed reminder calendar, never health values. [server-api.ts](../../widget-src/src/lib/server-api.ts) owns proxy parsing, feedback and A/B/product tracking. `document-format.ts` owns display labels and date formatting.
 
 Only the Pages build redirects `chat-api.ts → byok-chat.ts` and `upload-api.ts → byok-upload.ts`. Both builds use the same explicit local record API.
 
@@ -93,7 +93,7 @@ One JSON file per user. Append-only arrays are never mutated; corrections add a 
 
 ### The store + sync
 
-[RoadmapStore](../../widget-src/src/storage/roadmap-store.ts) owns the local record operations exposed by `roadmap-data.ts`, including: `getPrefillInputs()` (synchronous profile seed so a returning user's "Starting Info" renders collapsed on first paint), `getReportEmailCaptured()/markReportEmailCaptured()`, `getReminderOptIn/setReminderOptIn/computeReminderScheduleNow`, and `flush()/flushSync()`. `app.tsx` awaits `initRoadmapStore` before render.
+[RoadmapStore](../../widget-src/src/storage/roadmap-store.ts) owns the local record operations exposed by `roadmap-data.ts`, including: `getPrefillInputs()` (synchronous profile seed so a returning user's "Starting Info" renders collapsed on first paint), `getReportEmailCaptured()/markReportEmailCaptured()`, `getReminderOptIn/setReminderRows/computeReminderScheduleNow`, and `flush()/flushSync()`. `app.tsx` awaits `initRoadmapStore` before render.
 
 The [SyncManager](../../packages/health-core/src/sync-manager.ts) runs one optimistic-concurrency loop per named document — `health-roadmap.json` and `chat-history.json` ride the same loop via injected `DocumentSpec`s (filename + migrate + merge). After every write it re-reads and confirms the file parses and `lamport` hasn't regressed — catching half-writes and corruption at the cost of one extra read per save (invisible on an app used a few times a year).
 
@@ -134,6 +134,6 @@ Every write merges against the freshest read. Backends with conditional writes (
 <a id="identity"></a>
 ## Identity / auth
 
-v1's three-layer auth (Shopify HMAC → per-user JWT → Supabase RLS) is gone from the data path. In v2, **identity is the cloud account**: the browser does client-side OAuth (PKCE) directly with Google/Dropbox, and Shopify login is irrelevant to where data lives. The cloud token never leaves the device. One exception, on both builds: Google grants a refresh token only to a confidential client, so the browser posts the OAuth code to `api.google-token`, which forwards it to Google with our client secret and stores nothing.
+v1's three-layer auth (Shopify HMAC → per-user JWT → Supabase RLS) is gone from the data path. In v2, **identity is the cloud account**: the browser does client-side OAuth (PKCE) directly with Google/Dropbox, and Shopify sign-in is irrelevant to where data lives. The cloud token never leaves the device. One exception, on both builds: Google grants a refresh token only to a confidential client, so the browser posts the OAuth code to `api.google-token`, which forwards it to Google with our client secret and stores nothing.
 
 The server-side HMAC app-proxy verification still exists, but only as an *anti-abuse front door* on the AI endpoints (chat, lab-import-v2) and the Klaviyo capture — see [Security model](ops-deployment.md#security). It is no longer how the app knows who you are.

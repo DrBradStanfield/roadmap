@@ -1,5 +1,4 @@
 import SwiftUI
-import TipKit
 
 /// The My health tab (US-73; was My data and My plan, US-25 AC5, AC17): one page by topic,
 /// weight first, each topic's values then its plan cards, as the engine places them; the
@@ -208,29 +207,26 @@ struct MyDataView: View {
             self.page = HealthPage(store)
             pageBuiltFor = key
         }
-        // Each tour tip, once due, brings its anchor into view (US-57); a weight section with
-        // no card passes tip 2 (review R4).
-        .task { await bringIntoView(SnapshotTip(), Self.firstRow, proxy: proxy, at: .center) }
-        .task { await bringIntoView(FoundationTip(), currentPage.firstWeightCard, proxy: proxy, at: .center) }
-        // A tap by the clock that closes tip 2 also scrolls to the top, so tip 3 scrolls
-        // again once that settles (US-57 AC2).
-        .task { await bringIntoView(BloodTestsTip(), HealthTopic.bloodTests.anchor, proxy: proxy, at: .top, settle: .milliseconds(700)) }
-        .tourStep(FoundationTip(), hasNoAnchor: page.firstWeightCard == nil)
+        // The tour sees this list: each due tip's anchor is brought into view and its tip
+        // shows once the list is at rest (US-57 AC2). A sheet or alert up holds it.
+        .tourList(proxy: proxy, targets: Self.tourTargets(page), covered: sheetUp) { addingLabs = true }
     }
+
+    /// One of this screen's sheets or its alert is up. Whether anything at all is presented the tour
+    /// reads from the window (`TourGuide.presenting`); this list only makes a closing sheet here a moment
+    /// to look again, as the window reports no change (review R2).
+    private var sheetUp: Bool { entry != nil || showSync || showSettings || addingLabs || addingTest || refusal != nil }
 
     /// The scroll id of Weight & diabetes' first row, tour tip 1's anchor.
     static let firstRow = "tour.firstRow"
 
-    /// Once `tip` is due, scrolls its anchor into view (US-57); with `settle`, scrolls there
-    /// again after it.
-    private func bringIntoView(_ tip: some Tip, _ anchor: @autoclosure () -> String?, proxy: ScrollViewProxy, at point: UnitPoint,
-                               settle: Duration? = nil) async {
-        for await due in tip.shouldDisplayUpdates where due {
-            withAnimation { proxy.scrollTo(anchor(), anchor: point) }
-            guard let settle else { continue }
-            try? await Task.sleep(for: settle)
-            proxy.scrollTo(anchor(), anchor: point)
-        }
+    /// Each tip's anchor this page draws, by scroll id: the first row, the first Weight &
+    /// diabetes card, the Blood tests heading. A step with none passes (review R4).
+    static func tourTargets(_ page: HealthPage) -> [TourStep: TourTarget] {
+        var targets: [TourStep: TourTarget] = [.bloodTests: TourTarget(id: HealthTopic.bloodTests.anchor, atTop: true)]
+        if page.waist != nil { targets[.snapshot] = TourTarget(id: firstRow, atTop: false) }
+        if let card = page.firstWeightCard { targets[.foundation] = TourTarget(id: card, atTop: false) }
+        return targets
     }
 
     // MARK: Rows

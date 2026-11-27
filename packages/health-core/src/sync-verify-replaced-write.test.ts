@@ -10,7 +10,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ROADMAP_FILE_NAME, StorageError } from './adapter';
-import type { RoadmapFile } from './roadmap-file';
+import type { FileReminderOptIn, FileSupplement, RoadmapFile } from './roadmap-file';
+import { pickNewerOptional } from './old-optin-merge.test-helpers';
 import { DriveAdapter } from './drive-rest';
 import { createEmptyFile, createMeasurement } from './roadmap-file';
 import { ROADMAP_DOC } from './roadmap-doc';
@@ -52,6 +53,8 @@ class ControlledDrive {
   clobberWith: RoadmapFile | null = null;
   /** The copy lands one lamport past A's upload, so only the field check sees it. */
   clobberAhead = false;
+  /** The stale copy lands after A's first PATCH only. */
+  clobberOnce = false;
   aPatches = 0;
   readonly bReady = deferred();
   private releaseB = deferred();
@@ -90,6 +93,7 @@ class ControlledDrive {
           this.body = clone(this.clobberWith);
           if (this.clobberAhead) this.body.meta.lamport = prepared.meta.lamport + 1;
           this.version += 1;
+          if (this.clobberOnce) this.clobberWith = null;
         }
         if (this.race && who === 'b') this.bCommitted.resolve();
         if (this.race && who === 'a' && !this.aReleased) {
@@ -346,5 +350,165 @@ describe('verifyPersistedFile: writes that add no row (US-10 AC6a, US-11 AC7)', 
     // Precondition: the re-read really does move that field's clock.
     expect(readBack(ours).profile.fieldStamps?.heightCm?.updatedAt).not.toBe(ours.profile.fieldStamps?.heightCm?.updatedAt);
     expect(verify(ours, ours)).not.toThrow();
+  });
+});
+
+describe('the check after a save also covers the reminder opt-in (US-17 AC19)', () => {
+  const optInRow = (token: string, status: 'active' | 'cancelled', updatedAt: string): FileReminderOptIn =>
+    ({ status, token, email: `${token}@example.test`, provider: 'dropbox', updatedAt, lamport: 1 });
+  const withOptIn = (optIn: FileReminderOptIn): RoadmapFile => ({ ...seeded(), reminderOptIn: optIn });
+  /** A conditional store holding `first`, where `racer` lands once between a save's read and its upload. */
+  const racedOnce = (cloud: MemoryCloud, first: RoadmapFile, racer: RoadmapFile): MemoryAdapter => {
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(first), version: 1 });
+    const store = new MemoryAdapter(cloud);
+    const write = store.write.bind(store);
+    let raced = false;
+    store.write = async (...args: Parameters<MemoryAdapter['write']>) => {
+      if (!raced) { raced = true; cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(racer), version: 2 }); }
+      return write(...args);
+    };
+    return store;
+  };
+  // The old rule for the opt-in: the newer object whole, its list with it.
+  const oldDoc = { ...ROADMAP_DOC, merge: (l: RoadmapFile, b: RoadmapFile, ctx: { deviceId: string; now: string }) =>
+    ({ ...ROADMAP_DOC.merge(l, b, ctx), reminderOptIn: pickNewerOptional(l.reminderOptIn, b.reminderOptIn) }) };
+
+  it('a nested row another writer dropped in the window is written again, and the save then lands', async () => {
+    const base = withOptIn(optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z'));
+    const drive = new ControlledDrive(base, true); drive.install();
+    const b = manager('b').save(stampProfile(clone(base), { birthYear: 1981 }, NOW));
+    await drive.bReady.promise;
+    const ours = clone(base);
+    ours.reminderOptIn = { ...ours.reminderOptIn!, tokens: [optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z')] };
+    const [aSaved] = await Promise.all([manager('a').save(ours), b]);
+    racePreconditions(drive);
+    expect(aSaved.attempts).toBeGreaterThan(0);
+    expect(drive.body.reminderOptIn?.tokens?.map((r) => r.token)).toEqual(['token-b']);
+    expect(drive.body.profile.birthYear).toBe(1981);
+  });
+
+  it('a Turn off another writer replaced in the window is written again (the single object, as on main)', async () => {
+    const base = withOptIn(optInRow('token-a', 'active', '2026-10-21T10:00:00.000Z'));
+    const drive = new ControlledDrive(base, true); drive.install();
+    const b = manager('b').save(stampProfile(clone(base), { birthYear: 1981 }, NOW));
+    await drive.bReady.promise;
+    const ours = { ...clone(base), reminderOptIn: optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z') };
+    const [aSaved] = await Promise.all([manager('a').save(ours), b]);
+    racePreconditions(drive);
+    expect(aSaved.attempts).toBeGreaterThan(0);
+    expect(drive.body.reminderOptIn).toMatchObject({ status: 'cancelled', token: 'token-a' });
+  });
+
+  it('a newer erase in the re-read decides: no retry loop', async () => {
+    const base = withOptIn(optInRow('token-a', 'active', '2026-10-21T10:00:00.000Z'));
+    const drive = new ControlledDrive(base, false); drive.install();
+    drive.clobberWith = buildErasedFile({ stored: base, own: base, device: null, ctx: CTX });
+    drive.clobberAhead = true;
+    drive.clobberOnce = true;
+    const ours = { ...clone(base), reminderOptIn: optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z') };
+    const saved = await manager('a').save(ours);
+    expect(drive.aPatches).toBeLessThanOrEqual(2);
+    expect(saved.attempts).toBeLessThanOrEqual(1);
+    expect(drive.body.meta.eraseEpoch).toBe((base.meta.eraseEpoch ?? 0) + 1);
+  });
+
+  it('an opt-in-only save replaced by a newer erase before its check takes the erase in', async () => {
+    const empty = createEmptyFile(CTX);
+    const base = { ...empty, reminderOptIn: optInRow('token-a', 'active', '2026-10-21T10:00:00.000Z') };
+    const drive = new ControlledDrive(base, false); drive.install();
+    drive.clobberWith = buildErasedFile({ stored: base, own: base, device: null, ctx: CTX });
+    drive.clobberAhead = true;
+    drive.clobberOnce = true;
+    const ours = { ...clone(base), reminderOptIn: optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z') };
+    const saved = await manager('a').save(ours);
+    expect(saved.attempts).toBe(1);
+    expect(saved.file.meta.eraseEpoch).toBe((base.meta.eraseEpoch ?? 0) + 1);
+    expect(JSON.stringify(saved.file)).not.toContain('token-a');
+    expect(JSON.stringify(drive.body)).not.toContain('token-a');
+  });
+
+  // Limit (US-17 AC19, US-10 AC6a): the retry merges the save's own input with the new read, as main does.
+  it('limit: a row this save learned only from its first read, which another writer then removed, is not written back', async () => {
+    const plain = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
+    const base = withOptIn({ ...plain, tokens: [optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z')] });
+    const drive = new ControlledDrive(base, false); drive.install();
+    // An older writer replaces the upload once with the object alone.
+    drive.clobberWith = withOptIn(plain);
+    drive.clobberAhead = true;
+    drive.clobberOnce = true;
+    // This device never saw token B: its copy holds the object alone, plus an edit.
+    const saved = await manager('a').save(stampProfile(withOptIn(plain), { heightCm: 181 }, NOW));
+    expect(saved.attempts).toBe(1);
+    expect(drive.body.reminderOptIn?.tokens).toBeUndefined();
+    expect(drive.body.profile.heightCm).toBe(181);
+  });
+
+  it('limit: the same holds for a profile field this save learned only from its first read', async () => {
+    const base = stampProfile(seeded(), { birthYear: 1981 }, '2026-10-21T11:00:00.000Z');
+    const drive = new ControlledDrive(base, false); drive.install();
+    drive.clobberWith = seeded();
+    drive.clobberAhead = true;
+    drive.clobberOnce = true;
+    const saved = await manager('a').save(stampProfile(seeded(), { heightCm: 181 }, NOW));
+    expect(saved.attempts).toBe(1);
+    expect(drive.body.profile.birthYear).toBe(1980);
+    expect(drive.body.profile.heightCm).toBe(181);
+  });
+
+  it('a hand-edited opt-in whose token is not a string saves with an unrelated edit in one attempt', async () => {
+    const malformed = { ...optInRow('x', 'cancelled', '2026-10-21T11:00:00.000Z'), token: { not: 'a string' } } as unknown as FileReminderOptIn;
+    const base = withOptIn(malformed);
+    const drive = new ControlledDrive(base, false); drive.install();
+    const saved = await manager('a').save(stampProfile(clone(base), { heightCm: 182 }, NOW));
+    expect(saved.attempts).toBe(0);
+    expect(drive.body.reminderOptIn?.status).toBe('cancelled');
+    expect(drive.body.profile.heightCm).toBe(182);
+  });
+
+  it('limit: a cancel learned only on the first read is not written back after a write conflict (conditional store)', async () => {
+    const cloud = new MemoryCloud();
+    const cancelledA = optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z');
+    const first = withOptIn({ ...cancelledA, tokens: [optInRow('token-b', 'cancelled', '2026-10-21T10:30:00.000Z')] });
+    // An old writer saves A alone between this save's read and its conditional upload.
+    const store = racedOnce(cloud, first, withOptIn(cancelledA));
+    // This device holds B active, from before the cancel.
+    const ours = withOptIn(optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z'));
+    const saved = await new SyncManager(store, 'a', ROADMAP_DOC, { now: () => NOW }).save(ours);
+    expect(saved.attempts).toBe(1);
+    const stored: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+    // This device's own older row is what the retry writes; the other writer dropped the cancel.
+    expect(stored.reminderOptIn?.tokens).toEqual([optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z')]);
+  });
+
+  it('US-09 AC23: a row the first merge set aside, which a concurrent erase never saw, survives the retry', async () => {
+    const supplement = (id: string, updatedAt: string): FileSupplement => ({
+      id, supplementKey: 'vitamin-d', supplementName: 'Vitamin D', doseValue: 1000, doseUnit: 'IU',
+      status: 'active', startedAt: '2026-10-01', updatedAt, lamport: 1,
+    });
+    // Another device added the same supplement under its own id, newer than this one.
+    const cloudCopy = { ...seeded(), supplements: [supplement('supp-cloud', '2026-10-21T11:00:00.000Z')] };
+    const cloud = new MemoryCloud();
+    // An erase that saw only the cloud copy lands before this conditional upload.
+    const store = racedOnce(cloud, cloudCopy, buildErasedFile({ stored: cloudCopy, own: cloudCopy, device: null, ctx: CTX }));
+    const ours = { ...seeded(), supplements: [supplement('supp-local', '2026-10-21T10:00:00.000Z')] };
+    const saved = await new SyncManager(store, 'a', ROADMAP_DOC, { now: () => NOW }).save(ours);
+    expect(saved.attempts).toBe(1);
+    const stored: RoadmapFile = JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json);
+    expect(stored.supplements.map((s) => [s.id, s.status])).toEqual([['supp-local', 'active']]);
+  });
+
+  it('an old-code writer that drops the list in the window costs one retry, then the save settles', async () => {
+    const base = withOptIn(optInRow('token-a', 'cancelled', '2026-10-21T11:00:00.000Z'));
+    const drive = new ControlledDrive(base, true); drive.install();
+    const old = new SyncManager(new DriveAdapter('synthetic-b'), 'b', oldDoc, { now: () => NOW });
+    const b = old.save(stampProfile(clone(base), { birthYear: 1981 }, NOW));
+    await drive.bReady.promise;
+    const ours = clone(base);
+    ours.reminderOptIn = { ...ours.reminderOptIn!, tokens: [optInRow('token-b', 'active', '2026-10-21T10:00:00.000Z')] };
+    const [aSaved, bSaved] = await Promise.all([manager('a').save(ours), b]);
+    racePreconditions(drive);
+    expect(bSaved.attempts).toBe(0);
+    expect(aSaved.attempts).toBe(1);
+    expect(drive.body.reminderOptIn?.tokens?.map((r) => r.token)).toEqual(['token-b']);
   });
 });

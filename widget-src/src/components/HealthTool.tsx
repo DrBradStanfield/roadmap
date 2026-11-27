@@ -32,7 +32,7 @@ import { UploadModal } from './UploadModal';
 import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { BottomTabBar, panelDomId, tabDomId, type TabId } from './BottomTabBar';
 import { activeCellIn } from './NumericInputCell';
-import { inPsaRow } from './ScreeningQuestions';
+import { leftOnClose } from './LongitudinalField';
 import { NO_RECORD, writeMirror } from '../lib/chat-mirror';
 import {
   loadLatestMeasurements,
@@ -147,7 +147,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The record shown, at load and on every whole re-read, and another writer's change held behind an edit (hooks/useRecordApply).
   const { showRecord, signal: rereadRecord, ownSave, shows: showErase, settled: profileSettled, firstReadShown, firstReadFailed } = useRecordApply({
     setInputs, reloadValues, applyLists, units, erase: eraseStore,
-    later: () => ({ markSaved, flushPendingSave, flushListSaves, profileDirty, clearAnswered, savedProfile }), // declared below
+    later: () => ({ markSaved, flushPendingSave, flushListSaves, profileForm, clearAnswered, savedProfile }), // declared below
   });
   // The medication, screening and supplement saves (hooks/useListSaves).
   const {
@@ -265,7 +265,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   }, [reached, epoch, chatPrefetch]);
 
   // The profile's save: height, sex, the birth date, the unit system (hooks/useProfileSave).
-  const { flushProfile, profileTimer, markSaved, savedProfile, profileDirty, birthRefused, clearBirthRefused } = useProfileSave({
+  const { flushProfile, profileTimer, markSaved, savedProfile, profileForm, birthRefused, clearBirthRefused } = useProfileSave({
     inputs, inputsRef, setInputs, loaded, onSettled: profileSettled, writeRefused, units,
   });
 
@@ -302,8 +302,8 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // The page's stage on the one hide path (lib/page-hide.ts), which writes once
   // after every stage: only queued edits, with the erase they were made
   // against. A matrix's draft stays on the device instead (US-03 AC5). A
-  // closing tab fires no blur, so focus still in the PSA row is moved out
-  // first: the row's blur commits it, with its own checks. The fields' waiting
+  // closing tab fires no blur, so focus still in the PSA row or the weight box
+  // is moved out first: its blur saves it, with its own checks. The fields' waiting
   // save and a committed PSA are then staged at once, not on the timer or a
   // promise, which would run after the write (US-06 AC15; Brad 2026-11-03:
   // weight, waist or BP save on tab close). iOS kills a hidden tab, so hiding
@@ -311,7 +311,7 @@ export function HealthTool({ syncControl, remindersSection, storageBar, saveAler
   // date (Brad 2026-11-03, "Wait for the date").
   useEffect(() => onPageHide(closing => {
     const focused = document.activeElement;
-    if (closing && focused instanceof HTMLElement && inPsaRow(focused)) focused.blur();
+    if (closing && focused instanceof HTMLElement && leftOnClose(focused)) focused.blur();
     profileTimer.flush();
     stagePendingSave();
     // The waiting medication, screening and supplement saves, each with the

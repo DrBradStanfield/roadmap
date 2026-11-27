@@ -252,7 +252,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Weight & Diabetes Medications ──────────────────────────
 
   'weight-med-glp1': {
-    reason: 'GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.' + WEIGHT_MED_TRIGGER_NOTE,
+    reason: 'GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.' + WEIGHT_MED_TRIGGER_NOTE,
     guidelines: [],
     references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
   },
@@ -270,19 +270,19 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-glp1-switch': {
-    reason: 'Tirzepatide (Mounjaro/Zepbound) works on both GIP and GLP-1 receptors, which may provide greater weight loss than GLP-1-only medications. In clinical trials, tirzepatide achieved up to 22% body weight loss.',
+    reason: 'Tirzepatide (Mounjaro/Zepbound) works on both GIP and GLP-1 receptors, which may provide greater weight loss than GLP-1-only medications. In clinical trials, Tirzepatide achieved up to 22% body weight loss.',
     guidelines: [],
     references: REFS_GLP1,
   },
 
   'weight-med-sglt2i': {
-    reason: 'SGLT2 inhibitors (empagliflozin, dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection in some populations, making them a valuable addition for metabolic health.',
+    reason: 'SGLT2 inhibitors (Empagliflozin, Dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection in some populations, making them a valuable addition for metabolic health.',
     guidelines: [],
     references: REFS_SGLT2I,
   },
 
   'weight-med-metformin': {
-    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. Extended-release formulations cause fewer gastrointestinal side effects.',
+    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that Metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. Extended-release formulations cause fewer gastrointestinal side effects.',
     guidelines: [],
     references: [
       { label: 'Knowler 2002 – Diabetes Prevention Program: lifestyle or metformin & incidence of type 2 diabetes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa012512' },
@@ -291,7 +291,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-glp1': {
-    reason: 'GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant weight loss alongside improvements in metabolic health. These medications work best as part of a comprehensive approach including diet, exercise, and sleep.' + WEIGHT_MED_TRIGGER_NOTE,
+    reason: 'GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant weight loss alongside improvements in metabolic health. These medications work best as part of a comprehensive approach including diet, exercise, and sleep.' + WEIGHT_MED_TRIGGER_NOTE,
     guidelines: [],
     references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
   },
@@ -461,7 +461,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-ezetimibe': {
-    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for ezetimibe on its own is limited, and ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on ezetimibe in pregnancy to judge the risk.',
+    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -472,7 +472,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-bempedoic-acid': {
-    reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. This plan suggests discussing it only if you cannot take a statin and your level is still above target after the PCSK9 inhibitor and ezetimibe steps (each taken, declined or not tolerated). The combination pill with ezetimibe (Nexlizet) offers convenience.\n\nIts US label says to stop it when pregnancy is recognized, unless the benefits outweigh the possible risks to the baby.',
+    reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. This plan suggests discussing it only if you cannot take a statin and your level is still above target after the PCSK9 inhibitor and Ezetimibe steps (each taken, declined or not tolerated). The combination pill with Ezetimibe (Nexlizet) offers convenience.\n\nIts US label says to stop it when pregnancy is recognized, unless the benefits outweigh the possible risks to the baby.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: [
       { label: 'Nissen 2023 – CLEAR Outcomes: bempedoic acid in statin-intolerant patients (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2215024' },
@@ -481,7 +481,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-statin-dose': {
-    reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which option to discuss with your doctor next depends on the dose you take now.',
+    reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and Rosuvastatin 40mg gives the largest reduction (~63%). Which option to discuss with your doctor next depends on the dose you take now.',
     guidelines: [...GUIDELINES_STATIN_STEPS],
     references: [REF_ESC_EAS_2019, ...REFS_STATIN_PREGNANCY],
   },
@@ -499,7 +499,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-pcsk9i': {
-    reason: 'PCSK9 inhibitors (evolocumab, alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. If a statin is not tolerated for any reason, this plan suggests discussing a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), ezetimibe comes next; bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
+    reason: 'PCSK9 inhibitors (Evolocumab, Alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus Ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. If a statin is not tolerated for any reason, this plan suggests discussing a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), Ezetimibe comes next; Bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -515,7 +515,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Supplements ────────────────────────────────────────────
 
   'supplement-micronutrient-base': {
-    reason: 'A comprehensive daily supplement can help fill nutritional gaps. The COSMOS trial enrolled men aged 60 and over and women aged 65 and over. A meta-analysis of its three cognition sub-studies (about 5,200 people) found that a daily multivitamin-mineral improved global cognition and episodic memory compared with placebo. The effect on global cognition was equivalent to about 2 years less cognitive ageing. This suggests broad micronutrient support may benefit brain health alongside physical health.\n\nThe WHO 2026 guideline on reducing the risk of cognitive decline and dementia recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It is a strong recommendation based on moderate-certainty evidence; WHO gave the reason as \'unexpected harmful effects that outweigh any potential benefits\'. It kept its 2019 recommendation without reassessing supplements, and it did not cite the COSMOS trials.\n\nThe base includes vitamin K2. In healthy volunteers taking a vitamin K antagonist, MK-7 (a form of vitamin K2) at 10 to 20 mcg a day lowered the INR enough to matter clinically in at least 40 to 60% of people, and 45 mcg a day lowered the group\'s average INR by about 40%. The study authors concluded that MK-7 supplements should be avoided with vitamin K antagonist therapy. If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.',
+    reason: 'A comprehensive daily supplement can help fill nutritional gaps. The COSMOS trial enrolled men aged 60 and over and women aged 65 and over. A meta-analysis of its three cognition sub-studies (about 5,200 people) found that a daily multivitamin-mineral improved global cognition and episodic memory compared with placebo. The effect on global cognition was equivalent to about 2 years less cognitive ageing. This suggests broad micronutrient support may benefit brain health alongside physical health.\n\nThe WHO 2026 guideline on reducing the risk of cognitive decline and dementia recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It is a strong recommendation based on moderate-certainty evidence; WHO gave the reason as \'unexpected harmful effects that outweigh any potential benefits\'. It kept its 2019 recommendation without reassessing supplements, and it did not cite the COSMOS trials.\n\nThe base includes vitamin K2. In healthy volunteers taking a vitamin K antagonist, MK-7 (a form of vitamin K2) at 10 to 20 mcg a day lowered the INR enough to matter clinically in at least 40 to 60% of people, and 45 mcg a day lowered the group\'s average INR by about 40%. The study authors concluded that MK-7 supplements should be avoided with vitamin K antagonist therapy. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.',
     guidelines: [],
     references: [
       ...REFS_COSMOS,
@@ -615,7 +615,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'skin-retinoid': {
-    reason: 'Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.',
+    reason: 'Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.',
     guidelines: [],
     references: [
       { label: 'Bagatin 2018 – Adapalene vs tretinoin for photoaging (Eur J Dermatol)', url: 'https://doi.org/10.1684/ejd.2018.3320' },

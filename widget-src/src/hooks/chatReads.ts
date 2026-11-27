@@ -1,6 +1,6 @@
 /**
- * A thread's turns, read with a time limit (N1, Fable 2026-11-12): the chat
- * locks Send while the shown thread loads, so a read that hangs must still end.
+ * A conversation's turns, read with a time limit (N1, Fable 2026-11-12): the chat
+ * locks Send while the shown conversation loads, so a read that hangs must still end.
  * It always settles: turns, 'gone' (a 404, US-15 AC6a) or 'failed' (an error,
  * a throw, or no answer within LOAD_TIMEOUT_MS). It stops, its timer cleared
  * and its fetch aborted, at the time limit, as soon as the store's load is no

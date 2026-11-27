@@ -124,14 +124,14 @@ export function busy(s: ChatState, othersBusy: boolean): boolean {
 const same = (state: ChatState): Step => ({ state, effects: [] });
 const inFlight = (t: Turn): t is Extract<Turn, { phase: 'sending' | 'streaming' }> => t.phase === 'sending' || t.phase === 'streaming';
 
-/** The person moved (a send, or another chat shown): a guest's first read no longer opens a thread (Q7). */
+/** The person moved (a send, or another chat shown): a guest's first read no longer opens a conversation (Q7). */
 function settled(s: ChatState): ChatState {
   return s.list.phase === 'reading' || s.list.phase === 'waiting' ? { ...s, list: { ...s.list, autoOpen: false } } : s;
 }
-/** The first chat, never sent from or left: only then may a guest's first read open a thread (Q7). */
+/** The first chat, never sent from or left: only then may a guest's first read open a conversation (Q7). */
 const untouched = (s: ChatState): boolean => s.shown.key === 'new:0' && s.turn.phase === 'idle' && s.messages.length === 0;
 
-/** A new shown chat with no thread (New chat, its mirror, a thread gone): its own key and opening. */
+/** A new shown chat with no conversation (New chat, its mirror, a conversation gone): its own key and opening. */
 function freshChat(s: ChatState): ChatState {
   const seq = { ...s.seq, key: s.seq.key + 1, opening: s.seq.opening + 1 };
   return { ...settled(s), seq, shown: { key: `new:${seq.key}`, id: null, opening: seq.opening }, messages: [], error: null, notice: 'none', load: { phase: 'none' } };
@@ -259,7 +259,7 @@ function loadLanded(s: ChatState, e: Extract<ChatEvent, { type: 'load-landed' }>
     if (!current) return same(s);
     return { state: { ...s, messages: e.turns, load: { phase: 'none' } }, effects: [{ type: 'post-state' }] };
   }
-  // A 404 at any opening: the thread is gone (AC6a). R8: emptying the shown chat also ends its load.
+  // A 404 at any opening: the conversation is gone (AC6a). R8: emptying the shown chat also ends its load.
   const dropped: ChatState = { ...s, conversations: s.conversations.filter((c) => c.id !== e.id) };
   if (s.shown.id === e.id) return { state: freshChat(dropped), effects: [{ type: 'edits-leave' }] };
   return same(dropped); // a load is only ever for the shown thread (property test), so this one is not loading
@@ -281,7 +281,7 @@ export function transition(s: ChatState, e: ChatEvent): Step {
       if ((p.erase ?? s.erase.shown) !== s.erase.shown) return same(s);
       const id = p.activeConversationId;
       const moved: Effect[] = [{ type: 'remote-selected' }, { type: 'edits-leave' }];
-      if (p.loaded === false) { // R1: its turns are no history; this tab keeps its own, or reads the thread itself
+      if (p.loaded === false) { // R1: its turns are no history; this tab keeps its own, or reads the conversation itself
         const kept: ChatState = { ...s, conversations: p.conversations, error: p.error };
         if (id === s.shown.id) return same(kept);
         if (id === null) return { state: { ...freshChat(kept), error: p.error, notice: s.notice }, effects: moved };

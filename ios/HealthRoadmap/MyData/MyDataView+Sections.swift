@@ -1,5 +1,4 @@
 import SwiftUI
-import TipKit
 
 /// My health's topic sections: headings, plan cards and each topic's rows. Split out of MyDataView.swift.
 extension MyDataView {
@@ -7,11 +6,10 @@ extension MyDataView {
     /// controls at its trailing end (Blood tests: lab upload and Sync, round 7). At the largest
     /// sizes a one-word title shrinks to one line and any controls go under it, so no word
     /// breaks ("Supplem-ents", TextSizeLayoutTests, US-25 AC26).
-    /// Tour tip 3 (US-57 AC7) rides on Blood tests' heading from the start, never only once due
-    /// (docs/gotchas.md 2026-11-27); its action is the lab upload.
+    /// Tour tip 3 (US-57 AC7) rides on Blood tests' heading; its action, the lab upload, is the tour's (`tourList`).
     /// "Upload labs" sits on the topics `uploadLabsEvent` names (US-73 AC14) and opens the lab upload.
     private func heading(_ topic: HealthTopic) -> some View {
-        TopicHeading(topic.title, anchor: topic.anchor, tip: topic == .bloodTests ? { addingLabs = true } : nil) {
+        TopicHeading(topic.title, anchor: topic.anchor, tourTip: topic == .bloodTests) {
             if let event = topic.uploadLabsEvent {
                 Button("Upload labs") {
                     analytics?.event(event)

@@ -325,8 +325,8 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
   it('carries an explicit reminders opt-out THROUGH an erase (never re-consents)', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.setReminderOptIn({ status: 'active', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' }, store.shownErase);
-    store.setReminderOptIn({ status: 'cancelled', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' }, store.shownErase);
+    store.setReminderRows([{ status: 'active', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' }], store.shownErase);
+    store.setReminderRows([{ status: 'cancelled', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' }], store.shownErase);
 
     await store.deleteAllData();
 
@@ -348,7 +348,7 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
   it('turns reminders OFF for an enrolled user (the erase must not re-enrol them)', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    store.setReminderOptIn({ status: 'active', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' }, store.shownErase);
+    store.setReminderRows([{ status: 'active', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' }], store.shownErase);
 
     await store.deleteAllData();
 

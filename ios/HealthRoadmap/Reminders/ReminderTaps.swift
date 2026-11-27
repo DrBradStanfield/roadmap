@@ -1,7 +1,7 @@
 import Observation
 import UserNotifications
 
-/// Hears taps on reminder notifications and asks the app to show My plan, where
+/// Hears taps on reminder notifications and asks the app to show My health, where
 /// the detail is (US-25 AC12). Set as the notification center's delegate at
 /// launch, before the app finishes launching, so a tap that cold-starts the app
 /// still lands. RootView switches tab when `planRequests` moves.

@@ -377,7 +377,7 @@ describe('US-21 phase 2 — AddLabTest', () => {
 describe('US-21 phase 2 — section shows the add button', () => {
   it('renders the section with the add button even when there are no lab values yet', () => {
     const { getByRole, getByText } = render(<AdditionalLabRows labValues={[]} onAdded={vi.fn()} />);
-    expect(getByText('Additional lab results')).toBeTruthy();
+    expect(getByText('Additional blood tests')).toBeTruthy();
     expect(getByRole('button', { name: /add a blood test/i })).toBeTruthy();
   });
 

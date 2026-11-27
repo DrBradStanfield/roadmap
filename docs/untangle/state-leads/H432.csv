@@ -1,0 +1,2 @@
+id,area,title,kind,status,evidence,pr,needs_brad
+H432,feedback form,Focus returns to the Send feedback button after the thank-you goes,lead,not started,"Filed 2026-11-27. widget-src/src/components/FeedbackForm.tsx: when the thank-you line goes, keyboard and screen reader focus should land back on the Send feedback button. Open PR 2242 (US-19 AC3a) announces how a send ended; this is the focus half.",,no

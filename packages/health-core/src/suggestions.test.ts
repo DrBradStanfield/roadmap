@@ -2295,7 +2295,7 @@ describe('generateSuggestions', () => {
       expect(glp1 !== undefined).toBe(row.on);
       if (row.on) {
         const and = row.reasons.length > 0 ? ` and ${joinWithAnd(row.reasons)}` : '';
-        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
+        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
       }
     });
 
@@ -2318,7 +2318,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('Weight medication card wording (US-06 AC6)', () => {
-    const TAIL = ', consider discussing Tirzepatide (listed first) or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
+    const TAIL = ', consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
     const cases: { name: string; bmi: number; whr?: number; inputs: Partial<HealthInputs>; text: string }[] = [
       { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
       { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
@@ -2360,7 +2360,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('The BP weight paragraph follows the weight-medication trigger (US-06 AC6)', () => {
-    const PARAGRAPH = 'Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.';
+    const PARAGRAPH = 'Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.';
 
     it('shows at BMI 26 with a healthy waist and BP 135/85', () => {
       const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 26, waistToHeightRatio: 0.46 });
@@ -3203,7 +3203,7 @@ describe('Evidence attachment', () => {
     const { inputs, results } = createTestData({}, { bmi: 22 });
     const base = generateSuggestions(inputs, results, 'si').find(s => s.id === 'supplement-micronutrient-base')!;
     expect(base.ingredients).toContain('Vitamin D3 with K2');
-    expect(base.description).toContain('If you take warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.');
+    expect(base.description).toContain('If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR.');
     const reason = SUGGESTION_EVIDENCE['supplement-micronutrient-base'].reason;
     expect(reason).toContain('vitamin K antagonist');
     // Review R2 (2026-10-22): the 45 mcg result and the authors' conclusion; no "below retail" framing.
@@ -3550,7 +3550,7 @@ describe('US-06 AC8: the dose cards', () => {
       priority: 'attention',
       title: 'Add your statin dose',
       description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded. A higher dose or a more potent statin may help, and which one to discuss with your doctor depends on your current dose. Add it to see which. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
-      reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and rosuvastatin 40mg gives the largest reduction (~63%). Which option to discuss with your doctor next depends on the dose you take now.',
+      reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and Rosuvastatin 40mg gives the largest reduction (~63%). Which option to discuss with your doctor next depends on the dose you take now.',
     });
     expect(statinDose!.guidelines).toEqual(increase!.guidelines);
     expect(statinDose!.references).toEqual(increase!.references);
@@ -3866,7 +3866,7 @@ describe('US-07 AC6: who the plan is for', () => {
     // Adversary R1 (2026-10-14, orchestrator's decision): the BP cards' weight
     // paragraph named GLP-1 medicines for an unknown age. The weight-loss
     // sentences stay; the GLP-1 sentence needs a known adult age.
-    const GLP1_SENTENCE = 'GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.';
+    const GLP1_SENTENCE = 'GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.';
     it.each([
       ['bp-stage2', { systolicBp: 145, diastolicBp: 92 }],
       ['bp-stage1', { systolicBp: 135, diastolicBp: 85 }],
