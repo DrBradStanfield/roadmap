@@ -52,6 +52,7 @@ const ACCEPTED = { data: { id: 're_synthetic_1' }, error: null, headers: null };
 /** A 2xx whose body has no id: no error, nothing to show it was accepted. */
 const NO_ID_BODY = { data: {}, error: null, headers: null };
 const NO_DATA = { data: null, error: null, headers: null };
+const EMPTY_ID = { data: { id: '' }, error: null, headers: null };
 
 const optin = (id: string) => ({
   id,
@@ -65,6 +66,7 @@ const optin = (id: string) => ({
 
 const sentryFeatures = () =>
   vi.mocked(Sentry.captureException).mock.calls.map((c) => (c[1] as { tags?: { feature?: string } })?.tags?.feature);
+const reportedMessage = () => (vi.mocked(Sentry.captureException).mock.calls[0]?.[0] as Error | undefined)?.message;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -83,25 +85,26 @@ describe('US-17 AC14: a send with no error and no id is not a sent reminder', ()
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 
-  it.each([['a 2xx body with no id', NO_ID_BODY], ['no data at all', NO_DATA]])(
-    'sendReminderEmail returns false and reports to Sentry on %s',
-    async (_label, result) => {
-      send.mockResolvedValue(result);
-      await expect(sendReminderEmail('synthetic.reader@example.test', '<p>due</p>', 'https://u', 'S')).resolves.toBe(false);
-      expect(sentryFeatures()).toEqual(['reminder_email']);
-      const reported = vi.mocked(Sentry.captureException).mock.calls[0][0] as Error;
-      expect(reported.message).toMatch(/no error and no id/);
-    },
-  );
+  // Every sender against every answer with no usable id, so a sender that
+  // drops the shared check for its own partial copy fails here.
+  const NO_ID_ANSWERS = [['a 2xx body with no id', NO_ID_BODY], ['no data at all', NO_DATA], ['an empty id', EMPTY_ID]] as const;
 
-  it('US-19: sendFeedbackEmail returns false and reports to Sentry on the same answer', async () => {
-    send.mockResolvedValue(NO_ID_BODY);
-    await expect(sendFeedbackEmail('synthetic.reader@example.test', 'nice tool', null)).resolves.toBe(false);
-    expect(sentryFeatures()).toEqual(['feedback_email']);
+  it.each(NO_ID_ANSWERS)('sendReminderEmail returns false and reports the id check to Sentry on %s', async (_label, result) => {
+    send.mockResolvedValue(result);
+    await expect(sendReminderEmail('synthetic.reader@example.test', '<p>due</p>', 'https://u', 'S')).resolves.toBe(false);
+    expect(sentryFeatures()).toEqual(['reminder_email']);
+    expect(reportedMessage()).toMatch(/no error and no id/);
   });
 
-  it('sendEmail still throws on the same answer', async () => {
-    send.mockResolvedValue(NO_ID_BODY);
+  it.each(NO_ID_ANSWERS)('US-19: sendFeedbackEmail returns false and reports the id check to Sentry on %s', async (_label, result) => {
+    send.mockResolvedValue(result);
+    await expect(sendFeedbackEmail('synthetic.reader@example.test', 'nice tool', null)).resolves.toBe(false);
+    expect(sentryFeatures()).toEqual(['feedback_email']);
+    expect(reportedMessage()).toMatch(/no error and no id/);
+  });
+
+  it.each(NO_ID_ANSWERS)('sendEmail throws the id check on %s', async (_label, result) => {
+    send.mockResolvedValue(result);
     await expect(sendEmail('synthetic.reader@example.test', 'subject', '<p>x</p>')).rejects.toThrow(/no error and no id/);
   });
 
