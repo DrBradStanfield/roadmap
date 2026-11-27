@@ -108,8 +108,6 @@ export interface BloodTestTimelineProps {
    *  whose values show with neither (US-07 AC6). */
   grading: Grading;
   onUploadClick?: () => void;
-  uploadDisabled?: boolean;
-  loginUrl?: string;
   // Set true once Phase 2 (cloud) data has arrived. Save is disabled until
   // then to avoid committing a draft over partially-loaded state.
   hasApiResponse?: boolean;
@@ -136,7 +134,7 @@ export type BloodTestPrefillFn = (
 
 export function BloodTestTimeline({
   bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, startUnitOf, onUnitSwitch,
-  onSaveBatch, onCorrectValue, move, isSaving, grading, onUploadClick, uploadDisabled, loginUrl,
+  onSaveBatch, onCorrectValue, move, isSaving, grading, onUploadClick,
   hasApiResponse, flushRef, prefillRef, onHoldsText,
 }: BloodTestTimelineProps) {
   const batches = useMemo(() => groupByBatch(bloodTestHistory), [bloodTestHistory]);
@@ -319,22 +317,10 @@ export function BloodTestTimeline({
       <div className="bt-timeline-header">
         <h3 className="bt-timeline-title" tabIndex={-1}>Blood Test Results</h3>
         <div className="bt-timeline-actions">
-          {uploadDisabled ? (
-            <div className="upload-lab-wrapper">
-              <button
-                type="button"
-                className="btn-primary upload-lab-btn upload-lab-btn--disabled"
-                disabled
-              >Upload your lab results</button>
-              <div className="upload-lab-tooltip">
-                <p>Upload lab reports, scan reports and clinic letters, and the blood tests, scan results and more in them are read for you.</p>
-                {loginUrl && <a href={loginUrl} className="upload-lab-tooltip-link">Sign in to use this feature →</a>}
-              </div>
-            </div>
-          ) : onUploadClick ? (
+          {onUploadClick && (
             <button type="button" className="btn-primary upload-lab-btn"
                     onClick={onUploadClick}>Upload your lab results</button>
-          ) : null}
+          )}
           {isSaving && (
             <span className="bt-saving-indicator" aria-live="polite">Saving…</span>
           )}
