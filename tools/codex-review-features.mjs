@@ -16,13 +16,18 @@ export const DISABLE_IF_LISTED = [
   "hooks", "daemon_auto_start", "remote_plugin", "plugin_sharing", "skill_mcp_dependency_install", "tool_suggest", "goals",
   "guardian_approval", "worktrees", "in_app_chat", "in_app_dictation", "in_app_updates", "in_app_voice", "realtime_conversation",
   "browser_annotation_api",
+  // 0.172.0 turned this on by default (stable; openai/codex #62366, "Enable lazy startup for stdio MCP servers by default"):
+  // a stdio MCP server with a cached tool list starts on its first tool call. Off, the --record server starts with the
+  // session, as on 0.163.0 and 0.171.0-alpha.13.2, where the wrapper was checked (2026-11-27).
+  "mcp_lazy_stdio_startup",
 ];
 
 const REMOVED = "stage removed in 0.171: accepted for old configs, no effect";
 const TUI = "interactive TUI or desktop app only; codex exec has no UI";
 /**
  * Features allowed to stay enabled, each with why. Seeded 2026-11-27 from codex-cli 0.171.0-alpha.13.2 after the disables
- * above (0.163.0's enabled set is a subset). "Judged" is a reading of the name and stage, not a probe of what it does.
+ * above (the enabled sets of 0.163.0 and 0.172.0 are subsets). "Judged" is a reading of the name and stage, not a probe
+ * of what it does.
  */
 export const INERT = {
   api_key_cyber_access_programs: "API-key accounts only; the run stops before exec unless `login status` reports a ChatGPT login (checkLogin)",
@@ -75,13 +80,18 @@ export const INERT = {
 };
 
 /**
- * Named in DISABLE_IF_LISTED, yet still enabled after --disable: allowed ONLY on the version and at the stage where that
+ * Named in DISABLE_IF_LISTED, yet still enabled after --disable: allowed ONLY on the versions and at the stage where that
  * was seen (2026-11-27, `features list` under the wrapper's flags; both are disabled on 0.163.0). Anywhere else, refused.
+ * On 0.172.0 the flag gates nothing (openai/codex at rust-v0.172.0): a config's key is skipped (codex-rs/features/src/lib.rs),
+ * a managed requirement is ignored with "availability no longer depends on this feature flag"
+ * (core/src/config/managed_features.rs), and no other code reads either flag. What they named stays outside exec: the
+ * model's worktree tools are built in the TUI only (tui/src/managed_worktree_tools.rs), exec makes a worktree only for its
+ * own --worktree flag, which the wrapper never passes and which refuses --ignore-user-config and --ephemeral
+ * (exec/src/lib.rs); a realtime voice session starts only on a client's RealtimeConversationStart request, which the exec
+ * crate never sends (no "realtime" anywhere in codex-rs/exec at that tag).
  */
-export const CANNOT_DISABLE = {
-  realtime_conversation: { version: "codex-cli 0.171.0-alpha.13.2", stage: "removed" },
-  worktrees: { version: "codex-cli 0.171.0-alpha.13.2", stage: "removed" },
-};
+const STUCK = [{ version: "codex-cli 0.171.0-alpha.13.2", stage: "removed" }, { version: "codex-cli 0.172.0", stage: "removed" }];
+export const CANNOT_DISABLE = { realtime_conversation: STUCK, worktrees: STUCK };
 
 /** INERT entries whose only reason is the `removed` stage (Codex R7): judged at that stage alone. */
 const REMOVED_ONLY = new Set(["item_ids", "resize_all_images", "sqlite", "steer", "terminal_resize_reflow", "tool_search_always_defer_mcp_tools", "tui_app_server"]);
@@ -128,7 +138,7 @@ export const disableArgs = (names) => [...DISABLE_ALWAYS, ...DISABLE_IF_LISTED.f
 
 /**
  * Enabled features no one has judged, sorted. An entry judged inert only because its stage is `removed` holds only at that
- * stage (Codex R7); a CANNOT_DISABLE entry only on its own version and stage.
+ * stage (Codex R7); a CANNOT_DISABLE entry only on one of its own versions, at that version's stage.
  */
 export const unjudged = (features, version) => features.filter((f) => f.enabled && !(Object.hasOwn(INERT, f.name) && (!REMOVED_ONLY.has(f.name) || f.stage === "removed"))
-  && !(Object.hasOwn(CANNOT_DISABLE, f.name) && CANNOT_DISABLE[f.name].version === version && CANNOT_DISABLE[f.name].stage === f.stage)).map((f) => f.name).sort();
+  && !(Object.hasOwn(CANNOT_DISABLE, f.name) && CANNOT_DISABLE[f.name].some((s) => s.version === version && s.stage === f.stage))).map((f) => f.name).sort();
