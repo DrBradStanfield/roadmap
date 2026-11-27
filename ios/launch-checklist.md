@@ -155,7 +155,7 @@ then. App Attest needs the paid team, so chat and upload wait for enrolment.
   preselected from Health and labelled "From Apple Health"; a changed weight on a day
   that has one asks "Replace it?". The UI tests cannot answer Apple's sheet.
 - Apple Health blood pressure and background delivery.
-- A reminder notification firing, and its tap opening My plan.
+- A reminder notification firing, and its tap opening My health.
 - App Attest with a real device key.
 - Deleting the app's Apple Health samples, and the Export share sheet.
 - The document scanner on "+".
