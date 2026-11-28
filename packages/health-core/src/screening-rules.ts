@@ -155,7 +155,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     reminder: { category: 'screening_colorectal', label: 'Colorectal screening' },
     evidenceKey: 'screening-colorectal',
     notes: [
-      { below: 45, text: 'Starting at 35 is Dr Brad\'s recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.' },
+      { below: 45, text: 'The American Cancer Society starts screening at 45 for people at average risk. Starting at 35 is Dr Brad\'s recommendation, because colorectal cancer has become more common in younger adults. Discuss timing with your doctor.' },
       { above: 75, text: 'Screening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.' },
     ],
     cards: {
@@ -329,7 +329,7 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
   colorectalStart: (age) => ({
     title: 'Start colorectal cancer screening',
     description: age < COLORECTAL_GUIDELINE_FROM
-      ? 'Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.'
+      ? 'The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.'
       : age < COLORECTAL_COLONOSCOPY_FROM
         ? 'Colorectal screening is recommended. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. The American Cancer Society treats these and other tests as equal options. Discuss with your doctor.'
         : 'Colorectal screening is recommended. From 55, Dr Brad suggests a colonoscopy every 10 years. A FIT test every year is also a good option (American Cancer Society). Discuss with your doctor.',

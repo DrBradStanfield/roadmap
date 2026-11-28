@@ -223,7 +223,7 @@ describe('US-07 AC19: medicine names start with a capital', () => {
       'Consider discussing Bempedoic acid with your doctor',
       'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide',
       'Discuss adding Ezetimibe 10mg with your doctor.',
-      "You're at or near the maximum dose of Simvastatin.",
+      'You take the highest dose of Simvastatin this plan lists, or close to it.',
       'Dulaglutide (Trulicity)',
     ]) expect(joined).toContain(phrase);
   });

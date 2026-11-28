@@ -115,6 +115,9 @@ const REFS_SGLT2I: SuggestionReference[] = [
   { label: 'Neuen 2025 – SMART-C: SGLT2 inhibitors and kidney outcomes by GFR and albuminuria (JAMA)', url: 'https://doi.org/10.1001/jama.2025.20834' },
 ];
 
+/** L2: the 2019 European order and Dr Brad's (US-07 AC23). */
+const EZETIMIBE_ORDER = 'The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.';
+
 const REFS_BP_TRIALS: SuggestionReference[] = [
   { label: 'SPRINT 2015 – Intensive BP lowering <120 mmHg (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1511939' },
   { label: 'Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)', url: 'https://doi.org/10.1016/S0140-6736(24)01028-6' },
@@ -270,9 +273,9 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-glp1-switch': {
-    reason: 'Tirzepatide (Mounjaro/Zepbound) works on both GIP and GLP-1 receptors, which may provide greater weight loss than GLP-1-only medications. In clinical trials, Tirzepatide achieved up to 22% body weight loss.',
+    reason: 'Tirzepatide (Mounjaro/Zepbound) works on both GIP and GLP-1 receptors, which may provide greater weight loss than GLP-1-only medications. In clinical trials, Tirzepatide achieved up to 22% body weight loss. In SURMOUNT-5, a head-to-head trial in adults with obesity without diabetes, weight fell by 20.2% on Tirzepatide and 13.7% on Semaglutide over 72 weeks; the trial was open-label and funded by the maker of Tirzepatide.',
     guidelines: [],
-    references: REFS_GLP1,
+    references: [...REFS_GLP1, { label: 'Aronne 2025 – SURMOUNT-5: tirzepatide vs semaglutide for obesity (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2416394' }],
   },
 
   'weight-med-sglt2i': {
@@ -452,7 +455,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Cholesterol Medication Cascade ─────────────────────────
 
   'med-statin': {
-    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nSome doctors use more aggressive on-treatment lipid targets (ApoB below 50 mg/dL, LDL below 55 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.\n\nThe FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.',
+    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nSome doctors use more aggressive on-treatment lipid targets (ApoB below 50 mg/dL, LDL below 55 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.\n\n' + EZETIMIBE_ORDER + '\n\nThe FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES, ...REFS_PESA, ...REFS_LDL_SAFETY,
@@ -475,6 +478,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. This plan suggests discussing it only if you cannot take a statin and your level is still above target after the PCSK9 inhibitor and Ezetimibe steps (each taken, declined or not tolerated). The combination pill with Ezetimibe (Nexlizet) offers convenience.\n\nIts US label says to stop it when pregnancy is recognized, unless the benefits outweigh the possible risks to the baby.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: [
+      ...REFS_LIPID_GUIDELINES,
       { label: 'Nissen 2023 – CLEAR Outcomes: bempedoic acid in statin-intolerant patients (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2215024' },
       { label: 'FDA label – Nexletol (bempedoic acid), 8.1 Pregnancy: discontinue when pregnancy is recognized (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=88d06d89-a3da-40b4-b273-8f4f7d56c4c9' },
     ],
@@ -573,7 +577,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-omega3': {
-    reason: 'An updated meta-analysis of interventional trials found that omega-3 supplementation reduces cardiovascular events and cardiac death, with benefits increasing at higher doses. The effect appears strongest for EPA-rich formulations.\n\nHigher doses carry a cost. A meta-analysis of seven large cardiovascular trials found that omega-3 supplements raised the risk of atrial fibrillation, an irregular heart rhythm. The risk was greater in trials testing more than 1 g a day (hazard ratio 1.49) than in trials testing 1 g a day or less (1.12). Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined: benefit may rise with dose, but so may the risk of atrial fibrillation. If you have atrial fibrillation or take a blood thinner, check with your doctor first.\n\nOmega-3 levels may also matter for brain health. In one trial (VITACOG), B vitamin supplementation slowed brain atrophy by 40%, but only in participants with good omega-3 levels. When omega-3 was low, B vitamins had no effect. This suggests the cognitive benefit of B vitamins may depend on good omega-3 levels. A Dutch trial found the reverse. In FACIT (791 adults aged 50 to 70 with raised homocysteine), 800 mcg of folic acid a day improved global cognition and processing speed only in people with lower omega-3 levels. Omega-3 was not randomised in either trial, so how the two interact remains uncertain.\n\nThe WHO 2026 guideline on reducing the risk of cognitive decline and dementia recommends against omega-3, vitamin B, vitamin E and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It is a strong recommendation based on moderate-certainty evidence; WHO gave the reason as \'unexpected harmful effects that outweigh any potential benefits\'. It kept its 2019 recommendation without reassessing supplements, and it did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health.',
+    reason: 'An updated meta-analysis of interventional trials found that omega-3 supplementation reduces cardiovascular events and cardiac death, with benefits increasing at higher doses. The effect appears strongest for EPA-rich formulations.\n\nHigher doses carry a cost. A meta-analysis of seven large cardiovascular trials found that omega-3 supplements raised the risk of atrial fibrillation, an irregular heart rhythm. The risk was greater in trials testing more than 1 g a day (hazard ratio 1.49) than in trials testing 1 g a day or less (1.12). Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined: benefit may rise with dose, but so may the risk of atrial fibrillation. If you have atrial fibrillation or take a blood thinner, check with your doctor first.\n\nOmega-3 levels may also matter for brain health. In one trial (VITACOG), B vitamin supplementation slowed brain atrophy by 40%, but only in participants with good omega-3 levels. When omega-3 was low, B vitamins had no effect. This suggests the cognitive benefit of B vitamins may depend on good omega-3 levels. A Dutch trial found the reverse. In FACIT (791 adults aged 50 to 70 with raised homocysteine), 800 mcg of folic acid a day improved global cognition and processing speed only in people with lower omega-3 levels. Omega-3 was not randomised in either trial, so how the two interact remains uncertain.\n\nThe WHO 2026 guideline on reducing the risk of cognitive decline and dementia recommends against omega-3, vitamin B, vitamin E and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It is a strong recommendation based on moderate-certainty evidence; WHO gave the reason as \'unexpected harmful effects that outweigh any potential benefits\'. It kept its 2019 recommendation without reassessing supplements, and it did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health.',
     guidelines: [],
     references: [
       { label: 'Bernasconi 2021 – Omega-3 dose & cardiovascular outcomes (Mayo Clin Proc)', url: 'https://doi.org/10.1016/j.mayocp.2020.08.034' },
@@ -615,7 +619,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'skin-retinoid': {
-    reason: 'Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.',
+    reason: 'Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.',
     guidelines: [],
     references: [
       { label: 'Bagatin 2018 – Adapalene vs tretinoin for photoaging (Eur J Dermatol)', url: 'https://doi.org/10.1684/ejd.2018.3320' },
@@ -685,7 +689,7 @@ export const GUIDE_REFERENCES: SuggestionReference[] = [
 /** Static stat card evidence entries. */
 export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   'apob': {
-    reason: 'Apolipoprotein B (ApoB) counts the total number of atherogenic lipoprotein particles in your blood and is the most accurate single predictor of cardiovascular risk — more precise than LDL-cholesterol, which only measures cholesterol content. Each atherogenic particle carries exactly one ApoB molecule. The 2026 ACC/AHA Dyslipidemia Guideline recommends ApoB measurement to assess residual ASCVD risk, with treatment targets based on cardiovascular risk category: below 90 mg/dL for borderline-intermediate risk, below 70 mg/dL for high risk, and below 55 mg/dL for very high risk. ApoB is preferred over LDL-C because it captures all atherogenic particles including VLDL remnants and Lp(a).',
+    reason: 'Apolipoprotein B (ApoB) counts the total number of atherogenic lipoprotein particles in your blood and is the most accurate single predictor of cardiovascular risk — more precise than LDL-cholesterol, which only measures cholesterol content. Each atherogenic particle carries exactly one ApoB molecule. The 2026 ACC/AHA Dyslipidemia Guideline recommends ApoB measurement to assess residual ASCVD risk, with treatment targets based on cardiovascular risk category: below 90 mg/dL for borderline-intermediate risk, below 70 mg/dL for high risk, and below 55 mg/dL for very high risk. ApoB is preferred over LDL-C because it captures all atherogenic particles including VLDL remnants and Lp(a). This tool calls ApoB optimal only below 0.5 g/L (50 mg/dL), Dr Brad\'s target, lower than the goals above.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: [
       ...REFS_LIPID_GUIDELINES,

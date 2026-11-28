@@ -31,12 +31,14 @@ const quotes = (line: string) => [...line.matchAll(/"([^"]*)"/g)].map((m) => m[1
 /** The quoted strings after "After:" on a before/after line. */
 const afterQuotes = (line: string) => quotes(line.slice(line.indexOf('After:')));
 
-// Spec line 52.
-const NOTE = afterQuotes(specLine('**Form note under 45**', '- After:'))[0];
-// Spec lines 54, 56-58.
+// Spec line 52, reordered by US-07 AC27 (Brad 2026-11-28): the guideline's 45 first, Dr Brad's 35 second.
+const SPEC_NOTE = afterQuotes(specLine('**Form note under 45**', '- After:'))[0];
+const NOTE = 'The American Cancer Society starts screening at 45 for people at average risk. Starting at 35 is Dr Brad\'s recommendation, because colorectal cancer has become more common in younger adults. Discuss timing with your doctor.';
+// Spec lines 54, 56-58; the 35 to 44 card reordered as the note is (US-07 AC27).
 const START_TITLE = quotes(specLine('**Start card**', '**Start card**'))[0];
+const SPEC_START_35 = quotes(specLine('**Start card**', '- After, 35 to 44:'))[0];
 const START = {
-  '35-44': quotes(specLine('**Start card**', '- After, 35 to 44:'))[0],
+  '35-44': 'The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.',
   '45-54': quotes(specLine('**Start card**', '- After, 45 to 54:'))[0],
   '55-75': quotes(specLine('**Start card**', '- After, 55 to 75:'))[0],
 };
@@ -64,7 +66,10 @@ const colorectalNotes = (age: number) =>
 describe('US-07 AC1h: the colorectal start card by age band (spec lines 54-58)', () => {
   it('reads the spec words it checks (guard: a parse miss would pass vacuously)', () => {
     expect(START_TITLE).toBe('Start colorectal cancer screening');
-    for (const t of [NOTE, ...Object.values(START), UP[2], OVER[2], REASON, WOLF_LABEL]) expect(t.length).toBeGreaterThan(40);
+    for (const t of [SPEC_NOTE, SPEC_START_35, ...Object.values(START), UP[2], OVER[2], REASON, WOLF_LABEL]) expect(t.length).toBeGreaterThan(40);
+    // The reorder keeps the spec's reason and timing words; only the order and the guideline's name change.
+    expect(SPEC_NOTE).toContain('Starting at 35 is Dr Brad\'s recommendation, because colorectal cancer has become more common in younger adults.');
+    expect(SPEC_START_35).toContain('because colorectal cancer has become more common in younger adults.');
     expect(FIT_LINE.startsWith('From 55, Dr Brad suggests moving to a colonoscopy')).toBe(true);
   });
 
@@ -201,7 +206,7 @@ describe('US-07 AC1h: roadmap_text.html (spec lines 75-80)', () => {
   });
 
   it('[159] is Siegel 2019, appended after [158]; nothing before it shifts, and it is cited', () => {
-    expect(REF_LIST).toHaveLength(162); // [160] to [162] were appended later (US-07 AC21, AC22)
+    expect(REF_LIST).toHaveLength(163); // [161], [162] (US-07 AC22) and [163] (US-07 AC24) were appended later
     // Spec line 79, in the list's own markup: *x* as <em>, **x** as <strong>, the DOI as the list's "DOI: <a>" link.
     const md = specLine('**Page**', '- New reference [159]: ').slice('- New reference [159]: '.length);
     const [citation, doi] = md.split(' doi:');

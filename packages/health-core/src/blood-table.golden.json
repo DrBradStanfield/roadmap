@@ -393,7 +393,7 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -432,7 +432,7 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
           "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
@@ -638,7 +638,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -738,9 +738,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {
@@ -1214,7 +1214,7 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -1253,7 +1253,7 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
           "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
@@ -1459,7 +1459,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -1559,9 +1559,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {
@@ -2035,7 +2035,7 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -2074,7 +2074,7 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
           "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
@@ -2280,7 +2280,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -2380,9 +2380,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {
@@ -2934,7 +2934,7 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -2973,7 +2973,7 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
           "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
@@ -3179,7 +3179,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -3279,9 +3279,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {
@@ -3851,7 +3851,7 @@
           "category": "bloodwork",
           "priority": "attention",
           "title": "Elevated Lp(a): 180 nmol/L",
-          "description": "Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n⚠️ ApoB: 120 mg/dL — target <50 mg/dL\n⚠️ Blood pressure: 138/86 mmHg — target <120/80\n⚠️ BMI: 27.2 — target <25, or <30 with a healthy waist-to-height ratio\n⚠️ HbA1c: 6.2 % — target <5.7 %\n✅ Statin: Atorvastatin 20mg\n⚠️ Ezetimibe: not started\n⚠️ PCSK9 inhibitor: not started — can lower Lp(a) ~25–30%\n\nConsider discussing these medicines with your doctor.",
+          "description": "Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n⚠️ ApoB: 120 mg/dL — target <50 mg/dL\n⚠️ Blood pressure: 138/86 mmHg — target <120/80\n⚠️ BMI: 27.2 — target <25, or <30 with a healthy waist-to-height ratio\n⚠️ HbA1c: 6.2 % — target <5.7 %\n✅ Statin: Atorvastatin 20mg\n⚠️ Ezetimibe: not started\n⚠️ PCSK9 inhibitor: not started — can lower Lp(a) ~25–30%\n\nThe ApoB target is Dr Brad's, lower than guideline goals.\n\nConsider discussing these medicines with your doctor.",
           "ingredients": [],
           "reason": "Lp(a) is genetically determined — you are born with a set level that cannot be changed through diet or lifestyle. The 2026 ACC/AHA Dyslipidemia Guideline recommends measuring Lp(a) at least once in all adults (Class I). Elevated Lp(a) is an independent cardiovascular risk factor. Since Lp(a) itself cannot be lowered (yet), the strategy is to aggressively reduce all other modifiable risk factors: lipids, blood pressure, blood sugar, weight, and medications where indicated.",
           "guidelines": [
@@ -3933,7 +3933,7 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your ApoB is 120 mg/dL; the treatment target is below 50 mg/dL. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your ApoB is 120 mg/dL. Guidelines set goals by heart risk. Dr Brad aims for below 50 mg/dL, lower than guideline goals. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
           "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
@@ -4193,7 +4193,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -4293,9 +4293,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {

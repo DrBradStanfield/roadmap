@@ -424,7 +424,7 @@ describe('US-07 AC1j: the evidence, the algorithm doc and the page carry the app
     const between = HTML.slice(HTML.indexOf('</ul>', from), HTML.indexOf('Age 76-85:'));
     expect(between).toContain(`<li data-mce-fragment="1">${bullet}</li>`);
     const refs = HTML.slice(HTML.indexOf('<h2 id="references">'), HTML.indexOf('<h2 id="changelog">')).match(/^<li>.*$/gm) ?? [];
-    expect(refs).toHaveLength(162); // [160] to [162] were appended later (US-07 AC21, AC22)
+    expect(refs).toHaveLength(163); // [161], [162] (US-07 AC22) and [163] (US-07 AC24) were appended later
   });
 
   it('the Changelog line comes after Change 3\'s PSA line, dated 12 November 2026', () => {

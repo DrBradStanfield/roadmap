@@ -38,6 +38,8 @@ const minor: HealthInputs = { sex: 'female', heightCm: 160, weightKg: 55, birthY
 const noAge: HealthInputs = { sex: 'male', heightCm: 178, weightKg: 80 };
 const PRODUCT_TEXT = /microvitamin|sleep by|drstanfield|dr brad/i;
 const PRODUCT_NAMES = /microvitamin|sleep by|drstanfield/i;
+/** US-07 AC27 (Brad 2026-11-28): the omega-3 sentence labels Dr Brad's own view; no other supplement line names him. */
+const DR_BRAD_VIEWS = /Dr Brad thinks it is reasonable for adults to consider/g;
 
 describe('US-61 AC1: the two new supplement cards, in every market', () => {
   it('US-61 AC1: an adult gets lutein and zeaxanthin and TMG, beside the other supplement cards, with the final text', () => {
@@ -83,7 +85,7 @@ describe('US-61 AC2-AC3: engine output never carries a product or a US variant, 
       const { suggestions } = plan(record, 'conventional');
       expect(suggestions.map((s) => s.description)).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']);
       const supplements = suggestions.filter((s) => s.category === 'supplements');
-      expect(supplements.map((s) => `${s.title} ${s.description} ${JSON.stringify(s.references)}`).join(' ')).not.toMatch(PRODUCT_TEXT);
+      expect(supplements.map((s) => `${s.title} ${s.description} ${JSON.stringify(s.references)}`).join(' ').replace(DR_BRAD_VIEWS, '')).not.toMatch(PRODUCT_TEXT);
       // The base card keeps the WHO sentences: the variant is the overlay's alone.
       expect(supplements.find((s) => s.id === 'supplement-micronutrient-base')!.description).toContain('WHO');
     }

@@ -131,8 +131,8 @@ function sectionIntro(container: HTMLElement, section: string): Promise<string> 
     return title.parentElement!.querySelector('.health-section-desc')!.textContent!;
   });
 }
-const weightMedsIntro = (container: HTMLElement) => sectionIntro(container, 'Weight & diabetes medications');
-const cholesterolIntro = (container: HTMLElement) => sectionIntro(container, 'Cholesterol medications');
+const weightMedsIntro = (container: HTMLElement) => sectionIntro(container, 'Your weight & diabetes medications');
+const cholesterolIntro = (container: HTMLElement) => sectionIntro(container, 'Your cholesterol medications');
 /** The local mirror as the widget writes it: a saved weight row in
  *  `previousMeasurements`, which opens the vitals matrix at mount. */
 const SAVED_WEIGHT_MIRROR = JSON.stringify({
@@ -328,7 +328,7 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { total: 3.84, hdl: 2.2 } });
     await waitFor(() => expect(planCard(view.container, 'Consider discussing a statin with your doctor')).toBeDefined());
     expect(await cholesterolIntro(view.container))
-      .toMatch(/^Your non-HDL cholesterol is 1\.6 mmol\/L; the treatment target is below 1\.6 mmol\/L\. /);
+      .toMatch(/^Your non-HDL cholesterol is 1\.6 mmol\/L\. Guidelines set goals by heart risk\. Dr Brad aims for below 1\.6 mmol\/L, lower than guideline goals\. /);
   });
 
   it('TC 3.76 and HDL 2.20: non-HDL 1.56 is below the 1.6 target, though it shows as 1.6, so both stay neutral', async () => {
@@ -356,13 +356,13 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { total: 3.9, hdl: 2.2 } }); // non-HDL 1.7
     await waitFor(() => expect(planCard(view.container, 'Consider discussing a statin with your doctor')).toBeDefined());
     expect(await cholesterolIntro(view.container))
-      .toMatch(/^Your non-HDL cholesterol is 1\.7 mmol\/L; the treatment target is below 1\.6 mmol\/L\. /);
+      .toMatch(/^Your non-HDL cholesterol is 1\.7 mmol\/L\. Guidelines set goals by heart risk\. Dr Brad aims for below 1\.6 mmol\/L, lower than guideline goals\. /);
   });
 
   it('the form opens with the plan card\'s own sentence, word for word and digit for digit', async () => {
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 } });
     await waitFor(() => expect(planCard(view.container, 'Consider discussing a statin with your doctor')).toBeDefined());
-    const sentence = 'Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L.';
+    const sentence = 'Your LDL-c is 3.0 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk.';
     expect(suggestionText(view.container, 'Consider discussing a statin with your doctor'))
       .toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
     expect(await cholesterolIntro(view.container)).toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
@@ -385,7 +385,7 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
 describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inhibitor, ezetimibe, bempedoic acid', () => {
   /** The cholesterol section's question labels, in page order. */
   const lipidQuestions = (container: HTMLElement) => waitFor(() => {
-    const title = Array.from(container.querySelectorAll('.health-section-title, .mh-group-label')).find((t) => t.textContent === 'Cholesterol medications');
+    const title = Array.from(container.querySelectorAll('.health-section-title, .mh-group-label')).find((t) => t.textContent === 'Your cholesterol medications');
     if (!title) throw new Error('the section is not on the page');
     return Array.from(title.parentElement!.querySelectorAll('label')).map((l) => l.textContent);
   });
@@ -574,7 +574,7 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
     const view = await guestWith({ ...MEDICINE_RECORD, birthYear: 1980, birthMonth: 1 });
     await waitFor(() => expect(planCard(view.container, 'Consider discussing a statin with your doctor')).toBeDefined());
     expect(await weightMedsIntro(view.container)).toBe(recommends('32', 'an HbA1c in the prediabetes range'));
-    expect(await cholesterolIntro(view.container)).toMatch(/the treatment target is below 1\.4 mmol\/L/);
+    expect(await cholesterolIntro(view.container)).toMatch(/Dr Brad aims for below 1\.4 mmol\/L/);
     expect(hints(view.container)).toContain(STATIN_HINT);
   });
 
@@ -584,7 +584,7 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
     expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
     expect(await cholesterolIntro(view.container)).toBe(CHOLESTEROL_NEUTRAL);
     expect(hints(view.container)).toEqual([]);
-    expect(view.container.textContent).not.toContain('treatment target');
+    expect(view.container.textContent).not.toContain('Dr Brad aims for below');
     // Plain fields: the medicines they take can still be recorded.
     for (const id of ['glp1-name', 'sglt2i-name', 'metformin', 'statin-name', 'ezetimibe']) {
       expect(view.container.querySelector(`#${id}`)).not.toBeNull();
