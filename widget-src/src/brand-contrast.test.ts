@@ -94,7 +94,7 @@ describe('web redesign §1 — each use is on the right token', () => {
   // US-20 AC4a: the success green is a second green that fails as text, so text takes the text green.
   it.each([['styles.css', css], ['fields.css', fieldsCss], ['standalone.css', standaloneCss]])('US-20 AC4a: %s never sets text in the success green', (_, sheet) => {
     expect(ratio(token('color-success'), WHITE)).toBeLessThan(4.5); // 3.30
-    const textInSuccess = rules(sheet).filter((r) => /(^|[;{ ])color:\s*(var\(--color-success\)|#16a34a)/i.test(r));
+    const textInSuccess = rules(sheet).filter((r) => /(^|[;{ ])color:\s*(var\(\s*--color-success\s*[,)]|[^;]*#16a34a)/i.test(r));
     expect(textInSuccess).toEqual([]);
   });
 
