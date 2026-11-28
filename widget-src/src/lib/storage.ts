@@ -262,6 +262,8 @@ export const BT_TIMELINE_DRAFT_KEY = 'health_roadmap_bt_timeline_draft';
 export const VITALS_DRAFT_KEY = 'health_roadmap_vitals_draft';
 /** The Lp(a) rows the user kept as saved when asked (US-05 AC3, lpa-unit.ts). */
 export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
+/** US-09 AC67: followed by the provider; holds the UTC day of the last cloud id count. Log-off removes them. */
+export const IDENTITY_DAY_KEY = 'hr_cloud_identity_day_';
 
 /**
  * Remove the stored document blobs, both matrices' unsaved drafts and the

@@ -3,7 +3,7 @@
 // id or a body.
 import { describe, it, expect, vi } from 'vitest';
 import { PER_ACTION_EVENT_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
-import { COPIES_OUTCOMES, IDENTITY_GRANTS, IDENTITY_OUTCOMES, IDENTITY_PROVIDERS } from '../../packages/health-core/src/cloud-identity';
+import { COPIES_OUTCOMES, IDENTITY_GRANTS, IDENTITY_GRANTS_BY_PROVIDER, IDENTITY_OUTCOMES, IDENTITY_PROVIDERS } from '../../packages/health-core/src/cloud-identity';
 import { parseProductEvent } from './product-events.server';
 
 vi.mock('@sentry/react-router', () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));
@@ -24,9 +24,11 @@ describe('US-09 AC67 event shapes', () => {
     }
   });
 
-  it('cloud_identity_read takes every provider, grant and outcome word', () => {
+  it('cloud_identity_read takes every outcome with each grant its provider can hold, and refuses the rest', () => {
+    expect(IDENTITY_GRANTS_BY_PROVIDER).toEqual({ 'google-drive': ['refreshable', 'access_only'], dropbox: ['refreshable'], github: ['pat'] });
     for (const provider of IDENTITY_PROVIDERS) for (const grant of IDENTITY_GRANTS) for (const outcome of IDENTITY_OUTCOMES) {
-      expect(parseProductEvent(read({ provider, grant, outcome }))).toEqual(read({ provider, grant, outcome }));
+      const fits = (IDENTITY_GRANTS_BY_PROVIDER[provider] as readonly string[]).includes(grant);
+      expect(parseProductEvent(read({ provider, grant, outcome }))).toEqual(fits ? read({ provider, grant, outcome }) : null);
     }
   });
 
@@ -34,15 +36,17 @@ describe('US-09 AC67 event shapes', () => {
     for (const metadata of [
       { provider: 'webdav', grant: 'pat', outcome: 'ok' },
       { provider: 'local', grant: 'pat', outcome: 'ok' },
-      { provider: 'dropbox', grant: 'redirect' },
+      { provider: 'dropbox', grant: 'refreshable' },
       { provider: 'dropbox', outcome: 'ok' },
-      { grant: 'redirect', outcome: 'ok' },
+      { grant: 'refreshable', outcome: 'ok' },
       { provider: 'dropbox', grant: 'oauth', outcome: 'ok' },
-      { provider: 'dropbox', grant: 'redirect', outcome: 'landed' },
-      { provider: 'dropbox', grant: 'redirect', outcome: 'incomplete' },
-      { provider: 'dropbox', grant: 'redirect', outcome: 'ok', count: 1 },
-      { provider: 'dropbox', grant: 'redirect', outcome: 'ok', accountId: 'dbid:test' },
-      { provider: 'dropbox', grant: 'redirect', outcome: 'ok', owned: '1' },
+      { provider: 'dropbox', grant: 'redirect', outcome: 'ok' }, // the retired words
+      { provider: 'google-drive', grant: 'popup', outcome: 'ok' },
+      { provider: 'dropbox', grant: 'refreshable', outcome: 'landed' },
+      { provider: 'dropbox', grant: 'refreshable', outcome: 'incomplete' },
+      { provider: 'dropbox', grant: 'refreshable', outcome: 'ok', count: 1 },
+      { provider: 'dropbox', grant: 'refreshable', outcome: 'ok', accountId: 'dbid:test' },
+      { provider: 'dropbox', grant: 'refreshable', outcome: 'ok', owned: '1' },
       {},
     ]) {
       expect(parseProductEvent(read(metadata))).toBeNull();
@@ -50,22 +54,21 @@ describe('US-09 AC67 event shapes', () => {
     expect(parseProductEvent(read())).toBeNull();
   });
 
-  it('cloud_identity_read takes tokenReply on a Dropbox redirect, and without it', () => {
+  it('cloud_identity_read takes tokenReply from Dropbox, and goes without it', () => {
     for (const tokenReply of ['had_id', 'no_id']) {
-      const m = { provider: 'dropbox', grant: 'redirect', outcome: 'ok', tokenReply };
+      const m = { provider: 'dropbox', grant: 'refreshable', outcome: 'ok', tokenReply };
       expect(parseProductEvent(read(m))).toEqual(read(m));
     }
-    expect(parseProductEvent(read({ provider: 'dropbox', grant: 'redirect', outcome: 'ok' }))).toEqual(read({ provider: 'dropbox', grant: 'redirect', outcome: 'ok' }));
+    expect(parseProductEvent(read({ provider: 'dropbox', grant: 'refreshable', outcome: 'ok' }))).toEqual(read({ provider: 'dropbox', grant: 'refreshable', outcome: 'ok' }));
   });
 
-  it('tokenReply is refused from any other provider or grant, as another word, or on another event', () => {
+  it('tokenReply is refused from any other provider, as another word, or on another event', () => {
     for (const metadata of [
-      { provider: 'google-drive', grant: 'redirect', outcome: 'ok', tokenReply: 'had_id' },
+      { provider: 'google-drive', grant: 'refreshable', outcome: 'ok', tokenReply: 'had_id' },
       { provider: 'github', grant: 'pat', outcome: 'ok', tokenReply: 'no_id' },
-      { provider: 'google-drive', grant: 'popup', outcome: 'ok', tokenReply: 'had_id' },
-      { provider: 'dropbox', grant: 'pat', outcome: 'ok', tokenReply: 'had_id' },
-      { provider: 'dropbox', grant: 'redirect', outcome: 'ok', tokenReply: 'dbid:test' },
-      { provider: 'dropbox', grant: 'redirect', outcome: 'ok', tokenReply: true },
+      { provider: 'google-drive', grant: 'access_only', outcome: 'ok', tokenReply: 'had_id' },
+      { provider: 'dropbox', grant: 'refreshable', outcome: 'ok', tokenReply: 'dbid:test' },
+      { provider: 'dropbox', grant: 'refreshable', outcome: 'ok', tokenReply: true },
     ]) {
       expect(parseProductEvent(read(metadata))).toBeNull();
     }

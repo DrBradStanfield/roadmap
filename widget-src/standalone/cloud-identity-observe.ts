@@ -11,18 +11,18 @@
  * sign-in. Answers are judged into closed words (health-core's
  * cloud-identity.ts) and dropped. The only thing written is the day key.
  */
+import { useEffect } from 'react';
 import { fetchOrFail, ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core/adapter';
-import { classifyCopies, classifyIdentityRead, type IdentityGrant, type IdentityProvider } from '@roadmap/health-core/cloud-identity';
+import { classifyCopies, classifyIdentityRead, type IdentityGrant, type IdentityProvider, type TokenReplyWord } from '@roadmap/health-core/cloud-identity';
 import { DRIVE_API } from '@roadmap/health-core/drive-rest';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
 import { ACCOUNT_URL as DROPBOX_ACCOUNT_URL } from '../src/storage/dropbox';
 import { lostSignIn } from '../src/storage/sign-in-state';
 import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
-import { healthWritesAllowed, ownLogOffHasBegun, safeGetItem, safeSetItem } from '../src/lib/storage';
+import { healthWritesAllowed, IDENTITY_DAY_KEY, ownLogOffHasBegun, safeGetItem, safeSetItem } from '../src/lib/storage';
 
-/** Followed by the provider; holds the UTC day of the last read, nothing else. */
-export const IDENTITY_DAY_KEY = 'hr_cloud_identity_day_';
+export { IDENTITY_DAY_KEY };
 const CALL_TIMEOUT_MS = 8_000;
 
 const DRIVE_ABOUT_URL = `${DRIVE_API}/about?fields=${encodeURIComponent('user(permissionId)')}`;
@@ -31,12 +31,13 @@ const DRIVE_COPIES_URL = `${DRIVE_API}/files?q=${encodeURIComponent(`name='${ROA
   + `&spaces=drive&fields=${encodeURIComponent('files(ownedByMe),nextPageToken,incompleteSearch')}&pageSize=100`;
 const GITHUB_USER_URL = 'https://api.github.com/user';
 
-interface Held { provider: IdentityProvider; token: string | null; grant: IdentityGrant }
+interface Held { provider: IdentityProvider; token: string | null; grant: IdentityGrant; tokenReply?: TokenReplyWord }
 
-/** The page's adapter's provider and held token; null for any other store (the device, WebDAV). */
+/** The page's adapter's provider and held token, and a Dropbox adapter's redirect word (taken once);
+ *  null for any other store (the device, WebDAV). */
 function heldBy(adapter: StorageAdapter): Held | null {
   if (adapter instanceof GoogleDriveAdapter) return { provider: 'google-drive', ...adapter.heldToken() };
-  if (adapter instanceof DropboxAdapter) return { provider: 'dropbox', ...adapter.heldToken() };
+  if (adapter instanceof DropboxAdapter) return { provider: 'dropbox', ...adapter.heldToken(), tokenReply: adapter.takeTokenReply() ?? undefined };
   if (adapter instanceof GitHubAdapter) return { provider: 'github', ...adapter.heldToken() };
   return null;
 }
@@ -44,7 +45,8 @@ function heldBy(adapter: StorageAdapter): Held | null {
 /** One call: its status and parsed body, or a null status when no answer came. Never throws. */
 async function ask(url: string, init: RequestInit): Promise<{ status: number | null; body: unknown }> {
   try {
-    const res = await fetchOrFail('cloud', url, { ...init, timeoutMs: CALL_TIMEOUT_MS });
+    // no-store: an answer is never served from, or kept in, the browser's HTTP cache.
+    const res = await fetchOrFail('cloud', url, { ...init, cache: 'no-store', timeoutMs: CALL_TIMEOUT_MS });
     return { status: res.status, body: await res.json().catch(() => undefined) };
   } catch {
     return { status: null, body: undefined };
@@ -58,22 +60,23 @@ function readIdentity(provider: IdentityProvider, auth: Record<string, string>):
   return ask(GITHUB_USER_URL, { headers: { ...auth, Accept: 'application/vnd.github+json' } });
 }
 
-/** Fire and forget, after the first render. Every failure is silent. */
+/** Fire and forget. Every failure is silent. */
 export async function observeCloudIdentity(adapter: StorageAdapter): Promise<void> {
   try {
     if (!SHOPIFY_SURFACE) return;
     const held = heldBy(adapter);
     if (!held) return;
-    // A Dropbox redirect return carries its token-reply word, and reads even if today's read is done:
-    // a sign-in usually follows a load that already read.
-    const tokenReply = held.provider === 'dropbox' ? DropboxAdapter.takeRedirectTokenReply() : null;
-    const key = IDENTITY_DAY_KEY + held.provider;
+    // The adapter a Dropbox redirect made carries its token-reply word, and reads even if today's read
+    // is done: a sign-in usually follows a load that already read.
+    const { provider, token, grant, tokenReply } = held;
+    const key = IDENTITY_DAY_KEY + provider;
     const day = new Date().toISOString().slice(0, 10);
     if (safeGetItem(key) === day && !tokenReply) return;
     // The log-off barrier: a page whose writes have stopped writes no key and asks nothing.
     if (!healthWritesAllowed() || ownLogOffHasBegun()) return;
+    // The day's slot is taken only if it stored: a refused or full storage asks nothing and sends nothing.
     safeSetItem(key, day);
-    const { provider, token, grant } = held;
+    if (safeGetItem(key) !== day) return;
     const read = { provider, grant, ...(tokenReply ? { tokenReply } : {}) };
     if (!token || lostSignIn()) {
       trackProductEvent('cloud_identity_read', { ...read, outcome: 'skipped' });
@@ -90,4 +93,11 @@ export async function observeCloudIdentity(adapter: StorageAdapter): Promise<voi
   } catch {
     /* a measurement never breaks the page */
   }
+}
+
+/** Starts the observation once the full app has committed its first render. Under Strict Mode the
+ *  effect runs twice; the day key (and the Dropbox word, taken once) makes the second a no-op. */
+export function CloudIdentityObserver({ adapter }: { adapter: StorageAdapter }): null {
+  useEffect(() => { void observeCloudIdentity(adapter); }, [adapter]);
+  return null;
 }

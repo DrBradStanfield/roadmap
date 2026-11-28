@@ -7,7 +7,7 @@ import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEME
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { REMINDER_PROVIDERS } from '../../packages/health-core/src/roadmap-file';
 import { SAVE_RETRY_OUTCOMES, SAVE_RETRY_TRIGGERS } from '../../packages/health-core/src/save-retry-words';
-import { COPIES_OUTCOMES, COPY_BUCKETS, IDENTITY_GRANTS, IDENTITY_OUTCOMES, IDENTITY_PROVIDERS, TOKEN_REPLY_WORDS } from '../../packages/health-core/src/cloud-identity';
+import { COPIES_OUTCOMES, COPY_BUCKETS, IDENTITY_GRANTS, IDENTITY_GRANTS_BY_PROVIDER, IDENTITY_OUTCOMES, IDENTITY_PROVIDERS, TOKEN_REPLY_WORDS, type IdentityProvider } from '../../packages/health-core/src/cloud-identity';
 import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-products';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
 import { LIMIT_TEST_WORDS } from '../../packages/health-core/src/lab-extraction';
@@ -37,7 +37,7 @@ const metadataSchema = z
     outcome: z.enum([...new Set([...MCP_TOOL_OUTCOMES, ...SAVE_RETRY_OUTCOMES, ...IDENTITY_OUTCOMES, ...COPIES_OUTCOMES])]).optional(),
     /** US-09 AC67: how the page's cloud token was granted. Owned by `cloud_identity_read`. */
     grant: z.enum(IDENTITY_GRANTS).optional(),
-    /** US-09 AC67: whether Dropbox's redirect token reply carried an account id. Owned by `cloud_identity_read`, Dropbox redirect only. */
+    /** US-09 AC67: whether Dropbox's redirect token reply carried an account id. Owned by `cloud_identity_read`; Dropbox only (checkEventKeys). */
     tokenReply: z.enum(TOKEN_REPLY_WORDS).optional(),
     /** US-09 AC67: record copies Drive listed, owned and not, as buckets. Owned by `drive_record_copies`. */
     owned: z.enum(COPY_BUCKETS).optional(),
@@ -272,12 +272,13 @@ function checkEventKeys(
     if (!(typeof metadata.count === 'number' && metadata.count >= 2)) ctx.addIssue({ code: 'custom', path: ['metadata', 'count'], message: 'count is not one this event may carry' });
     if (!(REMINDER_PROVIDERS as readonly unknown[]).includes(metadata.provider)) ctx.addIssue({ code: 'custom', path: ['metadata', 'provider'], message: 'provider is not one this event may carry' });
   }
-  // US-09 AC67: only a provider whose account id is read.
-  if (event.eventName === 'cloud_identity_read' && !(IDENTITY_PROVIDERS as readonly unknown[]).includes(metadata.provider)) {
-    ctx.addIssue({ code: 'custom', path: ['metadata', 'provider'], message: 'provider is not one this event may carry' });
-  }
-  if (metadata.tokenReply !== undefined && !(metadata.provider === 'dropbox' && metadata.grant === 'redirect')) {
-    ctx.addIssue({ code: 'custom', path: ['metadata', 'tokenReply'], message: 'tokenReply is only a Dropbox redirect\'s' });
+  // US-09 AC67: only a provider whose account id is read, with a grant that provider's page can hold.
+  // The client alone knows a load completed a redirect, so the server holds tokenReply to Dropbox.
+  if (event.eventName === 'cloud_identity_read') {
+    const provider = (IDENTITY_PROVIDERS as readonly unknown[]).includes(metadata.provider) ? metadata.provider as IdentityProvider : null;
+    if (!provider) ctx.addIssue({ code: 'custom', path: ['metadata', 'provider'], message: 'provider is not one this event may carry' });
+    else if (!(IDENTITY_GRANTS_BY_PROVIDER[provider] as readonly unknown[]).includes(metadata.grant)) ctx.addIssue({ code: 'custom', path: ['metadata', 'grant'], message: 'grant is not one this provider may carry' });
+    if (metadata.tokenReply !== undefined && provider !== 'dropbox') ctx.addIssue({ code: 'custom', path: ['metadata', 'tokenReply'], message: 'tokenReply is only Dropbox\'s' });
   }
   // US-09 AC67: the copy buckets come as a pair, always on `ok`, maybe on `incomplete` (the page seen), never on a failure.
   if (event.eventName === 'drive_record_copies') {

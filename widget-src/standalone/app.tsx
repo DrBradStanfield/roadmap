@@ -26,7 +26,7 @@ import { HistoryLightboxHost } from './history-lightbox';
 import { boot } from './boot';
 import { storageState } from './connect';
 import { resolveBackend } from './resolve-backend';
-import { observeCloudIdentity } from './cloud-identity-observe';
+import { CloudIdentityObserver } from './cloud-identity-observe';
 
 async function main() {
   // Nothing may run before boot(): its first line notes another tab's log-off
@@ -72,6 +72,8 @@ async function main() {
           />
         </GuestContext.Provider>
         <HistoryLightboxHost />
+        {/* US-09 AC67: a measurement only, started after the first commit; it changes nothing a person sees. */}
+        <CloudIdentityObserver adapter={adapter} />
       </CrashBoundary>
     </React.StrictMode>,
   );
@@ -91,8 +93,6 @@ async function main() {
   void autoEnrolReminders(backend)
     .catch(() => undefined)
     .then(() => pushReminderSchedule(backend));
-  // US-09 AC67: a measurement only, once a day per provider; it changes nothing a person sees.
-  void observeCloudIdentity(adapter);
 }
 
 void main();

@@ -28,7 +28,7 @@ import { answerOutcome, ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageEr
 import { driveCreateFile, driveCreateFolder, driveDownloadDocument, driveDownloadJson, driveEnsureSubfolder, driveFileIsLive, driveFileVersion, driveFindFileId, driveFindFolder, driveUpdateIfVersion, driveUploadDocument, readDriveRecord, DRIVE_API, DRIVE_FOLDER_NAME, writeDriveRecord } from '@roadmap/health-core/drive-rest';
 import { splitDocumentRef } from '@roadmap/health-core/document-path';
 import { codeGrantReply, postRefreshGrant } from './drive-token-reply';
-import { refreshOnce } from './token-flight';
+import { heldGrant, refreshOnce } from './token-flight';
 import { isSignedOut, signInEnded } from './sign-in-state';
 import { driveWatchLoop } from './drive-watch';
 import { gis, gisReady, loadGis } from './drive-gis';
@@ -164,8 +164,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   /** True if the cached access token is still usable as-is. */
   hasValidToken(): boolean { return this.heldToken().token !== null; }
-  /** That token, else null, and how it was granted. Read only: never refreshes or keeps anything (US-09 AC67). */
-  heldToken(): { token: string | null; grant: 'redirect' | 'popup' } { const t = this.tokens; return { token: t?.accessToken && Date.now() < t.expiresAt - 60_000 ? t.accessToken : null, grant: t?.refreshToken ? 'redirect' : 'popup' }; }
+  /** That token, else null, and whether it can be refreshed; read only (US-09 AC67, token-flight.ts). */
+  heldToken(): ReturnType<typeof heldGrant> { return heldGrant(this.tokens); }
 
   /**
    * PRIMARY connect: full-page redirect to Google (PKCE). Never resolves in

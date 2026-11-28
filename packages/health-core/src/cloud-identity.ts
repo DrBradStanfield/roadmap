@@ -13,9 +13,15 @@ import * as z from './zod';
 /** The providers whose account id is read. WebDAV has none to read. */
 export const IDENTITY_PROVIDERS = ['google-drive', 'dropbox', 'github'] as const;
 export type IdentityProvider = (typeof IDENTITY_PROVIDERS)[number];
-/** How the page's token was granted: a sign-in redirect, Google's popup, a pasted GitHub token. */
-export const IDENTITY_GRANTS = ['redirect', 'popup', 'pat'] as const;
+/** What the page can know about its token: it came with a refresh token, it came alone, or it is a pasted GitHub token. */
+export const IDENTITY_GRANTS = ['refreshable', 'access_only', 'pat'] as const;
 export type IdentityGrant = (typeof IDENTITY_GRANTS)[number];
+/** The grants each provider's page can hold: a Dropbox sign-in always carries a refresh token. */
+export const IDENTITY_GRANTS_BY_PROVIDER: Record<IdentityProvider, readonly IdentityGrant[]> = {
+  'google-drive': ['refreshable', 'access_only'],
+  dropbox: ['refreshable'],
+  github: ['pat'],
+};
 /** `cloud_identity_read`'s outcome. `skipped`: no unexpired token was in hand, so nothing was asked. */
 export const IDENTITY_OUTCOMES = ['ok', 'missing', 'refused', 'unreachable', 'malformed', 'skipped'] as const;
 export type IdentityOutcome = (typeof IDENTITY_OUTCOMES)[number];
@@ -26,7 +32,7 @@ export type CopyBucket = (typeof COPY_BUCKETS)[number];
 export const COPIES_OUTCOMES = ['ok', 'refused', 'unreachable', 'incomplete'] as const;
 export type CopiesOutcome = (typeof COPIES_OUTCOMES)[number];
 
-/** Whether Dropbox's token reply at a redirect return carried an `account_id`. */
+/** Whether Dropbox's token reply carried an `account_id`, on the load whose redirect made the page's sign-in. */
 export const TOKEN_REPLY_WORDS = ['had_id', 'no_id'] as const;
 export type TokenReplyWord = (typeof TOKEN_REPLY_WORDS)[number];
 

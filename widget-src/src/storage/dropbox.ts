@@ -22,7 +22,7 @@ import { answerOutcome, fetchOrFail, ROADMAP_FILE_NAME, sleepUntilAborted, catch
 import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/transfer-deadline';
 import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry, signInUnfinished } from './pkce';
-import { refreshOnce } from './token-flight';
+import { heldGrant, refreshOnce } from './token-flight';
 import { classifyTokenReply, type TokenReplyWord } from '@roadmap/health-core/cloud-identity';
 import { isSignedOut, signInEnded } from './sign-in-state';
 
@@ -66,9 +66,6 @@ interface DropboxTokens {
   expiresAt: number; // epoch ms
 }
 
-/** US-09 AC67: whether this page load's redirect token reply carried an account id. Page memory only, read once. */
-let redirectTokenReply: TokenReplyWord | null = null;
-
 function loadTokens(): DropboxTokens | null {
   return getSignIn<DropboxTokens>(TOKEN_KEY);
 }
@@ -93,6 +90,9 @@ export class DropboxAdapter implements StorageAdapter {
   readonly id = 'dropbox' as const;
   readonly label = 'Dropbox';
   private tokens: DropboxTokens | null;
+  /** US-09 AC67: on the adapter a redirect return made and saved, whether its token reply carried an
+   *  account id. Page memory only, taken once; any other adapter holds null. */
+  private tokenReplyWord: TokenReplyWord | null = null;
 
   /** `gen`: the log-off id this sign-in began under, which its saves carry (US-09 AC45). */
   constructor(private readonly config: DropboxConfig, readonly gen: LogOffId = logOffId()) {
@@ -134,10 +134,10 @@ export class DropboxAdapter implements StorageAdapter {
     });
   }
 
-  /** This load's redirect token-reply word, once; null on any other load (US-09 AC67). */
-  static takeRedirectTokenReply(): TokenReplyWord | null {
-    const word = redirectTokenReply;
-    redirectTokenReply = null;
+  /** This adapter's redirect token-reply word, once; null on any adapter a redirect did not make (US-09 AC67). */
+  takeTokenReply(): TokenReplyWord | null {
+    const word = this.tokenReplyWord;
+    this.tokenReplyWord = null;
     return word;
   }
 
@@ -176,14 +176,16 @@ export class DropboxAdapter implements StorageAdapter {
     // A body that is not JSON (a wifi sign-in page) is an incomplete reply too.
     const reply: unknown = await res.json().catch(() => null);
     const json = tokenReply(reply, true);
-    redirectTokenReply = classifyTokenReply(reply); // a word, never the id (US-09 AC67)
     const saved = setSignIns({
       [TOKEN_KEY]: { accessToken: json.access_token, refreshToken: json.refresh_token, expiresAt: Date.now() + json.expires_in * 1000 } satisfies DropboxTokens,
       [CONFIG_KEY]: {},
     }, claimed.gen);
     // Strip ?code/&state from the URL so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
-    return saved ? new DropboxAdapter(config, claimed.gen) : claimed.gen !== logOffId() ? signInUnfinished() : null; // a log-off during the exchange; else as before
+    if (!saved) return claimed.gen !== logOffId() ? signInUnfinished() : null; // a log-off during the exchange; else as before
+    const adapter = new DropboxAdapter(config, claimed.gen);
+    adapter.tokenReplyWord = classifyTokenReply(reply); // a word, never the id (US-09 AC67)
+    return adapter;
   }
 
   async disconnect(): Promise<void> {
@@ -334,11 +336,10 @@ export class DropboxAdapter implements StorageAdapter {
     throw error;
   };
 
-  /** The access token while unexpired and this page's sign-in stands, else null; always a redirect grant.
-   *  Read only: never refreshes or keeps anything (US-09 AC67). */
-  heldToken(): { token: string | null; grant: 'redirect' } {
-    const usable = this.tokens && Date.now() < this.tokens.expiresAt - 60_000 && !isSignedOut(this.id);
-    return { token: usable ? this.tokens!.accessToken : null, grant: 'redirect' };
+  /** The access token while more than a minute is left and this page's sign-in stands, else null; a
+   *  Dropbox grant always carries a refresh token. Read only: never refreshes or keeps anything (US-09 AC67). */
+  heldToken(): { token: string | null; grant: 'refreshable' } {
+    return { token: isSignedOut(this.id) ? null : heldGrant(this.tokens).token, grant: 'refreshable' };
   }
 
   private async accessToken(): Promise<string> {
