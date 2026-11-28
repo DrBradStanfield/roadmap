@@ -4,7 +4,7 @@
  *   off: "Get an email when a check-up is due" + [Turn on]
  *   on:  "✓ Email reminders on → user@example.com" + [Turn off]
  *
- * Opt-in goes to the email on the SAME cloud account that stores the data,
+ * Opt-in goes to the email of the SAME cloud storage that stores the data,
  * read in the browser (US-17 AC7 — no storage credential leaves it). When the
  * provider has none to give (a GitHub token without the email permission),
  * the control asks for the address once. The capability token lives in the
@@ -106,7 +106,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
       ) : view.phase === 'asking' ? (
         <div className="hr-sync-form">
           <span className="hr-sync-detail">
-            Reminders go to the email on your connected cloud account.
+            Reminders go to the email address on your cloud storage account.
           </span>
           {view.form.needsEmail && (
             <input

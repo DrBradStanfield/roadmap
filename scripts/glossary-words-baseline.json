@@ -4,8 +4,7 @@
     "packages/health-core/src/file-adapter.ts": 1
   },
   "G13-cloud-account": {
-    "widget-src/standalone/reminders-control.tsx": 2,
-    "widget-src/standalone/reminders.ts": 2
+    "widget-src/standalone/reminders-control.tsx": 1
   },
   "G21-ios-app": {
     "CLAUDE.md": 1,

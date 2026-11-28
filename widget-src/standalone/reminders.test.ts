@@ -347,6 +347,8 @@ describe('US-17 AC1 — auto-enrolment is silent: no error, no retry storm; the 
 
     await expect(optInToReminders('github')).rejects.toBeInstanceOf(ReminderEmailNeeded);
     expect(f).not.toHaveBeenCalled();
+    // The real class (the control's pin test mocks ./reminders with its own copy): the ruled sentence, 2026-11-27.
+    expect(new ReminderEmailNeeded().message).toBe('We could not read the email address on your cloud storage account. Type the address reminders should go to.');
   });
 
   it('manual path with a typed address posts that address', async () => {

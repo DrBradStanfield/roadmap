@@ -69,7 +69,7 @@ export function clearAutoEnrolBlock(): void {
  *  answers by showing a one-time typed field — never a silent enrolment. */
 export class ReminderEmailNeeded extends Error {
   constructor() {
-    super('We could not read the email on your cloud account — type the address reminders should go to.');
+    super('We could not read the email address on your cloud storage account. Type the address reminders should go to.');
     this.name = 'ReminderEmailNeeded';
   }
 }
@@ -174,7 +174,7 @@ export async function optInToReminders(
   backend: Backend,
   { marketingEmail, email, silent }: { marketingEmail?: string; email?: string; silent?: { from: FileReminderOptIn | undefined; retired?: ReminderTokenRow } } = {},
 ): Promise<OptInResult> {
-  if (!remindersSupported(backend)) throw new Error('Reminders need a connected cloud account.');
+  if (!remindersSupported(backend)) throw new Error('Reminders need connected cloud storage.');
   // US-07 AC6: the plan is built for adults, and so are its reminders.
   if (isKnownMinorNow()) throw new Error('Check-up reminders are for adults aged 18 and over.');
   // The record this enrolment was asked for: a reply landing after an erase
