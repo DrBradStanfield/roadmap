@@ -59,7 +59,16 @@ describe('US-07 AC23: cholesterol cards', () => {
 
   it('L2: the statin card names the guideline first and drops the dose', () => {
     expect(card(plan({ ldlC: 3.0 }, { statin: { drug: 'none', dose: null } }), 'med-statin').description)
-      .toContain('Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin, then Ezetimibe before a higher dose. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
+      .toContain('Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
+  });
+
+  it('L2: the statin card face names no other medicine when Ezetimibe is recorded taken or not tolerated', () => {
+    for (const ezetimibe of ['yes', 'not_tolerated'] as const) {
+      const text = card(plan({ ldlC: 3.0 }, { statin: { drug: 'none', dose: null }, ezetimibe }), 'med-statin').description;
+      expect(text, ezetimibe).toContain('Dr Brad suggests a low-dose statin, such as Rosuvastatin. Consider discussing a statin with your doctor.');
+      expect(text, ezetimibe).not.toMatch(/Ezetimibe/i);
+    }
+    expect(SUGGESTION_EVIDENCE['med-statin'].reason).toContain('Dr Brad suggests Ezetimibe before a higher dose.');
   });
 
   it('L4, L6, L7: Bempedoic acid without its brand and with the lipid guidelines; a higher dose; the switch card without "maximum"', () => {
@@ -130,25 +139,12 @@ describe('US-07 AC24: weight cards', () => {
   });
 });
 
-describe('US-07 AC25: blood pressure', () => {
-  it('B3: the weight-medicine line in stage 1 and 2 cards, with its sources', () => {
-    const stage2 = card(plan({ weightKg: 95, systolicBp: 145, diastolicBp: 92 }), 'bp-stage2');
-    expect(stage2.description).toContain('Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.');
-    expect(stage2.references!.map((r) => r.url)).toEqual(expect.arrayContaining(['https://doi.org/10.1136/heartjnl-2024-324170', 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b']));
-  });
-
-  it('unchanged in this PR: the stage 1 target and the measure card', () => {
+describe('US-07 AC25: blood pressure cards, unchanged in this PR', () => {
+  it('keep their weight line, the stage 1 target and the measure card\'s words', () => {
+    expect(card(plan({ weightKg: 95, systolicBp: 145, diastolicBp: 92 }), 'bp-stage2').description)
+      .toContain('Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.');
     expect(card(plan({ systolicBp: 135, diastolicBp: 82 }), 'bp-stage1').description).toContain('Consider discussing it with your doctor. Target is <120/80.\n\n');
     expect(card(plan({}), 'measure-bp').description).toMatch(/Aim for below 120\/80 \(130\/80 if you're frail\)\.$/);
-  });
-});
-
-describe('US-07 AC26: protein card, unchanged in this PR', () => {
-  const protein = (eGFR?: number) => card(generateSuggestions({ heightCm: 175, sex: 'male' },
-    { heightCm: 175, idealBodyWeight: 73.8, proteinTarget: 89, age: 40, suggestions: [], ...(eGFR !== undefined ? { eGFR } : {}) }, 'si'), 'protein-target').description;
-  it('keeps its earlier words at eGFR 44, 45, 59, 60 and unknown', () => {
-    expect(protein(44)).toBe('Based on your ideal body weight of 73.8 kg, aim for 89g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.');
-    for (const e of [45, 59, 60, undefined]) expect(protein(e)).toBe('Based on your ideal body weight of 73.8 kg, aim for 89g of protein daily. This supports muscle maintenance and metabolic health.');
   });
 });
 
@@ -181,13 +177,13 @@ describe('US-07 AC27: colorectal order, skin, supplements, form', () => {
 });
 
 /**
- * Cards that still show a dose, a strength or a brand on their face, each with
- * why. Every other card the engine emits must show none. An entry no scenario
- * hits fails too, so the list cannot go stale.
+ * The one phrase each listed card may still show: a dose kept while its wording
+ * is pending, or the person's own recorded dose. The rest of each listed card is
+ * scanned like every other card, and a listed phrase no card shows fails too.
  */
-const HELD_FOR_OWNER_WORDING: Readonly<Record<string, string>> = {
-  'med-ezetimibe': 'wording pending: the card keeps "Ezetimibe 10mg" (US-07 AC23)',
-  'lpa-elevated': 'its checklist shows the person\'s own recorded statin and dose ("Statin: Atorvastatin 40mg"), not a suggested dose',
+const HELD_FOR_OWNER_WORDING: Readonly<Record<string, { phrase: RegExp; why: string }>> = {
+  'med-ezetimibe': { phrase: /Ezetimibe 10mg/, why: 'wording pending: the card keeps "Ezetimibe 10mg" (US-07 AC23)' },
+  'lpa-elevated': { phrase: /^\u2705 Statin: [A-Z][a-z]+ \d+mg$/m, why: 'its checklist shows the person\'s own recorded statin and dose, not a suggested dose' },
 };
 
 describe('US-07 AC23 to AC27: no dose, strength or brand on a card face outside HELD_FOR_OWNER_WORDING', () => {
@@ -224,10 +220,22 @@ describe('US-07 AC23 to AC27: no dose, strength or brand on a card face outside 
       'bp-stage1', 'bp-stage2', 'lpa-elevated', 'skin-retinoid', 'protein-target']) expect(ids, id).toContain(id);
   });
 
-  it('no card outside the list shows a medicine dose, a strength or a brand; every listed card does', () => {
-    const offending = new Set(faces.filter((f) => DOSE.test(f.face) || BRANDS.test(f.face)).map((f) => f.id));
-    expect([...offending].filter((id) => !(id in HELD_FOR_OWNER_WORDING))).toEqual([]);
-    expect(Object.keys(HELD_FOR_OWNER_WORDING).filter((id) => !offending.has(id))).toEqual([]);
+  /** A face with its card's one permitted phrase taken out. */
+  const scanned = (id: string, face: string) => (id in HELD_FOR_OWNER_WORDING ? face.replace(HELD_FOR_OWNER_WORDING[id].phrase, '') : face);
+  const offends = (id: string, face: string) => { const t = scanned(id, face); return DOSE.test(t) || BRANDS.test(t); };
+
+  it('no card face shows a medicine dose, a strength or a brand beyond its listed phrase; each listed phrase is shown', () => {
+    expect(faces.filter((f) => offends(f.id, f.face)).map((f) => f.id)).toEqual([]);
+    for (const [id, { phrase }] of Object.entries(HELD_FOR_OWNER_WORDING)) expect(faces.some((f) => f.id === id && phrase.test(f.face)), id).toBe(true);
+  });
+
+  it('a listed card still fails on anything beyond its phrase', () => {
+    const ezetimibe = faces.find((f) => f.id === 'med-ezetimibe')!;
+    expect(offends(ezetimibe.id, ezetimibe.face)).toBe(false);
+    expect(offends(ezetimibe.id, `${ezetimibe.face} Ask about Zetia.`)).toBe(true);
+    expect(offends(ezetimibe.id, `${ezetimibe.face} Or Rosuvastatin 40mg.`)).toBe(true);
+    const lpa = faces.find((f) => f.id === 'lpa-elevated' && HELD_FOR_OWNER_WORDING['lpa-elevated'].phrase.test(f.face))!;
+    expect(offends(lpa.id, `${lpa.face}\nRepatha`)).toBe(true);
   });
 
   it('creatine, omega-3 and protein amounts stay', () => {

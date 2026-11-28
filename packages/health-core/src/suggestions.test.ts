@@ -487,7 +487,7 @@ describe('generateSuggestions', () => {
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
       expect(bpSuggestion?.description).toContain('Weight loss is one of the most effective ways to lower blood pressure');
-      expect(bpSuggestion?.description).toContain('GLP-1 medicines');
+      expect(bpSuggestion?.description).toContain('GLP-1 medications');
     });
 
     it('stage 1 mentions weight loss when BMI 25-29.9 and WHtR >= 0.5', () => {
@@ -1308,8 +1308,8 @@ describe('generateSuggestions', () => {
 
     // US-07 AC5: the sentence reads true at exactly the target.
     it.each([
-      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin, then Ezetimibe before a higher dose. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
-      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L. Guidelines set goals by heart risk. Dr Brad aims for below 0.50 g/L, lower than guideline goals. Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin, then Ezetimibe before a higher dose. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
+      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
+      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L. Guidelines set goals by heart risk. Dr Brad aims for below 0.50 g/L, lower than guideline goals. Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
     ])('med-statin at exactly the target, $name, shows and reads true (US-07 AC5)', ({ values, text }) => {
       const { inputs, results } = createTestData(values);
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description).toBe(text);
@@ -1371,7 +1371,7 @@ describe('generateSuggestions', () => {
     it('med-statin at exactly the non-HDL target of 1.6 shows (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 1.6 });
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description)
-        .toBe('Your non-HDL cholesterol is 1.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.6 mmol/L, lower than guideline goals. Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin, then Ezetimibe before a higher dose. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
+        .toBe('Your non-HDL cholesterol is 1.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.6 mmol/L, lower than guideline goals. Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
     });
 
     it.each([
@@ -2363,7 +2363,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('The BP weight paragraph follows the weight-medication trigger (US-06 AC6)', () => {
-    const PARAGRAPH = 'Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.';
+    const PARAGRAPH = 'Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.';
 
     it('shows at BMI 26 with a healthy waist and BP 135/85', () => {
       const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 26, waistToHeightRatio: 0.46 });
@@ -3872,7 +3872,7 @@ describe('US-07 AC6: who the plan is for', () => {
     // Adversary R1 (2026-10-14, orchestrator's decision): the BP cards' weight
     // paragraph named GLP-1 medicines for an unknown age. The weight-loss
     // sentences stay; the GLP-1 sentence needs a known adult age.
-    const GLP1_SENTENCE = 'GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.';
+    const GLP1_SENTENCE = 'GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.';
     it.each([
       ['bp-stage2', { systolicBp: 145, diastolicBp: 92 }],
       ['bp-stage1', { systolicBp: 135, diastolicBp: 85 }],

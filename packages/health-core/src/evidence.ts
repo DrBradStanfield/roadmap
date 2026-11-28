@@ -115,11 +115,6 @@ const REFS_SGLT2I: SuggestionReference[] = [
   { label: 'Neuen 2025 – SMART-C: SGLT2 inhibitors and kidney outcomes by GFR and albuminuria (JAMA)', url: 'https://doi.org/10.1001/jama.2025.20834' },
 ];
 
-/** B3: Tirzepatide's and Semaglutide's blood pressure effect (US-07 AC25). */
-const REFS_GLP1_BP: SuggestionReference[] = [
-  { label: 'Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)', url: 'https://doi.org/10.1136/heartjnl-2024-324170' },
-  { label: 'FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b' },
-];
 /** L2: the 2019 European order and Dr Brad's (US-07 AC23). */
 const EZETIMIBE_ORDER = 'The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.';
 
@@ -448,13 +443,13 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   'bp-stage2': {
     reason: 'Blood pressure in the stage 2 range (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, guidelines typically recommend medication alongside lifestyle measures. Discuss it with your doctor.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
-    references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS, ...REFS_GLP1_BP],
+    references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
 
   'bp-stage1': {
     reason: 'Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
-    references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS, ...REFS_GLP1_BP],
+    references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
 
   // ── Cholesterol Medication Cascade ─────────────────────────

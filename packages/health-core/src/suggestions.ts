@@ -7,7 +7,7 @@ import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningAge,
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
 import { psaNextDue, psaRaised, psaRuleHolds, raisedPsaCards } from './psa-schedule';
 import { weightCascade, lipidCascade, type WeightStep } from './medication-cascades';
-import { BP_WEIGHT_MEDICINE, GLP1_INCREASE_TEXT, GLP1_SWITCH_TEXT, LIPID_INHERITED, LIPID_VERY_HIGH_RISK, RETINOID_TEXT, doseCardText, lipidStepCard, lipidTargetText, lpaLipidTargetNote } from './card-wording';
+import { GLP1_INCREASE_TEXT, GLP1_SWITCH_TEXT, LIPID_INHERITED, LIPID_VERY_HIGH_RISK, RETINOID_TEXT, doseCardText, lipidStepCard, lipidTargetText, lpaLipidTargetNote } from './card-wording';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
   type UnitSystem,
@@ -723,7 +723,7 @@ export function generateSuggestions(
     }
     if (weightMeds.on) {
       // The GLP-1 sentence names medicines, so it needs a known adult age (US-07 AC6).
-      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? BP_WEIGHT_MEDICINE : ''}`);
+      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? ' GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.' : ''}`);
     }
     const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';
 

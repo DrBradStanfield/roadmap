@@ -357,7 +357,7 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.",
+          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.",
           "ingredients": [],
           "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
@@ -385,14 +385,6 @@
             {
               "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
               "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
-            },
-            {
-              "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
-              "url": "https://doi.org/10.1136/heartjnl-2024-324170"
-            },
-            {
-              "label": "FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)",
-              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b"
             }
           ]
         },
@@ -1186,7 +1178,7 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.",
+          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.",
           "ingredients": [],
           "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
@@ -1214,14 +1206,6 @@
             {
               "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
               "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
-            },
-            {
-              "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
-              "url": "https://doi.org/10.1136/heartjnl-2024-324170"
-            },
-            {
-              "label": "FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)",
-              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b"
             }
           ]
         },
@@ -2015,7 +1999,7 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.",
+          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.",
           "ingredients": [],
           "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
@@ -2043,14 +2027,6 @@
             {
               "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
               "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
-            },
-            {
-              "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
-              "url": "https://doi.org/10.1136/heartjnl-2024-324170"
-            },
-            {
-              "label": "FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)",
-              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b"
             }
           ]
         },
@@ -3921,7 +3897,7 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 138/86 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nIncrease potassium-rich foods (3,500–5,000mg/day).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.",
+          "description": "Your BP of 138/86 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nIncrease potassium-rich foods (3,500–5,000mg/day).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.",
           "ingredients": [],
           "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
@@ -3949,14 +3925,6 @@
             {
               "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
               "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
-            },
-            {
-              "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
-              "url": "https://doi.org/10.1136/heartjnl-2024-324170"
-            },
-            {
-              "label": "FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)",
-              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b"
             }
           ]
         },

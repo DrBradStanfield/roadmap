@@ -51,7 +51,7 @@ export function lipidStepCard(step: LipidStep, statinDrug: string, switchesAtTop
   const { onStatin, unstudied } = pregnancy;
   switch (step) {
     case 'statin': return ['Consider discussing a statin with your doctor',
-      'Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin, then Ezetimibe before a higher dose. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.'];
+      'Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.'];
     case 'ezetimibe': return ['Consider discussing Ezetimibe with your doctor', `Discuss adding Ezetimibe 10mg with your doctor. ${unstudied}`];
     case 'bempedoic-acid': return ['Consider discussing Bempedoic acid with your doctor',
       'Bempedoic acid lowers cholesterol by a different pathway than statins. Consider discussing it with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'];
@@ -71,11 +71,6 @@ export function lipidStepCard(step: LipidStep, statinDrug: string, switchesAtTop
 export const GLP1_INCREASE_TEXT = 'Consider discussing a higher dose of your GLP-1 medicine with your doctor, including its pros and cons.';
 /** W3: the switch card (SURMOUNT-5 tested Tirzepatide against Semaglutide only). */
 export const GLP1_SWITCH_TEXT = 'In a head-to-head trial, people lost more weight on Tirzepatide than on Semaglutide. Consider discussing switching to Tirzepatide with your doctor.';
-
-// ---------------------------------------------------------------- Blood pressure (B3)
-
-/** B3: the stage 1 and 2 cards' weight-medicine line. */
-export const BP_WEIGHT_MEDICINE = ' GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.';
 
 // ---------------------------------------------------------------- Skin (K1)
 
