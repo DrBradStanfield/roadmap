@@ -1,7 +1,8 @@
 // File-size ratchet (US-64 AC23). Brad 2026-11-09, CLAUDE.md "File budgets": production code files
 // target 300-500 lines; a file over 500 never grows (split it first).
-// `node scripts/file-size-baseline.mjs --write` lowers or removes entries in file-size-baseline.json.
-// It refuses to raise one, and adds none unless `--allow-new` is passed.
+// Only growth fails: a file that shrank, or is gone, passes with its entry left as it was (Brad 2026-11-28).
+// `node scripts/file-size-baseline.mjs --write` tightens the baseline by hand: it lowers or removes entries
+// in file-size-baseline.json, refuses to raise one, and adds none unless `--allow-new` is passed.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -10,7 +11,6 @@ import { fileURLToPath } from 'node:url';
 export const LIMIT = 500;
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const BASELINE_PATH = join(ROOT, 'scripts/file-size-baseline.json');
-export const REGEN_CMD = 'node scripts/file-size-baseline.mjs --write';
 
 const CODE = /\.(ts|tsx|js|mjs|cjs|swift)$/;
 const ROOTS = /^((app|widget-src\/src|widget-src\/standalone|packages\/health-core\/src|ios|tools|scripts|\.claude\/hooks)\/|[^/]+$)/;
@@ -52,6 +52,11 @@ export function overLimit(exempt) {
     productionFiles().filter(([f, n]) => n > LIMIT && !skip.has(f)).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)),
   );
 }
+
+/** Baseline files with more lines than recorded. A file that shrank, or is gone (0 lines), passes. */
+export const grown = (files, lines = (f) => (existsSync(join(ROOT, f)) ? lineCount(f) : 0)) => Object.entries(files)
+  .filter(([f, recorded]) => lines(f) > recorded)
+  .map(([f, recorded]) => `${f}: recorded ${recorded}, now ${lines(f)}. Split it first, then it can only shrink.`);
 
 const sorted = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)));
 

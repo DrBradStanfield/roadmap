@@ -7,10 +7,10 @@ import { BASELINE_PATH, compare, countAll } from './glossary-words.mjs';
 const problems: string[] = compare(JSON.parse(readFileSync(BASELINE_PATH, 'utf8')), countAll());
 
 describe('glossary retired-word ratchet (US-64 AC44)', () => {
-  it('each tracked file uses each retired word as often as glossary-words-baseline.json records, no more and no less', () => {
+  it('no tracked file uses a retired word more often than glossary-words-baseline.json records; fewer passes', () => {
     const help =
-      'Use the word docs/glossary.md gives instead. After a fix, lower the record: node scripts/glossary-words.mjs --write ' +
-      '(it never raises a count; a use the entry keeps on purpose goes in that rule\'s `keep` list in scripts/glossary-words.mjs).';
+      'Use the word docs/glossary.md gives instead. A use the entry keeps on purpose goes in that rule\'s `keep` list in ' +
+      'scripts/glossary-words.mjs. A record can be tightened by hand: node scripts/glossary-words.mjs --write (it never raises a count).';
     expect(problems, [...problems, help].join('\n')).toEqual([]);
   });
 });

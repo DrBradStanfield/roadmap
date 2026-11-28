@@ -65,7 +65,7 @@ Shared data with claude_business (products.md master (`scripts/check-symlinks.mj
 - Skills (`.claude/`) and on-demand docs (docs/reference.md, docs/deploy-runbook.md): ≤500 lines — split by topic
   at the cap. Loop files: per [docs/loops/LOOP.md](docs/loops/LOOP.md) (always-loaded ≤200; notes ≤500;
   reports ≤150; changelogs + CSVs are history/data, cap-exempt).
-- **Production code (Brad 2026-11-09):** target 300–500 lines per file, split by what changes together; a file over 500 never grows (split it first); no explicit `any` in TypeScript, and a file's count only falls (Brad 2026-11-23).
+- **Production code (Brad 2026-11-09):** target 300–500 lines per file, split by what changes together; a file over 500 never grows (split it first); no explicit `any` in TypeScript, and a file's count never rises (Brad 2026-11-23); the ratchets fail only on growth, never on a shrink (Brad 2026-11-28).
 - **Docs are Markdown; Artifacts are built from them (HARD, Brad 2026-10-12, both repos):** `node tools/md-artifact.mjs <file.md>`, republish to its `artifact:` URL; never hand-edit an Artifact or write a new HTML doc.
 - Memory: 200 lines/25KB, hard-enforced. Structured records → CSV, never prose.
 
