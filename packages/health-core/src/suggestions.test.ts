@@ -2736,8 +2736,8 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'screening-dexa')).toBeUndefined();
     });
 
-    it('does not suggest DEXA for male age 69', () => {
-      const { inputs, results } = createTestData({ sex: 'male', birthYear: 1957, birthMonth: 1 }, { age: 69 });
+    it('does not suggest DEXA for male age 59 (men from 60: US-07 AC22)', () => {
+      const { inputs, results } = createTestData({ sex: 'male', birthYear: 1967, birthMonth: 1 }, { age: 59 });
       const scr: ScreeningInputs = {};
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       expect(suggestions.find(s => s.id === 'screening-dexa')).toBeUndefined();

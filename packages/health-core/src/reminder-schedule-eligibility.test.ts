@@ -56,8 +56,8 @@ describe('screening reminder eligibility (US-06, algorithm doc table)', () => {
     ['screening_prostate', 'female', 60, false],
     ['screening_dexa', 'female', 49, false],
     ['screening_dexa', 'female', 50, true],
-    ['screening_dexa', 'male', 69, false],
-    ['screening_dexa', 'male', 70, true],
+    ['screening_dexa', 'male', 59, false], // men from 60: US-07 AC22
+    ['screening_dexa', 'male', 60, true],
   ] as const)('%s, %s aged %i: scheduled is %s', (category, sex, age, expected) => {
     expect(scheduled(sex, age).has(category)).toBe(expected);
   });

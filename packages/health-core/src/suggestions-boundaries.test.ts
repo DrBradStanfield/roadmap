@@ -336,9 +336,9 @@ describe('US-06, US-07 AC1: screening eligibility at each age gate, one year eit
     expect(has('male', 50, 'screening-endometrial')).toBe(false);
   });
 
-  it('DEXA: women from 50, men from 70', () => {
+  it('DEXA: women from 50, men from 60 (US-07 AC22)', () => {
     expect([49, 50].map((a) => has('female', a, 'screening-dexa'))).toEqual([false, true]);
-    expect([69, 70].map((a) => has('male', a, 'screening-dexa'))).toEqual([false, true]);
+    expect([59, 60].map((a) => has('male', a, 'screening-dexa'))).toEqual([false, true]);
   });
 });
 
