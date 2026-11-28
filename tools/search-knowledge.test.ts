@@ -79,6 +79,22 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     expect(search(buildIndex(corpus), 'What does HTN mean?')[0].handle).toBe('high-blood-pressure');
   });
 
+  it('US-41 AC1a: a built-in object name such as constructor is not an abbreviation', () => {
+    const corpus = [...CORPUS,
+      { handle: 'kidney-function', title: 'Kidney Function', summary: 'The native kidney: an object lesson in code.' },
+      { handle: 'high-blood-pressure', title: 'Hypertension', summary: 'High blood pressure in adults.' }];
+    const index = buildIndex(corpus);
+    expect(search(index, 'zzqqx', 8)).toEqual([]);
+    const body = '# Intro\nopening text\n# Kidney\nfunction of the native kidney';
+    for (const word of ['constructor', 'toString', '__proto__', ...Object.getOwnPropertyNames(Object.prototype)]) {
+      expect(search(index, word, 8)).toEqual(search(index, 'zzqqx', 8));
+      expect(search(index, `What is ${word}?`, 8)).toEqual([]);
+      expect(bestSection(body, word, 200)).toBe(bestSection(body, 'zzqqx', 200));
+    }
+    expect(search(buildIndex(loadBlogIndex()), 'constructor', 8)).toEqual([]);
+    expect(search(index, 'htn', 8).map((h) => h.handle)).toEqual(['high-blood-pressure']);
+  });
+
   it('keeps the abbreviation map small and unambiguous: under 60 single-token keys', () => {
     const keys = Object.keys(ABBREVIATIONS);
     for (const ambiguous of ['hg', 'als', 'af', 'mi', 'me', 'ed']) expect(keys).not.toContain(ambiguous);
@@ -154,7 +170,7 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
 
   it('imports no network module and no model client (the CLI and the core it ranks with)', () => {
     const allowed = {
-      'search-knowledge.ts': /^(node:(url)|\.\.\/app\/lib\/(blog-index\.server|matched-content|search-knowledge))$/,
+      'search-knowledge.ts': /^(node:(fs|url)|\.\.\/app\/lib\/(blog-index\.server|matched-content|search-knowledge))$/,
       '../app/lib/search-knowledge.ts': /^\.\/search-knowledge-abbreviations\.json$/,
     };
     for (const [file, pattern] of Object.entries(allowed)) {
@@ -164,6 +180,9 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
       for (const spec of specifiers) expect(spec).toMatch(pattern);
       expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|anthropic)\b/i);
     }
+    // From node:fs the CLI takes these two only, so no write call is imported (US-41 AC2).
+    const cli = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'search-knowledge.ts'), 'utf8');
+    expect([...cli.matchAll(/^import\s+([^;]+?)\s+from\s+'node:fs'/gm)].map((m) => m[1].replace(/\s+/g, ' '))).toEqual(['{ existsSync, realpathSync }']);
   });
 });
 
