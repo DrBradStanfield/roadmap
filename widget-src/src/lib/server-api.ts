@@ -8,6 +8,7 @@ import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
 import { randomId } from './random-id';
 import type { SaveRetry } from '@roadmap/health-core/save-retry-words';
+import type { CopiesOutcome, CopyBucket, IdentityGrant, IdentityOutcome, TokenReplyWord } from '@roadmap/health-core/cloud-identity';
 
 export const PROXY_PATH = '/apps/health-tool-1';
 
@@ -103,7 +104,14 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey | 
   backend?: (typeof REMOTE_CHANGE_BACKENDS)[number];
   /** `save_retry` (US-09 AC30): what started a retry of a failed save, and how it ended. */
   trigger?: SaveRetry['trigger'];
-  outcome?: SaveRetry['outcome'];
+  outcome?: SaveRetry['outcome'] | IdentityOutcome | CopiesOutcome;
+  /** `cloud_identity_read` (US-09 AC67): how the page's token was granted. */
+  grant?: IdentityGrant;
+  /** `cloud_identity_read` (US-09 AC67), Dropbox redirect return only: whether the token reply held an account id. */
+  tokenReply?: TokenReplyWord;
+  /** `drive_record_copies` (US-09 AC67): record copies Drive listed, owned and not, as buckets. */
+  owned?: CopyBucket;
+  notOwned?: CopyBucket;
   /** `lab_unit_refused` (US-21 phase 3): the catalogue key of the test and the
    *  unit spelling the record would not take. Never a value. */
   key?: string;

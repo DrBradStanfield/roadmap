@@ -19,6 +19,7 @@ import { ChatStreamError, readChatStream } from './chat-stream';
 // client-supplied context instead of looking for a DB record.
 import { LOCAL_FIRST } from './build-flags';
 import { getChatArticle } from './assistant-config';
+import { logOffId } from './storage';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -157,6 +158,7 @@ export async function listConversations(): Promise<ChatListResult | null> {
     if (store === 'unavailable') return null;
     if (store) return { conversations: store.listConversations(), isGuest: false };
     kind = 'fetch';
+    const gen = logOffId();
     const qs = chatQueryParts();
     const params = qs.length ? `?${qs.join('&')}` : '';
     const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat${params}`);
@@ -173,7 +175,7 @@ export async function listConversations(): Promise<ChatListResult | null> {
 
     // Persist guest session token if returned
     const sessionToken = tokenOf(result);
-    if (sessionToken) setGuestSessionToken(sessionToken);
+    if (sessionToken) setGuestSessionToken(sessionToken, gen);
 
     return {
       conversations: result.conversations,
@@ -206,11 +208,12 @@ export async function loadConversation(conversationId: string, signal?: AbortSig
     if (store === 'failed' || store === 'unavailable') return 'failed';
     if (store) return store.getMessages(conversationId);
     kind = 'fetch';
+    const gen = logOffId();
     const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
     const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat?${params}`, { signal });
     if (!response.ok) {
       const data = await parseJsonResponse<ChatReply>(response).catch(() => null);
-      if (guestThreadGone(response.status, data) || threadNotFound(response.status, data)) return 'gone'; // a customer's too (R6)
+      if (guestThreadGone(response.status, data, gen) || threadNotFound(response.status, data)) return 'gone'; // a customer's too (R6)
       Sentry.captureMessage('Chat loadConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },
@@ -247,6 +250,8 @@ export async function sendMessage(
   onDelta: (delta: ChatDelta) => void = () => {},
   // Only the widget's own chat applies form edits, so only it asks for the tools (US-15 AC19).
   canApplyEdits = false,
+  // The log-off id the question is sent under, read before the token (US-09 AC68).
+  gen = logOffId(),
   sessionToken = getGuestSessionToken(),
   asked = chatAskedUnder(), // the erase the question is asked under (US-11 AC2h)
   // The reply is saved only under the erase marks taken as the question is
@@ -292,15 +297,15 @@ export async function sendMessage(
 
     // Persist guest session token if returned
     const newToken = tokenOf(data);
-    if (newToken) setGuestSessionToken(newToken);
+    if (newToken) setGuestSessionToken(newToken, gen);
 
     // A guest is its token plus its IP, so a new IP is a new guest who does
     // not own the stored thread (US-15 AC6a). The server refused before any
     // chat write or model call and handed back a session, so the message goes
     // once into a new conversation on it, passed directly in case storage
     // refused the save above. A customer's 404 is shown.
-    if (conversationId && guestThreadGone(response.status, data)) {
-      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, newToken ?? sessionToken, asked, opened);
+    if (conversationId && guestThreadGone(response.status, data, gen)) {
+      return sendMessage(message, null, guestInputs, [], onDelta, canApplyEdits, gen, newToken ?? sessionToken, asked, opened);
     }
 
     if (response.status === 429) return { result: null, error: { error: CHAT_LIMIT_MESSAGE } };
@@ -393,6 +398,7 @@ export async function deleteConversation(conversationId: string): Promise<boolea
 
 async function deleteServerConversation(conversationId: string): Promise<boolean> {
   try {
+    const gen = logOffId();
     const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -402,7 +408,7 @@ async function deleteServerConversation(conversationId: string): Promise<boolean
       }),
     });
     if (!response.ok) {
-      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null))) return true;
+      if (guestThreadGone(response.status, await parseJsonResponse<ChatReply>(response).catch(() => null), gen)) return true;
       Sentry.captureMessage('Chat deleteConversation failed', {
         level: 'warning',
         tags: { feature: 'chat' },

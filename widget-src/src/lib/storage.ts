@@ -262,6 +262,8 @@ export const BT_TIMELINE_DRAFT_KEY = 'health_roadmap_bt_timeline_draft';
 export const VITALS_DRAFT_KEY = 'health_roadmap_vitals_draft';
 /** The Lp(a) rows the user kept as saved when asked (US-05 AC3, lpa-unit.ts). */
 export const LPA_CHECK_KEPT_KEY = 'health_roadmap_lpa_check_kept';
+/** US-09 AC67: followed by the provider; holds the UTC day of the last cloud id count. Log-off removes them. */
+export const IDENTITY_DAY_KEY = 'hr_cloud_identity_day_';
 
 /**
  * Remove the stored document blobs, both matrices' unsaved drafts and the
@@ -346,8 +348,9 @@ export function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
 }
 
-export function safeSetItem(key: string, value: string): void {
-  try { localStorage.setItem(key, value); } catch {}
+/** True when the write was taken; callers that need no answer ignore it. */
+export function safeSetItem(key: string, value: string): boolean {
+  try { localStorage.setItem(key, value); return true; } catch { return false; }
 }
 
 export function safeRemoveItem(key: string): void {

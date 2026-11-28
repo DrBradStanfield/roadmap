@@ -10,6 +10,8 @@
  * decides what to keep or clear, so a joiner judges the answer exactly as the
  * caller that started it does.
  */
+import type { IdentityGrant } from '@roadmap/health-core/cloud-identity';
+
 export type TokenProvider = 'google-drive' | 'dropbox';
 
 /** The refreshes in flight on this page, by provider and refresh token. */
@@ -24,4 +26,17 @@ export function refreshOnce<T>(provider: TokenProvider, refreshToken: string, ru
   const flight = (async () => run())().finally(() => flights.delete(key));
   flights.set(key, flight);
   return flight;
+}
+
+/** A cached grant as the Drive and Dropbox adapters keep it. */
+interface CachedGrant { accessToken: string; refreshToken?: string; expiresAt: number }
+
+/**
+ * US-09 AC67: the access token a page already holds while more than a minute
+ * is left on it (the minute the adapters refresh at), else null, and whether a
+ * refresh token came with it. Read only: it never refreshes or keeps anything.
+ */
+export function heldGrant(tokens: CachedGrant | null): { token: string | null; grant: Exclude<IdentityGrant, 'pat'> } {
+  const token = tokens?.accessToken && Date.now() < tokens.expiresAt - 60_000 ? tokens.accessToken : null;
+  return { token, grant: tokens?.refreshToken ? 'refreshable' : 'access_only' };
 }

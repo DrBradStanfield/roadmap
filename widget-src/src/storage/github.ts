@@ -52,6 +52,11 @@ export class GitHubAdapter implements StorageAdapter {
     return !!(this.config?.token && this.config.owner && this.config.repo);
   }
 
+  /** The pasted token, else null. Read only (US-09 AC67). */
+  heldToken(): { token: string | null; grant: 'pat' } {
+    return { token: this.config?.token || null, grant: 'pat' };
+  }
+
   /**
    * The account's primary verified email, read HERE in the browser for the
    * reminders opt-in (US-17 AC7): only the address crosses to Brad's server,

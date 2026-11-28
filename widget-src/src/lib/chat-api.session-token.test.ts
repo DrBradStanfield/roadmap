@@ -84,3 +84,81 @@ describe('US-15 AC6b: a guest session token that is not a string is not kept', (
     expect(sentToken(1)).toBe('new-tok');
   });
 });
+
+/** US-09 AC68: a reply to a request sent before a log-off (in this tab or
+ *  another, which rotates the log-off id) stores no session; with no log-off
+ *  it does. */
+describe('US-09 AC68: a reply that lands after a log-off keeps no guest session', () => {
+  const LOG_OFF_ID_KEY = 'health_roadmap_log_off_id';
+  /** The log-off empties the key and rotates the id while the request is out. */
+  const logOffDuringRequest = (reply: Response) => async () => {
+    stored.delete(KEY);
+    stored.set(LOG_OFF_ID_KEY, 'id-after');
+    return reply;
+  };
+  const late = { sessionToken: 'late-tok', isGuest: true };
+  const CALLS: Array<[string, () => Promise<unknown>, () => Response]> = [
+    ['sendMessage', () => sendMessage('hello', null, null), () => json(200, { success: true, conversationId: 'c1', messageId: 'm1', content: 'hi', ...late })],
+    ['listConversations', () => listConversations(), () => json(200, { success: true, conversations: [], ...late })],
+    ['a guest 404', () => loadConversation('c1'), () => json(404, { success: false, error: 'Conversation not found', ...late })],
+  ];
+
+  beforeEach(() => void stored.set(LOG_OFF_ID_KEY, 'id-before'));
+
+  it.each(CALLS)('%s: the key stays absent', async (_name, call, reply) => {
+    fetchMock.mockImplementationOnce(logOffDuringRequest(reply()));
+    await call();
+    expect(stored.has(KEY)).toBe(false);
+  });
+
+  it.each(CALLS)('%s: with no log-off the session is stored (control)', async (_name, call, reply) => {
+    fetchMock.mockResolvedValueOnce(reply());
+    await call();
+    expect(stored.get(KEY)).toBe('late-tok');
+  });
+
+  // The id is read before the token: a log-off that completes between the two
+  // reads still finds the reply sent under the old id.
+  it.each(CALLS)('%s: a log-off between the id read and the token read', async (_name, call, reply) => {
+    let loggedOff = false;
+    vi.stubGlobal('localStorage', {
+      ...localStorage,
+      getItem: (k: string) => {
+        if (k === KEY && !loggedOff) {
+          loggedOff = true;
+          stored.delete(KEY);
+          stored.set(LOG_OFF_ID_KEY, 'id-after');
+        }
+        return stored.get(k) ?? null;
+      },
+    });
+    fetchMock.mockResolvedValueOnce(reply());
+    await call();
+    expect(loggedOff).toBe(true);
+    expect(stored.has(KEY)).toBe(false);
+  });
+
+  // This page's own log-off, whose new id the browser refused to store: the
+  // id is unchanged, so only the page's own claim keeps the reply out.
+  it("this page's own log-off with its id write refused: the reply stores nothing", async () => {
+    vi.resetModules(); // a fresh page: the claim is never cleared within one
+    const storage = await import('./storage');
+    const api = await import('./chat-api');
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => stored.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        if (k === LOG_OFF_ID_KEY) throw new Error('synthetic quota');
+        stored.set(k, String(v));
+      },
+      removeItem: (k: string) => void stored.delete(k),
+    });
+    fetchMock.mockImplementationOnce(async () => {
+      storage.newLogOffId();
+      stored.delete(KEY);
+      return json(200, { success: true, conversationId: 'c1', messageId: 'm1', content: 'hi', ...late });
+    });
+    await api.sendMessage('hello', null, null);
+    expect(stored.get(LOG_OFF_ID_KEY)).toBe('id-before');
+    expect(stored.has(KEY)).toBe(false);
+  });
+});
