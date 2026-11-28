@@ -294,6 +294,14 @@ function searchKnowledge(query: string): ToolAnswer {
   return answer({ notice: NOTICE, results });
 }
 
+/** The heading `wanted` names: one as `sections` lists it (any case), else the first holding every word of it; -1 if none. */
+function sectionIndex(headings: string[], wanted: string): number {
+  const exact = headings.findIndex((h) => h.toLowerCase() === wanted.toLowerCase());
+  const words = tokenize(wanted);
+  if (exact !== -1 || words.length === 0) return exact;
+  return headings.findIndex((h) => { const hw = new Set(tokenize(h)); return words.every((w) => hw.has(w)); });
+}
+
 function getArticle(handle: string, wanted: string | undefined): ToolAnswer {
   const entry = loadBlogIndex().find((e) => e.handle === handle);
   const raw = entry && isServed(entry) ? loadBlogArticle(handle) : null;
@@ -306,8 +314,7 @@ function getArticle(handle: string, wanted: string | undefined): ToolAnswer {
   let text = body;
   let section: string | null = null;
   if (wanted !== undefined) {
-    const words = tokenize(wanted);
-    const i = words.length === 0 ? -1 : headings.findIndex((h) => { const hw = new Set(tokenize(h)); return words.every((w) => hw.has(w)); });
+    const i = sectionIndex(headings, wanted);
     if (i === -1) {
       return { text: `${NOTICE}\n\nThat entry has no section whose heading holds those words. Its sections: ${headings.join(' | ')}`, isError: true, reason: 'not-found' };
     }
