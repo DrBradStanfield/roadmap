@@ -242,8 +242,12 @@ describe('US-06: A2-1 step 2, the screening-rules table', () => {
     const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const pattern = (c: CardText) => esc(`${c.title} :: ${c.description}`).replace(/\\\{due\\\}/g, '[A-Z][a-z]{2} \\d{4}').replace(/\\\{packYears\\\}/g, '\\d+');
     for (const r of SCREENING_RULES) {
+      const start = r.cards.start;
       const kinds: Array<[string, readonly CardText[]]> = [
-        ['', 'ref' in r.cards.start ? [35, 45, 55].map(SCREENING_REFS[r.cards.start.ref]) : [r.cards.start]],
+        // Every age band and both sexes, so DEXA's three start texts are all checked (US-07 AC22).
+        ['', 'ref' in start
+          ? [35, 45, 55, 65, 75].flatMap((age) => ['female', 'male'].map((sex) => SCREENING_REFS[start.ref](age, sex)))
+          : [start]],
         ['-overdue', r.cards.overdue ? withFitLine(r, r.cards.overdue) : []],
         ['-upcoming', r.cards.upToDate ? withFitLine(r, r.cards.upToDate) : []],
       ];

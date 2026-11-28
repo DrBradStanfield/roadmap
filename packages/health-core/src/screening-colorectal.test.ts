@@ -206,7 +206,7 @@ describe('US-07 AC1h: roadmap_text.html (spec lines 75-80)', () => {
   });
 
   it('[159] is Siegel 2019, appended after [158]; nothing before it shifts, and it is cited', () => {
-    expect(REF_LIST).toHaveLength(168); // [160] (US-07 AC21) and [161]-[168] (US-07 AC23 to AC26) were appended later
+    expect(REF_LIST).toHaveLength(170); // [161], [162] (US-07 AC22) and [163]-[170] (US-07 AC23 to AC26) were appended later
     // Spec line 79, in the list's own markup: *x* as <em>, **x** as <strong>, the DOI as the list's "DOI: <a>" link.
     const md = specLine('**Page**', '- New reference [159]: ').slice('- New reference [159]: '.length);
     const [citation, doi] = md.split(' doi:');

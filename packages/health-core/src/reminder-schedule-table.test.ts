@@ -28,11 +28,11 @@ const GATES: Array<{ category: ReminderCategory; female?: [number, number?]; mal
   { category: 'screening_cervical', female: [25, 65] },
   { category: 'screening_lung', female: [50, 80], male: [50, 80], none: [50, 80] },
   { category: 'screening_prostate', male: [45] },
-  { category: 'screening_dexa', female: [50], male: [70] },
+  { category: 'screening_dexa', female: [50], male: [60] }, // men from 60: US-07 AC22
 ];
 
 const SEXES = [['female', 'female'], ['male', 'male'], ['none', undefined]] as const;
-const BOUNDS = [25, 35, 40, 45, 50, 65, 70, 75, 80];
+const BOUNDS = [25, 35, 40, 45, 50, 60, 65, 70, 75, 80];
 const cases = GATES.flatMap((g) => SEXES.flatMap(([name, sex]) => {
   const range = g[name];
   const ages = [...new Set(BOUNDS.flatMap((b) => [b - 1, b, b + 1]))];

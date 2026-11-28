@@ -800,7 +800,7 @@ export function generateSuggestions(
 
     /** Push a row's start card. */
     function pushStart(r: ScreeningRule, priority: Suggestion['priority']): void {
-      const start = 'ref' in r.cards.start ? SCREENING_REFS[r.cards.start.ref](age) : r.cards.start;
+      const start = 'ref' in r.cards.start ? SCREENING_REFS[r.cards.start.ref](age, sex) : r.cards.start;
       suggestions.push({ id: `screening-${r.id}`, category: 'screening', priority, ...fill(start) });
     }
 

@@ -399,7 +399,7 @@ function lungGroupShown(age: number, scr: ScreeningInputs): boolean {
   return inAges(LUNG.groupAges, age, undefined, !!scr.lungScreening || scr.lungResult === 'abnormal');
 }
 
-/** DEXA applies to women from 50 and men from 70. */
+/** DEXA applies to women from 50 and men from 60. */
 export function dexaEligible(age: number, sex: string | undefined): boolean {
   return ruleTakes(DEXA, DEXA.groupAges, age, sex);
 }

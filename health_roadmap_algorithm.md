@@ -1188,7 +1188,7 @@ Source: `suggestions.ts` (screening section) + `types.ts` (intervals/follow-up)
 | Lung | 50-80 | Both | Former/current smoker AND >= 20 pack-years (ACS 2023; no quit window) |
 | Prostate | 45+ | Male | Shared decision; the 45-49 note names the men the ACS advises to start at 45 (Black men; a close relative with prostate cancer); the tool asks no risk question |
 | Endometrial | 45+ | Female | Abnormal bleeding = urgent |
-| DEXA | Female >= 50, Male >= 70 | Both | — |
+| DEXA | Female >= 50, Male >= 60 | Both | Dr Brad's ages; guidelines: women 65+ (USPSTF 2025), men 70+ (BHOF 2022), younger with risk factors |
 
 With no sex on record only the unsexed screenings (colorectal, lung) show (US-07 AC8).
 

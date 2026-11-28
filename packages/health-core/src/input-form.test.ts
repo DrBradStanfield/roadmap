@@ -146,8 +146,8 @@ describe('screeningForm', () => {
     expect(keys(form)).toEqual(['cervical_method']);
   });
 
-  it('asks a 60-year-old man about colorectal, lung and prostate, no bone density', () => {
-    const form = screeningForm(60, 'male', {});
+  it('asks a 59-year-old man about colorectal, lung and prostate, no bone density (men from 60: US-07 AC22)', () => {
+    const form = screeningForm(59, 'male', {});
     expect(form[0].groups.map((g) => g.id)).toEqual(['colorectal', 'lung', 'prostate']);
     expect(form.some((s) => s.id === 'bone-density')).toBe(false);
   });

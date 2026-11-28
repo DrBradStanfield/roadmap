@@ -84,10 +84,12 @@ export const SCREENING_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'screening-dexa': {
-    reason: 'A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Early detection allows treatment with medications that reduce fracture risk. The USPSTF recommends screening for women aged 65+ and postmenopausal women under 65 with risk factors.',
-    guidelines: ['USPSTF'],
+    reason: 'A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Early detection allows treatment with medicines that reduce fracture risk. Dr Brad recommends a scan for all women from 50 and all men from 60. This is earlier than the official guidelines. The USPSTF (2025) recommends screening women 65 and older, and postmenopausal women under 65 at increased risk; for men it found the evidence insufficient to judge. The Bone Health and Osteoporosis Foundation (2022) recommends testing women 65 and older and men 70 and older, and younger postmenopausal women and men aged 50 to 69 with risk factors.',
+    guidelines: ['USPSTF 2025', 'BHOF 2022'],
     references: [
+      { label: 'USPSTF 2025 – Screening for osteoporosis to prevent fractures: recommendation statement (JAMA)', url: 'https://doi.org/10.1001/jama.2024.27154' },
       { label: 'USPSTF – Osteoporosis Screening Recommendation', url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/osteoporosis-screening' },
+      { label: 'LeBoff 2022 – The clinician\'s guide to prevention and treatment of osteoporosis (Osteoporos Int)', url: 'https://doi.org/10.1007/s00198-021-05900-y' },
     ],
   },
 };

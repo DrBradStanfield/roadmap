@@ -106,7 +106,7 @@ interface RuleBase {
   readonly evidenceKey: string;
   readonly notes: readonly Note[];
   readonly cards: {
-    readonly start: CardText | { readonly ref: 'breastStart' | 'colorectalStart' };
+    readonly start: CardText | { readonly ref: 'breastStart' | 'colorectalStart' | 'dexaStart' };
     readonly overdue?: CardText;
     readonly upToDate?: CardText;
   };
@@ -265,7 +265,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
   },
   {
     id: 'dexa', section: 'bone-density', followupBy: 'result', title: '',
-    cardAges: { female: [50], male: [70] }, askAges: { female: [50], male: [70] }, groupAges: { female: [50], male: [70] },
+    cardAges: { female: [50], male: [60] }, askAges: { female: [50], male: [60] }, groupAges: { female: [50], male: [60] },
     uploadMinAge: 50,
     choice: { key: 'dexa_screening', options: [
       { value: 'dexa_scan', label: 'Had a DEXA scan', months: 24 },
@@ -284,7 +284,7 @@ export const SCREENING_RULES: readonly ScreeningRule[] = [
     evidenceKey: 'screening-dexa',
     notes: [],
     cards: {
-      start: { title: 'Consider a DEXA bone density scan', description: 'A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Discuss with your doctor.' },
+      start: { ref: 'dexaStart' },
       overdue: { title: 'Bone density scan overdue', description: 'Your next DEXA scan was due {due}. Please schedule your scan.' },
       upToDate: { title: 'Bone density scan up to date', description: 'Next DEXA scan due around {due}.' },
     },
@@ -307,6 +307,7 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
   & { readonly [K in NoteRef]: (age: number) => string }
   & { readonly breastStart: (age: number) => CardText & { readonly priority: 'attention' | 'info' } }
   & { readonly colorectalStart: (age: number) => CardText }
+  & { readonly dexaStart: (age: number, sex: string | undefined) => CardText }
   & { readonly colorectalStatus: (card: CardText, age: number, method: string | undefined, result?: string) => CardText } = {
   lungSmoker: (s) => s.lungSmokingHistory === 'former_smoker' || s.lungSmokingHistory === 'current_smoker',
   lungPackYears: (s) => s.lungPackYears !== undefined && s.lungPackYears >= LUNG_PACK_YEARS,
@@ -333,6 +334,11 @@ export const SCREENING_REFS: { readonly [K in GateName]: (s: ScreeningInputs) =>
         ? 'Colorectal screening is recommended. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. The American Cancer Society treats these and other tests as equal options. Discuss with your doctor.'
         : 'Colorectal screening is recommended. From 55, Dr Brad suggests a colonoscopy every 10 years. A FIT test every year is also a good option (American Cancer Society). Discuss with your doctor.',
   }),
+  /** DEXA (D5, US-07 AC22): women from 50 and men from 60 is Dr Brad's; guidelines start at 65 (USPSTF 2025) and 70 (BHOF 2022). */
+  dexaStart: (age, sex) => ({ title: 'Consider a DEXA bone density scan', description: age < (sex === 'male' ? 70 : 65)
+    ? 'Dr Brad recommends a DEXA scan for all women from 50 and all men from 60. This is earlier than official guidelines, which recommend it for women from 65 and men from 70, or earlier with risk factors such as a previous fracture, smoking or certain medicines. A DEXA scan measures bone density and can find osteoporosis before a fracture. Discuss with your doctor.'
+    : sex === 'male' ? 'A DEXA scan measures bone density and can find osteoporosis before a fracture occurs. The Bone Health and Osteoporosis Foundation recommends it at your age. Discuss with your doctor.'
+    : 'A DEXA scan measures bone density and can find osteoporosis before a fracture occurs. Guidelines recommend it at your age. Discuss with your doctor.' }),
   /** The routine up-to-date and overdue cards (never the follow-up's): yearly FIT from 55 adds the colonoscopy line,
    *  never after an abnormal result (Brad 2026-11-12). */
   colorectalStatus: (card, age, method, result) => method === 'fit_annual' && age >= COLORECTAL_COLONOSCOPY_FROM
