@@ -20,6 +20,7 @@ import { isMaster, loadBlogIndex, type BlogIndexEntry } from './blog-index.serve
 import { loadBlogArticle } from './matched-content';
 import { parseFrontmatter, stripFrontmatter } from './frontmatter';
 import { routerView } from './router-view';
+import { safetyBlocks } from './master-safety';
 import type { ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import type { McpToolDefinition } from '../../packages/health-core/src/mcp-tool-catalogue';
 
@@ -220,27 +221,8 @@ function library() {
 /** The body as the model should read it: frontmatter off. */
 const bodyOf = (raw: string) => stripFrontmatter(raw).trim();
 
-/** A heading naming a risk (safety, side effects, toxicity, interactions, who should take care), at any level from `##`. */
-const SAFETY_HEADING = /^(#{2,6}) .*\b(?:safety|side effects?|toxicity|interactions?|contraindications?|precautions?|adverse|cautions?|warnings?|pregnancy|special populations?|risk factors?)\b.*$/gim;
 /** The body start a cut always keeps, whatever the safety blocks need: a master's Current view and Key safety points. */
 const MIN_START_CHARS = 4_000;
-
-/**
- * Every safety block of a body: a matching heading to the next heading of its
- * level or higher. A block inside one already taken is not taken again.
- */
-export function safetyBlocks(body: string): string[] {
-  const blocks: string[] = [];
-  let taken = -1;
-  for (const m of body.matchAll(SAFETY_HEADING)) {
-    if (m.index! < taken) continue;
-    const rest = body.slice(m.index! + m[0].length);
-    const next = rest.search(new RegExp(`^#{2,${m[1].length}} `, 'm'));
-    taken = m.index! + m[0].length + (next === -1 ? rest.length : next);
-    blocks.push(body.slice(m.index!, taken).trim());
-  }
-  return blocks;
-}
 
 /**
  * A whole entry over the cap: its start, a note, then its safety blocks. The
