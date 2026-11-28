@@ -117,5 +117,5 @@ export async function labImport(
   }
 }
 
-// The Pages build swaps upload-api.ts for this module, so tsc fails here when this module stops standing in for it.
+// The Pages build swaps upload-api.ts for this module. tsc fails here when this module lacks a value export of upload-api.ts or changes its signature incompatibly.
 ({ checkLabImportQuota, labImport }) satisfies typeof import('./upload-api');
