@@ -24,10 +24,15 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 const FAILED = 'Failed to send. Please try again.';
 const THANKS = 'Thank you for your feedback!';
 
-/** Fills the open form with synthetic values and presses Send with the focus on it. */
-async function send() {
+/** Fills the open form with synthetic values. */
+function fill() {
   fireEvent.change(screen.getByRole('textbox', { name: /email/i }), { target: { value: 'test@example.com' } });
   fireEvent.change(screen.getByRole('textbox', { name: /message/i }), { target: { value: 'Synthetic message' } });
+}
+
+/** Fills the open form and presses Send with the focus on it. */
+async function send() {
+  fill();
   const button = screen.getByRole('button', { name: 'Send' });
   button.focus();
   await act(async () => { fireEvent.click(button); });
@@ -148,17 +153,25 @@ describe('US-19 AC3a: the outcome of a send has an alert or a status role', () =
     expect([email.value, button.disabled]).toEqual(['\u00a0', true]);
   });
 
-  it('while a send runs, Send is grey as when disabled, also under the mouse (styles.css cascade)', async () => {
-    sendFeedback.mockImplementation(() => new Promise<boolean>(() => {}));
+  it('Send is grey as when disabled only while a send runs, also under the mouse (styles.css cascade)', async () => {
+    let answer!: (ok: boolean) => void;
+    sendFeedback.mockImplementation(() => new Promise<boolean>((resolve) => { answer = resolve; }));
     render(<FeedbackForm initialExpanded />);
     const look = (b: Element) => {
       const mouse = { width: 1280, hover: true, states: [[b, [':hover']]] as Array<[Element, string[]]> };
       return [cascaded(b, 'background', 1280), cascaded(b, 'background', mouse), cascaded(b, 'cursor', mouse)];
     };
-    const disabled = look(screen.getByRole('button', { name: 'Send' })); // both fields empty: disabled
+    const sendButton = () => screen.getByRole('button', { name: 'Send' });
+    const disabled = look(sendButton()); // both fields empty: disabled
     expect(disabled).toEqual(['var(--color-gray-light)', 'var(--color-gray-light)', 'not-allowed']);
+    fill(); // filled, before any send: React writes aria-disabled="false", which the grey rule must not match
+    const enabled = [sendButton().getAttribute('aria-disabled'), ...look(sendButton())];
+    expect(enabled).toEqual(['false', 'var(--color-brand-text)', 'var(--color-brand-text-hover)', 'pointer']);
     await send();
     expect(look(screen.getByRole('button', { name: 'Sending...' }))).toEqual(disabled);
+    await act(async () => { answer(false); });
+    fireEvent.mouseOut(sendButton()); // jsdom holds :hover on a clicked button until a mouseout
+    expect([sendButton().getAttribute('aria-disabled'), ...look(sendButton())]).toEqual(enabled); // the retry
   });
 
   it('the status region empties when the thank-you closes after 3 s, and stays mounted', async () => {
