@@ -21,7 +21,7 @@ thresholds: [{"ref":"EGFR_THRESHOLDS.moderatelyDecreased","value":30},{"ref":"EG
 - Heavy, progressive strength training and impact exercise help bone, and balance exercise cuts falls [31][42][49].
 - Calcium from food is preferred. Supplements do little to prevent fractures in healthy people at home, though experts disagree on details [19][20][42].
 - Bisphosphonates and denosumab cut fractures, and serious side effects are rare. Never stop denosumab without a plan: fractures can follow fast [15][32][35][36].
-- The Health Roadmap suggests a bone density scan for women from 50 and men from 70 (the health tool).
+- The Health Roadmap suggests a bone density scan for women from 50 and men from 60 (the health tool).
 
 ## Get help now
 
@@ -54,7 +54,7 @@ Often the first sign is a broken wrist, hip or spine bone after a minor fall. Ba
 - UK: consider a scan at a 10-year risk of 10% or more (an expert-consensus line), then decide on treatment together [1][2].
 
 **The Health Roadmap's bone density card** (the health tool):
-- It suggests a DEXA scan for women from 50 and men from 70. With no sex on record, the card does not show.
+- It suggests a DEXA scan for women from 50 and men from 60. With no sex on record, the card does not show.
 - After a normal result, the next scan is due in 5 years. After osteopenia, in 2 years, the plan's default interval.
 - An osteoporosis result opens a follow-up card. Once it is completed, the plan sets the next scan 12 months later.
 

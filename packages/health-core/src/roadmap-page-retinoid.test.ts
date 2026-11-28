@@ -12,7 +12,7 @@ describe('retinoid section citations (US-07 AC21)', () => {
     expect(HTML).toContain(
       "<p>However, it's worth noting that adapalene is generally the least irritating topical retinoid, while tretinoin can be more irritating.[160]</p>",
     );
-    expect(REF_LIST).toHaveLength(160);
+    expect(REF_LIST).toHaveLength(162); // [161], [162] were appended later (US-07 AC22)
     expect(REF_LIST[159].startsWith('<li>Samaranayaka, S. and P. Jarrett, <em>Topical retinoids.</em> DermNet, 2021. ')).toBe(true);
     expect(REF_LIST[159]).toContain('href="https://dermnetnz.org/topics/topical-retinoids"');
     expect(REF_LIST[158]).toContain('Global patterns and trends in colorectal cancer incidence in young adults');

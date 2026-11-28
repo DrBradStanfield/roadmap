@@ -259,11 +259,12 @@ describe('METRIC_GUIDES (US-58)', () => {
     // [148]-[154], the salt substitute, BP crisis, statin pregnancy and bempedoic acid sources, appended
     // 2026-11-02 (US-06 AC20, US-07 AC12-AC14); [155]-[158], the four lipid drug labels' pregnancy
     // sections, appended 2026-11-09 (US-06 AC20); [159], Siegel 2019 for colorectal screening from 35,
-    // appended 2026-11-12 (US-07 AC1h); [160], DermNet on retinoid irritation, appended 2026-11-28 (US-07 AC21).
-    expect(REF_LIST).toHaveLength(160);
+    // appended 2026-11-12 (US-07 AC1h); [160], DermNet on retinoid irritation, appended 2026-11-28 (US-07 AC21);
+    // [161], [162], USPSTF 2025 and BHOF 2022 for bone density, appended 2026-11-28 (US-07 AC22).
+    expect(REF_LIST).toHaveLength(162);
     expect(numberOf('https://doi.org/10.1056/NEJMoa012512')).toBe(122);
     expect(numberOf('https://doi.org/10.1007/s40279-015-0365-0')).toBe(108);
-    expect(Math.max(...cited)).toBe(160);
+    expect(Math.max(...cited)).toBe(162);
   });
 
   it('AC7: no clinical claim cites an Apple source (Brad\'s decision 2)', () => {
