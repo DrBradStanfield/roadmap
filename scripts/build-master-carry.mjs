@@ -2,7 +2,11 @@
 // article body quote-aware, find the heading path each marker sat under, place it in the master.
 // Moved verbatim from build-master-html.mjs in the file-size split (US-64 AC23).
 
-const MARKERS = { 'roadmap-embed': ['edu'], 'cta-roadmap': ['edu'], 'cta-pf': ['edu', 'commerce'] };
+// The eight US-only product markers (claude_business docs/drstanfield-store-customizations.md section 17) are
+// drstanfield.com only: its theme renders each as a card for US visitors and as nothing for everyone else.
+// Commerce drops them (its articles use the approved C3 callouts instead).
+const US_PRODUCT_MARKERS = ['cta-mv', 'cta-mvplus', 'cta-mvplus-creatine', 'cta-mvplus-collagen', 'cta-sleep', 'cta-sleep-melatonin', 'cta-sleep-magnesium', 'cta-sleep-glycine'];
+const MARKERS = { 'roadmap-embed': ['edu'], 'cta-roadmap': ['edu'], 'cta-pf': ['edu', 'commerce'], ...Object.fromEntries(US_PRODUCT_MARKERS.map((m) => [m, ['edu']])) };
 
 /** Heading text reduced for matching across the old and new bodies: "3. Blood <b>Pressure</b>" -> "blood pressure". */
 export const headingKey = (s) =>
@@ -121,7 +125,16 @@ export function placeCarried(blocks, carried) {
   };
   for (const c of carried) {
     const hits = c.path ? find(c.path) : [];
-    if (hits.length === 1) { out[endOf(hits[0])].after.push(c.html); continue; }
+    if (hits.length === 1) {
+      const end = endOf(hits[0]);
+      // A product card must follow a real body block, never sit right after a heading (an empty section) or its sub-heading.
+      if (US_PRODUCT_MARKERS.includes(c.kind) && out[end].level) {
+        unplaced.push({ ...c, reason: `the master section "${pathText(c.path)}" has no body text, so a card would sit next to a heading` });
+        continue;
+      }
+      out[end].after.push(c.html);
+      continue;
+    }
     let reason = hits.length ? `"${pathText(c.path)}" matches ${hits.length} master headings` : `the master has no heading "${pathText(c.path)}"`;
     // roadmap-embed renders nothing on the current theme; it is kept only as a position hint, so a lost heading falls back.
     const fb = !hits.length && c.kind === 'roadmap-embed' ? fallbackPlace(out, c.path, find, endOf) : null;

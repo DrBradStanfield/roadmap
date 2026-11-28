@@ -156,6 +156,35 @@ describe('build-master-html (US-50 AC9)', () => {
     expect(commerce).toContain('<div class="cta-pf"></div>');
   });
 
+  it('US-50 AC9: the US-only product markers carry over on edu and are dropped on commerce', () => {
+    const markers = ['cta-mv', 'cta-mvplus', 'cta-mvplus-creatine', 'cta-mvplus-collagen', 'cta-sleep', 'cta-sleep-melatonin', 'cta-sleep-magnesium', 'cta-sleep-glycine'];
+    for (const m of markers) {
+      const live = `<h2>Overview</h2><p>x</p><div class="${m}"><br></div>`;
+      const edu = buildMasterHtml(MASTER, { store: 'edu', liveHtml: live });
+      expect(edu.html).toContain(`<div class="${m}"></div>`);
+      expect(edu.carried.map((c: { kind: string }) => c.kind)).toEqual([m]);
+      const commerce = buildMasterHtml(MASTER, { store: 'commerce', liveHtml: live });
+      expect(commerce.html).not.toContain(m);
+    }
+    // The class must match exactly: cta-mvplus is not read out of cta-mvplus-creatine.
+    const both = buildMasterHtml(MASTER, { store: 'edu', liveHtml: '<h2>Overview</h2><div class="cta-mvplus-creatine"></div>' });
+    expect(both.carried.map((c: { kind: string }) => c.kind)).toEqual(['cta-mvplus-creatine']);
+  });
+
+  it('US-50 AC9: a US product marker is refused where its section has no body, never placed next to a heading', () => {
+    const md = `${MASTER}\n\n## Hollow\n\n### Empty sub-section\n`;
+    for (const path of ['<h2>Hollow</h2>', '<h2>Hollow</h2><h3>Empty sub-section</h3>']) {
+      const r = buildMasterHtml(md, { store: 'edu', liveHtml: `${path}<div class="cta-mv"></div>` });
+      expect(r.unplaced.length).toBe(1);
+      expect(r.unplaced[0].reason).toContain('no body text');
+      expect(r.html).not.toContain('class="cta-mv"');
+    }
+    // A section with a body still takes the card, after the body.
+    const ok = buildMasterHtml(MASTER, { store: 'edu', liveHtml: '<h2>Overview</h2><div class="cta-mv"></div>' });
+    expect(ok.unplaced).toEqual([]);
+    expect(ok.html).toMatch(/<\/(p|ul)>\s*<div class="cta-mv"><\/div>/);
+  });
+
   it('US-50 AC9: commerce points drstanfield.com product links at the on-store product; edu keeps them', () => {
     // A table cell is the one place a product link survives the commerce product drop.
     const md = MASTER.replace('| Citrate | Higher |', '| Citrate | Higher, see [MicroVitamin](https://drstanfield.com/products/microvitamin) |');

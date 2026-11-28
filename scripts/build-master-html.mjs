@@ -13,16 +13,18 @@
 // --live (required) is the article's CURRENT body on the same store. Theme
 // markers in it are not in the master and the site still uses them, so they
 // carry over. A marker is any element whose class list holds `roadmap-embed`,
-// `cta-roadmap` or `cta-pf` (claude_business docs/blog-callout-cards.md; any
-// attribute order or quoting). Each is placed at the end of the master section
+// `cta-roadmap`, `cta-pf` or one of the eight US-only product markers (`cta-mv`,
+// `cta-mvplus[-creatine|-collagen]`, `cta-sleep[-melatonin|-magnesium|-glycine]`;
+// claude_business docs/blog-callout-cards.md; any attribute order or quoting). Each is placed at the end of the master section
 // whose heading path (parent headings, the heading, its level) matches the one
 // it sat under in the live body (tags read quote-aware, so a quoted ">" cannot
-// hide one). Edu carries all three; commerce carries
-// `cta-pf` and drops the other two, which its theme renders as nothing. The
+// hide one). Edu carries all of them; commerce carries
+// `cta-pf` and drops the rest, which its theme renders as nothing. The
 // build refuses to write when a marker cannot be placed, when the path matches
 // no master heading or more than one, or when a marker sits where it cannot be
 // read (inside a heading, or on the heading element itself), so nothing is
-// dropped silently.
+// dropped silently. A US product marker is also refused when its master section has
+// no body block (the card would sit next to a heading); that check applies to them only.
 // One exception: `roadmap-embed` renders nothing on the current drstanfield.com
 // theme and is kept only as a position hint. When its exact path is gone it
 // goes to the end of the deepest master section matching a prefix of the path,
