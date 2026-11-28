@@ -20,6 +20,7 @@ import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, ty
 import { dispatch, getSwitchFlow, runMove, stepOf, useSwitchFlow, type MoveStep } from './switch-flow';
 import { PROVIDERS, recordStays } from './providers';
 import { trackProductEvent } from '../src/lib/server-api';
+import { getChatGate } from '../src/lib/chat-api'; // byok-chat on Pages; null on Shopify
 import { useModalDialog } from './use-dialog';
 import { PICKER_TITLE, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
 
@@ -130,6 +131,8 @@ export function LogOffConfirm({ current, busy, disabled, onBack, onLogOff }: {
         Your data stays safe in your {PROVIDERS[current].label}. This just signs you out and
         clears your health record from this browser. Sign back in with the same account to
         restore everything.
+        {/* Pages only, while a key is saved: log-off removes it (US-09 AC68). */}
+        {getChatGate()?.needsKey === false && ' This browser will also forget your Anthropic key; you will need to paste it again.'}
       </p>
       <div className="hr-sync-form">
         <button className="hr-sync-btn" disabled={disabled} onClick={onLogOff}>
