@@ -19,7 +19,8 @@ import {
 } from '../src/storage';
 import { beginRoadmapLogOff } from '../src/storage/roadmap-store';
 import { currentSignIn, lostSignIn, type LostSignIn, type SignIn } from '../src/storage/sign-in-state';
-import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
+import { BACKEND_KEY, LIFTED_REVISION_KEY, webRecordHost } from '../src/storage/web-record-host';
+import { clearGuestSessionToken } from '../src/lib/chat-request';
 import { clearAutoEnrolBlock } from './reminders';
 import { didNotConnect, signInRefused, switchStopCause, switchStopMessage } from './switch-stop';
 import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
@@ -253,6 +254,7 @@ export async function resolveRemembered(): Promise<ResolvedBackend> {
  *    (clearOffFileHealthData(); documents are already cleared above)
  *  - the legacy v1 health blob + the authenticated flag (clearLocalStorage())
  *  - the remembered-backend selection (BACKEND_KEY)
+ *  - the chat's guest session and the lift record
  *
  * The page then reloads; resolveBackend() finds no remembered backend and no
  * local data, so the widget returns to the connect/onboarding screen. The
@@ -287,6 +289,9 @@ export async function logOff(backend: Backend): Promise<void> {
   clearOffFileHealthData();
   safeRemoveItem(CLEARED_ERASE_KEY); // the next sign-in's record adopts its own erase (US-11 AC6)
   removeByPrefix(IDENTITY_DAY_KEY); // a sign-in after this log-off is measured the same day (US-09 AC67)
+  // The chat's guest session and a connect's lift record (US-09 AC68).
+  clearGuestSessionToken();
+  safeRemoveItem(LIFTED_REVISION_KEY);
   forgetBackend();
   // Again, now the wipe has freed space for it (Codex re-check R1).
   signalLogOff();

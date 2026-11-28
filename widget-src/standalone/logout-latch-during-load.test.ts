@@ -218,6 +218,7 @@ describe('US-09 AC2h: a tab still loading when another tab logs off', () => {
 
     cloud.firstRead.resolve();
     await lifting;
+    expect(localStorage.getItem('health_roadmap_lifted_revision')).toBeNull(); // US-09 AC68: no lift record after the log-off
     const store = await other.storage.RoadmapStore.create(cloud);
     expect(other.local.roadmapLocalWritesStopped()).toBe(true);
 
