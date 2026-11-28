@@ -63,7 +63,7 @@ export const MEDICATION_TEXT = {
   escalationRecorded: 'Higher dose or switch (recorded answer)',
   statinLabel: 'Statin',
   statinHint: 'Guidelines name statins the first medicine to consider when cholesterol stays above target. They reduce cholesterol production in the liver.',
-  ezetimibeLabel: 'On Ezetimibe?',
+  ezetimibeLabel: 'On Ezetimibe 10mg?',
   ezetimibeHint: (lipid: string) => `Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipid} reduction.`,
   bempedoicAcidLabel: 'Bempedoic acid',
   bempedoicAcidHint: 'Bempedoic acid lowers cholesterol production via a different pathway than statins. It is an option when a statin is not tolerated.',

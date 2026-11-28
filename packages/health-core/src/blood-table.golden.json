@@ -169,10 +169,9 @@
           "title": "Daily protein target: 72g",
           "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
           "guidelines": [
-            "ISSN 2017",
-            "KDIGO 2024"
+            "ISSN 2017"
           ],
           "references": [
             {
@@ -190,10 +189,6 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
-            },
-            {
-              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
-              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -338,12 +333,10 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "Guidelines consider a weight medicine from a BMI of 30, or 27 with a weight-related condition. With a BMI of 25.2 and elevated blood pressure, Dr Brad raises it earlier, alongside diet, exercise and sleep. A doctor may not prescribe below the licensed levels. Consider discussing Tirzepatide or Semaglutide with your doctor.",
+          "description": "With a BMI of 25.2 and elevated blood pressure, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [
-            "Endocrine Society 2015"
-          ],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -356,18 +349,6 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
-            },
-            {
-              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
-              "url": "https://doi.org/10.1210/jc.2014-3415"
-            },
-            {
-              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
-              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
-            },
-            {
-              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
-              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -420,9 +401,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -521,7 +502,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -549,10 +530,6 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
-            },
-            {
-              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
-              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },
@@ -1003,10 +980,9 @@
           "title": "Daily protein target: 72g",
           "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
           "guidelines": [
-            "ISSN 2017",
-            "KDIGO 2024"
+            "ISSN 2017"
           ],
           "references": [
             {
@@ -1024,10 +1000,6 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
-            },
-            {
-              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
-              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -1172,12 +1144,10 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "With a BMI of 25.2 and an HbA1c in the diabetes range and elevated blood pressure: if type 2 diabetes is confirmed, Tirzepatide and Semaglutide are licensed for it at any BMI. Consider discussing them with your doctor, alongside diet, exercise and sleep.",
+          "description": "With a BMI of 25.2 and an HbA1c in the diabetes range and elevated blood pressure, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [
-            "Endocrine Society 2015"
-          ],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -1190,18 +1160,6 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
-            },
-            {
-              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
-              "url": "https://doi.org/10.1210/jc.2014-3415"
-            },
-            {
-              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
-              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
-            },
-            {
-              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
-              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -1272,9 +1230,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -1373,7 +1331,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -1401,10 +1359,6 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
-            },
-            {
-              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
-              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },
@@ -1855,10 +1809,9 @@
           "title": "Daily protein target: 72g",
           "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
           "guidelines": [
-            "ISSN 2017",
-            "KDIGO 2024"
+            "ISSN 2017"
           ],
           "references": [
             {
@@ -1876,10 +1829,6 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
-            },
-            {
-              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
-              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -2024,12 +1973,10 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "With a BMI of 25.2 and an HbA1c in the diabetes range and elevated blood pressure: if type 2 diabetes is confirmed, Tirzepatide and Semaglutide are licensed for it at any BMI. Consider discussing them with your doctor, alongside diet, exercise and sleep.",
+          "description": "With a BMI of 25.2 and an HbA1c in the diabetes range and elevated blood pressure, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [
-            "Endocrine Society 2015"
-          ],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -2042,18 +1989,6 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
-            },
-            {
-              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
-              "url": "https://doi.org/10.1210/jc.2014-3415"
-            },
-            {
-              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
-              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
-            },
-            {
-              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
-              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -2124,9 +2059,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -2225,7 +2160,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -2253,10 +2188,6 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
-            },
-            {
-              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
-              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },
@@ -2882,10 +2813,9 @@
           "title": "Daily protein target: 72g",
           "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
           "guidelines": [
-            "ISSN 2017",
-            "KDIGO 2024"
+            "ISSN 2017"
           ],
           "references": [
             {
@@ -2903,10 +2833,6 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
-            },
-            {
-              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
-              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -3008,12 +2934,10 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "Guidelines consider a weight medicine from a BMI of 30, or 27 with a weight-related condition. With a BMI of 25.2 and elevated blood pressure, Dr Brad raises it earlier, alongside diet, exercise and sleep. A doctor may not prescribe below the licensed levels. Consider discussing Tirzepatide or Semaglutide with your doctor.",
+          "description": "With a BMI of 25.2 and elevated blood pressure, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [
-            "Endocrine Society 2015"
-          ],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -3026,18 +2950,6 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
-            },
-            {
-              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
-              "url": "https://doi.org/10.1210/jc.2014-3415"
-            },
-            {
-              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
-              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
-            },
-            {
-              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
-              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -3046,9 +2958,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -3147,7 +3059,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -3175,10 +3087,6 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
-            },
-            {
-              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
-              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },
@@ -3709,10 +3617,9 @@
           "title": "Daily protein target: 94g",
           "description": "Based on your ideal body weight of 172 lbs, aim for 94g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
           "guidelines": [
-            "ISSN 2017",
-            "KDIGO 2024"
+            "ISSN 2017"
           ],
           "references": [
             {
@@ -3730,10 +3637,6 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
-            },
-            {
-              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
-              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -3930,12 +3833,10 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "With a BMI of 27.2 and an HbA1c in the prediabetes range, elevated triglycerides, elevated blood pressure and elevated waist-to-height ratio, guidelines consider a weight medicine once lifestyle changes alone have not been enough. Dr Brad raises it from the start, alongside diet, exercise and sleep. Consider discussing Tirzepatide or Semaglutide with your doctor.",
+          "description": "With a BMI of 27.2 and an HbA1c in the prediabetes range, elevated triglycerides, elevated blood pressure and elevated waist-to-height ratio, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [
-            "Endocrine Society 2015"
-          ],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -3948,18 +3849,6 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
-            },
-            {
-              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
-              "url": "https://doi.org/10.1210/jc.2014-3415"
-            },
-            {
-              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
-              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
-            },
-            {
-              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
-              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -4076,9 +3965,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your ApoB is 120 mg/dL. Guidelines set goals by heart risk. Dr Brad aims for below 50 mg/dL, lower than guideline goals. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your ApoB is 120 mg/dL. Guidelines set goals by heart risk. Dr Brad aims for below 50 mg/dL, lower than guideline goals. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -4192,7 +4081,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -4220,10 +4109,6 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
-            },
-            {
-              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
-              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },

@@ -132,7 +132,7 @@ describe('US-07 AC22: evidence, algorithm doc and page', () => {
   });
 
   it('[161] is USPSTF 2025 and [162] is LeBoff 2022, appended after [160]; nothing before them shifts', () => {
-    expect(REF_LIST).toHaveLength(168); // [163]-[168] were appended later (US-07 AC23 to AC26)
+    expect(REF_LIST).toHaveLength(163); // [163] was appended later (US-07 AC24)
     expect(REF_LIST[159]).toContain('dermnetnz.org/topics/topical-retinoids');
     for (const [n, doi] of [[161, '10.1001/jama.2024.27154'], [162, '10.1007/s00198-021-05900-y']] as const) {
       const md = specLine('**Page**', '- New references').split(`[${n}] `)[1].split(/ \[\d+\] /)[0];

@@ -46,7 +46,7 @@ Sex-specific target BMIs (based on mortality meta-analyses):
 - **Normal:** `round(Ideal Body Weight * 1.2)` grams/day
 - **CKD (eGFR < 45):** `round(Ideal Body Weight * 1.0)` grams/day
 
-The CKD adjustment uses strict less-than: at exactly eGFR 45, the normal 1.2 multiplier applies. The card names KDIGO 2024's 0.8 g/kg of body weight first from eGFR below 60 (US-07 AC26; Card Words, section 4).
+The CKD adjustment uses strict less-than: at exactly eGFR 45, the normal 1.2 multiplier applies.
 
 The target is worked out from ideal body weight, so it needs sex too: with no sex on record there is no protein target (US-07 AC8).
 
@@ -699,7 +699,7 @@ The plan reads the latest active value per metric, day first, then time (`compar
 
 Wording only: no rule, threshold, drug, order, dose or citation changed with it.
 
-- **Medicines are topics to discuss with a doctor.** No sentence tells the person to start, stop, take, raise or switch a medicine. Medicine card titles read "Consider discussing [medicine] with your doctor" (a statin, Ezetimibe, Bempedoic acid, a more potent statin, a PCSK9 inhibitor, Tirzepatide, an SGLT2 inhibitor, Metformin, a weight management medication); the dose-change titles read "Consider discussing your statin dose with your doctor" and "Consider discussing your GLP-1 dose with your doctor". Doses, strengths and brand names stay off card faces (Brad 2026-11-28, US-07 AC23, reversing AC17's "keep the number inside a doctor-discussion sentence"); Sources keep them. Supplement amounts (creatine, omega-3, protein grams) stay. One doctor line per card: a card that already ends with one keeps it and gains no second.
+- **Medicines are topics to discuss with a doctor.** No sentence tells the person to start, stop, take, raise or switch a medicine. Medicine card titles read "Consider discussing [medicine] with your doctor" (a statin, Ezetimibe, Bempedoic acid, a more potent statin, a PCSK9 inhibitor, Tirzepatide, an SGLT2 inhibitor, Metformin, a weight management medication); the dose-change titles read "Consider discussing your statin dose with your doctor" and "Consider discussing your GLP-1 dose with your doctor". On the cards in the Card Words table (section 4), doses, strengths and brand names leave the card face (Brad 2026-11-28, US-07 AC23, amending AC17's "keep the number inside a doctor-discussion sentence"); the other cards keep theirs for now. Supplement amounts (creatine, omega-3, protein grams) stay. One doctor line per card: a card that already ends with one keeps it and gains no second.
 - **Ranges describe the number, never the person.** A card says where the value sits against the named guideline's range: "Your HbA1c of {value} is in the range the ADA calls prediabetes." (title "HbA1c in the prediabetes range"; diabetes likewise), "Your BP of {sys}/{dia} mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension." (the 2017 ACC/AHA guideline the stage cut-offs come from). Titles: "Blood pressure in the stage 1 range", "...stage 2 range", "...crisis range". A card with no other doctor line adds "Consider discussing it with your doctor."; `bp-stage2` keeps its own medicine line instead. Urgent cards keep their urgency and their seek-care lines.
 - **Tile words** (stat-tiles.ts display map; the grades below and in section 1 are unchanged): Underweight range, Overweight range, Obesity range, Prediabetes range, Diabetes range, and "eGFR below 15" for an eGFR under 15. On the BMI, HbA1c and eGFR value pages a tile graded outside Normal adds "A range is not a diagnosis. Your doctor confirms one."
 - **Supplement cards** end "Whether it suits you is worth discussing with your doctor or pharmacist." The medicine guides end "Whether it suits you is worth discussing with your doctor, as is any side effect you notice."
@@ -710,47 +710,27 @@ Wording only: no rule, threshold, drug, order, dose or citation changed with it.
 
 ### Card Words: the Guideline First, Dr Brad Labelled (Brad 2026-11-28, US-07 AC23 to AC27)
 
-Each card states the published guideline first and labels where Dr Brad's view goes further. Doses, strengths and brand names stay off card faces (Sources keep them); supplement amounts (creatine, omega-3, protein grams) stay. The engine picks a text from the predicates the plan already uses; no threshold, trigger, drug, order or interval changes. Text: `card-wording.ts`.
+These cards state the published guideline first and label where Dr Brad's view goes further, and doses, strengths and brand names leave their faces. Supplement amounts (creatine, omega-3, protein grams) stay. The engine picks a text from predicates the plan already uses; no threshold, trigger, drug, order or interval changes. Text: `card-wording.ts`. Cards not listed here are unchanged in this PR (wording pending), among them `med-ezetimibe`, `med-pcsk9i` with a statin not tolerated, the borderline lipid cards, the GLP-1 card and the form's weight intro, `weight-med-sglt2i`, `weight-med-metformin`, `protein-target`, the multivitamin card, the blood pressure targets and the form's Ezetimibe question.
 
-| Card | Branch (the predicate it reads) | Text |
+| Card | Branch | Text |
 |---|---|---|
 | Cholesterol medicine cards, form intro (L1) | LDL-c | "Your LDL-c is {value}. Guidelines set goals by heart risk. Dr Brad aims for below {target}, the guideline goal for very high risk." |
 | | ApoB, non-HDL | "Your {label} is {value}. Guidelines set goals by heart risk. Dr Brad aims for below {target}, lower than guideline goals." |
-| Borderline cards (L9) | ApoB, non-HDL | "Your {label} of {value} is borderline against Dr Brad's target of below {target}, which is lower than guideline goals." |
-| | LDL-c | "Your LDL-c of {value} is borderline high. Dr Brad aims for below {target}, the guideline goal for very high risk." |
 | Very high cards (L10) | ApoB, non-HDL | "... is very high. Levels like this carry a much higher heart risk." (non-HDL keeps "This reflects total atherogenic particle burden.") |
 | | LDL-c | "Levels this high can be inherited (familial hypercholesterolemia); your doctor can check." |
 | `lpa-elevated` (L11) | a lipid marker on record | after the checklist: "The {label} target is Dr Brad's, {the guideline goal for very high risk / lower than guideline goals}." |
 | `med-statin` (L2) | | "Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin, then Ezetimibe before a higher dose. Consider discussing a statin with your doctor." + the pregnancy line |
-| `med-ezetimibe` (L3) | (a) on a statin below the top dose, any other statin, or no dose | "The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first." |
-| | (b) Rosuvastatin or Atorvastatin at its top listed dose (`canIncreaseDose` false) | "Adding Ezetimibe is the next step for Dr Brad and for the European guideline (ESC/EAS 2019). Consider discussing it with your doctor." |
-| | (c) statin not tolerated | "When a statin is not tolerated, Dr Brad comes to Ezetimibe after a PCSK9 inhibitor. Consider discussing Ezetimibe with your doctor." |
 | `med-bempedoic-acid` (L4) | | "Bempedoic acid lowers cholesterol by a different pathway than statins. Consider discussing it with your doctor." + the pregnancy line |
 | `med-statin-increase` (L6) | | "Consider discussing a higher statin dose with your doctor." |
 | `med-statin-switch` (L7) | | "You take the highest dose of {Drug} this plan lists, or close to it. Consider discussing a more potent statin, such as Rosuvastatin, with your doctor." |
 | `med-pcsk9i` (L8) | on a statin | "Consider discussing a PCSK9 inhibitor with your doctor." |
-| | statin not tolerated | "When a statin is not tolerated, Dr Brad suggests a PCSK9 inhibitor first. Consider discussing it with your doctor." |
 | Dose cards (L5) | a step up or a switch at the top | "Your {statin/GLP-1} dose isn't recorded. The next option to discuss with your doctor, a higher dose or {a more potent statin / Tirzepatide}, depends on it. Add your dose to see which." |
 | | the top moves on | "Your {kind} dose isn't recorded. Add it to see whether a higher dose is an option to discuss with your doctor." |
-| GLP-1 cards (W1) | (c) the trigger names a diabetes-range HbA1c | "With a BMI of {bmi}{ and reasons}: if type 2 diabetes is confirmed, Tirzepatide and Semaglutide are licensed for it at any BMI. Consider discussing them with your doctor, alongside diet, exercise and sleep." |
-| | (a) BMI 30 or more, or 27 or more with a reason other than waist alone | "With a BMI of {bmi}{ and reasons}, guidelines consider a weight medicine once lifestyle changes alone have not been enough. Dr Brad raises it from the start, alongside diet, exercise and sleep. Consider discussing Tirzepatide or Semaglutide with your doctor." |
-| | (b) otherwise | "Guidelines consider a weight medicine from a BMI of 30, or 27 with a weight-related condition. With a BMI of {bmi}{ and reasons}, Dr Brad raises it earlier, alongside diet, exercise and sleep. A doctor may not prescribe below the licensed levels. Consider discussing Tirzepatide or Semaglutide with your doctor." |
-| Form weight intro (W2) | (c) / (a) / (b) as W1 | "At a BMI of {bmi}{ and reasons}, diabetes and weight medicines are an option to discuss with your doctor." / "..., guidelines consider a weight medicine. It is an option to discuss with your doctor." / "..., Dr Brad raises weight medicines earlier than guidelines do. They are an option to discuss with your doctor." |
 | `weight-med-glp1-switch` (W3) | | "In a head-to-head trial, people lost more weight on Tirzepatide than on Semaglutide. Consider discussing switching to Tirzepatide with your doctor." |
 | `weight-med-glp1-increase` (W4) | | "Consider discussing a higher dose of your GLP-1 medicine with your doctor, including its pros and cons." |
-| `weight-med-sglt2i` (W5) | diabetes-range HbA1c | "If type 2 diabetes is confirmed, SGLT2 inhibitors are licensed for it, and they also protect the heart and kidneys in some people. Consider discussing one, such as Empagliflozin or Dapagliflozin, with your doctor." |
-| | otherwise | "SGLT2 inhibitors are not licensed for weight loss, and guidelines advise against medicines for other conditions only to lose weight. Dr Brad includes them for heart and kidney benefits in some groups. Consider discussing one, such as Empagliflozin or Dapagliflozin, with your doctor." |
-| `weight-med-metformin` (W6) | diabetes-range HbA1c | "If type 2 diabetes is confirmed, Metformin is a long-used diabetes medicine. Extended-release forms may cause fewer stomach side effects. Consider discussing it with your doctor." |
-| | prediabetes-range HbA1c | "For prediabetes, diabetes guidelines consider Metformin for some people at high risk. In a large trial it cut the move to diabetes by about a third. Consider discussing it with your doctor." (ADA 2026 Standards, Rec 3.7) |
-| | normal or not recorded | "Guidelines advise against medicines for other conditions only to lose weight. Dr Brad includes Metformin as a later step. Extended-release forms may cause fewer stomach side effects. Consider discussing it with your doctor." |
 | Stage 1 and 2 weight line (B3) | | "GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor." |
-| `protein-target` (P2, P3) | eGFR 60 or more, or unknown | unchanged: "Based on your ideal body weight of {w}, aim for {n}g of protein daily. This supports muscle maintenance and metabolic health." |
-| | eGFR 45 to 59 (an exact eGFR; one printed as a limit keeps the line above) | "With reduced kidney function, kidney guidelines (KDIGO 2024) suggest about 0.8 g of protein per kg of body weight a day. Dr Brad suggests {n}g a day, from your ideal body weight of {w}. Discuss the right amount with your doctor." |
-| | eGFR below 45 | the same KDIGO sentence, then "Dr Brad lowers his target to {n}g a day, from your ideal body weight of {w}. Discuss the right amount with your doctor." |
 | `skin-retinoid` (K1) | | "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription." |
-| `supplement-micronutrient-base` (K4), both variants | | adds, before the doctor line: "Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone." |
-
-Held at their earlier words until a primary source is read (Brad's rule, 2026-11-28): the blood pressure targets on `bp-stage1` and `measure-bp` (the ACC/AHA 2025 goal wording), and the protein card with an eGFR of 60 or more (the US 0.8 g/kg allowance). Shipped without a clause no primary source confirmed: "high-intensity" (Ezetimibe card (a), the switch card's Sources line), and the European guideline's statin-intolerance order (Ezetimibe card (c), PCSK9 inhibitor card).
+| Form (F1, F3) | | titles "Your cholesterol medications", "Your weight & diabetes medications"; each step-up hint ends "An option to discuss with your doctor." |
 
 ### Who the Plan Is For
 
@@ -1076,7 +1056,7 @@ The cholesterol lines are the lower bounds of the risk-enhancing factors in the 
 
 **Note:** a healthy waist-to-height ratio (< 0.5) no longer blocks a raised marker. It reclassifies BMI 25–29.9 as Normal, which only stops BMI 28–29.9 turning the trigger on by itself.
 
-**Beyond the guidelines (Brad, 2026-09-26):** guidelines consider weight-loss medication at BMI > 30, or > 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan is more proactive: from BMI 25 with a raised marker, and with no waiting period, alongside diet, exercise and sleep. No guideline supports the lower BMI lines. The cards name the guideline line first and label the earlier start as Dr Brad's (US-07 AC24; Card Words, section 4).
+**Beyond the guidelines (Brad, 2026-09-26):** guidelines consider weight-loss medication at BMI > 30, or > 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan is more proactive: from BMI 25 with a raised marker, and with no waiting period, alongside diet, exercise and sleep. No guideline supports the lower BMI lines.
 
 The same trigger drives the cascade (medications tracked), the standalone `weight-glp1` card (medications not tracked), the BP cards' weight paragraph, and the input form's weight section, which steps through the cascade as section 5's form rules say.
 
@@ -1086,7 +1066,7 @@ The same trigger drives the cascade (medications tracked), the standalone `weigh
 
 **Title:** "Consider discussing a GLP-1 medication with your doctor" (Brad 2026-11-13, US-25 AC28; it read "Consider a GLP-1 medication").
 
-**Text:** three branches by the trigger's reasons and the BMI (US-07 AC24; Card Words, section 4). The reasons join as "a, b and c". A raised blood marker counts as a weight-related condition; waist alone does not (Brad 2026-11-28).
+**Text:** "With a BMI of {bmi}{ and {reasons}}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health." The reasons join as "a, b and c".
 
 **"No" (US-06 AC22, Brad 2026-11-23):** the GLP-1, SGLT2 inhibitor and metformin pickers each offer "No" (`'no'`), just before "Not tolerated". It means the person is not taking the medicine and has decided, perhaps with their doctor: that medicine's card stops showing and the cascade moves on to the next step, exactly as "Not tolerated" does. GLP-1 "No" asks no dose question and no new step-up question (a step-up answer already recorded still shows, as it does for "Not tolerated") and goes to the SGLT2 inhibitor; SGLT2 inhibitor "No" goes to metformin; metformin "No" ends the cascade. "No" records no medicine as started. The picker stays on the form, so choosing "Haven't tried yet" again brings the card back. Same word and value, different effect: on a tolerated statin, ezetimibe or PCSK9 inhibitor "No" keeps that card showing (with the statin not tolerated it moves on, US-06 AC20). The weight sequence has a next step to move to, and Brad (2026-11-23) chose "stop suggesting it" for these three; the lipid behaviour is unchanged while Brad decides whether to align them.
 

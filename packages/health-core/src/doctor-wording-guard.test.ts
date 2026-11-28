@@ -219,10 +219,10 @@ describe('US-07 AC19: medicine names start with a capital', () => {
   it('walks the text that names a medicine (the scan is not vacuous)', () => {
     const joined = all.join('\n');
     for (const phrase of [
-      'Consider discussing Tirzepatide or Semaglutide with your doctor.',
+      'consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep.',
       'Consider discussing Bempedoic acid with your doctor',
-      'Consider discussing one, such as Empagliflozin or Dapagliflozin, with your doctor.',
-      'Dr Brad suggests discussing Ezetimibe with your doctor first.',
+      'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide',
+      'Discuss adding Ezetimibe 10mg with your doctor.',
       'You take the highest dose of Simvastatin this plan lists, or close to it.',
       'Dulaglutide (Trulicity)',
     ]) expect(joined).toContain(phrase);

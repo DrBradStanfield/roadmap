@@ -7,8 +7,7 @@ import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningAge,
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
 import { psaNextDue, psaRaised, psaRuleHolds, raisedPsaCards } from './psa-schedule';
 import { weightCascade, lipidCascade, type WeightStep } from './medication-cascades';
-import { BP_WEIGHT_MEDICINE, LIPID_INHERITED, LIPID_VERY_HIGH_RISK, MULTIVITAMIN_VIEW, RETINOID_TEXT, REASON_HBA1C_DIABETES, REASON_HBA1C_PREDIABETES, REASON_WAIST,
-  doseCardText, glp1Description, lipidBorderlineText, lipidStepCard, lipidTargetText, lpaLipidTargetNote, proteinText, weightMedIntroText, weightStepText } from './card-wording';
+import { BP_WEIGHT_MEDICINE, GLP1_INCREASE_TEXT, GLP1_SWITCH_TEXT, LIPID_INHERITED, LIPID_VERY_HIGH_RISK, RETINOID_TEXT, doseCardText, lipidStepCard, lipidTargetText, lpaLipidTargetNote } from './card-wording';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
   type UnitSystem,
@@ -58,7 +57,7 @@ const LUTEIN_AREDS = 'In the AREDS trial, a formula containing beta-carotene slo
  */
 export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId, string>>> = {
   // No WHO dementia sentences (a disease outcome beside a named product).
-  'supplement-micronutrient-base': discuss(`${BASE_COSMOS} ${BASE_K2} ${MULTIVITAMIN_VIEW}`),
+  'supplement-micronutrient-base': discuss(`${BASE_COSMOS} ${BASE_K2}`),
   // Strength and lean mass only: no memory sentence.
   'supplement-creatine': discuss(CREATINE_STRENGTH),
   // Macular pigment only: no macular degeneration outcome.
@@ -181,19 +180,28 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
   const reasons: string[] = [];
   // A diabetic-range HbA1c is named as such, matching its urgent card (Brad 2026-11-06, US-06 AC6).
   if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
-    reasons.push(inputs.hba1c >= HBA1C_THRESHOLDS.diabetes ? REASON_HBA1C_DIABETES : REASON_HBA1C_PREDIABETES);
+    reasons.push(inputs.hba1c >= HBA1C_THRESHOLDS.diabetes ? 'an HbA1c in the diabetes range' : 'an HbA1c in the prediabetes range');
   }
   if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) reasons.push('elevated triglycerides');
   if (isBpRaised(inputs.systolicBp, inputs.diastolicBp)) reasons.push('elevated blood pressure');
   const lipid = lipidMarkerFor(inputs, results);
   if (lipid && lipid.value >= LIPID_RISK_ENHANCING[lipid.kind].line) reasons.push(LIPID_RISK_ENHANCING[lipid.kind].reason);
-  if (whr !== undefined && isWaistToHeightElevated(whr)) reasons.push(REASON_WAIST);
+  if (whr !== undefined && isWaistToHeightElevated(whr)) reasons.push('elevated waist-to-height ratio');
   return { on: reasons.length > 0 || (isBmiElevated(results.bmiCategory) && bmi > BMI_WEIGHT_MEDICINE_ALONE), reasons };
 }
 
+/** The GLP-1 card's text, shared by the cascade's first step and the standalone card. */
+function glp1Description(bmi: number, reasons: string[]): string {
+  const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
+  return `With a BMI of ${bmi}${and}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+}
+
 /** The form's weight-medication intro, in the plan's words: the BMI and the
- *  trigger's reasons, as the GLP-1 card names them (US-06 AC5, US-07 AC24). */
-export const weightMedIntro = (bmi: number, reasons: string[]): string => weightMedIntroText(bmi, reasons, joinWithAnd);
+ *  trigger's reasons, as the GLP-1 card names them (US-06 AC5). */
+export function weightMedIntro(bmi: number, reasons: string[]): string {
+  const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
+  return `At a BMI of ${bmi}${and}, medications that support weight management and metabolic health are an option to discuss with your doctor.`;
+}
 
 /**
  * Whether the plan shows medicine cards (US-07 AC6): only for a known age of
@@ -285,7 +293,9 @@ export function generateSuggestions(
       category: 'nutrition',
       priority: 'info',
       title: `Daily protein target: ${results.proteinTarget}g`,
-      description: proteinText(isCkd, limitOf(inputs, 'labEgfr') ? undefined : results.eGFR, results.proteinTarget, fmtWeight(results.idealBodyWeight, us('weight'))),
+      description: isCkd
+        ? `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.`
+        : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
     });
   }
 
@@ -394,19 +404,18 @@ export function generateSuggestions(
   // one standalone suggestion when they are not. Both read one trigger.
   const weightMeds = weightMedicationTrigger(inputs, results);
   if (weightMeds.on) {
-    const glp1Text = glp1Description(results.bmi!, weightMeds.reasons, joinWithAnd);
+    const glp1Text = glp1Description(results.bmi!, weightMeds.reasons);
     if (!medications) {
       suggestions.push({ id: 'weight-glp1', category: 'medication', priority: 'attention', title: 'Consider discussing a weight management medication with your doctor', description: glp1Text });
     } else {
       // Weight & diabetes medication cascade (GLP-1 → its dose if not recorded → escalate → SGLT2i → Metformin)
-      const later = (step: Exclude<WeightStep, 'glp1' | 'glp1-dose'>) => weightStepText(step, weightMeds.reasons);
       const stepCards: Record<WeightStep, [priority: Suggestion['priority'], title: string, text: string]> = {
         glp1: ['attention', 'Consider discussing a GLP-1 medication with your doctor', glp1Text],
         'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'Tirzepatide')],
-        'glp1-increase': ['attention', 'Consider discussing your GLP-1 dose with your doctor', later('glp1-increase')],
-        'glp1-switch': ['attention', 'Consider discussing Tirzepatide with your doctor', later('glp1-switch')],
-        sglt2i: ['attention', 'Consider discussing an SGLT2 inhibitor with your doctor', later('sglt2i')],
-        metformin: ['info', 'Consider discussing Metformin with your doctor', later('metformin')],
+        'glp1-increase': ['attention', 'Consider discussing your GLP-1 dose with your doctor', GLP1_INCREASE_TEXT],
+        'glp1-switch': ['attention', 'Consider discussing Tirzepatide with your doctor', GLP1_SWITCH_TEXT],
+        sglt2i: ['attention', 'Consider discussing an SGLT2 inhibitor with your doctor', 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
+        metformin: ['info', 'Consider discussing Metformin with your doctor', 'Metformin provides additional glycemic control and has potential long-term health benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.'],
       };
       for (const step of weightCascade(medications).suggest) {
         const [priority, title, description] = stepCards[step];
@@ -482,7 +491,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high ApoB',
-        description: lipidBorderlineText('apoB', 'ApoB', shown('apoB', 'apob', apoB), fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))),
+        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is borderline. Optimal is <${fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))}.`,
       });
     }
   }
@@ -513,7 +522,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high LDL cholesterol',
-        description: lipidBorderlineText('ldl', 'LDL-c', shown('ldlC', 'ldl', inputs.ldlC), fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.ldlMmol, us('ldl'))),
+        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is borderline high. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.ldlMmol, us('ldl'))}.`,
       });
     }
   }
@@ -545,7 +554,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high non-HDL cholesterol',
-        description: lipidBorderlineText('nonHdl', 'non-HDL cholesterol', `${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))}`, fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us('ldl'))),
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is borderline. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us('ldl'))}.`,
       });
     }
   }
@@ -762,12 +771,11 @@ export function generateSuggestions(
     // (on a statin, the statin line follows).
     const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.'
       + (statinDoses ? ` ${onStatinPregnancy}` : '');
-    const statin = { drug: statinDrug, dose: medications.statin?.dose ?? null };
     const pregnancy = { onStatin: onStatinPregnancy, unstudied: pregnancyUnstudied };
     // On a statin: statin → ezetimibe → the statin's dose if not recorded, a step up or a PCSK9 inhibitor.
     // Statin not tolerated: PCSK9 inhibitor → ezetimibe → bempedoic acid (US-06 AC20).
     for (const step of lipidCascade(medications).suggest) {
-      const [title, text] = lipidStepCard(step, statin, switchesAtTop, pregnancy);
+      const [title, text] = lipidStepCard(step, statinDrug, switchesAtTop, pregnancy);
       suggestions.push({ id: `med-${step}`, category: 'medication', priority: 'attention', title, description: `${lipidReason} ${text}` });
     }
   }
@@ -973,7 +981,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Micronutrient base',
-      description: `${BASE_COSMOS} ${BASE_WHO} ${BASE_K2} ${MULTIVITAMIN_VIEW}`,
+      description: `${BASE_COSMOS} ${BASE_WHO} ${BASE_K2}`,
       ingredients: [
         'Methylated B-complex',
         'Vitamin D3 with K2',

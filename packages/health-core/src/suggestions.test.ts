@@ -14,8 +14,8 @@ import {
 import { toCanonicalValue } from './units';
 import { calculateHealthResults, getBMICategory, getLipidStatus } from './calculations';
 
-/** The two supplement sentences that name Dr Brad's own view (US-07 AC27). */
-const DR_BRAD_SUPPLEMENT_VIEWS = /Dr Brad thinks it is reasonable for adults to consider|Suggesting a daily multivitamin is Dr Brad's view/g;
+/** The one supplement sentence that names Dr Brad's own view (US-07 AC27). */
+const DR_BRAD_SUPPLEMENT_VIEWS = /Dr Brad thinks it is reasonable for adults to consider/g;
 
 // Shorthand: convert conventional (US) blood test values to SI for test inputs
 const hba1c = (pct: number) => toCanonicalValue('hba1c', pct, 'conventional');
@@ -153,9 +153,9 @@ describe('generateSuggestions', () => {
     it('ldl-borderline names the 1.4 optimal line (US-07 AC5)', () => {
       const { inputs, results } = createTestData({ ldlC: 3.5 });
       expect(generateSuggestions(inputs, results).find(s => s.id === 'ldl-borderline')?.description)
-        .toBe('Your LDL-c of 3.5 mmol/L is borderline high. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk.');
+        .toBe('Your LDL-c of 3.5 mmol/L is borderline high. Optimal is <1.4 mmol/L.');
       expect(generateSuggestions(inputs, results, 'conventional').find(s => s.id === 'ldl-borderline')?.description)
-        .toBe('Your LDL-c of 135 mg/dL is borderline high. Dr Brad aims for below 55 mg/dL, the guideline goal for very high risk.');
+        .toBe('Your LDL-c of 135 mg/dL is borderline high. Optimal is <55 mg/dL.');
     });
 
     it('LDL 3.2 is above optimal but below borderline: no LDL card (US-07 AC5)', () => {
@@ -228,7 +228,7 @@ describe('generateSuggestions', () => {
     it('non-hdl-borderline names the 1.6 optimal line (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 4.5 });
       expect(generateSuggestions(inputs, results).find(s => s.id === 'non-hdl-borderline')?.description)
-        .toBe('Your non-HDL cholesterol of 4.5 mmol/L is borderline against Dr Brad\'s target of below 1.6 mmol/L, which is lower than guideline goals.');
+        .toBe('Your non-HDL cholesterol of 4.5 mmol/L is borderline. Optimal is <1.6 mmol/L.');
     });
 
     it('does not generate suggestion for optimal non-HDL < 160 mg/dL', () => {
@@ -2298,8 +2298,7 @@ describe('generateSuggestions', () => {
       expect(glp1 !== undefined).toBe(row.on);
       if (row.on) {
         const and = row.reasons.length > 0 ? ` and ${joinWithAnd(row.reasons)}` : '';
-        // The card's words by band are pinned in guideline-first-wording.test.ts (US-07 AC24); here, the BMI and reasons it names.
-        expect(glp1!.description).toContain(`a BMI of ${results.bmi}${and}`);
+        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
       }
     });
 
@@ -2322,24 +2321,21 @@ describe('generateSuggestions', () => {
   });
 
   describe('Weight medication card wording (US-06 AC6)', () => {
-    // US-07 AC24: the words follow the BMI's band against the guideline line.
-    const GUIDE = (who: string) => `With ${who}, guidelines consider a weight medicine once lifestyle changes alone have not been enough. Dr Brad raises it from the start, alongside diet, exercise and sleep. Consider discussing Tirzepatide or Semaglutide with your doctor.`;
-    const EARLIER = (who: string) => `Guidelines consider a weight medicine from a BMI of 30, or 27 with a weight-related condition. With ${who}, Dr Brad raises it earlier, alongside diet, exercise and sleep. A doctor may not prescribe below the licensed levels. Consider discussing Tirzepatide or Semaglutide with your doctor.`;
-    const DIABETES = (who: string) => `With ${who}: if type 2 diabetes is confirmed, Tirzepatide and Semaglutide are licensed for it at any BMI. Consider discussing them with your doctor, alongside diet, exercise and sleep.`;
+    const TAIL = ', consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
     const cases: { name: string; bmi: number; whr?: number; inputs: Partial<HealthInputs>; text: string }[] = [
-      { name: 'no reason', bmi: 30.5, inputs: {}, text: GUIDE('a BMI of 30.5') },
-      { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: GUIDE('a BMI of 31') },
-      { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: EARLIER('a BMI of 26 and an HbA1c in the prediabetes range') },
+      { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
+      { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
+      { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: `With a BMI of 26 and an HbA1c in the prediabetes range${TAIL}` },
       // Brad 2026-11-06: a diabetic-range HbA1c is named as such, at the urgent card's line.
-      { name: 'a diabetic-range HbA1c', bmi: 26, whr: 0.46, inputs: { hba1c: 50 }, text: DIABETES('a BMI of 26 and an HbA1c in the diabetes range') },
-      { name: 'HbA1c at the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: HBA1C_THRESHOLDS.diabetes }, text: DIABETES('a BMI of 26 and an HbA1c in the diabetes range') },
-      { name: 'HbA1c just under the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: 47.4 }, text: EARLIER('a BMI of 26 and an HbA1c in the prediabetes range') },
+      { name: 'a diabetic-range HbA1c', bmi: 26, whr: 0.46, inputs: { hba1c: 50 }, text: `With a BMI of 26 and an HbA1c in the diabetes range${TAIL}` },
+      { name: 'HbA1c at the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: HBA1C_THRESHOLDS.diabetes }, text: `With a BMI of 26 and an HbA1c in the diabetes range${TAIL}` },
+      { name: 'HbA1c just under the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: 47.4 }, text: `With a BMI of 26 and an HbA1c in the prediabetes range${TAIL}` },
       {
         name: 'three reasons',
         bmi: 26,
         whr: 0.46,
         inputs: { hba1c: 40, triglycerides: 2, systolicBp: 135, diastolicBp: 85 },
-        text: EARLIER('a BMI of 26 and an HbA1c in the prediabetes range, elevated triglycerides and elevated blood pressure'),
+        text: `With a BMI of 26 and an HbA1c in the prediabetes range, elevated triglycerides and elevated blood pressure${TAIL}`,
       },
     ];
 
@@ -2582,7 +2578,7 @@ describe('generateSuggestions', () => {
       const text = supplements
         .map(s => `${s.title} ${s.description} ${(s.ingredients ?? []).join(' ')}`)
         .join(' ')
-        // US-07 AC27 (Brad 2026-11-28): the omega-3 and multivitamin cards label Dr Brad's own view; no other line names him.
+        // US-07 AC27 (Brad 2026-11-28): the omega-3 card labels Dr Brad's own view; no other line names him.
         .replace(DR_BRAD_SUPPLEMENT_VIEWS, '')
         .toLowerCase();
       expect(text).not.toContain('microvitamin');
@@ -2666,15 +2662,14 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       const protein = suggestions.find(s => s.id === 'protein-target');
       expect(protein?.description).toContain('kidney function');
-      expect(protein?.description).toContain('Dr Brad lowers his target to');
+      expect(protein?.description).toContain('1.0g per kg');
     });
 
-    it('shows the full target, with the kidney guideline first, when eGFR is exactly 45 (US-07 AC26)', () => {
+    it('shows standard text when eGFR is exactly 45', () => {
       const { inputs, results } = createTestData({}, { eGFR: 45, proteinTarget: 89 });
       const suggestions = generateSuggestions(inputs, results);
       const protein = suggestions.find(s => s.id === 'protein-target');
-      expect(protein?.description).toMatch(/^With reduced kidney function, kidney guidelines \(KDIGO 2024\)/);
-      expect(protein?.description).toContain('Dr Brad suggests 89g a day');
+      expect(protein?.description).not.toContain('kidney function');
     });
   });
 
@@ -3496,10 +3491,10 @@ describe('lipid targets print the first value graded above them (US-07 AC5)', ()
   });
 
   it('the borderline cards in mg/dL: LDL <55, non-HDL <62, ApoB <50', () => {
-    expect(card(conv({ ldlC: ldl(140) }), 'ldl-borderline')).toBe('Your LDL-c of 140 mg/dL is borderline high. Dr Brad aims for below 55 mg/dL, the guideline goal for very high risk.');
+    expect(card(conv({ ldlC: ldl(140) }), 'ldl-borderline')).toBe('Your LDL-c of 140 mg/dL is borderline high. Optimal is <55 mg/dL.');
     expect(card(conv({ totalCholesterol: totalChol(220), hdlC: hdl(50) }), 'non-hdl-borderline'))
-      .toBe('Your non-HDL cholesterol of 170 mg/dL is borderline against Dr Brad\'s target of below 62 mg/dL, which is lower than guideline goals.');
-    expect(card(conv({ apoB: apoB(60) }), 'apob-borderline')).toBe('Your ApoB of 60 mg/dL is borderline against Dr Brad\'s target of below 50 mg/dL, which is lower than guideline goals.');
+      .toBe('Your non-HDL cholesterol of 170 mg/dL is borderline. Optimal is <62 mg/dL.');
+    expect(card(conv({ apoB: apoB(60) }), 'apob-borderline')).toBe('Your ApoB of 60 mg/dL is borderline. Optimal is <50 mg/dL.');
   });
 
   it('the Lp(a) checklist in mg/dL: LDL target <55', () => {

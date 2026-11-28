@@ -105,7 +105,7 @@ const REF_CHOLESTEROL_2018: SuggestionReference = {
 };
 
 /** When the plan suggests a weight medication, and how that differs from the guidelines (US-06 AC6). */
-const WEIGHT_MED_TRIGGER_NOTE = '\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.';
+const WEIGHT_MED_TRIGGER_NOTE = '\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.';
 
 const REFS_SGLT2I: SuggestionReference[] = [
   { label: 'Zinman 2015 – EMPA-REG OUTCOME: empagliflozin CV outcomes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1504720' },
@@ -115,20 +115,12 @@ const REFS_SGLT2I: SuggestionReference[] = [
   { label: 'Neuen 2025 – SMART-C: SGLT2 inhibitors and kidney outcomes by GFR and albuminuria (JAMA)', url: 'https://doi.org/10.1001/jama.2025.20834' },
 ];
 
-// US-07 AC24, AC25: the guidelines and labels the cards now name first.
-const REF_ENDO_2015: SuggestionReference = { label: 'Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)', url: 'https://doi.org/10.1210/jc.2014-3415' };
-const REFS_T2D_LICENCE: SuggestionReference[] = [
-  { label: 'FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)', url: 'https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf' },
-  { label: 'FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79' },
-];
 /** B3: Tirzepatide's and Semaglutide's blood pressure effect (US-07 AC25). */
 const REFS_GLP1_BP: SuggestionReference[] = [
   { label: 'Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)', url: 'https://doi.org/10.1136/heartjnl-2024-324170' },
   { label: 'FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b' },
 ];
-const REF_KDIGO_2024: SuggestionReference = { label: 'KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)', url: 'https://doi.org/10.1016/j.kint.2023.10.018' };
-const REF_USPSTF_VITAMINS_2022: SuggestionReference = { label: 'USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)', url: 'https://doi.org/10.1001/jama.2022.8970' };
-/** L2, L12: the 2019 European order and Dr Brad's (US-07 AC23). */
+/** L2: the 2019 European order and Dr Brad's (US-07 AC23). */
 const EZETIMIBE_ORDER = 'The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.';
 
 const REFS_BP_TRIALS: SuggestionReference[] = [
@@ -157,7 +149,7 @@ const REF_MPOD: SuggestionReference = { label: 'Wilson 2021 – Lutein/zeaxanthi
  */
 export const US_SUPPLEMENT_REFERENCES: Readonly<Partial<Record<UsProductCardId, SuggestionReference[]>>> = {
   // No WHO dementia guideline.
-  'supplement-micronutrient-base': [...REFS_COSMOS, REF_K2_VKA, REF_USPSTF_VITAMINS_2022],
+  'supplement-micronutrient-base': [...REFS_COSMOS, REF_K2_VKA],
   // No cognition or memory references.
   'supplement-creatine': [REF_CREATINE_STRENGTH],
   // No macular degeneration trials.
@@ -190,9 +182,9 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Nutrition ──────────────────────────────────────────────
 
   'protein-target': {
-    reason: 'Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.',
-    guidelines: ['ISSN 2017', 'KDIGO 2024'],
-    references: [...REFS_PROTEIN, REF_KDIGO_2024],
+    reason: 'Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.',
+    guidelines: ['ISSN 2017'],
+    references: REFS_PROTEIN,
   },
 
   'low-salt': {
@@ -269,8 +261,8 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
 
   'weight-med-glp1': {
     reason: 'GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.' + WEIGHT_MED_TRIGGER_NOTE,
-    guidelines: ['Endocrine Society 2015'],
-    references: [...REFS_GLP1, REF_CHOLESTEROL_2018, REF_ENDO_2015, ...REFS_T2D_LICENCE],
+    guidelines: [],
+    references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
   },
 
   'weight-med-glp1-dose': {
@@ -292,26 +284,24 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-sglt2i': {
-    reason: 'SGLT2 inhibitors (Empagliflozin, Dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection in some populations, making them a valuable addition for metabolic health.\n\nTheir US labels cover type 2 diabetes, heart failure and kidney disease, not weight loss, and the Endocrine Society advises against medicines approved for other conditions for weight loss alone. No guideline recommends SGLT2 inhibitors for weight alone; this step is Dr Brad\'s.',
-    guidelines: ['Endocrine Society 2015'],
-    references: [...REFS_SGLT2I, REF_ENDO_2015, { label: 'FDA label – Jardiance (empagliflozin), 1 Indications (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=faf3dd6a-9cd0-39c2-0d2e-232cb3f67565' }],
+    reason: 'SGLT2 inhibitors (Empagliflozin, Dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection in some populations, making them a valuable addition for metabolic health.',
+    guidelines: [],
+    references: REFS_SGLT2I,
   },
 
   'weight-med-metformin': {
-    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that Metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. The ADA\'s 2026 Standards of Care say Metformin should be considered for adults at high risk of type 2 diabetes, especially those aged 25 to 59 with a BMI of 35 or more, higher fasting glucose or HbA1c, or past gestational diabetes. Extended-release formulations cause fewer gastrointestinal side effects.\n\nWith an HbA1c below the prediabetes range, no guideline recommends Metformin for weight alone, and the Endocrine Society advises against medicines approved for other conditions for weight loss alone; this step is Dr Brad\'s.',
-    guidelines: ['ADA Standards of Care', 'Endocrine Society 2015'],
+    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that Metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. Extended-release formulations cause fewer gastrointestinal side effects.',
+    guidelines: [],
     references: [
       { label: 'Knowler 2002 – Diabetes Prevention Program: lifestyle or metformin & incidence of type 2 diabetes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa012512' },
       { label: 'Lee 2021 – Metformin & mortality in Diabetes Prevention Program (Diabetes Care)', url: 'https://doi.org/10.2337/dc21-1046' },
-      REF_ENDO_2015,
-      { label: 'ADA 2026 – Standards of Care in Diabetes, 3. Prevention or Delay of Diabetes: Metformin in prediabetes (Diabetes Care)', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12690170/' },
     ],
   },
 
   'weight-glp1': {
     reason: 'GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant weight loss alongside improvements in metabolic health. These medications work best as part of a comprehensive approach including diet, exercise, and sleep.' + WEIGHT_MED_TRIGGER_NOTE,
-    guidelines: ['Endocrine Society 2015'],
-    references: [...REFS_GLP1, REF_CHOLESTEROL_2018, REF_ENDO_2015, ...REFS_T2D_LICENCE],
+    guidelines: [],
+    references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
   },
 
   // ── General ────────────────────────────────────────────────
@@ -479,7 +469,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-ezetimibe': {
-    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. ' + EZETIMIBE_ORDER + '\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.',
+    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -493,6 +483,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. This plan suggests discussing it only if you cannot take a statin and your level is still above target after the PCSK9 inhibitor and Ezetimibe steps (each taken, declined or not tolerated). The combination pill with Ezetimibe (Nexlizet) offers convenience.\n\nIts US label says to stop it when pregnancy is recognized, unless the benefits outweigh the possible risks to the baby.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: [
+      ...REFS_LIPID_GUIDELINES,
       { label: 'Nissen 2023 – CLEAR Outcomes: bempedoic acid in statin-intolerant patients (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2215024' },
       { label: 'FDA label – Nexletol (bempedoic acid), 8.1 Pregnancy: discontinue when pregnancy is recognized (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=88d06d89-a3da-40b4-b273-8f4f7d56c4c9' },
     ],
@@ -511,13 +502,13 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-statin-switch': {
-    reason: 'Different statins vary in potency. Rosuvastatin 40mg provides the highest LDL reduction (~63%), while some other statins max out at lower potencies. ESC/EAS 2019 recommends a statin up to the highest tolerated dose before adding other medicines.',
+    reason: 'Different statins vary in potency. Rosuvastatin 40mg provides the highest LDL reduction (~63%), while some other statins max out at lower potencies. Switching to a more potent statin is recommended by ESC/EAS guidelines before adding additional medications.',
     guidelines: [...GUIDELINES_STATIN_STEPS],
     references: [REF_ESC_EAS_2019, ...REFS_STATIN_PREGNANCY],
   },
 
   'med-pcsk9i': {
-    reason: 'PCSK9 inhibitors (Evolocumab, Alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus Ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. If a statin is not tolerated for any reason, Dr Brad suggests discussing a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), Ezetimibe comes next; Bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
+    reason: 'PCSK9 inhibitors (Evolocumab, Alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus Ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. If a statin is not tolerated for any reason, this plan suggests discussing a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), Ezetimibe comes next; Bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -539,7 +530,6 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
       ...REFS_COSMOS,
       REF_WHO_DEMENTIA_2026,
       REF_K2_VKA,
-      REF_USPSTF_VITAMINS_2022,
     ],
   },
 
@@ -663,7 +653,7 @@ const REFS_BMI: SuggestionReference[] = [
 
 const REFS_EGFR: SuggestionReference[] = [
   { label: 'Inker 2021 – CKD-EPI 2021 race-free eGFR equation (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2102953' },
-  REF_KDIGO_2024,
+  { label: 'KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)', url: 'https://doi.org/10.1016/j.kint.2023.10.018' },
 ];
 
 const REFS_IBW: SuggestionReference[] = [

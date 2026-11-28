@@ -27,9 +27,6 @@ describe('US-07 AC9: SGLT2 inhibitor card (issue 473)', () => {
       'https://doi.org/10.1056/NEJMoa2024816',
       'https://doi.org/10.1016/S0140-6736(22)01429-5',
       'https://doi.org/10.1001/jama.2025.20834',
-      // US-07 AC24: the guideline against medicines for weight alone, and the label it is licensed by.
-      'https://doi.org/10.1210/jc.2014-3415',
-      'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=faf3dd6a-9cd0-39c2-0d2e-232cb3f67565',
     ]);
   });
 });

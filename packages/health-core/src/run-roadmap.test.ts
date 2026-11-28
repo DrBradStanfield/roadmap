@@ -822,14 +822,14 @@ describe('US-15 AC33: the protein target is withheld only when the run loses kid
 
   it('a saved creatinine with nothing refused: the card shows, kidney-adjusted', () => {
     const r = runRoadmap(KIDNEY, { values: [val('ldlC', 3.1, 'mmol/L')] });
-    expect(card(r.contextJson).description).toMatch(/Dr Brad lowers his target/);
+    expect(card(r.contextJson).description).toMatch(/adjusted for kidney function/);
     expect(r.rejected).toEqual([]);
   });
 
   it('a refused age, birth year or sex keeps the saved kidney adjustment', () => {
     for (const input of [{ age: 200 }, { birthYear: 1972.5 }, { sex: 'Male' }]) {
       const r = runRoadmap(KIDNEY, { values: [val('ldlC', 3.1, 'mmol/L')], ...input });
-      expect(card(r.contextJson).description).toMatch(/Dr Brad lowers his target/);
+      expect(card(r.contextJson).description).toMatch(/adjusted for kidney function/);
       expect(r.rejected.map(x => x.reason)).not.toContain(PROTEIN);
     }
   });
