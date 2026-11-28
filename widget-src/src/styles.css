@@ -1267,7 +1267,8 @@
   transform: scale(0.98);
 }
 
-.btn-primary:disabled {
+.btn-primary:disabled,
+.feedback-submit[aria-disabled="true"] {
   background: var(--color-gray-light);
   cursor: not-allowed;
 }

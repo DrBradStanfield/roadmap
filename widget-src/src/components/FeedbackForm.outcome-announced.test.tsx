@@ -110,6 +110,39 @@ describe('US-19 AC3a: the outcome of a send has an alert or a status role', () =
     expect(thanksCalls).toEqual([[{ preventScroll: true }]]);
   });
 
+  it('while a send runs, Send says it is unavailable but is not disabled, so it keeps the focus through a failed send', async () => {
+    // A disabled button cannot hold the focus: Chrome moves it to the page, so a keyboard user was no longer on Send.
+    let answer!: (ok: boolean) => void;
+    sendFeedback.mockImplementation(() => new Promise<boolean>((resolve) => { answer = resolve; }));
+    render(<FeedbackForm initialExpanded />);
+    await send();
+    const button = screen.getByRole('button', { name: 'Sending...' }) as HTMLButtonElement;
+    expect([button.disabled, button.getAttribute('aria-disabled')]).toEqual([false, 'true']);
+    expect(document.activeElement).toBe(button);
+    await act(async () => { fireEvent.click(button); fireEvent.submit(button.form!); }); // a second press, or Enter in a field
+    expect(sendFeedback).toHaveBeenCalledTimes(1);
+    await act(async () => { answer(false); });
+    expect(screen.getByRole('alert').textContent).toBe(FAILED);
+    expect(document.activeElement).toBe(button);
+    expect([button.textContent, button.disabled, button.getAttribute('aria-disabled')]).toEqual(['Send', false, 'false']);
+    await act(async () => { fireEvent.click(button); }); // the retry, from where the focus is
+    expect(sendFeedback).toHaveBeenCalledTimes(2);
+  });
+
+  it('Send stays disabled while the email or the message is empty, as before', () => {
+    render(<FeedbackForm initialExpanded />);
+    const button = screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.change(screen.getByRole('textbox', { name: /email/i }), { target: { value: 'test@example.com' } });
+    expect(button.disabled).toBe(true);
+    fireEvent.change(screen.getByRole('textbox', { name: /message/i }), { target: { value: ' ' } });
+    expect(button.disabled).toBe(true);
+    fireEvent.change(screen.getByRole('textbox', { name: /message/i }), { target: { value: 'Synthetic message' } });
+    expect(button.disabled).toBe(false);
+    fireEvent.change(screen.getByRole('textbox', { name: /email/i }), { target: { value: ' ' } });
+    expect(button.disabled).toBe(true);
+  });
+
   it('the status region empties when the thank-you closes after 3 s, and stays mounted', async () => {
     vi.useFakeTimers();
     sendFeedback.mockResolvedValue(true);

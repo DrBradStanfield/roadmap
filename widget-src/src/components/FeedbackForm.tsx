@@ -53,7 +53,8 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
 
   const formRef = useRef<HTMLFormElement>(null);
   const formShown = mode.kind === 'open' || mode.kind === 'sending' || mode.kind === 'failed';
-  const canSubmit = email.trim() !== '' && message.trim() !== '' && mode.kind !== 'sending';
+  const filled = email.trim() !== '' && message.trim() !== '';
+  const canSubmit = filled && mode.kind !== 'sending';
   // The latest onClose, so a parent's new callback each render does not restart the thank-you.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -153,7 +154,9 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
             <button
               type="submit"
               className="btn-primary feedback-submit"
-              disabled={!canSubmit}
+              disabled={!filled}
+              // US-19 AC3a: while sending, unavailable but not disabled, so a focus on Send stays (a disabled one drops it)
+              aria-disabled={mode.kind === 'sending'}
             >
               {mode.kind === 'sending' ? 'Sending...' : 'Send'}
             </button>
