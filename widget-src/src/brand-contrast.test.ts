@@ -91,6 +91,18 @@ describe('web redesign §1 — each use is on the right token', () => {
     expect(textInBrand).toEqual([]);
   });
 
+  // US-20 AC4a: the success green is a second green that fails as text, so text takes the text green.
+  it.each([['styles.css', css], ['fields.css', fieldsCss], ['standalone.css', standaloneCss]])('US-20 AC4a: %s never sets text in the success green', (_, sheet) => {
+    expect(ratio(token('color-success'), WHITE)).toBeLessThan(4.5); // 3.30
+    const textInSuccess = rules(sheet).filter((r) => /(^|[;{ ])color:\s*(var\(--color-success\)|#16a34a)/i.test(r));
+    expect(textInSuccess).toEqual([]);
+  });
+
+  it('US-20 AC4a: the feedback thank-you and a normal stat status are in the text green', () => {
+    expect(css).toMatch(/\.feedback-success \{\s*color: var\(--color-brand-text\);/);
+    expect(css).toMatch(/\.stat-status\.status-normal \{\s*color: var\(--color-brand-text\);/);
+  });
+
   // Opacity blends the text green into its background: 0.7 over white is about 3:1.
   // A parent's opacity fades its children too: `.a strong` under `.a { opacity: 0.6 }`
   // (the empty-plan lead was 2.4:1 that way). A sibling's opacity does not count.

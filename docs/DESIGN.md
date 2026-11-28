@@ -41,7 +41,7 @@ The palette is built on near-white backgrounds (`#fff`, `#f8f9fa`) with a teal b
 
 ### Semantic / Severity
 - **Error / Urgent** (`#dc3545`, `#dc2626`): Validation errors, urgent suggestion tier.
-- **Success / Normal** (`#16a34a`): Positive health indicators, optimal stat status.
+- **Success** (`#16a34a`, `--color-success`): fills, such as the upload done circle. Not for text: it is 3.30:1 on white. Positive text, such as a normal stat status and the feedback thank-you, uses the text green `#007c6a` (`--color-brand-text`, US-20 AC4a).
 - **Warning / Attention** (`#fd7e14`): Attention suggestion tier, at-risk metrics.
 - **Caution** (`#ea580c`): Attention stat status (between warning and urgent).
 - **Info / Muted Warning** (`#d97706`): Info stat status.
@@ -116,7 +116,7 @@ System font stack — renders native on every OS with zero FOIT/FOUT:
 ### Stat Cards (`.stat-card`)
 - Background: `#fff`, radius `8px`, `0 1px 2px rgba(0,0,0,0.05)` shadow
 - Centered text: label at 12px `#666`, value at 20px weight 600 `#111`
-- Status line at 11px weight 500: normal=`#16a34a`, info=`#d97706`, attention=`#ea580c`, urgent=`#dc2626`
+- Status line at 11px weight 500: normal=`#007c6a` (`--color-brand-text`, US-20 AC4a), info=`#d97706`, attention=`#ea580c`, urgent=`#dc2626`
 - Clickable cards expand to full grid width (`grid-column: 1 / -1`) and show detail text
 - Grid: `repeat(3, 1fr)` desktop, `repeat(2, 1fr)` mobile
 

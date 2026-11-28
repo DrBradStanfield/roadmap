@@ -651,7 +651,7 @@
 }
 
 .stat-status.status-normal {
-  color: #16a34a;
+  color: var(--color-brand-text);
 }
 
 .stat-status.status-info {
@@ -1537,7 +1537,7 @@
 }
 
 .feedback-success {
-  color: var(--color-success);
+  color: var(--color-brand-text);
   font-size: 14px;
   font-weight: 500;
   margin: 0;
