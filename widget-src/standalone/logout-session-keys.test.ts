@@ -32,6 +32,6 @@ describe('US-09 AC68: log-off clears the chat session and lift keys', () => {
     await connect.logOff(backend);
     expect(CLEARED.filter((key) => localStorage.getItem(key) !== null)).toEqual([]);
     expect(localStorage.getItem('hr_reminders_switch_cancelled')).toBe('test-token-kept'); // US-17 AC12
-    expect(localStorage.getItem('hr_anthropic_key')).toBe('test-key-kept'); // owner decision pending
+    expect(localStorage.getItem('hr_anthropic_key')).toBe('test-key-kept'); // kept: see AC68
   });
 });

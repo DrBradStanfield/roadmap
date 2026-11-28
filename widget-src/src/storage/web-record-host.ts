@@ -201,7 +201,8 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       pending: { get: isSyncPending, set: markSyncPending, clear: clearSyncPending },
       lifted: {
         get: () => safeGetItem(LIFTED_REVISION_KEY),
-        set: (revision: string) => safeSetItem(LIFTED_REVISION_KEY, revision),
+        // Not after a log-off since the sign-in began (US-09 AC68).
+        set: (revision: string) => { if (openedUnder === logOffId()) safeSetItem(LIFTED_REVISION_KEY, revision); },
         clear: () => safeRemoveItem(LIFTED_REVISION_KEY),
       },
       writesStopped: roadmapLocalWritesStopped,
