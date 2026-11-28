@@ -26,6 +26,7 @@ vi.mock('../lib/product-events.server', async (importOriginal) => ({
 }));
 
 import { action } from './api.feedback';
+import { authenticate } from '../shopify.server';
 import { SMALL_BODY_CAP } from '../lib/capped-body.server';
 import { streamingPost } from '../lib/capped-body.test-helpers';
 import { forgedQuery, proxyPairs, signedQuery, TEST_PROXY_SECRET } from '../lib/app-proxy.test-helpers';
@@ -96,6 +97,18 @@ describe('US-19 AC2a: the schema has no website key', () => {
     });
     expect(res.status).toBe(200);
     expect(sendFeedbackEmail).toHaveBeenLastCalledWith('older.widget@example.test', 'hello', null);
+  });
+});
+
+describe('US-19 AC2a: the signed proxy check runs before any work', () => {
+  it('when appProxy rejects, neither the record nor the email send runs', async () => {
+    const rejection = new Response(null, { status: 400 });
+    vi.mocked(authenticate.public.appProxy).mockRejectedValueOnce(rejection);
+    const records = recordFeedbackSubmission.mock.calls.length;
+    const sends = sendFeedbackEmail.mock.calls.length;
+    await expect(submit(proxied('198.51.100.12', '6.6.6.1'))).rejects.toBe(rejection);
+    expect(recordFeedbackSubmission.mock.calls.length).toBe(records);
+    expect(sendFeedbackEmail.mock.calls.length).toBe(sends);
   });
 });
 
