@@ -85,7 +85,7 @@ describe('US-17 AC14: a send with no error and no id is not a sent reminder', ()
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 
-  // Every sender against every answer with no usable id, so a sender that
+  // Every sender against three answers with no usable id, so a sender that
   // drops the shared check for its own partial copy fails here.
   const NO_ID_ANSWERS = [['a 2xx body with no id', NO_ID_BODY], ['no data at all', NO_DATA], ['an empty id', EMPTY_ID]] as const;
 
