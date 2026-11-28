@@ -8,7 +8,7 @@ import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
 import { psaNextDue, psaRaised, psaRuleHolds, raisedPsaCards } from './psa-schedule';
 import { weightCascade, lipidCascade, type WeightStep } from './medication-cascades';
 import { BP_WEIGHT_MEDICINE, LIPID_INHERITED, LIPID_VERY_HIGH_RISK, MULTIVITAMIN_VIEW, RETINOID_TEXT, REASON_HBA1C_DIABETES, REASON_HBA1C_PREDIABETES, REASON_WAIST,
-  bpStage1Target, doseCardText, glp1Description, lipidBorderlineText, lipidStepCard, lipidTargetText, lpaLipidTargetNote, measureBpTarget, proteinText, weightMedIntroText, weightStepText } from './card-wording';
+  doseCardText, glp1Description, lipidBorderlineText, lipidStepCard, lipidTargetText, lpaLipidTargetNote, proteinText, weightMedIntroText, weightStepText } from './card-wording';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
   type UnitSystem,
@@ -271,7 +271,7 @@ export function generateSuggestions(
       priority: 'attention',
       ...(inputs.pressureOrder
         ? { title: 'Check your blood pressure reading', description: 'Your last reading looks swapped: the top number (systolic) should be higher than the bottom (diastolic). Check it and add it again.' }
-        : { title: 'Measure your blood pressure', description: `High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. ${measureBpTarget(results.age)}` }),
+        : { title: 'Measure your blood pressure', description: 'High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you\'re frail).' }),
     });
   }
 
@@ -741,7 +741,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'attention',
         title: BP_TIER_LABEL.stage1,
-        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. ${bpStage1Target(results.age)}\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <${bpTargetFor(results.age)}/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
       });
     }
   }

@@ -167,7 +167,7 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 72g",
-          "description": "Dr Brad suggests 72g of protein a day, from your ideal body weight of 60.0 kg, to support muscle.",
+          "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
           "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
@@ -376,25 +376,15 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.",
+          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.",
           "ingredients": [],
-          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
             "ISH/ESH 2023",
-            "ACC/AHA 2025",
-            "ESC 2024",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
-            {
-              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
-              "url": "https://doi.org/10.1161/HYP.0000000000000249"
-            },
-            {
-              "label": "McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)",
-              "url": "https://doi.org/10.1093/eurheartj/ehae178"
-            },
             {
               "label": "Charchar 2023 – ISH lifestyle management of hypertension",
               "url": "https://doi.org/10.1097/HJH.0000000000003563"
@@ -418,6 +408,10 @@
             {
               "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
               "url": "https://doi.org/10.1136/heartjnl-2024-324170"
+            },
+            {
+              "label": "FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b"
             }
           ]
         },
@@ -1007,7 +1001,7 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 72g",
-          "description": "Dr Brad suggests 72g of protein a day, from your ideal body weight of 60.0 kg, to support muscle.",
+          "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
           "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
@@ -1234,25 +1228,15 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.",
+          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.",
           "ingredients": [],
-          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
             "ISH/ESH 2023",
-            "ACC/AHA 2025",
-            "ESC 2024",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
-            {
-              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
-              "url": "https://doi.org/10.1161/HYP.0000000000000249"
-            },
-            {
-              "label": "McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)",
-              "url": "https://doi.org/10.1093/eurheartj/ehae178"
-            },
             {
               "label": "Charchar 2023 – ISH lifestyle management of hypertension",
               "url": "https://doi.org/10.1097/HJH.0000000000003563"
@@ -1276,6 +1260,10 @@
             {
               "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
               "url": "https://doi.org/10.1136/heartjnl-2024-324170"
+            },
+            {
+              "label": "FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b"
             }
           ]
         },
@@ -1865,7 +1853,7 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 72g",
-          "description": "Dr Brad suggests 72g of protein a day, from your ideal body weight of 60.0 kg, to support muscle.",
+          "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
           "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
@@ -2092,25 +2080,15 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.",
+          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.",
           "ingredients": [],
-          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
             "ISH/ESH 2023",
-            "ACC/AHA 2025",
-            "ESC 2024",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
-            {
-              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
-              "url": "https://doi.org/10.1161/HYP.0000000000000249"
-            },
-            {
-              "label": "McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)",
-              "url": "https://doi.org/10.1093/eurheartj/ehae178"
-            },
             {
               "label": "Charchar 2023 – ISH lifestyle management of hypertension",
               "url": "https://doi.org/10.1097/HJH.0000000000003563"
@@ -2134,6 +2112,10 @@
             {
               "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
               "url": "https://doi.org/10.1136/heartjnl-2024-324170"
+            },
+            {
+              "label": "FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b"
             }
           ]
         },
@@ -2870,20 +2852,15 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Measure your blood pressure",
-          "description": "High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. The ACC/AHA guideline (2025) aims for a top number below 130. Dr Brad aims for below 120/80 under 65 and 130/80 from 65.",
+          "description": "High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you're frail).",
           "ingredients": [],
-          "reason": "High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing the SPRINT and ESPRIT trials.",
+          "reason": "High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThis plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you're frail.",
           "guidelines": [
-            "ACC/AHA 2025",
             "ACC/AHA 2017",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
-            {
-              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
-              "url": "https://doi.org/10.1161/HYP.0000000000000249"
-            },
             {
               "label": "Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)",
               "url": "https://doi.org/10.1161/HYP.0000000000000065"
@@ -2903,7 +2880,7 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 72g",
-          "description": "Dr Brad suggests 72g of protein a day, from your ideal body weight of 60.0 kg, to support muscle.",
+          "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
           "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
@@ -3730,7 +3707,7 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 94g",
-          "description": "Dr Brad suggests 94g of protein a day, from your ideal body weight of 172 lbs, to support muscle.",
+          "description": "Based on your ideal body weight of 172 lbs, aim for 94g of protein daily. This supports muscle maintenance and metabolic health.",
           "ingredients": [],
           "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
@@ -4055,25 +4032,15 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 138/86 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nIncrease potassium-rich foods (3,500–5,000mg/day).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.",
+          "description": "Your BP of 138/86 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nIncrease potassium-rich foods (3,500–5,000mg/day).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.",
           "ingredients": [],
-          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
             "ISH/ESH 2023",
-            "ACC/AHA 2025",
-            "ESC 2024",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
-            {
-              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
-              "url": "https://doi.org/10.1161/HYP.0000000000000249"
-            },
-            {
-              "label": "McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)",
-              "url": "https://doi.org/10.1093/eurheartj/ehae178"
-            },
             {
               "label": "Charchar 2023 – ISH lifestyle management of hypertension",
               "url": "https://doi.org/10.1097/HJH.0000000000003563"
@@ -4097,6 +4064,10 @@
             {
               "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
               "url": "https://doi.org/10.1136/heartjnl-2024-324170"
+            },
+            {
+              "label": "FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b"
             }
           ]
         },

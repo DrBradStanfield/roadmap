@@ -200,7 +200,7 @@ describe('US-07 AC24: weight and diabetes cards', () => {
     const meds = { ...onGlp1, sglt2i: { drug: 'empagliflozin' } } as MedicationInputs;
     const met = (inputs: Partial<HealthInputs>) => card(weightPlan(31, inputs, meds), 'weight-med-metformin').description;
     expect(met({ hba1c: hba1cPct(6.5) })).toMatch(/^If type 2 diabetes is confirmed, Metformin is a long-used diabetes medicine\./);
-    expect(met({ hba1c: hba1cPct(5.7) })).toBe('For prediabetes, in a large trial Metformin cut the move to diabetes by about a third. Consider discussing it with your doctor.');
+    expect(met({ hba1c: hba1cPct(5.7) })).toBe('For prediabetes, diabetes guidelines consider Metformin for some people at high risk. In a large trial it cut the move to diabetes by about a third. Consider discussing it with your doctor.');
     expect(met({ hba1c: hba1cPct(6.4) })).toMatch(/^For prediabetes/);
     for (const inputs of [{}, { hba1c: hba1cPct(5.6) }]) {
       expect(met(inputs)).toBe('Guidelines advise against medicines for other conditions only to lose weight. Dr Brad includes Metformin as a later step. Extended-release forms may cause fewer stomach side effects. Consider discussing it with your doctor.');
@@ -212,24 +212,17 @@ describe('US-07 AC25: blood pressure cards', () => {
   const stage1 = (birthYear: number | undefined) => card(calculateHealthResults(
     { heightCm: 175, sex: 'male', ...(birthYear ? { birthYear } : {}), systolicBp: 135, diastolicBp: 82 }, 'si', undefined, undefined, undefined, new Date(Date.UTC(2026, 6, 1))).suggestions, 'bp-stage1').description;
 
-  it('B1: under 65, 65 and over, and no birth year', () => {
-    expect(stage1(1962)).toContain('Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65.\n\n');
-    expect(stage1(1961)).toContain('Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130. Dr Brad aims for below 130/80 from 65.\n\n');
-    expect(stage1(undefined)).toContain('Dr Brad aims for below 120/80 under 65 and below 130/80 from 65. Add your birth year to see yours.\n\n');
-    expect(stage1(1962)).not.toContain('Target is');
-  });
-
-  it('B2: measure your blood pressure, by age', () => {
-    const measure = (birthYear?: number) => card(calculateHealthResults({ heightCm: 175, sex: 'male', ...(birthYear ? { birthYear } : {}) }, 'si', undefined, undefined, undefined, new Date(Date.UTC(2026, 6, 1))).suggestions, 'measure-bp').description;
-    expect(measure(1962)).toMatch(/add your reading\. The ACC\/AHA guideline \(2025\) aims for a top number below 130\. Dr Brad aims for below 120\/80 under 65 and 130\/80 from 65\.$/);
-    expect(measure()).toMatch(/Dr Brad aims for below 120\/80 under 65 and 130\/80 from 65\.$/);
-    expect(measure(1961)).toMatch(/aims for a top number below 130\. Dr Brad aims for below 130\/80 from 65\.$/);
-    expect(measure(1962)).not.toContain('frail');
+  // B1 and B2 are held at their earlier words until the ACC/AHA 2025 goal wording is read in the guideline itself.
+  it('B1, B2 (held): the stage 1 target and the measure card keep their earlier words', () => {
+    expect(stage1(1962)).toContain('Consider discussing it with your doctor. Target is <120/80.\n\n');
+    expect(stage1(1961)).toContain('Consider discussing it with your doctor. Target is <130/80.\n\n');
+    const measure = card(calculateHealthResults({ heightCm: 175, sex: 'male', birthYear: 1962 }, 'si', undefined, undefined, undefined, new Date(Date.UTC(2026, 6, 1))).suggestions, 'measure-bp').description;
+    expect(measure).toMatch(/Aim for below 120\/80 \(130\/80 if you're frail\)\.$/);
   });
 
   it('B3: the weight-medicine line in stage 1 and 2 cards', () => {
     const cards = plan({ weightKg: 95, systolicBp: 145, diastolicBp: 92 });
-    expect(card(cards, 'bp-stage2').description).toContain('Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.');
+    expect(card(cards, 'bp-stage2').description).toContain('Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.');
   });
 });
 
@@ -240,8 +233,9 @@ describe('US-07 AC26: protein card', () => {
     return generateSuggestions({ heightCm: 175, sex: 'male' }, results, 'si');
   }
 
-  it('P1: eGFR 60 or more, or unknown', () => {
-    for (const e of [undefined, 60, 90]) expect(protein(e)).toBe('Dr Brad suggests 89g of protein a day, from your ideal body weight of 73.8 kg, to support muscle.');
+  // P1 is held at its earlier words until the 0.8 g/kg allowance is read in the IOM text itself.
+  it('P1 (held): eGFR 60 or more, or unknown', () => {
+    for (const e of [undefined, 60, 90]) expect(protein(e)).toBe('Based on your ideal body weight of 73.8 kg, aim for 89g of protein daily. This supports muscle maintenance and metabolic health.');
   });
   it('P2: eGFR 45 to 59', () => {
     for (const e of [45, 59]) expect(protein(e)).toBe('With reduced kidney function, kidney guidelines (KDIGO 2024) suggest about 0.8 g of protein per kg of body weight a day. Dr Brad suggests 89g a day, from your ideal body weight of 73.8 kg. Discuss the right amount with your doctor.');
@@ -249,7 +243,7 @@ describe('US-07 AC26: protein card', () => {
   it('P2 needs an exact eGFR: one printed as a limit ("> 50") keeps P1\'s words (US-12 AC20)', () => {
     const results: HealthResults = { heightCm: 175, idealBodyWeight: 73.8, proteinTarget: 89, age: 40, suggestions: [], eGFR: 50 };
     const limited: HealthInputs = { heightCm: 175, sex: 'male', limits: { labEgfr: { comparator: '>', bound: 50, graded: true } } };
-    expect(card(generateSuggestions(limited, results, 'si'), 'protein-target').description).toMatch(/^Dr Brad suggests 89g of protein a day/);
+    expect(card(generateSuggestions(limited, results, 'si'), 'protein-target').description).toMatch(/^Based on your ideal body weight of 73\.8 kg, aim for 89g of protein daily\./);
   });
   it('P3: eGFR below 45', () => {
     expect(protein(44)).toBe('With reduced kidney function, kidney guidelines (KDIGO 2024) suggest about 0.8 g of protein per kg of body weight a day. Dr Brad lowers his target to 89g a day, from your ideal body weight of 73.8 kg. Discuss the right amount with your doctor.');
@@ -315,7 +309,7 @@ describe('US-07 AC23 to AC27: no dose, strength or dropped brand on a card face'
     const cards = scenarios[0];
     expect(card(cards, 'supplement-creatine').description).toContain('creatine (3–5 g/day)');
     expect(card(cards, 'supplement-omega3').description).toContain('up to 1 g a day of EPA and DHA');
-    expect(card(cards, 'protein-target').description).toMatch(/\d+g of protein a day/);
+    expect(card(cards, 'protein-target').description).toMatch(/\d+g of protein daily/);
   });
 
   it('the dose pattern would catch the words it replaced', () => {

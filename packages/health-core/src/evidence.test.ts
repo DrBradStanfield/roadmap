@@ -77,8 +77,8 @@ describe('VO2 max bands evidence (US-56 AC8)', () => {
 describe('metformin cites the Diabetes Prevention Program trial (US-07 AC1)', () => {
   it('cites Knowler 2002 beside Lee 2021 and says about a third, less than lifestyle', () => {
     const e = SUGGESTION_EVIDENCE['weight-med-metformin'];
-    // US-07 AC24: the Endocrine Society guideline follows, for the step that is Dr Brad's.
-    expect(e.references.map(r => r.url)).toEqual(['https://doi.org/10.1056/NEJMoa012512', 'https://doi.org/10.2337/dc21-1046', 'https://doi.org/10.1210/jc.2014-3415']);
+    // US-07 AC24: the Endocrine Society guideline and the ADA 2026 prevention recommendation follow.
+    expect(e.references.map(r => r.url)).toEqual(['https://doi.org/10.1056/NEJMoa012512', 'https://doi.org/10.2337/dc21-1046', 'https://doi.org/10.1210/jc.2014-3415', 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12690170/']);
     expect(e.reason).toContain('reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more');
   });
 });

@@ -126,7 +126,7 @@ describe('US-75 blood pressure widget', () => {
     const card = tierCard(persisted());
     expect(card?.id).toBe('bp-stage1');
     expect(text).toBe(spelledOut(card!.description)); // the plan's words, line breaks and all, its abbreviation spelled out
-    expect(text).toContain('Dr Brad aims for below 130/80 from 65.'); // 65 or older
+    expect(text).toContain('Target is <130/80'); // 65 or older
     // Never reworded: the DOM text is the description, line breaks and all.
   });
 

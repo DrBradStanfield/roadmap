@@ -2,13 +2,13 @@
  * Card words that state the published guideline first and label where Dr Brad's
  * view goes further (US-07 AC23 to AC27). Doses, strengths and brand names stay off card
  * faces; Sources keep them. Each text is chosen by the predicates the plan already
- * uses (the weight trigger's reasons, the lipid cascade's statin state,
- * bpTargetFor, the eGFR bands), never by a new rule.
+ * uses (the weight trigger's reasons, the lipid cascade's statin state, the
+ * eGFR bands), never by a new rule.
  */
 import type { LipidStep, WeightStep } from './medication-cascades';
 import { canIncreaseDose } from './types';
 import { BMI_GUIDELINE_WITH_CONDITION, BMI_THRESHOLDS } from './bmi-thresholds';
-import { EGFR_THRESHOLDS, bpTargetFor } from './units';
+import { EGFR_THRESHOLDS } from './units';
 
 // ---------------------------------------------------------------- Lipids (L1, L9, L11)
 
@@ -148,29 +148,16 @@ export function weightStepText(step: Exclude<WeightStep, 'glp1' | 'glp1-dose'>, 
     case 'metformin': return diabetes
       ? 'If type 2 diabetes is confirmed, Metformin is a long-used diabetes medicine. Extended-release forms may cause fewer stomach side effects. Consider discussing it with your doctor.'
       : reasons.includes(REASON_HBA1C_PREDIABETES)
-        ? 'For prediabetes, in a large trial Metformin cut the move to diabetes by about a third. Consider discussing it with your doctor.'
+        ? 'For prediabetes, diabetes guidelines consider Metformin for some people at high risk. In a large trial it cut the move to diabetes by about a third. Consider discussing it with your doctor.'
         : `Guidelines advise against medicines for other conditions only to lose weight. Dr Brad includes Metformin as a later step. Extended-release forms may cause fewer stomach side effects. Consider discussing it with your doctor.`;
   }
 }
 
-// ---------------------------------------------------------------- Blood pressure (B1 to B3)
-
-const ACC_AHA_BP = 'The ACC/AHA guideline (2025) aims for a top number below 130';
-
-/** B1: the stage 1 card's target sentences, by the age bpTargetFor reads. */
-export function bpStage1Target(age: number | undefined): string {
-  if (bpTargetFor(age) === 130) return `${ACC_AHA_BP}. Dr Brad aims for below 130/80 from 65.`;
-  const both = `${ACC_AHA_BP}; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65`;
-  return age === undefined ? `${both} and below 130/80 from 65. Add your birth year to see yours.` : `${both}.`;
-}
-
-/** B2: the measure-your-blood-pressure card's target sentences. */
-export const measureBpTarget = (age: number | undefined) => bpTargetFor(age) === 130
-  ? `${ACC_AHA_BP}. Dr Brad aims for below 130/80 from 65.`
-  : `${ACC_AHA_BP}. Dr Brad aims for below 120/80 under 65 and 130/80 from 65.`;
+// ---------------------------------------------------------------- Blood pressure (B3)
+// B1 and B2 keep their earlier words until the ACC/AHA 2025 goal wording is read in the guideline itself.
 
 /** B3: the stage 1 and 2 cards' weight-medicine line. */
-export const BP_WEIGHT_MEDICINE = ' GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.';
+export const BP_WEIGHT_MEDICINE = ' GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.';
 
 // ---------------------------------------------------------------- Protein (P1 to P3)
 
@@ -189,7 +176,8 @@ export function proteinText(ckd: boolean, exactEgfr: number | undefined, grams: 
   if (exactEgfr !== undefined && exactEgfr < EGFR_THRESHOLDS.lowNormal) {
     return `${KDIGO_PROTEIN} Dr Brad suggests ${grams}g a day, from your ideal body weight of ${idealWeight}. Discuss the right amount with your doctor.`;
   }
-  return `Dr Brad suggests ${grams}g of protein a day, from your ideal body weight of ${idealWeight}, to support muscle.`;
+  // P1 keeps its earlier words until the 0.8 g/kg allowance is read in the IOM text itself.
+  return `Based on your ideal body weight of ${idealWeight}, aim for ${grams}g of protein daily. This supports muscle maintenance and metabolic health.`;
 }
 
 // ---------------------------------------------------------------- Skin and supplements (K1, K3, K4)

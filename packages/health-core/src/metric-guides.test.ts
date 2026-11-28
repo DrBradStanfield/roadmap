@@ -261,11 +261,11 @@ describe('METRIC_GUIDES (US-58)', () => {
     // sections, appended 2026-11-09 (US-06 AC20); [159], Siegel 2019 for colorectal screening from 35,
     // appended 2026-11-12 (US-07 AC1h); [160], DermNet on retinoid irritation, appended 2026-11-28 (US-07 AC21);
     // [161], [162], USPSTF 2025 and BHOF 2022 for bone density, appended 2026-11-28 (US-07 AC22);
-    // [163]-[170], the guidelines and labels the cards now name first, appended 2026-11-28 (US-07 AC23 to AC26).
-    expect(REF_LIST).toHaveLength(170);
+    // [163]-[168], the guidelines and labels the cards now name first, appended 2026-11-28 (US-07 AC23 to AC26).
+    expect(REF_LIST).toHaveLength(168);
     expect(numberOf('https://doi.org/10.1056/NEJMoa012512')).toBe(122);
     expect(numberOf('https://doi.org/10.1007/s40279-015-0365-0')).toBe(108);
-    expect(Math.max(...cited)).toBe(170);
+    expect(Math.max(...cited)).toBe(168);
   });
 
   it('AC7: no clinical claim cites an Apple source (Brad\'s decision 2)', () => {

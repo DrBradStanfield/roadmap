@@ -424,7 +424,7 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
     // No birth month: the onboarding is not done, and a saved blood test opens the whole form (US-62 AC13).
     const view = await guestWith({ sex: 'male', birthYear: 1958, weight: 80, bp: [135, 85], lipids: { ldl: 2 } });
     await waitFor(() => expect(Array.from(view.container.querySelectorAll('.suggestion-desc'))
-      .some((d) => d.textContent?.includes('Dr Brad aims for below 130/80 from 65.'))).toBe(true));
+      .some((d) => d.textContent?.includes('Target is <130/80'))).toBe(true));
     expect(await bpHint(view.container)).toBe('Target: <130/80 mmHg');
   });
 
@@ -433,7 +433,7 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
     localStorage.setItem('health_roadmap_data', SAVED_WEIGHT_MIRROR);
     const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80, bp: [135, 85], lipids: { ldl: 2 } }); // the blood test opens the whole form
     await waitFor(() => expect(Array.from(view.container.querySelectorAll('.suggestion-desc'))
-      .some((d) => d.textContent?.includes('Dr Brad aims for below 120/80 under 65 and below 130/80 from 65. Add your birth year to see yours.'))).toBe(true));
+      .some((d) => d.textContent?.includes('Target is <120/80'))).toBe(true));
     const matrixBpTarget = await waitFor(() => {
       const label = Array.from(view.container.querySelectorAll('.bt-ref-label')).find((l) => l.textContent?.includes('/80 mmHg'));
       if (!label) throw new Error('no vitals matrix on the page');

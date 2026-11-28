@@ -210,7 +210,7 @@ describe('US-07 AC1i: roadmap_text.html (spec lines 108-109)', () => {
   });
 
   it('no new reference: [159] is still Siegel 2019 ([160] came later, US-07 AC21)', () => {
-    expect(REF_LIST).toHaveLength(170); // [161], [162] (US-07 AC22) and [163]-[170] (US-07 AC23 to AC26) were appended later
+    expect(REF_LIST).toHaveLength(168); // [161], [162] (US-07 AC22) and [163]-[168] (US-07 AC23 to AC26) were appended later
     expect(REF_LIST[158]).toContain('Global patterns and trends in colorectal cancer incidence in young adults');
   });
 });

@@ -121,15 +121,15 @@ const REFS_T2D_LICENCE: SuggestionReference[] = [
   { label: 'FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)', url: 'https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf' },
   { label: 'FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79' },
 ];
-const REF_JONES_2025: SuggestionReference = { label: 'Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)', url: 'https://doi.org/10.1161/HYP.0000000000000249' };
-const REF_MCEVOY_2024: SuggestionReference = { label: 'McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehae178' };
-const REF_KRUMHOLZ_2024: SuggestionReference = { label: 'Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)', url: 'https://doi.org/10.1136/heartjnl-2024-324170' };
+/** B3: Tirzepatide's and Semaglutide's blood pressure effect (US-07 AC25). */
+const REFS_GLP1_BP: SuggestionReference[] = [
+  { label: 'Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)', url: 'https://doi.org/10.1136/heartjnl-2024-324170' },
+  { label: 'FDA label – Wegovy (semaglutide), 14 Clinical Studies: systolic blood pressure vs placebo (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ee06186f-2aa3-4990-a760-757579d8f77b' },
+];
 const REF_KDIGO_2024: SuggestionReference = { label: 'KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)', url: 'https://doi.org/10.1016/j.kint.2023.10.018' };
 const REF_USPSTF_VITAMINS_2022: SuggestionReference = { label: 'USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)', url: 'https://doi.org/10.1001/jama.2022.8970' };
 /** L2, L12: the 2019 European order and Dr Brad's (US-07 AC23). */
 const EZETIMIBE_ORDER = 'The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.';
-/** B1: the guideline sentences, then Dr Brad's age-split target (US-07 AC25). */
-const BP_TARGET_NOTE = 'The ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT.';
 
 const REFS_BP_TRIALS: SuggestionReference[] = [
   { label: 'SPRINT 2015 – Intensive BP lowering <120 mmHg (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1511939' },
@@ -298,12 +298,13 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-metformin': {
-    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that Metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. Extended-release formulations cause fewer gastrointestinal side effects.\n\nWith an HbA1c below the prediabetes range, no guideline recommends Metformin for weight alone, and the Endocrine Society advises against medicines approved for other conditions for weight loss alone; this step is Dr Brad\'s.',
-    guidelines: ['Endocrine Society 2015'],
+    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that Metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. The ADA\'s 2026 Standards of Care say Metformin should be considered for adults at high risk of type 2 diabetes, especially those aged 25 to 59 with a BMI of 35 or more, higher fasting glucose or HbA1c, or past gestational diabetes. Extended-release formulations cause fewer gastrointestinal side effects.\n\nWith an HbA1c below the prediabetes range, no guideline recommends Metformin for weight alone, and the Endocrine Society advises against medicines approved for other conditions for weight loss alone; this step is Dr Brad\'s.',
+    guidelines: ['ADA Standards of Care', 'Endocrine Society 2015'],
     references: [
       { label: 'Knowler 2002 – Diabetes Prevention Program: lifestyle or metformin & incidence of type 2 diabetes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa012512' },
       { label: 'Lee 2021 – Metformin & mortality in Diabetes Prevention Program (Diabetes Care)', url: 'https://doi.org/10.2337/dc21-1046' },
       REF_ENDO_2015,
+      { label: 'ADA 2026 – Standards of Care in Diabetes, 3. Prevention or Delay of Diabetes: Metformin in prediabetes (Diabetes Care)', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12690170/' },
     ],
   },
 
@@ -440,9 +441,9 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Pressure ─────────────────────────────────────────
 
   'measure-bp': {
-    reason: 'High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing the SPRINT and ESPRIT trials.',
-    guidelines: ['ACC/AHA 2025', 'ACC/AHA 2017', 'SPRINT 2015', 'ESPRIT 2024'],
-    references: [REF_JONES_2025, REF_BP_2017, ...REFS_BP_TRIALS],
+    reason: 'High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThis plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you\'re frail.',
+    guidelines: ['ACC/AHA 2017', 'SPRINT 2015', 'ESPRIT 2024'],
+    references: [REF_BP_2017, ...REFS_BP_TRIALS],
   },
 
   'bp-crisis': {
@@ -455,15 +456,15 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-stage2': {
-    reason: 'Blood pressure in the stage 2 range (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, guidelines typically recommend medication alongside lifestyle measures. Discuss it with your doctor.\n\n' + BP_TARGET_NOTE + ' The SPRINT trial (9,300 participants) showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
-    guidelines: [...GUIDELINES_BP, 'ACC/AHA 2025', 'ESC 2024', 'SPRINT 2015', 'ESPRIT 2024'],
-    references: [REF_JONES_2025, REF_MCEVOY_2024, ...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS, REF_KRUMHOLZ_2024],
+    reason: 'Blood pressure in the stage 2 range (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, guidelines typically recommend medication alongside lifestyle measures. Discuss it with your doctor.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
+    guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
+    references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS, ...REFS_GLP1_BP],
   },
 
   'bp-stage1': {
-    reason: 'Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\n' + BP_TARGET_NOTE + ' The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
-    guidelines: [...GUIDELINES_BP, 'ACC/AHA 2025', 'ESC 2024', 'SPRINT 2015', 'ESPRIT 2024'],
-    references: [REF_JONES_2025, REF_MCEVOY_2024, ...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS, REF_KRUMHOLZ_2024],
+    reason: 'Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
+    guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
+    references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS, ...REFS_GLP1_BP],
   },
 
   // ── Cholesterol Medication Cascade ─────────────────────────

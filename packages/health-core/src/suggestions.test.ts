@@ -438,7 +438,7 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
-      expect(bpSuggestion?.description).toContain('Dr Brad aims for below 120/80 under 65.');
+      expect(bpSuggestion?.description).toContain('Target is <120/80');
     });
 
     it('shows target <130/80 for stage 1 when age >= 65', () => {
@@ -446,7 +446,7 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
-      expect(bpSuggestion?.description).toContain('Dr Brad aims for below 130/80 from 65.');
+      expect(bpSuggestion?.description).toContain('Target is <130/80');
     });
 
     it('triggers on systolic alone when diastolic is normal', () => {
@@ -1065,16 +1065,15 @@ describe('generateSuggestions', () => {
       expect(card?.priority).toBe('attention');
       expect(card?.category).toBe('blood_pressure');
       expect(card?.title).toBe('Measure your blood pressure');
-      expect(card?.description).toBe('High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. The ACC/AHA guideline (2025) aims for a top number below 130. Dr Brad aims for below 120/80 under 65 and 130/80 from 65.');
-      // US-07 AC25 (Brad 2026-11-28): the target follows bpTargetFor's age line; it replaces the 2 Nov frailty wording.
-      for (const age of [40, 64, undefined]) expect(bpCard({}, { age })?.description, `age ${age}`).toContain('Dr Brad aims for below 120/80 under 65 and 130/80 from 65.');
-      for (const age of [65, 70]) expect(bpCard({}, { age })?.description, `age ${age}`).toMatch(/Dr Brad aims for below 130\/80 from 65\.$/);
+      expect(card?.description).toBe('High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you\'re frail).');
+      // Brad 2026-11-02: one target sentence at every age, frailty named; this card does not read the age rule.
+      for (const age of [40, 70, undefined]) expect(bpCard({}, { age })?.description, `age ${age}`).toContain("Aim for below 120/80 (130/80 if you're frail).");
       // Its evidence reuses the plan's blood pressure references.
       expect(card?.references?.map(r => r.url)).toContain('https://doi.org/10.1161/HYP.0000000000000065');
       expect(card?.reason).toContain('no symptoms');
-      // US-07 AC25: the guideline first, then Dr Brad's age-split target.
-      expect(card?.reason).toContain('The ACC/AHA guideline (2025) aims for a top number below 130 mmHg. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing the SPRINT and ESPRIT trials.');
-      expect(card?.reason).not.toMatch(/frail/);
+      // Brad 2026-11-02: the reason's target has no age either.
+      expect(card?.reason).toContain("This plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you're frail.");
+      expect(card?.reason).not.toMatch(/65/);
     });
 
     it('asks to check a reading the plan left out as swapped, with the approved text (Brad 2026-11-02)', () => {
@@ -2368,7 +2367,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('The BP weight paragraph follows the weight-medication trigger (US-06 AC6)', () => {
-    const PARAGRAPH = 'Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.';
+    const PARAGRAPH = 'Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.';
 
     it('shows at BMI 26 with a healthy waist and BP 135/85', () => {
       const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 26, waistToHeightRatio: 0.46 });
@@ -3878,7 +3877,7 @@ describe('US-07 AC6: who the plan is for', () => {
     // Adversary R1 (2026-10-14, orchestrator's decision): the BP cards' weight
     // paragraph named GLP-1 medicines for an unknown age. The weight-loss
     // sentences stay; the GLP-1 sentence needs a known adult age.
-    const GLP1_SENTENCE = 'GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.';
+    const GLP1_SENTENCE = 'GLP-1 medicines, such as Tirzepatide or Semaglutide, may also lower blood pressure. Consider discussing them with your doctor.';
     it.each([
       ['bp-stage2', { systolicBp: 145, diastolicBp: 92 }],
       ['bp-stage1', { systolicBp: 135, diastolicBp: 85 }],
