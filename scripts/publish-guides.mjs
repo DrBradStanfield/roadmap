@@ -17,6 +17,7 @@ import { execFileSync } from 'node:child_process';
 import { requireMergedCode } from '../tools/write-gate.mjs';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
 import { norm } from './guide-compare.mjs';
+import { frontMatter } from './guide-front-matter.mjs';
 
 const API = '2025-07';
 const publish = process.argv.includes('--publish');
@@ -81,23 +82,12 @@ const files = readdirSync(guidesDir).filter((f) => f.endsWith('.md') && f !== 'R
 let differing = 0;
 for (const file of files) {
   const mdPath = new URL(file, guidesDir).pathname;
-  // The front matter is read straight from the .md, the way the slug always
-  // was: the builder's stderr would need a new line AND a capture here, which
-  // is more code than one more regex.
-  const md = readFileSync(mdPath, 'utf8');
-  // Take the whole line, then strip the quotes only when they wrap it. A
-  // one-character class would truncate `title: "The \"local-first\" guide"` at the
-  // first inner quote and publish half a title.
-  const front = (key) => {
-    const line = md.match(new RegExp(`^${key}:[ \\t]*(.*?)[ \\t]*$`, 'm'))?.[1];
-    if (!line) return undefined;
-    const quoted = line.match(/^"([\s\S]*)"$/);
-    return quoted ? quoted[1] : line;
-  };
-  const slug = front('slug');
-  const title = front('title');
+  // The front matter is read straight from the .md, by the reader the builder
+  // uses, so the article and the page take every value the same way.
+  const { slug, title, description } = frontMatter(readFileSync(mdPath, 'utf8')) ?? {};
   if (!slug || !title) throw new Error(`${file}: no slug or title in front matter`);
-  const description = front('description');
+  // The slug picks the article this overwrites, so only a handle's shape goes on.
+  if (!/^[a-z0-9-]+$/.test(slug)) throw new Error(`${file}: slug ${JSON.stringify(slug)} is not lowercase letters, digits and hyphens`);
   // The builder escapes every character of prose it puts in the page; the summary
   // is prose too, so it is escaped the same way or an & in a description ships raw.
   const summary = description ? `<p>${esc(description)}</p>` : null;
@@ -111,6 +101,8 @@ for (const file of files) {
     console.log(`\n${file} -> /blogs/guides/${slug}\n  NO ARTICLE with that handle. Not created; create it in Shopify first.`);
     continue;
   }
+  // Only the article the slug names is ever written, whatever the lookup returns.
+  if (article.handle !== slug) throw new Error(`${file}: the article Shopify returned for slug ${JSON.stringify(slug)} (id ${article.id}) has handle ${JSON.stringify(article.handle)}`);
 
   const live = article.body_html ?? '';
   // Shopify lowercases attribute names (viewBox -> viewbox) and inserts

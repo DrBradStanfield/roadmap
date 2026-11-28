@@ -13,6 +13,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
+import { frontMatter } from './guide-front-matter.mjs';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
 import { safeHref } from './build-master-html.mjs';
 
@@ -29,18 +30,11 @@ if (!mdPath) {
 const ASSETS = new URL('../docs/guides/assets/', import.meta.url);
 const md = readFileSync(mdPath, 'utf8');
 
-const fm = md.match(/^---\n([\s\S]*?)\n---\n/);
-if (!fm) {
+const meta = frontMatter(md);
+if (!meta) {
   console.error(`${mdPath}: no front matter. A guide starts with a --- block carrying at least title: and slug:.`);
   process.exit(1);
 }
-const fmRaw = fm[1];
-const meta = Object.fromEntries(
-  fmRaw.split('\n').map((l) => {
-    const i = l.indexOf(':');
-    return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, '')];
-  }),
-);
 
 // --- held HTML ------------------------------------------------------------
 // Generated HTML and code alike are parked as one-line tokens before the
@@ -220,7 +214,7 @@ const mdFile = `docs/guides/${basename(mdPath)}`;
 const repoPublic = /export const REPO_PUBLIC = true;/.test(readFileSync(new URL('../packages/health-core/src/plan.ts', import.meta.url), 'utf8'));
 const mdLink = repoPublic
   ? `<p class="rmg-md">This guide is also published as plain Markdown for AI agents: <a href="https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/${mdFile}">${mdFile}</a>. The Markdown is the master; this page is built from it.</p>`
-  : `<p class="rmg-md">This page is built from ${mdFile}, which is not public while the project’s GitHub is not. The published guide is <a href="https://drstanfield.com/blogs/guides/${meta.slug}">drstanfield.com/blogs/guides/${meta.slug}</a>.</p>`;
+  : `<p class="rmg-md">This page is built from ${mdFile}, which is not public while the project’s GitHub is not. The published guide is <a href="https://drstanfield.com/blogs/guides/${esc(meta.slug)}">drstanfield.com/blogs/guides/${esc(meta.slug)}</a>.</p>`;
 
 // Structured data for AI and search crawlers, from front matter only. "<" is
 // escaped so no value can close the script tag. Dropped by --no-script, whose
