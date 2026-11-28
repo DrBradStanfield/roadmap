@@ -26,6 +26,10 @@ export type CopyBucket = (typeof COPY_BUCKETS)[number];
 export const COPIES_OUTCOMES = ['ok', 'refused', 'unreachable', 'incomplete'] as const;
 export type CopiesOutcome = (typeof COPIES_OUTCOMES)[number];
 
+/** Whether Dropbox's token reply at a redirect return carried an `account_id`. */
+export const TOKEN_REPLY_WORDS = ['had_id', 'no_id'] as const;
+export type TokenReplyWord = (typeof TOKEN_REPLY_WORDS)[number];
+
 export interface CopiesCount {
   outcome: CopiesOutcome;
   /** Always on `ok`; on `incomplete` when a page was read (its counts so far); never otherwise. */
@@ -61,6 +65,11 @@ export function classifyIdentityRead(provider: IdentityProvider, status: number 
   if (status < 200 || status > 299) return failedStatus(status);
   if (!isObject(body)) return 'malformed';
   return IDENTITY_BODIES[provider].safeParse(body).success ? 'ok' : 'missing';
+}
+
+/** A Dropbox token reply, judged for its `account_id` only; the reply itself is not kept. */
+export function classifyTokenReply(reply: unknown): TokenReplyWord {
+  return IDENTITY_BODIES.dropbox.safeParse(reply).success ? 'had_id' : 'no_id';
 }
 
 const copiesBody = z.object({

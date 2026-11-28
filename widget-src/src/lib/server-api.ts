@@ -8,7 +8,7 @@ import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
 import { randomId } from './random-id';
 import type { SaveRetry } from '@roadmap/health-core/save-retry-words';
-import type { CopiesOutcome, CopyBucket, IdentityGrant, IdentityOutcome } from '@roadmap/health-core/cloud-identity';
+import type { CopiesOutcome, CopyBucket, IdentityGrant, IdentityOutcome, TokenReplyWord } from '@roadmap/health-core/cloud-identity';
 
 export const PROXY_PATH = '/apps/health-tool-1';
 
@@ -107,6 +107,8 @@ export interface ProductEventMetadata extends Partial<Record<UploadOutcomeKey | 
   outcome?: SaveRetry['outcome'] | IdentityOutcome | CopiesOutcome;
   /** `cloud_identity_read` (US-09 AC67): how the page's token was granted. */
   grant?: IdentityGrant;
+  /** `cloud_identity_read` (US-09 AC67), Dropbox redirect return only: whether the token reply held an account id. */
+  tokenReply?: TokenReplyWord;
   /** `drive_record_copies` (US-09 AC67): record copies Drive listed, owned and not, as buckets. */
   owned?: CopyBucket;
   notOwned?: CopyBucket;

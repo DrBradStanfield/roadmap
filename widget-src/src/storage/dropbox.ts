@@ -23,6 +23,7 @@ import { TRANSFER_DEADLINE_MS, timeoutDeadline } from '@roadmap/health-core/tran
 import { getSignIn, logOffId, setSignIn, setSignIns, safeRemoveItem, type LogOffId } from '../lib/storage';
 import { claimRedirectCancel, claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState, pkceEntry, signInUnfinished } from './pkce';
 import { refreshOnce } from './token-flight';
+import { classifyTokenReply, type TokenReplyWord } from '@roadmap/health-core/cloud-identity';
 import { isSignedOut, signInEnded } from './sign-in-state';
 
 export const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
@@ -41,7 +42,7 @@ const LIST_FOLDER_CONTINUE_URL = 'https://api.dropboxapi.com/2/files/list_folder
  *  there (spec: `host = "notify"`, `auth = "noauth"`; the cursor is the
  *  credential). It is CORS-enabled, so the browser can call it directly. */
 const LONGPOLL_URL = 'https://notify.dropboxapi.com/2/files/list_folder/longpoll';
-const ACCOUNT_URL = 'https://api.dropboxapi.com/2/users/get_current_account';
+export const ACCOUNT_URL = 'https://api.dropboxapi.com/2/users/get_current_account';
 /** Dropbox's own minimum, and its default. Seconds. */
 const LONGPOLL_TIMEOUT_S = 30;
 /** Dropbox holds a quiet long-poll its timeout plus up to 90 s of jitter
@@ -64,6 +65,9 @@ interface DropboxTokens {
   refreshToken: string;
   expiresAt: number; // epoch ms
 }
+
+/** US-09 AC67: whether this page load's redirect token reply carried an account id. Page memory only, read once. */
+let redirectTokenReply: TokenReplyWord | null = null;
 
 function loadTokens(): DropboxTokens | null {
   return getSignIn<DropboxTokens>(TOKEN_KEY);
@@ -130,6 +134,13 @@ export class DropboxAdapter implements StorageAdapter {
     });
   }
 
+  /** This load's redirect token-reply word, once; null on any other load (US-09 AC67). */
+  static takeRedirectTokenReply(): TokenReplyWord | null {
+    const word = redirectTokenReply;
+    redirectTokenReply = null;
+    return word;
+  }
+
   /** True once if the URL is OUR flow's Cancel/Back return (US-09 AC22). */
   static claimCancelledRedirect(): boolean {
     return claimRedirectCancel(PKCE_KEY);
@@ -163,7 +174,9 @@ export class DropboxAdapter implements StorageAdapter {
       throw new StorageError(`Dropbox token exchange failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status, undefined, answerOutcome(res.status));
     }
     // A body that is not JSON (a wifi sign-in page) is an incomplete reply too.
-    const json = tokenReply(await res.json().catch(() => null), true);
+    const reply: unknown = await res.json().catch(() => null);
+    const json = tokenReply(reply, true);
+    redirectTokenReply = classifyTokenReply(reply); // a word, never the id (US-09 AC67)
     const saved = setSignIns({
       [TOKEN_KEY]: { accessToken: json.access_token, refreshToken: json.refresh_token, expiresAt: Date.now() + json.expires_in * 1000 } satisfies DropboxTokens,
       [CONFIG_KEY]: {},
@@ -332,7 +345,7 @@ export class DropboxAdapter implements StorageAdapter {
     if (!this.tokens) throw new StorageError('Dropbox is not connected.', undefined, undefined, undefined, 'reconnect', 'refused'); // a forgotten sign-in
     // Refresh a minute before expiry. A page signed out sends a cached token to the refresh too, which
     // refuses it: no adapter goes on using a sign-in this page knows has ended (US-09 AC48, Codex R2).
-    if (Date.now() >= this.tokens.expiresAt - 60_000 || isSignedOut(this.id)) await this.refresh();
+    if (this.heldToken().token === null) await this.refresh();
     return this.tokens.accessToken;
   }
 

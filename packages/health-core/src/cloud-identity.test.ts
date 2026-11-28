@@ -1,7 +1,7 @@
 // US-09 AC67: the provider's answer is judged into closed words, and nothing
 // from the body comes back out. Table tests for both classifiers.
 import { describe, expect, it } from 'vitest';
-import { classifyCopies, classifyIdentityRead, copyBucket, type IdentityOutcome, type IdentityProvider } from './cloud-identity';
+import { classifyCopies, classifyIdentityRead, classifyTokenReply, copyBucket, type IdentityOutcome, type IdentityProvider } from './cloud-identity';
 
 const ID = 'test-id-one';
 
@@ -67,5 +67,18 @@ describe('classifyCopies (US-09 AC67)', () => {
 
   it('buckets a count', () => {
     expect([0, 1, 2, 100].map(copyBucket)).toEqual(['0', '1', '2+', '2+']);
+  });
+});
+
+describe('classifyTokenReply (US-09 AC67)', () => {
+  it.each([
+    [{ access_token: 'at', account_id: 'dbid:test', uid: '1' }, 'had_id'],
+    [{ access_token: 'at' }, 'no_id'],
+    [{ access_token: 'at', account_id: '' }, 'no_id'],
+    [{ access_token: 'at', account_id: 5 }, 'no_id'],
+    [null, 'no_id'],
+    ['text', 'no_id'],
+  ])('%j -> %s', (reply, word) => {
+    expect(classifyTokenReply(reply)).toBe(word);
   });
 });

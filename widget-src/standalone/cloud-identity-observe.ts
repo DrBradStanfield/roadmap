@@ -15,6 +15,7 @@ import { fetchOrFail, ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/he
 import { classifyCopies, classifyIdentityRead, type IdentityGrant, type IdentityProvider } from '@roadmap/health-core/cloud-identity';
 import { DRIVE_API } from '@roadmap/health-core/drive-rest';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
+import { ACCOUNT_URL as DROPBOX_ACCOUNT_URL } from '../src/storage/dropbox';
 import { lostSignIn } from '../src/storage/sign-in-state';
 import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
@@ -28,7 +29,6 @@ const DRIVE_ABOUT_URL = `${DRIVE_API}/about?fields=${encodeURIComponent('user(pe
 /** The record lookup's own name and space (drive-rest-record.ts), one page of 100. */
 const DRIVE_COPIES_URL = `${DRIVE_API}/files?q=${encodeURIComponent(`name='${ROADMAP_FILE_NAME}' and trashed=false`)}`
   + `&spaces=drive&fields=${encodeURIComponent('files(ownedByMe),nextPageToken,incompleteSearch')}&pageSize=100`;
-const DROPBOX_ACCOUNT_URL = 'https://api.dropboxapi.com/2/users/get_current_account';
 const GITHUB_USER_URL = 'https://api.github.com/user';
 
 interface Held { provider: IdentityProvider; token: string | null; grant: IdentityGrant }
@@ -51,8 +51,7 @@ async function ask(url: string, init: RequestInit): Promise<{ status: number | n
   }
 }
 
-function readIdentity(provider: IdentityProvider, token: string): Promise<{ status: number | null; body: unknown }> {
-  const auth = { Authorization: `Bearer ${token}` };
+function readIdentity(provider: IdentityProvider, auth: Record<string, string>): Promise<{ status: number | null; body: unknown }> {
   if (provider === 'google-drive') return ask(DRIVE_ABOUT_URL, { headers: auth });
   // The same no-argument call as the reminders' email read (dropbox.ts).
   if (provider === 'dropbox') return ask(DROPBOX_ACCOUNT_URL, { method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' }, body: 'null' });
@@ -65,22 +64,29 @@ export async function observeCloudIdentity(adapter: StorageAdapter): Promise<voi
     if (!SHOPIFY_SURFACE) return;
     const held = heldBy(adapter);
     if (!held) return;
+    // A Dropbox redirect return carries its token-reply word, and reads even if today's read is done:
+    // a sign-in usually follows a load that already read.
+    const tokenReply = held.provider === 'dropbox' ? DropboxAdapter.takeRedirectTokenReply() : null;
     const key = IDENTITY_DAY_KEY + held.provider;
     const day = new Date().toISOString().slice(0, 10);
-    if (safeGetItem(key) === day) return;
+    if (safeGetItem(key) === day && !tokenReply) return;
     // The log-off barrier: a page whose writes have stopped writes no key and asks nothing.
     if (!healthWritesAllowed() || ownLogOffHasBegun()) return;
     safeSetItem(key, day);
     const { provider, token, grant } = held;
+    const read = { provider, grant, ...(tokenReply ? { tokenReply } : {}) };
     if (!token || lostSignIn()) {
-      trackProductEvent('cloud_identity_read', { provider, grant, outcome: 'skipped' });
+      trackProductEvent('cloud_identity_read', { ...read, outcome: 'skipped' });
       return;
     }
-    const identity = await readIdentity(provider, token);
-    trackProductEvent('cloud_identity_read', { provider, grant, outcome: classifyIdentityRead(provider, identity.status, identity.body) });
-    if (provider !== 'google-drive') return;
-    const copies = await ask(DRIVE_COPIES_URL, { headers: { Authorization: `Bearer ${token}` } });
-    trackProductEvent('drive_record_copies', classifyCopies(copies.status, copies.body));
+    const auth = { Authorization: `Bearer ${token}` };
+    // Drive's two calls are independent, so they run together; the events keep their order.
+    const [identity, copies] = await Promise.all([
+      readIdentity(provider, auth),
+      provider === 'google-drive' ? ask(DRIVE_COPIES_URL, { headers: auth }) : null,
+    ]);
+    trackProductEvent('cloud_identity_read', { ...read, outcome: classifyIdentityRead(provider, identity.status, identity.body) });
+    if (copies) trackProductEvent('drive_record_copies', classifyCopies(copies.status, copies.body));
   } catch {
     /* a measurement never breaks the page */
   }

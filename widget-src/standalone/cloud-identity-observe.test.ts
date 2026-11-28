@@ -53,6 +53,7 @@ beforeEach(() => {
   answers = {};
   fetchMock.mockClear();
   trackProductEvent.mockClear();
+  DropboxAdapter.takeRedirectTokenReply(); // page memory from another test's return
   vi.stubGlobal('fetch', fetchMock);
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -133,6 +134,48 @@ describe('observeCloudIdentity (US-09 AC67)', () => {
       ['cloud_identity_read', { provider: 'dropbox', grant: 'redirect', outcome: 'ok' }],
       ['cloud_identity_read', { provider: 'github', grant: 'pat', outcome: 'ok' }],
     ]);
+  });
+
+  describe('a Dropbox redirect return', () => {
+    const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
+    async function returnFromDropbox(reply: object): Promise<DropboxAdapter> {
+      sessionStorage.setItem('health_roadmap_dropbox_pkce', JSON.stringify({ verifier: 'v', state: 's', gen: null }));
+      window.history.replaceState({}, '', '/?code=c&state=s');
+      answers[DROPBOX_TOKEN_URL] = { status: 200, body: { access_token: 'test-token-good', refresh_token: 'test-refresh', expires_in: 14400, ...reply } };
+      answers[DROPBOX_ACCOUNT] = { status: 200, body: { account_id: 'dbid:test' } };
+      const adapter = await DropboxAdapter.completeRedirect({ clientId: 'c', redirectUri: `${window.location.origin}/` });
+      fetchMock.mockClear();
+      return adapter!;
+    }
+
+    it('sends had_id, and reads though today was already read', async () => {
+      localStorage.setItem(`${IDENTITY_DAY_KEY}dropbox`, today());
+      await observeCloudIdentity(await returnFromDropbox({ account_id: 'dbid:test' }));
+      expect(urls()).toEqual([DROPBOX_ACCOUNT]);
+      expect(trackProductEvent.mock.calls).toEqual([['cloud_identity_read', { provider: 'dropbox', grant: 'redirect', outcome: 'ok', tokenReply: 'had_id' }]]);
+    });
+
+    it('sends no_id when the reply had no account id', async () => {
+      await observeCloudIdentity(await returnFromDropbox({}));
+      expect(trackProductEvent.mock.calls).toEqual([['cloud_identity_read', { provider: 'dropbox', grant: 'redirect', outcome: 'ok', tokenReply: 'no_id' }]]);
+    });
+
+    it('is read once: the next run that day is skipped as usual, with no tokenReply', async () => {
+      const adapter = await returnFromDropbox({ account_id: 'dbid:test' });
+      await observeCloudIdentity(adapter);
+      trackProductEvent.mockClear();
+      fetchMock.mockClear();
+      await observeCloudIdentity(adapter);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(trackProductEvent).not.toHaveBeenCalled();
+    });
+  });
+
+  it('a load that is not a redirect return carries no tokenReply', async () => {
+    answers = { [DROPBOX_ACCOUNT]: { status: 200, body: { account_id: 'dbid:test' } } };
+    localStorage.setItem(DROPBOX_TOKENS, JSON.stringify({ accessToken: 'test-token-good', refreshToken: 'test-refresh', expiresAt: Date.now() + HOUR }));
+    await observeCloudIdentity(new DropboxAdapter({ clientId: 'c', redirectUri: 'https://example.test/' }));
+    expect(trackProductEvent.mock.calls).toEqual([['cloud_identity_read', { provider: 'dropbox', grant: 'redirect', outcome: 'ok' }]]);
   });
 
   it('a guest page: no call, no event, no key', async () => {

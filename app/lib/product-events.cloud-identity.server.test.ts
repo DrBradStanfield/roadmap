@@ -50,6 +50,28 @@ describe('US-09 AC67 event shapes', () => {
     expect(parseProductEvent(read())).toBeNull();
   });
 
+  it('cloud_identity_read takes tokenReply on a Dropbox redirect, and without it', () => {
+    for (const tokenReply of ['had_id', 'no_id']) {
+      const m = { provider: 'dropbox', grant: 'redirect', outcome: 'ok', tokenReply };
+      expect(parseProductEvent(read(m))).toEqual(read(m));
+    }
+    expect(parseProductEvent(read({ provider: 'dropbox', grant: 'redirect', outcome: 'ok' }))).toEqual(read({ provider: 'dropbox', grant: 'redirect', outcome: 'ok' }));
+  });
+
+  it('tokenReply is refused from any other provider or grant, as another word, or on another event', () => {
+    for (const metadata of [
+      { provider: 'google-drive', grant: 'redirect', outcome: 'ok', tokenReply: 'had_id' },
+      { provider: 'github', grant: 'pat', outcome: 'ok', tokenReply: 'no_id' },
+      { provider: 'google-drive', grant: 'popup', outcome: 'ok', tokenReply: 'had_id' },
+      { provider: 'dropbox', grant: 'pat', outcome: 'ok', tokenReply: 'had_id' },
+      { provider: 'dropbox', grant: 'redirect', outcome: 'ok', tokenReply: 'dbid:test' },
+      { provider: 'dropbox', grant: 'redirect', outcome: 'ok', tokenReply: true },
+    ]) {
+      expect(parseProductEvent(read(metadata))).toBeNull();
+    }
+    expect(parseProductEvent(copies({ outcome: 'refused', tokenReply: 'had_id' }))).toBeNull();
+  });
+
   it('drive_record_copies takes both buckets on ok and on incomplete, none on a failure', () => {
     expect(parseProductEvent(copies({ owned: '1', notOwned: '0', outcome: 'ok' }))).toEqual(copies({ owned: '1', notOwned: '0', outcome: 'ok' }));
     expect(parseProductEvent(copies({ owned: '2+', notOwned: '1', outcome: 'incomplete' }))).toEqual(copies({ owned: '2+', notOwned: '1', outcome: 'incomplete' }));
