@@ -172,6 +172,11 @@ describe('US-40 AC2 (CR3) — the contract comes from base, not from the candida
     // This synthetic repo has no docs/user-stories.md; the old hardcoded line pointed there.
     expect(prompt).not.toContain('user-stories');
     expect(prompt).toContain('names the files that hold');
+    // Brad 2026-11-28: the reviewer is told the realism bar and the local-tools trust when it sets blocks_merge.
+    const flat = prompt.replace(/\s+/g, ' ');
+    expect(flat).toContain('Setting "blocks_merge" (Brad 2026-11-28). Realism bar: a finding blocks a merge only if it names a scenario a real user plausibly reaches through normal use');
+    expect(flat).toContain('any case the change makes no worse than main.');
+    expect(flat).toContain('Do not file findings about symlinks, swapped binaries, environment variables or file races there.');
     expect(JSON.parse(readFileSync(outJson, 'utf8')).instruction_edits).toEqual(['docs/review-format.md']);
     expect(r.status).toBe(0);
     writeFileSync(join(repo, 'docs', 'review-format.md'), 'BASE CONTRACT: review everything.\n');

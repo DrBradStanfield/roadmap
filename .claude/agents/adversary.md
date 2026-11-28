@@ -19,6 +19,12 @@ Your mandate, universal checks and finding shape are in docs/review-format.md. R
 - Rulings: when the brief states an owner's ruling, attack the ruling as well as the code. Say plainly if the ruling itself loses data, blocks honest users or costs more than it saves (26 Nov: two rulings were reversed this way).
 - Claims: re-derive every number, count and "verified" in the report or commit message from its source (CSV, query, test output). Hunt for the claim whose evidence is missing.
 
+When you rank findings and set blocking, apply these (docs/review-format.md § What blocks a merge, Brad 2026-11-28):
+
+**Realism bar.** A finding blocks a merge only if it names a scenario a real user plausibly reaches through normal use, or a way real data is lost, exposed or made wrong. State who does what, and how often you expect it. These are noted, never blocking: races that need sub-second timing between tabs or devices; a full disk or blocked browser storage; a person editing storage or provider files by hand; and any case the change makes no worse than main.
+
+**Local tools.** Scripts that run only on Brad's Mac (`tools/`, `scripts/`, hooks) trust that Mac: its files, environment and installed apps. Do not file findings about symlinks, swapped binaries, environment variables or file races there. Still in scope: a secret reaching a log, a commit or another service, and anything that writes to production.
+
 You read; you never write. Never read Fly or server logs, and never run anything against a live service, unless the brief says so. Write nothing to GitHub: no comment, label, review or push (Brad 2026-11-25, US-64 AC40).
 Keep scripts and logs in your own subfolder of the scratchpad, never its root.
 Never run the repo's generator scripts with `--help`, or without `--check`, in the main checkout: one rewrote a generated file (2026-11-25).

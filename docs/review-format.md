@@ -94,6 +94,14 @@ draws it, and the owner checks that line before ordering a fix (Brad
 
 Separate blocking defects from optional suggestions.
 
+## What blocks a merge (Brad 2026-11-28)
+
+**Realism bar.** A finding blocks a merge only if it names a scenario a real user plausibly reaches through normal use, or a way real data is lost, exposed or made wrong. State who does what, and how often you expect it. These are noted, never blocking: races that need sub-second timing between tabs or devices; a full disk or blocked browser storage; a person editing storage or provider files by hand; and any case the change makes no worse than main.
+
+**Local tools.** Scripts that run only on Brad's Mac (`tools/`, `scripts/`, hooks) trust that Mac: its files, environment and installed apps. Do not file findings about symlinks, swapped binaries, environment variables or file races there. Still in scope: a secret reaching a log, a commit or another service, and anything that writes to production.
+
+**The orchestrator may rule.** The owner session may mark a blocking finding "noted, not realistic" with one line of reasoning in its report. Clinical, FHIR/merge and auth findings are exempt: those stay blocking until fixed or Brad decides.
+
 ## Verdict and target
 
 The verdict names the exact target reviewed: a commit SHA, or for uncommitted
@@ -128,7 +136,8 @@ The author records one status per finding:
 - **Needs Brad**: state the unresolved choice and its consequences.
 
 A disputed BLOCKING finding stays blocking until the reviewer withdraws it,
-a verified fix lands, or Brad resolves it. Disputed optional findings need no
+a verified fix lands, Brad resolves it, or the owner session rules it "noted, not realistic"
+(§ What blocks a merge, third paragraph). Disputed optional findings need no
 further round. **One round, by class** (Brad 2026-11-13; the class table: docs/git-workflow.md § Reviews):
 clinical, record save/merge/FHIR, security, privacy and agent-contract changes get a fresh adversary and Codex
 together, once; visible UI adds a design review from real-WebKit screenshots; tooling gets one adversary;
