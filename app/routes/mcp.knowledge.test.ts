@@ -337,7 +337,7 @@ describe('US-41 AC8 — get_article: one entry, size-capped, sections on request
     expect(sectionOf('calcium-rich-foods-diet', 'calcium supplements')).toBe('Are Calcium Supplements a Viable Option?');
     expect(sectionOf('mothers-took-choline-their-kids-scored-8-iq-points-higher', 'they found')).toBe('Found in an Egg');
     expect(read('we-were-wrong-about-aspirin-new-evidence', 'What You Should').isError).toBe(true);
-    // Limit: a markdown heading reads itself only with its asterisks; without them its words are all stop words.
+    // Limit: a markdown heading is matched exactly only with its markdown; without it the word rule decides, and `What is it?` is all stop words.
     expect(sectionOf('how-to-correctly-use-hyaluronic-acid-to-reverse-wrinkles-by-18', '**What is it?**')).toBe('**What is it?**');
     expect(read('how-to-correctly-use-hyaluronic-acid-to-reverse-wrinkles-by-18', 'What is it?').isError).toBe(true);
     // Limits: a blank section, or one past the cap, is refused before any heading is looked at.
