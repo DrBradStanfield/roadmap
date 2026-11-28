@@ -128,7 +128,7 @@ function noReminderLane(backend: never): never {
  * whose storage is blocked.
  */
 let switchHoldsOldToken = false;
-export const SWITCH_CANCELLED_KEY = 'hr_reminders_switch_cancelled';
+const SWITCH_CANCELLED_KEY = 'hr_reminders_switch_cancelled';
 
 /** The stored object as it was read: absent both times, or the same token's
  *  row by every field the cancel rule reads (status, provider, time, lamport;
