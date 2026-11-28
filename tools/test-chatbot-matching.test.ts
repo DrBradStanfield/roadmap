@@ -1291,6 +1291,20 @@ describe('test-chatbot-matching count flags (US-15 AC24c)', () => {
     refused(await run(flags as string[]), flag as string);
   });
 
+  // Past the safe range: `Number` reads '1' and 309 zeros as Infinity and 9007199254740993 as
+  // 9007199254740992, so these are refused too. --estimate keeps the code before the fix from making
+  // the endless run; the count is checked before --estimate reads it.
+  const HUGE = '1' + '0'.repeat(309);
+  it.each(['--runs', '--concurrency', '--answer-check-runs'].flatMap(flag =>
+    [HUGE, '9007199254740993', '9007199254740992'].map(value => [flag, value.length > 20 ? "'1' and 309 zeros" : value, value])),
+  )('%s %s is past the safe range: exits 1 naming the flag, with no API call', async (flag, _label, value) => {
+    const r = await run(['--estimate', flag, value]);
+    expect(r.status, r.out).toBe(1);
+    expect(r.calls).toBe(0);
+    expect(r.err).toContain(`Error: ${flag} must be 9007199254740991 or less`);
+    expect(r.out).not.toContain('ESTIMATE');
+  });
+
   function refused(r: Awaited<ReturnType<typeof run>>, flag: string) {
     expect(r.status, r.out).toBe(1);
     expect(r.calls).toBe(0);

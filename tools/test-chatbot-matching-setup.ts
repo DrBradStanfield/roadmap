@@ -29,8 +29,8 @@ if (path.resolve(process.cwd()) !== REPO_ROOT) { console.error(`Run from the rep
 const args = process.argv.slice(2);
 
 const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
-// A count flag given is digits only and 1 or more (search_knowledge's rule and message), or the
-// run exits before any API call (US-15 AC24c). An empty or missing value is refused, not defaulted.
+// A count flag given is digits only, 1 or more and a safe integer (search_knowledge's rule and message),
+// or the run exits before any API call (US-15 AC24c). An empty or missing value is refused, not defaulted.
 const countArg = (flag: string, defaultValue: string) => {
   try {
     return positiveInt(flag, args.includes(flag) ? args[args.indexOf(flag) + 1] : defaultValue);
