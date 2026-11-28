@@ -35,7 +35,7 @@ import { failureTags, recordFailure, storageCauseClass, storageFailureClass } fr
 export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
 
 /** The device copy's revision a connect's lift uploaded (DeviceMirror.lifted). */
-const LIFTED_REVISION_KEY = 'health_roadmap_lifted_revision';
+export const LIFTED_REVISION_KEY = 'health_roadmap_lifted_revision';
 
 export { BACKEND_KEY } from '../lib/storage';
 

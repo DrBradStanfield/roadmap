@@ -12,7 +12,7 @@ export function tokenOf(data: ChatReply | null): string | undefined {
   return typeof data?.sessionToken === 'string' && data.sessionToken ? data.sessionToken : undefined;
 }
 
-const GUEST_SESSION_KEY = 'health_roadmap_guest_session';
+export const GUEST_SESSION_KEY = 'health_roadmap_guest_session';
 
 export function getGuestSessionToken(): string | null {
   try { return localStorage.getItem(GUEST_SESSION_KEY); } catch { return null; }
