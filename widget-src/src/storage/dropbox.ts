@@ -321,6 +321,13 @@ export class DropboxAdapter implements StorageAdapter {
     throw error;
   };
 
+  /** The access token while unexpired and this page's sign-in stands, else null; always a redirect grant.
+   *  Read only: never refreshes or keeps anything (US-09 AC67). */
+  heldToken(): { token: string | null; grant: 'redirect' } {
+    const usable = this.tokens && Date.now() < this.tokens.expiresAt - 60_000 && !isSignedOut(this.id);
+    return { token: usable ? this.tokens!.accessToken : null, grant: 'redirect' };
+  }
+
   private async accessToken(): Promise<string> {
     if (!this.tokens) throw new StorageError('Dropbox is not connected.', undefined, undefined, undefined, 'reconnect', 'refused'); // a forgotten sign-in
     // Refresh a minute before expiry. A page signed out sends a cached token to the refresh too, which

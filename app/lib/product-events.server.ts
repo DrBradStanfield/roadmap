@@ -7,6 +7,7 @@ import { CHAT_PROFILE_CHOICES, CHAT_PROFILE_FIELDS, EVENT_REASONS, GUIDE_PLACEME
 import { LPA_UNITS } from '../../packages/health-core/src/units';
 import { REMINDER_PROVIDERS } from '../../packages/health-core/src/roadmap-file';
 import { SAVE_RETRY_OUTCOMES, SAVE_RETRY_TRIGGERS } from '../../packages/health-core/src/save-retry-words';
+import { COPIES_OUTCOMES, COPY_BUCKETS, IDENTITY_GRANTS, IDENTITY_OUTCOMES, IDENTITY_PROVIDERS } from '../../packages/health-core/src/cloud-identity';
 import { US_PRODUCTS, type UsProduct } from '../../packages/health-core/src/us-products';
 import { METRIC_TYPES } from '../../packages/health-core/src/validation';
 import { LIMIT_TEST_WORDS } from '../../packages/health-core/src/lab-extraction';
@@ -32,8 +33,13 @@ const metadataSchema = z
     count: z.number().int().min(0).max(1000).optional(),
     tool: z.enum([...MCP_TOOL_NAMES, ...MCP_KNOWLEDGE_TOOL_NAMES]).optional(),
     client: z.enum(MCP_CLIENT_LABELS).optional(),
-    /** mcp_tool_call's words, or save_retry's (US-09 AC30): judged against the event in checkEventKeys. */
-    outcome: z.enum([...MCP_TOOL_OUTCOMES, ...SAVE_RETRY_OUTCOMES]).optional(),
+    /** mcp_tool_call's words, save_retry's (US-09 AC30), or US-09 AC67's two counters': judged against the event in checkEventKeys. */
+    outcome: z.enum([...new Set([...MCP_TOOL_OUTCOMES, ...SAVE_RETRY_OUTCOMES, ...IDENTITY_OUTCOMES, ...COPIES_OUTCOMES])]).optional(),
+    /** US-09 AC67: how the page's cloud token was granted. Owned by `cloud_identity_read`. */
+    grant: z.enum(IDENTITY_GRANTS).optional(),
+    /** US-09 AC67: record copies Drive listed, owned and not, as buckets. Owned by `drive_record_copies`. */
+    owned: z.enum(COPY_BUCKETS).optional(),
+    notOwned: z.enum(COPY_BUCKETS).optional(),
     /** US-09 AC30: what started a retry of a failed cloud save. Owned by `save_retry`. */
     trigger: z.enum(SAVE_RETRY_TRIGGERS).optional(),
     route: z.enum(MCP_IMPORT_ROUTES).optional(),
@@ -150,6 +156,9 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
   device: ['tool_opened'],
   measure: ['measurement_added'],
   trigger: ['save_retry'],
+  grant: ['cloud_identity_read'],
+  owned: ['drive_record_copies'],
+  notOwned: ['drive_record_copies'],
   ...Object.fromEntries(UPLOAD_OUTCOME_KEYS.map(k => [k, ['upload_outcome']])),
   limitUngradedTests: ['upload_outcome'],
   ...Object.fromEntries(UPLOAD_REVIEW_KEYS.map(k => [k, ['upload_review']])),
@@ -161,7 +170,7 @@ const EVENT_KEY_OWNERS: Record<string, readonly string[]> = {
 const EVENT_WORDS: Record<string, Partial<Record<string, readonly string[]>>> = {
   placement: { guide_opened: GUIDE_PLACEMENTS, signin_opened: SIGNIN_PLACEMENTS, upload_labs_opened: UPLOAD_LABS_PLACEMENTS },
   step: { mcp_tool_call: MCP_TOOL_STEPS, onboarding_step: ONBOARDING_STEPS },
-  outcome: { mcp_tool_call: MCP_TOOL_OUTCOMES, save_retry: SAVE_RETRY_OUTCOMES },
+  outcome: { mcp_tool_call: MCP_TOOL_OUTCOMES, save_retry: SAVE_RETRY_OUTCOMES, cloud_identity_read: IDENTITY_OUTCOMES, drive_record_copies: COPIES_OUTCOMES },
 };
 
 /** Events that mean nothing without their key: a tool tab with no device, or
@@ -177,6 +186,8 @@ const EVENT_REQUIRED_KEY: Partial<Record<string, string | readonly string[]>> = 
   save_retry: ['trigger', 'outcome'], // US-09 AC30: how it started and how it ended
   upload_review: 'saved', // US-13 AC13: a review that ended neither way counts nothing
   reminder_cancel_many: ['provider', 'count'], // US-17 AC19
+  cloud_identity_read: ['provider', 'grant', 'outcome'], // US-09 AC67
+  drive_record_copies: 'outcome',
 };
 
 /** Events whose metadata is ONLY their own keys: a shared key such as
@@ -213,6 +224,8 @@ const EVENT_ONLY_KEYS: Partial<Record<string, readonly string[]>> = {
   waist_widget_saved: [],
   bp_widget_viewed: [], // US-75: as US-74's
   bp_widget_saved: [],
+  cloud_identity_read: ['provider', 'grant', 'outcome'], // US-09 AC67: closed words, never an id or a body
+  drive_record_copies: ['owned', 'notOwned', 'outcome'],
 };
 
 /**
@@ -255,6 +268,16 @@ function checkEventKeys(
   if (event.eventName === 'reminder_cancel_many') {
     if (!(typeof metadata.count === 'number' && metadata.count >= 2)) ctx.addIssue({ code: 'custom', path: ['metadata', 'count'], message: 'count is not one this event may carry' });
     if (!(REMINDER_PROVIDERS as readonly unknown[]).includes(metadata.provider)) ctx.addIssue({ code: 'custom', path: ['metadata', 'provider'], message: 'provider is not one this event may carry' });
+  }
+  // US-09 AC67: only a provider whose account id is read.
+  if (event.eventName === 'cloud_identity_read' && metadata.provider !== undefined && !(IDENTITY_PROVIDERS as readonly unknown[]).includes(metadata.provider)) {
+    ctx.addIssue({ code: 'custom', path: ['metadata', 'provider'], message: 'provider is not one this event may carry' });
+  }
+  // US-09 AC67: the copy buckets come as a pair, always on `ok`, maybe on `incomplete` (the page seen), never on a failure.
+  const counted = [metadata.owned, metadata.notOwned].filter((b) => b !== undefined).length;
+  if (event.eventName === 'drive_record_copies'
+    && (counted === 1 || (metadata.outcome === 'ok' && counted === 0) || (metadata.outcome !== 'ok' && metadata.outcome !== 'incomplete' && counted > 0))) {
+    ctx.addIssue({ code: 'custom', path: ['metadata', 'owned'], message: 'counts are not ones this outcome may carry' });
   }
   // `unit` is any lab spelling on `lab_unit_refused`; here, only an Lp(a) unit.
   if (event.eventName === 'lpa_unit_selected' && metadata.unit !== undefined && !(LPA_UNITS as readonly unknown[]).includes(metadata.unit)) {

@@ -163,9 +163,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   /** True if the cached access token is still usable as-is. */
-  hasValidToken(): boolean {
-    return !!this.tokens?.accessToken && Date.now() < this.tokens.expiresAt - 60_000;
-  }
+  hasValidToken(): boolean { return this.heldToken().token !== null; }
+  /** That token, else null, and how it was granted. Read only: never refreshes or keeps anything (US-09 AC67). */
+  heldToken(): { token: string | null; grant: 'redirect' | 'popup' } { const t = this.tokens; return { token: t?.accessToken && Date.now() < t.expiresAt - 60_000 ? t.accessToken : null, grant: t?.refreshToken ? 'redirect' : 'popup' }; }
 
   /**
    * PRIMARY connect: full-page redirect to Google (PKCE). Never resolves in
