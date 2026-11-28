@@ -70,6 +70,7 @@ beforeEach(async () => {
   sent = [];
   chat.muted = [];
   floating.muted = [];
+  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true; }; // the document viewer (US-14 AC7a)
   // Wide desktop: the chat column shows. A phone matches the max-width query;
   // a narrow desktop (`wide` false) matches neither.
   vi.stubGlobal('matchMedia', (q: string) => ({

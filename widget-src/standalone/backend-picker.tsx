@@ -21,7 +21,7 @@ import { dispatch, getSwitchFlow, runMove, stepOf, useSwitchFlow, type MoveStep 
 import { PROVIDERS, recordStays } from './providers';
 import { trackProductEvent } from '../src/lib/server-api';
 import { getChatGate } from '../src/lib/chat-api'; // byok-chat on Pages; null on Shopify
-import { useModalDialog } from './use-dialog';
+import { useModalDialog } from '../src/lib/use-dialog';
 import { PICKER_TITLE, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
 
 /* Minimal brand marks (Brad OK'd logos). Inline so no asset fetches. */

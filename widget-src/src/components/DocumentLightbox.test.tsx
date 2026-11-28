@@ -28,6 +28,7 @@ beforeEach(() => {
   // restoreAllMocks leaves a module mock's calls and answers in place; each test starts with none.
   vi.mocked(deleteDocument).mockReset();
   vi.mocked(readDocumentFile).mockReset();
+  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true; }; // jsdom has none; the viewer is a <dialog> (US-14 AC7a)
   opened = [];
   downloads = [];
   URL.createObjectURL = vi.fn((b: Blob) => { opened.push(b); return 'blob:x'; }) as typeof URL.createObjectURL;

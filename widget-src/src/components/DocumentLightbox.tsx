@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer } from 'react';
+import { useId, useMemo, useReducer } from 'react';
 import { createPortal } from 'react-dom';
 import { deleteDocument, getShownErase, readDocumentFile } from '../lib/roadmap-data';
 import { DOCUMENT_TYPE_LABELS } from '@roadmap/health-core/document-path';
@@ -7,6 +7,7 @@ import { originalPreview } from '@roadmap/health-core/file-kinds';
 import type { ApiDocument } from '../lib/api-types';
 import { renderMarkdown } from '../lib/markdown';
 import { useIsMobile } from '../lib/useIsMobile';
+import { useModalDialog } from '../lib/use-dialog';
 
 interface DocumentLightboxProps {
   doc: ApiDocument;
@@ -34,12 +35,11 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
   const [original, sendOriginal] = useReducer(originalTransition, 'idle');
   const isMobile = useIsMobile(768);
 
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  // A modal <dialog>, as the standalone's lightboxes are (US-09 AC34): the browser keeps the page behind
+  // out of reach, Escape sends `cancel`, and the focus goes back to the opener (US-14 AC7a). The title
+  // names it; a missing or blank one shows "Untitled", the chat list's word, so the dialog always has a name.
+  const dialogRef = useModalDialog();
+  const titleId = useId();
 
   const renderedHtml = useMemo(() => {
     try {
@@ -91,14 +91,15 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
   // On <body>: `.health-tool` is transformed, so a fixed backdrop inside it would cover
   // the widget, not the screen (US-14 AC7). Outside the widget root it masks itself (US-09 AC8).
   return createPortal((
-    <div className="upload-modal-backdrop" data-clarity-mask="true" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <dialog ref={dialogRef} className="upload-modal-backdrop doc-lightbox-dialog" aria-labelledby={titleId} data-clarity-mask="true"
+      onCancel={(e) => { e.preventDefault(); onClose(); }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`upload-modal doc-lightbox${isMobile ? ' upload-modal--mobile' : ''}`}>
         <div className="upload-modal-header">
           <div className="doc-lightbox-title-row">
             <span className={`review-doc-type-badge review-doc-type--${doc.documentType}`}>
               {DOCUMENT_TYPE_LABELS[doc.documentType] || doc.documentType}
             </span>
-            <h3>{doc.title}</h3>
+            <h3 id={titleId} tabIndex={-1} data-initial-focus>{(doc.title ?? '').trim() || 'Untitled'}</h3>
           </div>
           <button className="upload-modal-close" onClick={onClose} aria-label="Close">&times;</button>
         </div>
@@ -131,6 +132,6 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   ), document.body);
 }
