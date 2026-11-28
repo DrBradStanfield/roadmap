@@ -75,8 +75,10 @@ interface Args {
   json: boolean;
 }
 
-function positiveInt(flag: string, raw: string): number {
+export function positiveInt(flag: string, raw: string): number {
   if (!/^\d+$/.test(raw) || Number(raw) < 1) throw new Refusal(`${flag} must be a whole number of 1 or more`);
+  // Past this, Number rounds the digits or reads Infinity (US-15 AC24c).
+  if (!Number.isSafeInteger(Number(raw))) throw new Refusal(`${flag} must be ${Number.MAX_SAFE_INTEGER} or less`);
   return Number(raw);
 }
 

@@ -336,6 +336,21 @@ describe('US-41 AC3/AC4 — posture first, bodies under a cap', () => {
     expect(captureRun(['iron', '--max-chars', '-5']).code).toBe(1);
   });
 
+  // US-15 AC24c: positiveInt also reads the router harness's counts, so a digit string past the safe range
+  // ('1' and 309 zeros is Infinity to Number) is refused, not run as Infinity or a rounded number.
+  it('refuses a number past the safe range, for --k and --max-chars too (US-15 AC24c)', () => {
+    const huge = '1' + '0'.repeat(309);
+    expect(tool.positiveInt('--k', '9007199254740991')).toBe(9007199254740991);
+    for (const raw of [huge, '9007199254740993', '9007199254740992']) {
+      expect(() => tool.positiveInt('--runs', raw)).toThrow(/^--runs must be 9007199254740991 or less$/);
+    }
+    for (const flag of ['--k', '--max-chars']) {
+      const { code, stderr } = captureRun(['iron', flag, huge]);
+      expect(code).toBe(1);
+      expect(stderr).toMatch(new RegExp(`^search_knowledge: ${flag} must be 9007199254740991 or less\\n`));
+    }
+  });
+
   it('prints help and exits 0, saying where the query does and does not go', () => {
     const { code, stdout } = captureRun(['--help']);
     expect(code).toBe(0);

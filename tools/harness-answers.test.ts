@@ -1,6 +1,6 @@
 // Brad 2026-11-10: every paid harness run is priced first (--estimate).
 import { describe, it, expect } from 'vitest';
-import { estimateRunCost, CHARS_PER_TOKEN, ROUTER_OUT_TOKENS, ANSWER_OUT_TOKENS } from './harness-answers';
+import { estimateRunCost, CHARS_PER_TOKEN, ROUTER_OUT_TOKENS, ANSWER_OUT_TOKENS, type AnswerCallPlan } from './harness-answers';
 import { PRICES } from '../packages/health-core/src/models';
 
 const p = PRICES.sonnet55;
@@ -9,7 +9,7 @@ describe('estimateRunCost (US-15 AC24b)', () => {
   const call = (cacheKey: string, cachedChars = 350_000, chars = 0) => ({ cacheKey, cachedChars, chars });
   const base = 350_000 / CHARS_PER_TOKEN; // 100K tokens
   const out = (n: number) => n * ANSWER_OUT_TOKENS * p.output;
-  const answers = (answerCalls: ReturnType<typeof call>[], concurrency?: number) =>
+  const answers = (answerCalls: AnswerCallPlan[], concurrency?: number) =>
     estimateRunCost({ routerCalls: 0, routerPromptChars: 0, answerCalls, concurrency });
 
   it('prices nothing for an empty run', () => {
@@ -54,6 +54,17 @@ describe('estimateRunCost (US-15 AC24b)', () => {
     for (const set of [[call('edit')], [call('edit'), call('run')], [call('edit'), call('run'), call('')]]) {
       const { expected, upper } = answers(set);
       expect(upper.answer).toBeCloseTo(expected.answer, 10);
+    }
+  });
+
+  // US-15 AC24c: a call made n times is one entry with runs n, so a huge --answer-check-runs still prices.
+  it('a call with runs n prices as n copies of it, for each concurrency', () => {
+    const copies = (n: number, c: AnswerCallPlan) => Array<AnswerCallPlan>(n).fill(c);
+    const edit = call('edit', 350_000, 9_000), run = call('run', 1_000, 2_000);
+    for (const concurrency of [undefined, 2, 10]) {
+      const counted = answers([{ ...edit, runs: 3 }, { ...run, runs: 4 }, call('edit')], concurrency);
+      const each = answers([...copies(3, edit), ...copies(4, run), call('edit')], concurrency);
+      for (const k of ['expected', 'upper'] as const) for (const f of ['answer', 'total'] as const) expect(counted[k][f]).toBeCloseTo(each[k][f], 10);
     }
   });
 

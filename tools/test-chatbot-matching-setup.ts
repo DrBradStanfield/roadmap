@@ -11,6 +11,7 @@ import type { BlogIndexEntry } from '../app/lib/blog-index.server';
 import { loadSurfaces, youtubeTurn } from './chatbot-surfaces';
 import { chatToolsFor } from '../packages/health-core/src/run-roadmap';
 import { estimateRunCost } from './harness-answers';
+import { positiveInt } from './search-knowledge';
 import { EMPTY_CHAT_CONTEXT, buildSystemBlocks, resolveChatContext } from '../app/lib/chat.server';
 import { healthInputSchema } from '../packages/health-core/src/validation';
 import { PRODUCTS_BLOCK_FILES } from '../app/lib/chat-products-block';
@@ -28,14 +29,24 @@ if (path.resolve(process.cwd()) !== REPO_ROOT) { console.error(`Run from the rep
 const args = process.argv.slice(2);
 
 const getArg = (flag: string, defaultValue: string) => getArgOf(args, flag, defaultValue);
+// A count flag given is digits only, 1 or more and a safe integer (search_knowledge's rule and message),
+// or the run exits before any API call (US-15 AC24c). An empty or missing value is refused, not defaulted.
+const countArg = (flag: string, defaultValue: string) => {
+  try {
+    return positiveInt(flag, args.includes(flag) ? args[args.indexOf(flag) + 1] : defaultValue);
+  } catch (error) {
+    console.error(`Error: ${(error as Error).message}`);
+    process.exit(1);
+  }
+};
 
-export const runs = Math.max(1, parseInt(getArg('--runs', '3'), 10));
+export const runs = countArg('--runs', '3');
 export const varianceThreshold = parseFloat(getArg('--variance-threshold', '0.05'));
 // Default concurrency 1: the 80K-token index counts toward ITPM on cold cache.
 // Five concurrent cold requests each recreate the cache = 400K tokens/min, blows
 // the Tier 1 50K ITPM limit. Post-warmup, cache reads consume ITPM at a reduced
 // rate, so --concurrency 3 is usually safe; bump manually if runs feel slow.
-export const concurrency = Math.max(1, parseInt(getArg('--concurrency', '1'), 10));
+export const concurrency = countArg('--concurrency', '1');
 export const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
 const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
@@ -46,7 +57,7 @@ const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 export const fixedHandlesOnly = args.includes('--fixed-handles-only');
 const includePending = args.includes('--include-pending');
 export const answerCheckMode = args.includes('--answer-check') || fixedHandlesOnly;
-export const answerCheckRuns = Math.max(1, parseInt(getArg('--answer-check-runs', String(runs)), 10));
+export const answerCheckRuns = countArg('--answer-check-runs', String(runs));
 // --estimate: price the run and exit before any API call (Brad 2026-11-10).
 const estimateOnly = args.includes('--estimate');
 
@@ -286,18 +297,18 @@ export function answerRequest(q: TestQuery, handles: string[]) {
 if (estimateOnly) {
   // Routed cases are priced as if routing passes and loads their expected handles. Each call's cached prefix is
   // its tools plus the cache_control blocks; each tool shape is its own cache entry (US-15 AC24b).
-  const answerCalls = suite.filter(hasAnswerCheck).flatMap(q => {
+  // One entry per case with its run count, not one per call, so any safe --answer-check-runs prices (US-15 AC24c).
+  const answerCalls = suite.filter(hasAnswerCheck).map(q => {
     const { system, messages, tools } = answerRequest(q, Array.isArray(q.expected) ? q.expected : q.answer_handles!);
     const size = (cached: boolean) => system.reduce((n, b) => n + (!!b.cache_control === cached ? b.text.length : 0), 0);
-    const call = { cacheKey: JSON.stringify(tools?.map(t => t.name) ?? []), cachedChars: JSON.stringify(tools ?? []).length + size(true),
-      chars: size(false) + JSON.stringify(messages).length };
-    return Array(answerCheckRuns).fill(call);
+    return { cacheKey: JSON.stringify(tools?.map(t => t.name) ?? []), cachedChars: JSON.stringify(tools ?? []).length + size(true),
+      chars: size(false) + JSON.stringify(messages).length, runs: answerCheckRuns };
   });
   const routerCalls = filtered.length ? filtered.length * runs + 1 : 0;
   const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCalls, concurrency });
   // Brad approves a paid run on the "up to" figure (US-15 AC24b).
   const both = (k: keyof typeof cost.upper) =>
     `expected $${cost.expected[k].toFixed(2)} with prompt caching, up to $${cost.upper[k].toFixed(2)} if the cache never hits`;
-  console.log(`ESTIMATE router calls=${routerCalls} ${both('router')}; answer calls=${answerCalls.length} ${both('answer')}; total ${both('total')}. No API call made.`);
+  console.log(`ESTIMATE router calls=${routerCalls} ${both('router')}; answer calls=${answerCalls.length * answerCheckRuns} ${both('answer')}; total ${both('total')}. No API call made.`);
   process.exit(0);
 }

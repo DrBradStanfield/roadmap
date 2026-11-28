@@ -1241,3 +1241,93 @@ describe('test-chatbot-matching report and request shapes (synthetic fixtures)',
     expect(runs).toMatchSnapshot();
   });
 });
+
+// US-15 AC24c: a count flag (--runs, --concurrency, --answer-check-runs) that is not digits only and
+// 1 or more exits before any API call. Before, `--concurrency x` (or `--concurrency --verbose`)
+// paid for the warm-up call, then ran no case and exited 0 with "Total: 0".
+describe('test-chatbot-matching count flags (US-15 AC24c)', () => {
+  const INDEX = [{ title: 'Pin A', handle: 'pin-a', url: 'https://example.com/a', type: 'article', summary: 'Synthetic summary A.' }];
+
+  /** One in-process run of a one-case synthetic suite whose router always routes pin-a; `check` adds answer checks. */
+  async function run(flags: string[], check: object = {}) {
+    const dir = mkdtempSync(join(tmpdir(), 'chatbot-count-'));
+    try {
+      const index = join(dir, 'index.json');
+      writeFileSync(index, JSON.stringify(INDEX));
+      let calls = 0;
+      const r = await runHarness(['--index', index, '--category', 'pin', ...flags], {
+        fixtures: [{ query: 'q-count', category: 'pin', expected: ['pin-a'], ...check }],
+        fetch: async () => { calls++; return textReply('{"handles":["pin-a"]}'); },
+      });
+      return { status: r.status, out: noColour(r.out), err: r.err, calls };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it.each([1, 3])('--runs N --concurrency N runs the case and exits 0 (N = %i)', async (n) => {
+    const r = await run(['--runs', String(n), '--concurrency', String(n)]);
+    expect(r.out, r.err).toContain(`Runs each:   ${n}`);
+    expect(r.out).toContain(`Concurrency: ${n}`);
+    expect(r.out).toContain('Total:       1');
+    expect(r.out).toContain('Passing:     1');
+    expect(r.calls).toBe(1 + n); // the warm-up, then the case once per run
+    expect(r.status).toBe(0);
+  });
+
+  it.each([
+    ['--concurrency', 'x'], ['--concurrency', '--verbose'], ['--concurrency', '0'], ['--concurrency', '1.5'],
+    ['--runs', 'x'], ['--runs', '0'], ['--runs', '-1'], ['--answer-check-runs', 'x'], ['--answer-check-runs', '0'],
+    // Digits only, the rule search_knowledge uses: `Number` would read these as 10 and 16 runs.
+    ['--runs', '1e1'], ['--runs', '0x10'],
+  ])('%s %s exits 1 naming the flag, with no API call', async (flag, value) => {
+    refused(await run([flag, value]), flag);
+  });
+
+  // No value: an empty one, or the flag given last. Before, both took the default.
+  it.each([
+    ["--runs ''", '--runs', ['--runs', '']], ['--concurrency given last', '--concurrency', ['--concurrency']],
+  ])('%s exits 1 naming the flag, with no API call', async (_label, flag, flags) => {
+    refused(await run(flags as string[]), flag as string);
+  });
+
+  // Past the safe range: `Number` reads '1' and 309 zeros as Infinity and 9007199254740993 as
+  // 9007199254740992, so these are refused too. --estimate keeps the code before the fix from making
+  // the endless run; the count is checked before --estimate reads it.
+  const HUGE = '1' + '0'.repeat(309);
+  it.each(['--runs', '--concurrency', '--answer-check-runs'].flatMap(flag =>
+    [HUGE, '9007199254740993', '9007199254740992'].map(value => [flag, value.length > 20 ? "'1' and 309 zeros" : value, value])),
+  )('%s %s is past the safe range: exits 1 naming the flag, with no API call', async (flag, _label, value) => {
+    const r = await run(['--estimate', flag, value]);
+    expect(r.status, r.out).toBe(1);
+    expect(r.calls).toBe(0);
+    expect(r.err).toContain(`Error: ${flag} must be 9007199254740991 or less`);
+    expect(r.out).not.toContain('ESTIMATE');
+  });
+
+  // A huge safe count is accepted, not capped (Brad's ruling), and --estimate prices it with no call.
+  // Before, the estimate built one entry per answer call: past 4294967295 that threw RangeError.
+  const answerEstimate = (flags: string[]) => run(['--answer-check', '--estimate', ...flags], { must_mention: ['alpha'] });
+  const SAFE = String(Number.MAX_SAFE_INTEGER);
+  it.each([['--answer-check-runs', '4294967296'], ['--answer-check-runs', SAFE], ['--runs', '4294967296'], ['--runs', SAFE]])(
+    '--answer-check --estimate %s %s prints the estimate and exits 0, with no API call', async (flag, value) => {
+      const r = await answerEstimate([flag, value]);
+      expect(r.status, r.err).toBe(0);
+      expect(r.calls).toBe(0);
+      expect(r.out).toContain(`answer calls=${value} expected $`);
+      expect(r.out).toContain('No API call made.');
+      expect(r.out).not.toMatch(/NaN|Infinity/);
+    });
+
+  it('--estimate prices each answer run: twice the answer runs, twice the "up to" answer figure', async () => {
+    const upTo = async (n: string) => Number((await answerEstimate(['--answer-check-runs', n])).out
+      .match(/answer calls=\d+ expected \$[\d.]+ with prompt caching, up to \$([\d.]+)/)![1]);
+    expect(await upTo('8589934592')).toBeCloseTo(2 * await upTo('4294967296'), 1);
+  });
+
+  function refused(r: Awaited<ReturnType<typeof run>>, flag: string) {
+    expect(r.status, r.out).toBe(1);
+    expect(r.calls).toBe(0);
+    expect(r.err).toContain(`Error: ${flag} must be a whole number of 1 or more`);
+  }
+});
