@@ -1839,7 +1839,7 @@
   "C002": "screening-cervical-upcoming [info] Cervical screening up to date :: Next screening due Apr 2031.",
   "C003": "screening-cervical-followup [info] Cervical screening up to date :: Following your HPV positive result, next screening due Jul 2027.",
   "C004": "screening-cervical-upcoming [info] Cervical screening up to date :: Next screening due Jun 2028.",
-  "C005": "screening-colorectal [attention] Start colorectal cancer screening :: Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
+  "C005": "screening-colorectal [attention] Start colorectal cancer screening :: The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
   "C006": "screening-colorectal-upcoming [info] Colorectal screening up to date :: Next screening due Apr 2027.",
   "C007": "screening-colorectal-followup [urgent] Organize colonoscopy :: Your screening showed a positive FIT test. Please organize a colonoscopy with your doctor.",
   "C008": "screening-colorectal-overdue [attention] Colorectal screening overdue :: Your next colorectal screening was due Sep 2026. Please schedule your screening.",
@@ -1976,24 +1976,24 @@
   ],
   "G006": [
    "# colorectal | Colorectal",
-   "note: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
+   "note: The American Cancer Society starts screening at 45 for people at average risk. Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. Discuss timing with your doctor.",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"\"}"
   ],
   "G007": [
    "# colorectal | Colorectal",
-   "note: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
+   "note: The American Cancer Society starts screening at 45 for people at average risk. Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. Discuss timing with your doctor.",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"not_yet_started\"}"
   ],
   "G008": [
    "# colorectal | Colorectal",
-   "note: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
+   "note: The American Cancer Society starts screening at 45 for people at average risk. Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. Discuss timing with your doctor.",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"
   ],
   "G009": [
    "# colorectal | Colorectal",
-   "note: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
+   "note: The American Cancer Society starts screening at 45 for people at average risk. Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. Discuss timing with your doctor.",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2026-04\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"abnormal\"}",
@@ -2001,7 +2001,7 @@
   ],
   "G010": [
    "# colorectal | Colorectal",
-   "note: Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts screening at 45 for people at average risk. Discuss timing with your doctor.",
+   "note: The American Cancer Society starts screening at 45 for people at average risk. Starting at 35 is Dr Brad's recommendation, because colorectal cancer has become more common in younger adults. Discuss timing with your doctor.",
    "{\"kind\":\"choice\",\"key\":\"colorectal_method\",\"label\":\"Screening method\",\"options\":\"SCREENING_OPTIONS.colorectal_method\",\"value\":\"fit_annual\"}",
    "{\"kind\":\"month\",\"key\":\"colorectal_last_date\",\"label\":\"Date of last screening\",\"value\":\"2025-09\",\"when\":\"past\"}",
    "{\"kind\":\"choice\",\"key\":\"colorectal_result\",\"label\":\"Result\",\"options\":\"SCREENING_OPTIONS.result\",\"value\":\"normal\"}"

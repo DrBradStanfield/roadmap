@@ -169,8 +169,8 @@ describe('US-07 AC1: blood-pressure stages (doc §3 and §4 BP Tiers)', () => {
   });
 
   it('the stage card names the age-dependent target: <120/80 at 64, <130/80 at 65', () => {
-    expect(byId(plan({ systolicBp: 135, diastolicBp: 70 }, { age: 64 }), 'bp-stage1')?.description).toContain('Target is <120/80');
-    expect(byId(plan({ systolicBp: 135, diastolicBp: 70 }, { age: 65 }), 'bp-stage1')?.description).toContain('Target is <130/80');
+    expect(byId(plan({ systolicBp: 135, diastolicBp: 70 }, { age: 64 }), 'bp-stage1')?.description).toContain('Dr Brad aims for below 120/80 under 65.');
+    expect(byId(plan({ systolicBp: 135, diastolicBp: 70 }, { age: 65 }), 'bp-stage1')?.description).toContain('Dr Brad aims for below 130/80 from 65.');
   });
 
   it('the potassium paragraph needs eGFR 45 or more (doc §4)', () => {

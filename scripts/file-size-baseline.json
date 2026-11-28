@@ -6,7 +6,7 @@
   },
   "files": {
     "tools/codex-review.mjs": 1397,
-    "packages/health-core/src/suggestions.ts": 1132,
+    "packages/health-core/src/suggestions.ts": 1109,
     "packages/health-core/src/record-edits.ts": 1029,
     "packages/health-core/src/mcp-import.ts": 914,
     "ios/scripts/app-store-video-compose.swift": 882,

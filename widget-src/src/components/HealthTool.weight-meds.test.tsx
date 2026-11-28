@@ -42,12 +42,15 @@ import { bmiOnRow, planTitles, suggestionText } from '../testing/plan-on-page';
 import { openSettings } from '../testing/settings';
 
 const NEUTRAL = 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time. Discuss any you take with your doctor.';
-const recommends = (bmi: string, reasons?: string) => (reasons
-  ? `At a BMI of ${bmi} and ${reasons}, medications that support weight management and metabolic health are an option to discuss with your doctor.`
-  : `At a BMI of ${bmi}, medications that support weight management and metabolic health are an option to discuss with your doctor.`);
-/** The plan's GLP-1 card text (US-06 AC6). */
+/** The form's intro (US-06 AC5), in its band (US-07 AC24): these cases are BMI 26 (below the guideline line) or 32 (at it). */
+const recommends = (bmi: string, reasons?: string) => {
+  const at = `At a BMI of ${bmi}${reasons ? ` and ${reasons}` : ''}`;
+  return Number(bmi) >= 30 ? `${at}, guidelines consider a weight medicine. It is an option to discuss with your doctor.`
+    : `${at}, Dr Brad raises weight medicines earlier than guidelines do. They are an option to discuss with your doctor.`;
+};
+/** The plan's GLP-1 card text (US-06 AC6) below the guideline line (US-07 AC24): every case here is BMI 26. */
 const glp1Card = (bmi: string, reasons: string) =>
-  `With a BMI of ${bmi} and ${reasons}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
+  `Guidelines consider a weight medicine from a BMI of 30, or 27 with a weight-related condition. With a BMI of ${bmi} and ${reasons}, Dr Brad raises it earlier, alongside diet, exercise and sleep. A doctor may not prescribe below the licensed levels. Consider discussing Tirzepatide or Semaglutide with your doctor.`;
 
 interface GuestRecord {
   sex?: 'male';
@@ -131,8 +134,8 @@ function sectionIntro(container: HTMLElement, section: string): Promise<string> 
     return title.parentElement!.querySelector('.health-section-desc')!.textContent!;
   });
 }
-const weightMedsIntro = (container: HTMLElement) => sectionIntro(container, 'Weight & diabetes medications');
-const cholesterolIntro = (container: HTMLElement) => sectionIntro(container, 'Cholesterol medications');
+const weightMedsIntro = (container: HTMLElement) => sectionIntro(container, 'Your weight & diabetes medications');
+const cholesterolIntro = (container: HTMLElement) => sectionIntro(container, 'Your cholesterol medications');
 /** The local mirror as the widget writes it: a saved weight row in
  *  `previousMeasurements`, which opens the vitals matrix at mount. */
 const SAVED_WEIGHT_MIRROR = JSON.stringify({
@@ -328,7 +331,7 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { total: 3.84, hdl: 2.2 } });
     await waitFor(() => expect(planCard(view.container, 'Consider discussing a statin with your doctor')).toBeDefined());
     expect(await cholesterolIntro(view.container))
-      .toMatch(/^Your non-HDL cholesterol is 1\.6 mmol\/L; the treatment target is below 1\.6 mmol\/L\. /);
+      .toMatch(/^Your non-HDL cholesterol is 1\.6 mmol\/L\. Guidelines set goals by heart risk\. Dr Brad aims for below 1\.6 mmol\/L, lower than guideline goals\. /);
   });
 
   it('TC 3.76 and HDL 2.20: non-HDL 1.56 is below the 1.6 target, though it shows as 1.6, so both stay neutral', async () => {
@@ -356,13 +359,13 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { total: 3.9, hdl: 2.2 } }); // non-HDL 1.7
     await waitFor(() => expect(planCard(view.container, 'Consider discussing a statin with your doctor')).toBeDefined());
     expect(await cholesterolIntro(view.container))
-      .toMatch(/^Your non-HDL cholesterol is 1\.7 mmol\/L; the treatment target is below 1\.6 mmol\/L\. /);
+      .toMatch(/^Your non-HDL cholesterol is 1\.7 mmol\/L\. Guidelines set goals by heart risk\. Dr Brad aims for below 1\.6 mmol\/L, lower than guideline goals\. /);
   });
 
   it('the form opens with the plan card\'s own sentence, word for word and digit for digit', async () => {
     const view = await guestWith({ sex: 'male', weight: 80, lipids: { ldl: 3 } });
     await waitFor(() => expect(planCard(view.container, 'Consider discussing a statin with your doctor')).toBeDefined());
-    const sentence = 'Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L.';
+    const sentence = 'Your LDL-c is 3.0 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk.';
     expect(suggestionText(view.container, 'Consider discussing a statin with your doctor'))
       .toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
     expect(await cholesterolIntro(view.container)).toMatch(new RegExp(`^${sentence.replace(/\./g, '\\.')} `));
@@ -385,7 +388,7 @@ describe('US-06 AC5: the form recommends a cholesterol medication only when the 
 describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inhibitor, ezetimibe, bempedoic acid', () => {
   /** The cholesterol section's question labels, in page order. */
   const lipidQuestions = (container: HTMLElement) => waitFor(() => {
-    const title = Array.from(container.querySelectorAll('.health-section-title, .mh-group-label')).find((t) => t.textContent === 'Cholesterol medications');
+    const title = Array.from(container.querySelectorAll('.health-section-title, .mh-group-label')).find((t) => t.textContent === 'Your cholesterol medications');
     if (!title) throw new Error('the section is not on the page');
     return Array.from(title.parentElement!.querySelectorAll('label')).map((l) => l.textContent);
   });
@@ -404,7 +407,7 @@ describe('US-06 AC20: statin not tolerated, the plan and the form step PCSK9 inh
       meds: [['statin', 'not_tolerated'], ['pcsk9i', 'pcsk9i', 140], ['ezetimibe', 'ezetimibe', 10]],
     });
     await waitFor(() => expect(lipidCards(view.container)).toEqual(['Consider discussing Bempedoic acid with your doctor']));
-    expect(await lipidQuestions(view.container)).toEqual(['Statin', 'On a PCSK9 inhibitor?', 'On Ezetimibe 10mg?', 'Bempedoic acid']);
+    expect(await lipidQuestions(view.container)).toEqual(['Statin', 'On a PCSK9 inhibitor?', 'On Ezetimibe?', 'Bempedoic acid']);
   });
 });
 
@@ -421,7 +424,7 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
     // No birth month: the onboarding is not done, and a saved blood test opens the whole form (US-62 AC13).
     const view = await guestWith({ sex: 'male', birthYear: 1958, weight: 80, bp: [135, 85], lipids: { ldl: 2 } });
     await waitFor(() => expect(Array.from(view.container.querySelectorAll('.suggestion-desc'))
-      .some((d) => d.textContent?.includes('Target is <130/80'))).toBe(true));
+      .some((d) => d.textContent?.includes('Dr Brad aims for below 130/80 from 65.'))).toBe(true));
     expect(await bpHint(view.container)).toBe('Target: <130/80 mmHg');
   });
 
@@ -430,7 +433,7 @@ describe('US-06 AC5: the form\'s age-based targets and sections follow the plan\
     localStorage.setItem('health_roadmap_data', SAVED_WEIGHT_MIRROR);
     const view = await guestWith({ sex: 'male', birthYear: 1899, weight: 80, bp: [135, 85], lipids: { ldl: 2 } }); // the blood test opens the whole form
     await waitFor(() => expect(Array.from(view.container.querySelectorAll('.suggestion-desc'))
-      .some((d) => d.textContent?.includes('Target is <120/80'))).toBe(true));
+      .some((d) => d.textContent?.includes('Dr Brad aims for below 120/80 under 65 and below 130/80 from 65. Add your birth year to see yours.'))).toBe(true));
     const matrixBpTarget = await waitFor(() => {
       const label = Array.from(view.container.querySelectorAll('.bt-ref-label')).find((l) => l.textContent?.includes('/80 mmHg'));
       if (!label) throw new Error('no vitals matrix on the page');
@@ -574,7 +577,7 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
     const view = await guestWith({ ...MEDICINE_RECORD, birthYear: 1980, birthMonth: 1 });
     await waitFor(() => expect(planCard(view.container, 'Consider discussing a statin with your doctor')).toBeDefined());
     expect(await weightMedsIntro(view.container)).toBe(recommends('32', 'an HbA1c in the prediabetes range'));
-    expect(await cholesterolIntro(view.container)).toMatch(/the treatment target is below 1\.4 mmol\/L/);
+    expect(await cholesterolIntro(view.container)).toMatch(/Dr Brad aims for below 1\.4 mmol\/L/);
     expect(hints(view.container)).toContain(STATIN_HINT);
   });
 
@@ -584,7 +587,7 @@ describe('US-07 AC6: the form withholds its medicine wording when the plan does'
     expect(await weightMedsIntro(view.container)).toBe(NEUTRAL);
     expect(await cholesterolIntro(view.container)).toBe(CHOLESTEROL_NEUTRAL);
     expect(hints(view.container)).toEqual([]);
-    expect(view.container.textContent).not.toContain('treatment target');
+    expect(view.container.textContent).not.toContain('Dr Brad aims for below');
     // Plain fields: the medicines they take can still be recorded.
     for (const id of ['glp1-name', 'sglt2i-name', 'metformin', 'statin-name', 'ezetimibe']) {
       expect(view.container.querySelector(`#${id}`)).not.toBeNull();

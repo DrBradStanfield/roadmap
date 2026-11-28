@@ -167,11 +167,12 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 72g",
-          "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
+          "description": "Dr Brad suggests 72g of protein a day, from your ideal body weight of 60.0 kg, to support muscle.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
-            "ISSN 2017"
+            "ISSN 2017",
+            "KDIGO 2024"
           ],
           "references": [
             {
@@ -189,6 +190,10 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
+            },
+            {
+              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
+              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -333,10 +338,12 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "With a BMI of 25.2 and elevated blood pressure, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
+          "description": "Guidelines consider a weight medicine from a BMI of 30, or 27 with a weight-related condition. With a BMI of 25.2 and elevated blood pressure, Dr Brad raises it earlier, alongside diet, exercise and sleep. A doctor may not prescribe below the licensed levels. Consider discussing Tirzepatide or Semaglutide with your doctor.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [
+            "Endocrine Society 2015"
+          ],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -349,6 +356,18 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
+            },
+            {
+              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
+              "url": "https://doi.org/10.1210/jc.2014-3415"
+            },
+            {
+              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
+              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
+            },
+            {
+              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -357,15 +376,25 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.",
+          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.",
           "ingredients": [],
-          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
             "ISH/ESH 2023",
+            "ACC/AHA 2025",
+            "ESC 2024",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
+            {
+              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
+              "url": "https://doi.org/10.1161/HYP.0000000000000249"
+            },
+            {
+              "label": "McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)",
+              "url": "https://doi.org/10.1093/eurheartj/ehae178"
+            },
             {
               "label": "Charchar 2023 – ISH lifestyle management of hypertension",
               "url": "https://doi.org/10.1097/HJH.0000000000003563"
@@ -385,6 +414,10 @@
             {
               "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
               "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
+            },
+            {
+              "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
+              "url": "https://doi.org/10.1136/heartjnl-2024-324170"
             }
           ]
         },
@@ -393,9 +426,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -432,7 +465,7 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
           "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
@@ -494,7 +527,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -522,6 +555,10 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
+            },
+            {
+              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
+              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },
@@ -638,7 +675,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -738,9 +775,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {
@@ -970,11 +1007,12 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 72g",
-          "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
+          "description": "Dr Brad suggests 72g of protein a day, from your ideal body weight of 60.0 kg, to support muscle.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
-            "ISSN 2017"
+            "ISSN 2017",
+            "KDIGO 2024"
           ],
           "references": [
             {
@@ -992,6 +1030,10 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
+            },
+            {
+              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
+              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -1136,10 +1178,12 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "With a BMI of 25.2 and an HbA1c in the diabetes range and elevated blood pressure, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
+          "description": "With a BMI of 25.2 and an HbA1c in the diabetes range and elevated blood pressure: if type 2 diabetes is confirmed, Tirzepatide and Semaglutide are licensed for it at any BMI. Consider discussing them with your doctor, alongside diet, exercise and sleep.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [
+            "Endocrine Society 2015"
+          ],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -1152,6 +1196,18 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
+            },
+            {
+              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
+              "url": "https://doi.org/10.1210/jc.2014-3415"
+            },
+            {
+              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
+              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
+            },
+            {
+              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -1178,15 +1234,25 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.",
+          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.",
           "ingredients": [],
-          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
             "ISH/ESH 2023",
+            "ACC/AHA 2025",
+            "ESC 2024",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
+            {
+              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
+              "url": "https://doi.org/10.1161/HYP.0000000000000249"
+            },
+            {
+              "label": "McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)",
+              "url": "https://doi.org/10.1093/eurheartj/ehae178"
+            },
             {
               "label": "Charchar 2023 – ISH lifestyle management of hypertension",
               "url": "https://doi.org/10.1097/HJH.0000000000003563"
@@ -1206,6 +1272,10 @@
             {
               "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
               "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
+            },
+            {
+              "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
+              "url": "https://doi.org/10.1136/heartjnl-2024-324170"
             }
           ]
         },
@@ -1214,9 +1284,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -1253,7 +1323,7 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
           "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
@@ -1315,7 +1385,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -1343,6 +1413,10 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
+            },
+            {
+              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
+              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },
@@ -1459,7 +1533,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -1559,9 +1633,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {
@@ -1791,11 +1865,12 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 72g",
-          "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
+          "description": "Dr Brad suggests 72g of protein a day, from your ideal body weight of 60.0 kg, to support muscle.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
-            "ISSN 2017"
+            "ISSN 2017",
+            "KDIGO 2024"
           ],
           "references": [
             {
@@ -1813,6 +1888,10 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
+            },
+            {
+              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
+              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -1957,10 +2036,12 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "With a BMI of 25.2 and an HbA1c in the diabetes range and elevated blood pressure, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
+          "description": "With a BMI of 25.2 and an HbA1c in the diabetes range and elevated blood pressure: if type 2 diabetes is confirmed, Tirzepatide and Semaglutide are licensed for it at any BMI. Consider discussing them with your doctor, alongside diet, exercise and sleep.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [
+            "Endocrine Society 2015"
+          ],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -1973,6 +2054,18 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
+            },
+            {
+              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
+              "url": "https://doi.org/10.1210/jc.2014-3415"
+            },
+            {
+              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
+              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
+            },
+            {
+              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -1999,15 +2092,25 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.",
+          "description": "Your BP of 128/82 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.",
           "ingredients": [],
-          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
             "ISH/ESH 2023",
+            "ACC/AHA 2025",
+            "ESC 2024",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
+            {
+              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
+              "url": "https://doi.org/10.1161/HYP.0000000000000249"
+            },
+            {
+              "label": "McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)",
+              "url": "https://doi.org/10.1093/eurheartj/ehae178"
+            },
             {
               "label": "Charchar 2023 – ISH lifestyle management of hypertension",
               "url": "https://doi.org/10.1097/HJH.0000000000003563"
@@ -2027,6 +2130,10 @@
             {
               "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
               "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
+            },
+            {
+              "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
+              "url": "https://doi.org/10.1136/heartjnl-2024-324170"
             }
           ]
         },
@@ -2035,9 +2142,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -2074,7 +2181,7 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
           "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
@@ -2136,7 +2243,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -2164,6 +2271,10 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
+            },
+            {
+              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
+              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },
@@ -2280,7 +2391,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -2380,9 +2491,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {
@@ -2759,15 +2870,20 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Measure your blood pressure",
-          "description": "High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you're frail).",
+          "description": "High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. The ACC/AHA guideline (2025) aims for a top number below 130. Dr Brad aims for below 120/80 under 65 and 130/80 from 65.",
           "ingredients": [],
-          "reason": "High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThis plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you're frail.",
+          "reason": "High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing the SPRINT and ESPRIT trials.",
           "guidelines": [
+            "ACC/AHA 2025",
             "ACC/AHA 2017",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
+            {
+              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
+              "url": "https://doi.org/10.1161/HYP.0000000000000249"
+            },
             {
               "label": "Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)",
               "url": "https://doi.org/10.1161/HYP.0000000000000065"
@@ -2787,11 +2903,12 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 72g",
-          "description": "Based on your ideal body weight of 60.0 kg, aim for 72g of protein daily. This supports muscle maintenance and metabolic health.",
+          "description": "Dr Brad suggests 72g of protein a day, from your ideal body weight of 60.0 kg, to support muscle.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
-            "ISSN 2017"
+            "ISSN 2017",
+            "KDIGO 2024"
           ],
           "references": [
             {
@@ -2809,6 +2926,10 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
+            },
+            {
+              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
+              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -2910,10 +3031,12 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "With a BMI of 25.2 and elevated blood pressure, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
+          "description": "Guidelines consider a weight medicine from a BMI of 30, or 27 with a weight-related condition. With a BMI of 25.2 and elevated blood pressure, Dr Brad raises it earlier, alongside diet, exercise and sleep. A doctor may not prescribe below the licensed levels. Consider discussing Tirzepatide or Semaglutide with your doctor.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [
+            "Endocrine Society 2015"
+          ],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -2926,6 +3049,18 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
+            },
+            {
+              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
+              "url": "https://doi.org/10.1210/jc.2014-3415"
+            },
+            {
+              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
+              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
+            },
+            {
+              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -2934,9 +3069,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your LDL-c is 3.6 mmol/L; the treatment target is below 1.4 mmol/L. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your LDL-c is 3.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -2973,7 +3108,7 @@
           "category": "screening",
           "priority": "attention",
           "title": "Start colorectal cancer screening",
-          "description": "Dr Brad recommends starting colorectal screening at 35, because colorectal cancer has become more common in younger adults. The official guideline (American Cancer Society) starts at 45. Dr Brad suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
+          "description": "The American Cancer Society starts colorectal screening at 45. Dr Brad recommends starting at 35, because colorectal cancer has become more common in younger adults. He suggests a FIT test every year until 55, then a colonoscopy every 10 years. Discuss with your doctor.",
           "ingredients": [],
           "reason": "Dr Brad recommends starting colorectal screening at age 35, because colorectal cancer in adults under 50 has become more common in many countries since the mid-1990s. This is his recommendation, not the official guideline: the American Cancer Society recommends starting at 45 for people at average risk and continuing through 75. Dr Brad suggests a stool test (FIT) every year until 55, then a colonoscopy every 10 years. This order is his suggestion; the American Cancer Society lists FIT every year and colonoscopy every 10 years, among other tests, as equal options from 45. After a positive test and a colonoscopy, follow the repeat interval in your colonoscopy report, which depends on what was found; if the report gave none, Dr Brad suggests repeating the colonoscopy every 3 years. This default is his recommendation, not a guideline figure.",
           "guidelines": [
@@ -3035,7 +3170,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -3063,6 +3198,10 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
+            },
+            {
+              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
+              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },
@@ -3179,7 +3318,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -3279,9 +3418,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {
@@ -3591,11 +3730,12 @@
           "category": "nutrition",
           "priority": "info",
           "title": "Daily protein target: 94g",
-          "description": "Based on your ideal body weight of 172 lbs, aim for 94g of protein daily. This supports muscle maintenance and metabolic health.",
+          "description": "Dr Brad suggests 94g of protein a day, from your ideal body weight of 172 lbs, to support muscle.",
           "ingredients": [],
-          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
+          "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.",
           "guidelines": [
-            "ISSN 2017"
+            "ISSN 2017",
+            "KDIGO 2024"
           ],
           "references": [
             {
@@ -3613,6 +3753,10 @@
             {
               "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
               "url": "https://doi.org/10.1093/nutrit/nuaa104"
+            },
+            {
+              "label": "KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)",
+              "url": "https://doi.org/10.1016/j.kint.2023.10.018"
             }
           ]
         },
@@ -3809,10 +3953,12 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing a GLP-1 medication with your doctor",
-          "description": "With a BMI of 27.2 and an HbA1c in the prediabetes range, elevated triglycerides, elevated blood pressure and elevated waist-to-height ratio, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.",
+          "description": "With a BMI of 27.2 and an HbA1c in the prediabetes range, elevated triglycerides, elevated blood pressure and elevated waist-to-height ratio, guidelines consider a weight medicine once lifestyle changes alone have not been enough. Dr Brad raises it from the start, alongside diet, exercise and sleep. Consider discussing Tirzepatide or Semaglutide with your doctor.",
           "ingredients": [],
-          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
-          "guidelines": [],
+          "reason": "GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.",
+          "guidelines": [
+            "Endocrine Society 2015"
+          ],
           "references": [
             {
               "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
@@ -3825,6 +3971,18 @@
             {
               "label": "Grundy 2018 – AHA/ACC cholesterol guideline: risk-enhancing factors (Circulation)",
               "url": "https://doi.org/10.1161/CIR.0000000000000625"
+            },
+            {
+              "label": "Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)",
+              "url": "https://doi.org/10.1210/jc.2014-3415"
+            },
+            {
+              "label": "FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)",
+              "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf"
+            },
+            {
+              "label": "FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79"
             }
           ]
         },
@@ -3851,7 +4009,7 @@
           "category": "bloodwork",
           "priority": "attention",
           "title": "Elevated Lp(a): 180 nmol/L",
-          "description": "Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n⚠️ ApoB: 120 mg/dL — target <50 mg/dL\n⚠️ Blood pressure: 138/86 mmHg — target <120/80\n⚠️ BMI: 27.2 — target <25, or <30 with a healthy waist-to-height ratio\n⚠️ HbA1c: 6.2 % — target <5.7 %\n✅ Statin: Atorvastatin 20mg\n⚠️ Ezetimibe: not started\n⚠️ PCSK9 inhibitor: not started — can lower Lp(a) ~25–30%\n\nConsider discussing these medicines with your doctor.",
+          "description": "Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n⚠️ ApoB: 120 mg/dL — target <50 mg/dL\n⚠️ Blood pressure: 138/86 mmHg — target <120/80\n⚠️ BMI: 27.2 — target <25, or <30 with a healthy waist-to-height ratio\n⚠️ HbA1c: 6.2 % — target <5.7 %\n✅ Statin: Atorvastatin 20mg\n⚠️ Ezetimibe: not started\n⚠️ PCSK9 inhibitor: not started — can lower Lp(a) ~25–30%\n\nThe ApoB target is Dr Brad's, lower than guideline goals.\n\nConsider discussing these medicines with your doctor.",
           "ingredients": [],
           "reason": "Lp(a) is genetically determined — you are born with a set level that cannot be changed through diet or lifestyle. The 2026 ACC/AHA Dyslipidemia Guideline recommends measuring Lp(a) at least once in all adults (Class I). Elevated Lp(a) is an independent cardiovascular risk factor. Since Lp(a) itself cannot be lowered (yet), the strategy is to aggressively reduce all other modifiable risk factors: lipids, blood pressure, blood sugar, weight, and medications where indicated.",
           "guidelines": [
@@ -3897,15 +4055,25 @@
           "category": "blood_pressure",
           "priority": "attention",
           "title": "Blood pressure in the stage 1 range",
-          "description": "Your BP of 138/86 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nIncrease potassium-rich foods (3,500–5,000mg/day).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.",
+          "description": "Your BP of 138/86 mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. The ACC/AHA guideline (2025) aims for a top number below 130; the European guideline (ESC 2024) aims for 120 to 129. Dr Brad aims for below 120/80 under 65.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nIncrease potassium-rich foods (3,500–5,000mg/day).\n\nWeight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.",
           "ingredients": [],
-          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+          "reason": "Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
           "guidelines": [
             "ISH/ESH 2023",
+            "ACC/AHA 2025",
+            "ESC 2024",
             "SPRINT 2015",
             "ESPRIT 2024"
           ],
           "references": [
+            {
+              "label": "Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)",
+              "url": "https://doi.org/10.1161/HYP.0000000000000249"
+            },
+            {
+              "label": "McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)",
+              "url": "https://doi.org/10.1093/eurheartj/ehae178"
+            },
             {
               "label": "Charchar 2023 – ISH lifestyle management of hypertension",
               "url": "https://doi.org/10.1097/HJH.0000000000003563"
@@ -3925,6 +4093,10 @@
             {
               "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
               "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
+            },
+            {
+              "label": "Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)",
+              "url": "https://doi.org/10.1136/heartjnl-2024-324170"
             }
           ]
         },
@@ -3933,9 +4105,9 @@
           "category": "medication",
           "priority": "attention",
           "title": "Consider discussing Ezetimibe with your doctor",
-          "description": "Your ApoB is 120 mg/dL; the treatment target is below 50 mg/dL. Discuss adding Ezetimibe 10mg with your doctor. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+          "description": "Your ApoB is 120 mg/dL. Guidelines set goals by heart risk. Dr Brad aims for below 50 mg/dL, lower than guideline goals. The European guideline (ESC/EAS 2019) raises a statin to the highest tolerated dose before adding Ezetimibe. Dr Brad suggests discussing Ezetimibe with your doctor first. Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
           "ingredients": [],
-          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
+          "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.",
           "guidelines": [
             "ACC/AHA 2026",
             "ESC/EAS 2019"
@@ -4022,7 +4194,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Micronutrient base",
-          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis of three COSMOS trial sub-studies (2024) found that a daily multivitamin improved global cognition and episodic memory in older adults. This suggests broad micronutrient support may benefit brain health alongside filling common dietary gaps. The WHO's 2026 dementia guideline recommends against vitamin B, vitamin E, omega-3 and multivitamin-mineral supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It kept its earlier recommendation without reassessing supplements, and did not cite the COSMOS trials. If you take Warfarin (Coumadin, Marevan) or another vitamin K antagonist, check with your doctor or anticoagulation clinic before starting or stopping vitamin K2, because it can change your INR. Suggesting a daily multivitamin is Dr Brad's view; no guideline recommends one for everyone. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [
             "Methylated B-complex",
             "Vitamin D3 with K2",
@@ -4050,6 +4222,10 @@
             {
               "label": "Theuwissen 2013 – Low-dose vitamin K2 (MK-7) and oral anticoagulant stability (J Thromb Haemost)",
               "url": "https://doi.org/10.1111/jth.12203"
+            },
+            {
+              "label": "USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)",
+              "url": "https://doi.org/10.1001/jama.2022.8970"
             }
           ]
         },
@@ -4166,7 +4342,7 @@
           "category": "supplements",
           "priority": "info",
           "title": "Omega-3",
-          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
+          "description": "A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO's 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health. Whether it suits you is worth discussing with your doctor or pharmacist.",
           "ingredients": [],
           "reason": null,
           "guidelines": [],
@@ -4266,9 +4442,9 @@
           "category": "skin",
           "priority": "info",
           "title": "Topical retinoid",
-          "description": "A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.",
+          "description": "Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist. Retinoids are well studied for skin texture and collagen, and are used at night with daily sunscreen. They must not be used during pregnancy. Tretinoin needs a prescription.",
           "ingredients": [],
-          "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
+          "reason": "Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.",
           "guidelines": [],
           "references": [
             {

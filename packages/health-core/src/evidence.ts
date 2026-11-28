@@ -105,7 +105,7 @@ const REF_CHOLESTEROL_2018: SuggestionReference = {
 };
 
 /** When the plan suggests a weight medication, and how that differs from the guidelines (US-06 AC6). */
-const WEIGHT_MED_TRIGGER_NOTE = '\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.';
+const WEIGHT_MED_TRIGGER_NOTE = '\n\nThis plan raises these medications earlier than guidelines do. Guidelines consider them at a BMI above 30, or above 27 with a weight-related condition, after 3–6 months of lifestyle change. This plan suggests discussing them at a BMI of 30 or more, above 28 unless your waist is in the healthy range, and from 25 when a marker is raised: HbA1c, blood pressure, triglycerides, cholesterol or waist size. No guideline supports these lower BMI thresholds, and a doctor may not agree to prescribe below the licensed ones. With an HbA1c in the diabetes range, Tirzepatide (Mounjaro) and Semaglutide (Ozempic) are licensed for glycemic control in type 2 diabetes with no BMI condition, once the diagnosis is confirmed. The cholesterol lines (ApoB 130 mg/dL, LDL-C 160 mg/dL, non-HDL-C 190 mg/dL or more) are the risk-enhancing levels in the 2018 AHA/ACC cholesterol guideline, which uses them to guide statin decisions, not weight medication.';
 
 const REFS_SGLT2I: SuggestionReference[] = [
   { label: 'Zinman 2015 – EMPA-REG OUTCOME: empagliflozin CV outcomes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1504720' },
@@ -114,6 +114,22 @@ const REFS_SGLT2I: SuggestionReference[] = [
   { label: 'Vaduganathan 2022 – SGLT2 inhibitors in heart failure: meta-analysis of five trials (Lancet)', url: 'https://doi.org/10.1016/S0140-6736(22)01429-5' },
   { label: 'Neuen 2025 – SMART-C: SGLT2 inhibitors and kidney outcomes by GFR and albuminuria (JAMA)', url: 'https://doi.org/10.1001/jama.2025.20834' },
 ];
+
+// US-07 AC24, AC25: the guidelines and labels the cards now name first.
+const REF_ENDO_2015: SuggestionReference = { label: 'Apovian 2015 – Endocrine Society guideline: pharmacological management of obesity (J Clin Endocrinol Metab)', url: 'https://doi.org/10.1210/jc.2014-3415' };
+const REFS_T2D_LICENCE: SuggestionReference[] = [
+  { label: 'FDA label – Mounjaro (tirzepatide), 1 Indications: glycemic control in type 2 diabetes (FDA)', url: 'https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/215866s041lbl.pdf' },
+  { label: 'FDA label – Ozempic (semaglutide), 1 Indications: glycemic control in type 2 diabetes (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=adec4fd2-6858-4c99-91d4-531f5f2a2d79' },
+];
+const REF_JONES_2025: SuggestionReference = { label: 'Jones 2025 – AHA/ACC High Blood Pressure Guideline (Hypertension)', url: 'https://doi.org/10.1161/HYP.0000000000000249' };
+const REF_MCEVOY_2024: SuggestionReference = { label: 'McEvoy 2024 – ESC Guidelines for elevated blood pressure and hypertension (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehae178' };
+const REF_KRUMHOLZ_2024: SuggestionReference = { label: 'Krumholz 2024 – Tirzepatide and blood pressure: SURMOUNT-1 analyses (Heart)', url: 'https://doi.org/10.1136/heartjnl-2024-324170' };
+const REF_KDIGO_2024: SuggestionReference = { label: 'KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)', url: 'https://doi.org/10.1016/j.kint.2023.10.018' };
+const REF_USPSTF_VITAMINS_2022: SuggestionReference = { label: 'USPSTF 2022 – Vitamin, mineral and multivitamin supplementation to prevent cardiovascular disease and cancer (JAMA)', url: 'https://doi.org/10.1001/jama.2022.8970' };
+/** L2, L12: the 2019 European order and Dr Brad's (US-07 AC23). */
+const EZETIMIBE_ORDER = 'The 2019 European guideline raises a statin to the highest tolerated dose before adding Ezetimibe; Dr Brad suggests Ezetimibe before a higher dose.';
+/** B1: the guideline sentences, then Dr Brad's age-split target (US-07 AC25). */
+const BP_TARGET_NOTE = 'The ACC/AHA guideline (2025) aims for a top number below 130 mmHg; the European guideline (ESC 2024) aims for 120 to 129 mmHg if tolerated. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing SPRINT and ESPRIT.';
 
 const REFS_BP_TRIALS: SuggestionReference[] = [
   { label: 'SPRINT 2015 – Intensive BP lowering <120 mmHg (NEJM)', url: 'https://doi.org/10.1056/NEJMoa1511939' },
@@ -141,7 +157,7 @@ const REF_MPOD: SuggestionReference = { label: 'Wilson 2021 – Lutein/zeaxanthi
  */
 export const US_SUPPLEMENT_REFERENCES: Readonly<Partial<Record<UsProductCardId, SuggestionReference[]>>> = {
   // No WHO dementia guideline.
-  'supplement-micronutrient-base': [...REFS_COSMOS, REF_K2_VKA],
+  'supplement-micronutrient-base': [...REFS_COSMOS, REF_K2_VKA, REF_USPSTF_VITAMINS_2022],
   // No cognition or memory references.
   'supplement-creatine': [REF_CREATINE_STRENGTH],
   // No macular degeneration trials.
@@ -174,9 +190,9 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Nutrition ──────────────────────────────────────────────
 
   'protein-target': {
-    reason: 'Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.',
-    guidelines: ['ISSN 2017'],
-    references: REFS_PROTEIN,
+    reason: 'Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), Dr Brad lowers the target to 1.0 g/kg of ideal body weight; KDIGO 2024 suggests 0.8 g/kg of body weight in CKD stages 3 to 5.',
+    guidelines: ['ISSN 2017', 'KDIGO 2024'],
+    references: [...REFS_PROTEIN, REF_KDIGO_2024],
   },
 
   'low-salt': {
@@ -253,8 +269,8 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
 
   'weight-med-glp1': {
     reason: 'GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. This plan lists Tirzepatide first because of its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.' + WEIGHT_MED_TRIGGER_NOTE,
-    guidelines: [],
-    references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
+    guidelines: ['Endocrine Society 2015'],
+    references: [...REFS_GLP1, REF_CHOLESTEROL_2018, REF_ENDO_2015, ...REFS_T2D_LICENCE],
   },
 
   'weight-med-glp1-dose': {
@@ -270,30 +286,31 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'weight-med-glp1-switch': {
-    reason: 'Tirzepatide (Mounjaro/Zepbound) works on both GIP and GLP-1 receptors, which may provide greater weight loss than GLP-1-only medications. In clinical trials, Tirzepatide achieved up to 22% body weight loss.',
+    reason: 'Tirzepatide (Mounjaro/Zepbound) works on both GIP and GLP-1 receptors, which may provide greater weight loss than GLP-1-only medications. In clinical trials, Tirzepatide achieved up to 22% body weight loss. In SURMOUNT-5, a head-to-head trial in adults with obesity without diabetes, weight fell by 20.2% on Tirzepatide and 13.7% on Semaglutide over 72 weeks; the trial was open-label and funded by the maker of Tirzepatide.',
     guidelines: [],
-    references: REFS_GLP1,
+    references: [...REFS_GLP1, { label: 'Aronne 2025 – SURMOUNT-5: tirzepatide vs semaglutide for obesity (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2416394' }],
   },
 
   'weight-med-sglt2i': {
-    reason: 'SGLT2 inhibitors (Empagliflozin, Dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection in some populations, making them a valuable addition for metabolic health.',
-    guidelines: [],
-    references: REFS_SGLT2I,
+    reason: 'SGLT2 inhibitors (Empagliflozin, Dapagliflozin) work by a different mechanism to GLP-1 medications — they cause the kidneys to excrete excess glucose. Beyond modest weight loss, they provide proven cardiovascular and kidney protection in some populations, making them a valuable addition for metabolic health.\n\nTheir US labels cover type 2 diabetes, heart failure and kidney disease, not weight loss, and the Endocrine Society advises against medicines approved for other conditions for weight loss alone. No guideline recommends SGLT2 inhibitors for weight alone; this step is Dr Brad\'s.',
+    guidelines: ['Endocrine Society 2015'],
+    references: [...REFS_SGLT2I, REF_ENDO_2015, { label: 'FDA label – Jardiance (empagliflozin), 1 Indications (DailyMed)', url: 'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=faf3dd6a-9cd0-39c2-0d2e-232cb3f67565' }],
   },
 
   'weight-med-metformin': {
-    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that Metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. Extended-release formulations cause fewer gastrointestinal side effects.',
-    guidelines: [],
+    reason: 'Metformin has been used for decades to improve blood sugar control. The Diabetes Prevention Program (DPP) trial showed that Metformin reduced the move from prediabetes to diabetes by about a third versus placebo; lifestyle change did more. Extended-release formulations cause fewer gastrointestinal side effects.\n\nWith an HbA1c below the prediabetes range, no guideline recommends Metformin for weight alone, and the Endocrine Society advises against medicines approved for other conditions for weight loss alone; this step is Dr Brad\'s.',
+    guidelines: ['Endocrine Society 2015'],
     references: [
       { label: 'Knowler 2002 – Diabetes Prevention Program: lifestyle or metformin & incidence of type 2 diabetes (NEJM)', url: 'https://doi.org/10.1056/NEJMoa012512' },
       { label: 'Lee 2021 – Metformin & mortality in Diabetes Prevention Program (Diabetes Care)', url: 'https://doi.org/10.2337/dc21-1046' },
+      REF_ENDO_2015,
     ],
   },
 
   'weight-glp1': {
     reason: 'GLP-1 receptor agonists like Tirzepatide and Semaglutide have been shown in large randomised trials to produce significant weight loss alongside improvements in metabolic health. These medications work best as part of a comprehensive approach including diet, exercise, and sleep.' + WEIGHT_MED_TRIGGER_NOTE,
-    guidelines: [],
-    references: [...REFS_GLP1, REF_CHOLESTEROL_2018],
+    guidelines: ['Endocrine Society 2015'],
+    references: [...REFS_GLP1, REF_CHOLESTEROL_2018, REF_ENDO_2015, ...REFS_T2D_LICENCE],
   },
 
   // ── General ────────────────────────────────────────────────
@@ -423,9 +440,9 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Pressure ─────────────────────────────────────────
 
   'measure-bp': {
-    reason: 'High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThis plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you\'re frail.',
-    guidelines: ['ACC/AHA 2017', 'SPRINT 2015', 'ESPRIT 2024'],
-    references: [REF_BP_2017, ...REFS_BP_TRIALS],
+    reason: 'High blood pressure usually causes no symptoms, so a reading is the only way to know. Home readings with an automated upper-arm cuff, taken seated after a few minutes of rest, are a practical way to track it; every 2–4 weeks is enough to see a trend.\n\nThe ACC/AHA guideline (2025) aims for a top number below 130 mmHg. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing the SPRINT and ESPRIT trials.',
+    guidelines: ['ACC/AHA 2025', 'ACC/AHA 2017', 'SPRINT 2015', 'ESPRIT 2024'],
+    references: [REF_JONES_2025, REF_BP_2017, ...REFS_BP_TRIALS],
   },
 
   'bp-crisis': {
@@ -438,21 +455,21 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-stage2': {
-    reason: 'Blood pressure in the stage 2 range (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, guidelines typically recommend medication alongside lifestyle measures. Discuss it with your doctor.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
-    guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
-    references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
+    reason: 'Blood pressure in the stage 2 range (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, guidelines typically recommend medication alongside lifestyle measures. Discuss it with your doctor.\n\n' + BP_TARGET_NOTE + ' The SPRINT trial (9,300 participants) showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
+    guidelines: [...GUIDELINES_BP, 'ACC/AHA 2025', 'ESC 2024', 'SPRINT 2015', 'ESPRIT 2024'],
+    references: [REF_JONES_2025, REF_MCEVOY_2024, ...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS, REF_KRUMHOLZ_2024],
   },
 
   'bp-stage1': {
-    reason: 'Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
-    guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
-    references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
+    reason: 'Blood pressure in the stage 1 range (130–139 systolic or 80–89 diastolic mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\n' + BP_TARGET_NOTE + ' The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
+    guidelines: [...GUIDELINES_BP, 'ACC/AHA 2025', 'ESC 2024', 'SPRINT 2015', 'ESPRIT 2024'],
+    references: [REF_JONES_2025, REF_MCEVOY_2024, ...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS, REF_KRUMHOLZ_2024],
   },
 
   // ── Cholesterol Medication Cascade ─────────────────────────
 
   'med-statin': {
-    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nSome doctors use more aggressive on-treatment lipid targets (ApoB below 50 mg/dL, LDL below 55 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.\n\nThe FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.',
+    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nSome doctors use more aggressive on-treatment lipid targets (ApoB below 50 mg/dL, LDL below 55 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.\n\n' + EZETIMIBE_ORDER + '\n\nThe FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES, ...REFS_PESA, ...REFS_LDL_SAFETY,
@@ -461,7 +478,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-ezetimibe': {
-    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting Ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.\n\nIf a statin is not tolerated, this plan suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.',
+    reason: 'Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding Ezetimibe to a statin typically lowers LDL by an additional 15–20%. A Swedish registry study found fewer heart events when Ezetimibe was started early after a heart attack. ' + EZETIMIBE_ORDER + '\n\nIf a statin is not tolerated, Dr Brad suggests discussing a PCSK9 inhibitor first, because the outcome evidence for Ezetimibe on its own is limited, and Ezetimibe after it if your level is still above target.\n\nIts US label says there are not enough data on Ezetimibe in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -493,13 +510,13 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'med-statin-switch': {
-    reason: 'Different statins vary in potency. Rosuvastatin 40mg provides the highest LDL reduction (~63%), while some other statins max out at lower potencies. Switching to a more potent statin is recommended by ESC/EAS guidelines before adding additional medications.',
+    reason: 'Different statins vary in potency. Rosuvastatin 40mg provides the highest LDL reduction (~63%), while some other statins max out at lower potencies. ESC/EAS 2019 recommends a statin up to the highest tolerated dose before adding other medicines.',
     guidelines: [...GUIDELINES_STATIN_STEPS],
     references: [REF_ESC_EAS_2019, ...REFS_STATIN_PREGNANCY],
   },
 
   'med-pcsk9i': {
-    reason: 'PCSK9 inhibitors (Evolocumab, Alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus Ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. If a statin is not tolerated for any reason, this plan suggests discussing a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), Ezetimibe comes next; Bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
+    reason: 'PCSK9 inhibitors (Evolocumab, Alirocumab) are injectable medications that can lower LDL by an additional 50–60% beyond statins. They are recommended by AHA/ACC and ESC/EAS guidelines when lipid targets are not met with maximally tolerated statin plus Ezetimibe. They also lower Lp(a) by approximately 25–30%.\n\nStatin muscle damage is rare. If it happens, the statin is usually stopped, and a PCSK9 inhibitor is one option to discuss with your doctor. If a statin is not tolerated for any reason, Dr Brad suggests discussing a PCSK9 inhibitor next. If your level is still above target after that step (taken, declined or not tolerated), Ezetimibe comes next; Bempedoic acid last.\n\nTheir US labels say there are not enough data on PCSK9 inhibitors in pregnancy to judge the risk.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -521,6 +538,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
       ...REFS_COSMOS,
       REF_WHO_DEMENTIA_2026,
       REF_K2_VKA,
+      REF_USPSTF_VITAMINS_2022,
     ],
   },
 
@@ -573,7 +591,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'supplement-omega3': {
-    reason: 'An updated meta-analysis of interventional trials found that omega-3 supplementation reduces cardiovascular events and cardiac death, with benefits increasing at higher doses. The effect appears strongest for EPA-rich formulations.\n\nHigher doses carry a cost. A meta-analysis of seven large cardiovascular trials found that omega-3 supplements raised the risk of atrial fibrillation, an irregular heart rhythm. The risk was greater in trials testing more than 1 g a day (hazard ratio 1.49) than in trials testing 1 g a day or less (1.12). Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined: benefit may rise with dose, but so may the risk of atrial fibrillation. If you have atrial fibrillation or take a blood thinner, check with your doctor first.\n\nOmega-3 levels may also matter for brain health. In one trial (VITACOG), B vitamin supplementation slowed brain atrophy by 40%, but only in participants with good omega-3 levels. When omega-3 was low, B vitamins had no effect. This suggests the cognitive benefit of B vitamins may depend on good omega-3 levels. A Dutch trial found the reverse. In FACIT (791 adults aged 50 to 70 with raised homocysteine), 800 mcg of folic acid a day improved global cognition and processing speed only in people with lower omega-3 levels. Omega-3 was not randomised in either trial, so how the two interact remains uncertain.\n\nThe WHO 2026 guideline on reducing the risk of cognitive decline and dementia recommends against omega-3, vitamin B, vitamin E and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It is a strong recommendation based on moderate-certainty evidence; WHO gave the reason as \'unexpected harmful effects that outweigh any potential benefits\'. It kept its 2019 recommendation without reassessing supplements, and it did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health.',
+    reason: 'An updated meta-analysis of interventional trials found that omega-3 supplementation reduces cardiovascular events and cardiac death, with benefits increasing at higher doses. The effect appears strongest for EPA-rich formulations.\n\nHigher doses carry a cost. A meta-analysis of seven large cardiovascular trials found that omega-3 supplements raised the risk of atrial fibrillation, an irregular heart rhythm. The risk was greater in trials testing more than 1 g a day (hazard ratio 1.49) than in trials testing 1 g a day or less (1.12). Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined: benefit may rise with dose, but so may the risk of atrial fibrillation. If you have atrial fibrillation or take a blood thinner, check with your doctor first.\n\nOmega-3 levels may also matter for brain health. In one trial (VITACOG), B vitamin supplementation slowed brain atrophy by 40%, but only in participants with good omega-3 levels. When omega-3 was low, B vitamins had no effect. This suggests the cognitive benefit of B vitamins may depend on good omega-3 levels. A Dutch trial found the reverse. In FACIT (791 adults aged 50 to 70 with raised homocysteine), 800 mcg of folic acid a day improved global cognition and processing speed only in people with lower omega-3 levels. Omega-3 was not randomised in either trial, so how the two interact remains uncertain.\n\nThe WHO 2026 guideline on reducing the risk of cognitive decline and dementia recommends against omega-3, vitamin B, vitamin E and multivitamin-mineral supplements for that purpose in people without a diagnosed deficiency. It is a strong recommendation based on moderate-certainty evidence; WHO gave the reason as \'unexpected harmful effects that outweigh any potential benefits\'. It kept its 2019 recommendation without reassessing supplements, and it did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health.',
     guidelines: [],
     references: [
       { label: 'Bernasconi 2021 – Omega-3 dose & cardiovascular outcomes (Mayo Clin Proc)', url: 'https://doi.org/10.1016/j.mayocp.2020.08.034' },
@@ -615,7 +633,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'skin-retinoid': {
-    reason: 'Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.',
+    reason: 'Retinoids (vitamin A derivatives) are a well-studied topical treatment for skin ageing. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found Adapalene 0.3% comparable in efficacy to Tretinoin 0.05% for treating photoaging, with a similar safety profile. Caution: retinoids must not be used during pregnancy.',
     guidelines: [],
     references: [
       { label: 'Bagatin 2018 – Adapalene vs tretinoin for photoaging (Eur J Dermatol)', url: 'https://doi.org/10.1684/ejd.2018.3320' },
@@ -644,7 +662,7 @@ const REFS_BMI: SuggestionReference[] = [
 
 const REFS_EGFR: SuggestionReference[] = [
   { label: 'Inker 2021 – CKD-EPI 2021 race-free eGFR equation (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2102953' },
-  { label: 'KDIGO 2024 – Clinical practice guideline for CKD: GFR categories (Kidney Int)', url: 'https://doi.org/10.1016/j.kint.2023.10.018' },
+  REF_KDIGO_2024,
 ];
 
 const REFS_IBW: SuggestionReference[] = [
@@ -685,7 +703,7 @@ export const GUIDE_REFERENCES: SuggestionReference[] = [
 /** Static stat card evidence entries. */
 export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   'apob': {
-    reason: 'Apolipoprotein B (ApoB) counts the total number of atherogenic lipoprotein particles in your blood and is the most accurate single predictor of cardiovascular risk — more precise than LDL-cholesterol, which only measures cholesterol content. Each atherogenic particle carries exactly one ApoB molecule. The 2026 ACC/AHA Dyslipidemia Guideline recommends ApoB measurement to assess residual ASCVD risk, with treatment targets based on cardiovascular risk category: below 90 mg/dL for borderline-intermediate risk, below 70 mg/dL for high risk, and below 55 mg/dL for very high risk. ApoB is preferred over LDL-C because it captures all atherogenic particles including VLDL remnants and Lp(a).',
+    reason: 'Apolipoprotein B (ApoB) counts the total number of atherogenic lipoprotein particles in your blood and is the most accurate single predictor of cardiovascular risk — more precise than LDL-cholesterol, which only measures cholesterol content. Each atherogenic particle carries exactly one ApoB molecule. The 2026 ACC/AHA Dyslipidemia Guideline recommends ApoB measurement to assess residual ASCVD risk, with treatment targets based on cardiovascular risk category: below 90 mg/dL for borderline-intermediate risk, below 70 mg/dL for high risk, and below 55 mg/dL for very high risk. ApoB is preferred over LDL-C because it captures all atherogenic particles including VLDL remnants and Lp(a). This tool calls ApoB optimal only below 0.5 g/L (50 mg/dL), Dr Brad\'s target, lower than the goals above.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: [
       ...REFS_LIPID_GUIDELINES,

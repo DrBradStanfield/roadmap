@@ -14,6 +14,9 @@ import {
 import { toCanonicalValue } from './units';
 import { calculateHealthResults, getBMICategory, getLipidStatus } from './calculations';
 
+/** The two supplement sentences that name Dr Brad's own view (US-07 AC27). */
+const DR_BRAD_SUPPLEMENT_VIEWS = /Dr Brad thinks it is reasonable for adults to consider|Suggesting a daily multivitamin is Dr Brad's view/g;
+
 // Shorthand: convert conventional (US) blood test values to SI for test inputs
 const hba1c = (pct: number) => toCanonicalValue('hba1c', pct, 'conventional');
 const ldl = (mgdl: number) => toCanonicalValue('ldl', mgdl, 'conventional');
@@ -150,9 +153,9 @@ describe('generateSuggestions', () => {
     it('ldl-borderline names the 1.4 optimal line (US-07 AC5)', () => {
       const { inputs, results } = createTestData({ ldlC: 3.5 });
       expect(generateSuggestions(inputs, results).find(s => s.id === 'ldl-borderline')?.description)
-        .toBe('Your LDL-c of 3.5 mmol/L is borderline high. Optimal is <1.4 mmol/L.');
+        .toBe('Your LDL-c of 3.5 mmol/L is borderline high. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk.');
       expect(generateSuggestions(inputs, results, 'conventional').find(s => s.id === 'ldl-borderline')?.description)
-        .toBe('Your LDL-c of 135 mg/dL is borderline high. Optimal is <55 mg/dL.');
+        .toBe('Your LDL-c of 135 mg/dL is borderline high. Dr Brad aims for below 55 mg/dL, the guideline goal for very high risk.');
     });
 
     it('LDL 3.2 is above optimal but below borderline: no LDL card (US-07 AC5)', () => {
@@ -225,7 +228,7 @@ describe('generateSuggestions', () => {
     it('non-hdl-borderline names the 1.6 optimal line (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 4.5 });
       expect(generateSuggestions(inputs, results).find(s => s.id === 'non-hdl-borderline')?.description)
-        .toBe('Your non-HDL cholesterol of 4.5 mmol/L is borderline. Optimal is <1.6 mmol/L.');
+        .toBe('Your non-HDL cholesterol of 4.5 mmol/L is borderline against Dr Brad\'s target of below 1.6 mmol/L, which is lower than guideline goals.');
     });
 
     it('does not generate suggestion for optimal non-HDL < 160 mg/dL', () => {
@@ -435,7 +438,7 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
-      expect(bpSuggestion?.description).toContain('Target is <120/80');
+      expect(bpSuggestion?.description).toContain('Dr Brad aims for below 120/80 under 65.');
     });
 
     it('shows target <130/80 for stage 1 when age >= 65', () => {
@@ -443,7 +446,7 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
-      expect(bpSuggestion?.description).toContain('Target is <130/80');
+      expect(bpSuggestion?.description).toContain('Dr Brad aims for below 130/80 from 65.');
     });
 
     it('triggers on systolic alone when diastolic is normal', () => {
@@ -484,7 +487,7 @@ describe('generateSuggestions', () => {
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
       expect(bpSuggestion?.description).toContain('Weight loss is one of the most effective ways to lower blood pressure');
-      expect(bpSuggestion?.description).toContain('GLP-1 medications');
+      expect(bpSuggestion?.description).toContain('GLP-1 medicines');
     });
 
     it('stage 1 mentions weight loss when BMI 25-29.9 and WHtR >= 0.5', () => {
@@ -1062,15 +1065,16 @@ describe('generateSuggestions', () => {
       expect(card?.priority).toBe('attention');
       expect(card?.category).toBe('blood_pressure');
       expect(card?.title).toBe('Measure your blood pressure');
-      expect(card?.description).toBe('High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you\'re frail).');
-      // Brad 2026-11-02: one target sentence at every age, frailty named; this card does not read the age rule.
-      for (const age of [40, 70, undefined]) expect(bpCard({}, { age })?.description, `age ${age}`).toContain("Aim for below 120/80 (130/80 if you're frail).");
+      expect(card?.description).toBe('High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. The ACC/AHA guideline (2025) aims for a top number below 130. Dr Brad aims for below 120/80 under 65 and 130/80 from 65.');
+      // US-07 AC25 (Brad 2026-11-28): the target follows bpTargetFor's age line; it replaces the 2 Nov frailty wording.
+      for (const age of [40, 64, undefined]) expect(bpCard({}, { age })?.description, `age ${age}`).toContain('Dr Brad aims for below 120/80 under 65 and 130/80 from 65.');
+      for (const age of [65, 70]) expect(bpCard({}, { age })?.description, `age ${age}`).toMatch(/Dr Brad aims for below 130\/80 from 65\.$/);
       // Its evidence reuses the plan's blood pressure references.
       expect(card?.references?.map(r => r.url)).toContain('https://doi.org/10.1161/HYP.0000000000000065');
       expect(card?.reason).toContain('no symptoms');
-      // Brad 2026-11-02: the reason's target has no age either.
-      expect(card?.reason).toContain("This plan aims for <120/80 mmHg, as some doctors do, based on the SPRINT and ESPRIT trials, or <130/80 mmHg if you're frail.");
-      expect(card?.reason).not.toMatch(/65/);
+      // US-07 AC25: the guideline first, then Dr Brad's age-split target.
+      expect(card?.reason).toContain('The ACC/AHA guideline (2025) aims for a top number below 130 mmHg. Dr Brad aims for <120/80 mmHg under 65 and <130/80 mmHg from 65, citing the SPRINT and ESPRIT trials.');
+      expect(card?.reason).not.toMatch(/frail/);
     });
 
     it('asks to check a reading the plan left out as swapped, with the approved text (Brad 2026-11-02)', () => {
@@ -1267,7 +1271,7 @@ describe('generateSuggestions', () => {
       const statin = suggestions.find(s => s.id === 'med-statin');
       expect(statin).toBeDefined();
       expect(statin!.description).toContain('ApoB');
-      expect(statin!.description).toContain('the treatment target is below');
+      expect(statin!.description).toContain('Dr Brad aims for below');
     });
 
     it('med-statin description uses non-HDL when ApoB unavailable', () => {
@@ -1280,7 +1284,7 @@ describe('generateSuggestions', () => {
       const statin = suggestions.find(s => s.id === 'med-statin');
       expect(statin).toBeDefined();
       expect(statin!.description).toContain('non-HDL');
-      expect(statin!.description).toContain('the treatment target is below');
+      expect(statin!.description).toContain('Dr Brad aims for below');
     });
 
     it('med-statin description uses LDL as fallback', () => {
@@ -1290,7 +1294,7 @@ describe('generateSuggestions', () => {
       const statin = suggestions.find(s => s.id === 'med-statin');
       expect(statin).toBeDefined();
       expect(statin!.description).toContain('LDL-c');
-      expect(statin!.description).toContain('the treatment target is below');
+      expect(statin!.description).toContain('Dr Brad aims for below');
     });
 
     it('med-ezetimibe description includes specific lipid reason', () => {
@@ -1300,13 +1304,13 @@ describe('generateSuggestions', () => {
       const eze = suggestions.find(s => s.id === 'med-ezetimibe');
       expect(eze).toBeDefined();
       expect(eze!.description).toContain('ApoB');
-      expect(eze!.description).toContain('the treatment target is below');
+      expect(eze!.description).toContain('Dr Brad aims for below');
     });
 
     // US-07 AC5: the sentence reads true at exactly the target.
     it.each([
-      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L; the treatment target is below 1.4 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
-      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L; the treatment target is below 0.50 g/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
+      { name: 'LDL 1.4', values: { ldlC: 1.4 }, text: 'Your LDL-c is 1.4 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin, then Ezetimibe before a higher dose. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
+      { name: 'ApoB 0.5', values: { apoB: 0.5 }, text: 'Your ApoB is 0.50 g/L. Guidelines set goals by heart risk. Dr Brad aims for below 0.50 g/L, lower than guideline goals. Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin, then Ezetimibe before a higher dose. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.' },
     ])('med-statin at exactly the target, $name, shows and reads true (US-07 AC5)', ({ values, text }) => {
       const { inputs, results } = createTestData(values);
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description).toBe(text);
@@ -1368,7 +1372,7 @@ describe('generateSuggestions', () => {
     it('med-statin at exactly the non-HDL target of 1.6 shows (US-07 AC5)', () => {
       const { inputs, results } = createTestData({}, { nonHdlCholesterol: 1.6 });
       expect(generateSuggestions(inputs, results, 'si', {}).find(s => s.id === 'med-statin')?.description)
-        .toBe('Your non-HDL cholesterol is 1.6 mmol/L; the treatment target is below 1.6 mmol/L. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
+        .toBe('Your non-HDL cholesterol is 1.6 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.6 mmol/L, lower than guideline goals. Guidelines name a statin first. Dr Brad suggests a low-dose statin, such as Rosuvastatin, then Ezetimibe before a higher dose. Consider discussing a statin with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.');
     });
 
     it.each([
@@ -1390,7 +1394,7 @@ describe('generateSuggestions', () => {
       const pcsk9i = suggestions.find(s => s.id === 'med-pcsk9i');
       expect(pcsk9i).toBeDefined();
       expect(pcsk9i!.description).toContain('ApoB');
-      expect(pcsk9i!.description).toContain('the treatment target is below');
+      expect(pcsk9i!.description).toContain('Dr Brad aims for below');
     });
   });
 
@@ -2295,7 +2299,8 @@ describe('generateSuggestions', () => {
       expect(glp1 !== undefined).toBe(row.on);
       if (row.on) {
         const and = row.reasons.length > 0 ? ` and ${joinWithAnd(row.reasons)}` : '';
-        expect(glp1!.description).toBe(`With a BMI of ${results.bmi}${and}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`);
+        // The card's words by band are pinned in guideline-first-wording.test.ts (US-07 AC24); here, the BMI and reasons it names.
+        expect(glp1!.description).toContain(`a BMI of ${results.bmi}${and}`);
       }
     });
 
@@ -2318,21 +2323,24 @@ describe('generateSuggestions', () => {
   });
 
   describe('Weight medication card wording (US-06 AC6)', () => {
-    const TAIL = ', consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.';
+    // US-07 AC24: the words follow the BMI's band against the guideline line.
+    const GUIDE = (who: string) => `With ${who}, guidelines consider a weight medicine once lifestyle changes alone have not been enough. Dr Brad raises it from the start, alongside diet, exercise and sleep. Consider discussing Tirzepatide or Semaglutide with your doctor.`;
+    const EARLIER = (who: string) => `Guidelines consider a weight medicine from a BMI of 30, or 27 with a weight-related condition. With ${who}, Dr Brad raises it earlier, alongside diet, exercise and sleep. A doctor may not prescribe below the licensed levels. Consider discussing Tirzepatide or Semaglutide with your doctor.`;
+    const DIABETES = (who: string) => `With ${who}: if type 2 diabetes is confirmed, Tirzepatide and Semaglutide are licensed for it at any BMI. Consider discussing them with your doctor, alongside diet, exercise and sleep.`;
     const cases: { name: string; bmi: number; whr?: number; inputs: Partial<HealthInputs>; text: string }[] = [
-      { name: 'no reason', bmi: 30.5, inputs: {}, text: `With a BMI of 30.5${TAIL}` },
-      { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: `With a BMI of 31${TAIL}` },
-      { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: `With a BMI of 26 and an HbA1c in the prediabetes range${TAIL}` },
+      { name: 'no reason', bmi: 30.5, inputs: {}, text: GUIDE('a BMI of 30.5') },
+      { name: 'a whole-number BMI prints as the tile shows it', bmi: 31, inputs: {}, text: GUIDE('a BMI of 31') },
+      { name: 'one reason', bmi: 26, whr: 0.46, inputs: { hba1c: 40 }, text: EARLIER('a BMI of 26 and an HbA1c in the prediabetes range') },
       // Brad 2026-11-06: a diabetic-range HbA1c is named as such, at the urgent card's line.
-      { name: 'a diabetic-range HbA1c', bmi: 26, whr: 0.46, inputs: { hba1c: 50 }, text: `With a BMI of 26 and an HbA1c in the diabetes range${TAIL}` },
-      { name: 'HbA1c at the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: HBA1C_THRESHOLDS.diabetes }, text: `With a BMI of 26 and an HbA1c in the diabetes range${TAIL}` },
-      { name: 'HbA1c just under the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: 47.4 }, text: `With a BMI of 26 and an HbA1c in the prediabetes range${TAIL}` },
+      { name: 'a diabetic-range HbA1c', bmi: 26, whr: 0.46, inputs: { hba1c: 50 }, text: DIABETES('a BMI of 26 and an HbA1c in the diabetes range') },
+      { name: 'HbA1c at the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: HBA1C_THRESHOLDS.diabetes }, text: DIABETES('a BMI of 26 and an HbA1c in the diabetes range') },
+      { name: 'HbA1c just under the diabetic line', bmi: 26, whr: 0.46, inputs: { hba1c: 47.4 }, text: EARLIER('a BMI of 26 and an HbA1c in the prediabetes range') },
       {
         name: 'three reasons',
         bmi: 26,
         whr: 0.46,
         inputs: { hba1c: 40, triglycerides: 2, systolicBp: 135, diastolicBp: 85 },
-        text: `With a BMI of 26 and an HbA1c in the prediabetes range, elevated triglycerides and elevated blood pressure${TAIL}`,
+        text: EARLIER('a BMI of 26 and an HbA1c in the prediabetes range, elevated triglycerides and elevated blood pressure'),
       },
     ];
 
@@ -2360,7 +2368,7 @@ describe('generateSuggestions', () => {
   });
 
   describe('The BP weight paragraph follows the weight-medication trigger (US-06 AC6)', () => {
-    const PARAGRAPH = 'Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.';
+    const PARAGRAPH = 'Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference. GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.';
 
     it('shows at BMI 26 with a healthy waist and BP 135/85', () => {
       const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 26, waistToHeightRatio: 0.46 });
@@ -2575,6 +2583,8 @@ describe('generateSuggestions', () => {
       const text = supplements
         .map(s => `${s.title} ${s.description} ${(s.ingredients ?? []).join(' ')}`)
         .join(' ')
+        // US-07 AC27 (Brad 2026-11-28): the omega-3 and multivitamin cards label Dr Brad's own view; no other line names him.
+        .replace(DR_BRAD_SUPPLEMENT_VIEWS, '')
         .toLowerCase();
       expect(text).not.toContain('microvitamin');
       expect(text).not.toContain('dr brad');
@@ -2657,14 +2667,15 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       const protein = suggestions.find(s => s.id === 'protein-target');
       expect(protein?.description).toContain('kidney function');
-      expect(protein?.description).toContain('1.0g per kg');
+      expect(protein?.description).toContain('Dr Brad lowers his target to');
     });
 
-    it('shows standard text when eGFR is exactly 45', () => {
+    it('shows the full target, with the kidney guideline first, when eGFR is exactly 45 (US-07 AC26)', () => {
       const { inputs, results } = createTestData({}, { eGFR: 45, proteinTarget: 89 });
       const suggestions = generateSuggestions(inputs, results);
       const protein = suggestions.find(s => s.id === 'protein-target');
-      expect(protein?.description).not.toContain('kidney function');
+      expect(protein?.description).toMatch(/^With reduced kidney function, kidney guidelines \(KDIGO 2024\)/);
+      expect(protein?.description).toContain('Dr Brad suggests 89g a day');
     });
   });
 
@@ -2863,8 +2874,9 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       const retinoid = suggestions.find(s => s.id === 'skin-retinoid')!;
       expect(retinoid.description).toContain('pregnancy');
-      // US-25 AC28 (App Review 1.4.1): the prescription line ends the card.
-      expect(retinoid.description).toMatch(/pregnancy\. Tretinoin needs a prescription\. Discuss it with your doctor or pharmacist before starting\.$/);
+      // US-07 AC27 (Brad 2026-11-28): the card opens with the doctor or pharmacist line; the prescription line ends it.
+      expect(retinoid.description).toMatch(/^Consider discussing a topical retinoid, such as Adapalene or Tretinoin, with your doctor or pharmacist\./);
+      expect(retinoid.description).toMatch(/pregnancy\. Tretinoin needs a prescription\.$/);
     });
   });
 
@@ -3183,13 +3195,13 @@ describe('Evidence attachment', () => {
     expect(baseUrls).toContain('https://www.who.int/publications/i/item/9789240123557');
 
     const omega3 = suggestions.find(s => s.id === 'supplement-omega3')!;
-    expect(omega3.description).toContain('reasonable for everyone to consider up to 1 g a day of EPA and DHA combined');
+    expect(omega3.description).toContain('reasonable for adults to consider up to 1 g a day of EPA and DHA combined');
     expect(omega3.description).toContain('atrial fibrillation risk rises slightly at that dose and more above it');
     // Jernerén 2015 analysed VITACOG by omega-3 status; omega-3 was not randomised.
     expect(omega3.description).toContain('In one trial (VITACOG)');
     expect(omega3.description).not.toMatch(/Randomised trials also show/);
     const omega3Reason = SUGGESTION_EVIDENCE['supplement-omega3'].reason;
-    expect(omega3Reason).toContain('reasonable for everyone to consider up to 1 g a day of EPA and DHA combined');
+    expect(omega3Reason).toContain('reasonable for adults to consider up to 1 g a day of EPA and DHA combined');
     expect(omega3Reason).toContain('In one trial (VITACOG)');
     expect(omega3Reason).toContain('atrial fibrillation');
     expect(omega3Reason).toContain('1.49');
@@ -3446,9 +3458,9 @@ describe('non-HDL is compared unrounded and rounded only for display (US-07 AC5,
 
   it('the statin card shows the value rounded, and the first value above the target', () => {
     expect(statinCard(planOf(3.84, 2.2)))
-      .toMatch(/^Your non-HDL cholesterol is 1\.6 mmol\/L; the treatment target is below 1\.6 mmol\/L\. /);
+      .toMatch(/^Your non-HDL cholesterol is 1\.6 mmol\/L\. Guidelines set goals by heart risk\. Dr Brad aims for below 1\.6 mmol\/L, /);
     expect(statinCard(planOf(totalChol(150), hdl(88), 'conventional')))
-      .toMatch(/^Your non-HDL cholesterol is 62 mg\/dL; the treatment target is below 62 mg\/dL\. /);
+      .toMatch(/^Your non-HDL cholesterol is 62 mg\/dL\. Guidelines set goals by heart risk\. Dr Brad aims for below 62 mg\/dL, /);
   });
 
   it.each([
@@ -3481,14 +3493,14 @@ describe('lipid targets print the first value graded above them (US-07 AC5)', ()
 
   it('the statin card in mg/dL: LDL below 55', () => {
     expect(card(conv({ ldlC: ldl(116) }, {}), 'med-statin'))
-      .toMatch(/^Your LDL-c is 116 mg\/dL; the treatment target is below 55 mg\/dL\. /);
+      .toMatch(/^Your LDL-c is 116 mg\/dL\. Guidelines set goals by heart risk\. Dr Brad aims for below 55 mg\/dL, /);
   });
 
   it('the borderline cards in mg/dL: LDL <55, non-HDL <62, ApoB <50', () => {
-    expect(card(conv({ ldlC: ldl(140) }), 'ldl-borderline')).toBe('Your LDL-c of 140 mg/dL is borderline high. Optimal is <55 mg/dL.');
+    expect(card(conv({ ldlC: ldl(140) }), 'ldl-borderline')).toBe('Your LDL-c of 140 mg/dL is borderline high. Dr Brad aims for below 55 mg/dL, the guideline goal for very high risk.');
     expect(card(conv({ totalCholesterol: totalChol(220), hdlC: hdl(50) }), 'non-hdl-borderline'))
-      .toBe('Your non-HDL cholesterol of 170 mg/dL is borderline. Optimal is <62 mg/dL.');
-    expect(card(conv({ apoB: apoB(60) }), 'apob-borderline')).toBe('Your ApoB of 60 mg/dL is borderline. Optimal is <50 mg/dL.');
+      .toBe('Your non-HDL cholesterol of 170 mg/dL is borderline against Dr Brad\'s target of below 62 mg/dL, which is lower than guideline goals.');
+    expect(card(conv({ apoB: apoB(60) }), 'apob-borderline')).toBe('Your ApoB of 60 mg/dL is borderline against Dr Brad\'s target of below 50 mg/dL, which is lower than guideline goals.');
   });
 
   it('the Lp(a) checklist in mg/dL: LDL target <55', () => {
@@ -3498,7 +3510,7 @@ describe('lipid targets print the first value graded above them (US-07 AC5)', ()
   // A value off the display grid reads on the side of the target the plan grades it.
   it('LDL 1.40 mmol/L shown in mg/dL: the statin card and the checklist say 55, at the target', () => {
     const suggestions = conv({ ldlC: 1.4, lpa: 200 }, {});
-    expect(card(suggestions, 'med-statin')).toMatch(/^Your LDL-c is 55 mg\/dL; the treatment target is below 55 mg\/dL\. /);
+    expect(card(suggestions, 'med-statin')).toMatch(/^Your LDL-c is 55 mg\/dL\. Guidelines set goals by heart risk\. Dr Brad aims for below 55 mg\/dL, /);
     expect(card(suggestions, 'lpa-elevated')).toContain('\u26A0\uFE0F LDL-c: 55 mg/dL \u2014 target <55 mg/dL');
   });
 
@@ -3514,9 +3526,9 @@ describe('lipid targets print the first value graded above them (US-07 AC5)', ()
 
   it('SI is unchanged: 1.4, 1.6 and 0.50', () => {
     const si = (inputs: Partial<HealthInputs>) => calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, ...inputs }, 'si', {}).suggestions;
-    expect(card(si({ ldlC: 3 }), 'med-statin')).toMatch(/the treatment target is below 1\.4 mmol\/L\. /);
-    expect(card(si({ totalCholesterol: 5, hdlC: 1.2 }), 'med-statin')).toMatch(/the treatment target is below 1\.6 mmol\/L\. /);
-    expect(card(si({ apoB: 0.8 }), 'med-statin')).toMatch(/the treatment target is below 0\.50 g\/L\. /);
+    expect(card(si({ ldlC: 3 }), 'med-statin')).toMatch(/Dr Brad aims for below 1\.4 mmol\/L, /);
+    expect(card(si({ totalCholesterol: 5, hdlC: 1.2 }), 'med-statin')).toMatch(/Dr Brad aims for below 1\.6 mmol\/L, /);
+    expect(card(si({ apoB: 0.8 }), 'med-statin')).toMatch(/Dr Brad aims for below 0\.50 g\/L, /);
   });
 });
 
@@ -3532,7 +3544,7 @@ describe('US-06 AC8: the dose cards', () => {
       category: 'medication',
       priority: 'attention',
       title: 'Add your GLP-1 dose',
-      description: "Your GLP-1 dose isn't recorded. A higher dose or a switch to Tirzepatide may help, and which one to discuss with your doctor depends on your current dose. Add it to see which.",
+      description: "Your GLP-1 dose isn't recorded. The next option to discuss with your doctor, a higher dose or Tirzepatide, depends on it. Add your dose to see which.",
       reason: 'GLP-1 medications are started at a low dose and stepped up gradually; clinical trials used this dose escalation to improve tolerability. Which option to discuss with your doctor next depends on the dose you take now.',
       guidelines: [],
     });
@@ -3549,7 +3561,7 @@ describe('US-06 AC8: the dose cards', () => {
       category: 'medication',
       priority: 'attention',
       title: 'Add your statin dose',
-      description: "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L. Your statin dose isn't recorded. A higher dose or a more potent statin may help, and which one to discuss with your doctor depends on your current dose. Add it to see which. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
+      description: "Your LDL-c is 3.0 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, the guideline goal for very high risk. Your statin dose isn't recorded. The next option to discuss with your doctor, a higher dose or a more potent statin, depends on it. Add your dose to see which. The FDA advises most people to stop a statin once they know they are pregnant, and NICE advises stopping 3 months before trying to conceive. Talk to your doctor.",
       reason: 'Statin strength depends on both the drug and the dose. Doubling a statin dose typically lowers LDL by a further 6–7% (the "rule of 6"), and Rosuvastatin 40mg gives the largest reduction (~63%). Which option to discuss with your doctor next depends on the dose you take now.',
     });
     expect(statinDose!.guidelines).toEqual(increase!.guidelines);
@@ -3562,14 +3574,14 @@ describe('US-06 AC8: the dose cards', () => {
   it('names the switch only for a drug whose highest dose switches', () => {
     const weight: HealthInputs = { heightCm: 178, sex: 'male', weightKg: 101.4 };
     const lipid: HealthInputs = { heightCm: 178, sex: 'male', weightKg: 70, ldlC: 3.0 };
-    const HIGHEST = 'A higher dose may help, or you may already take the highest.';
+    const HIGHEST = 'Add it to see whether a higher dose is an option to discuss with your doctor.';
     for (const drug of ['tirzepatide', 'semaglutide_injection', 'semaglutide_oral', 'dulaglutide']) {
       const text = card(weight, { glp1: { drug, dose: null } }, 'weight-med-glp1-dose')!.description;
-      expect(text, drug).toContain(drug === 'tirzepatide' ? HIGHEST : 'A higher dose or a switch to Tirzepatide may help,');
+      expect(text, drug).toContain(drug === 'tirzepatide' ? HIGHEST : 'a higher dose or Tirzepatide, depends on it.');
     }
     for (const drug of ['rosuvastatin', 'atorvastatin', 'pitavastatin', 'pravastatin', 'simvastatin']) {
       const text = card(lipid, { statin: { drug, dose: null }, ezetimibe: 'yes' }, 'med-statin-dose')!.description;
-      expect(text, drug).toContain(drug === 'rosuvastatin' ? HIGHEST : 'A higher dose or a more potent statin may help,');
+      expect(text, drug).toContain(drug === 'rosuvastatin' ? HIGHEST : 'a higher dose or a more potent statin, depends on it.');
     }
   });
 });
@@ -3678,11 +3690,11 @@ describe('US-06 AC10: gradedDose and the dose helpers', () => {
 // US-06 AC10: a dose graded up to the highest may sit just below it, so the
 // switch card says "at or near" (atorvastatin 70 mg grades as 80 mg).
 describe('US-06 AC10: the statin switch card', () => {
-  it('atorvastatin 70 mg: "at or near the maximum dose of Atorvastatin"', () => {
+  it('atorvastatin 70 mg: "the highest dose of Atorvastatin this plan lists, or close to it"', () => {
     const switchCard = calculateHealthResults({ heightCm: 178, sex: 'male', birthYear: 1980, weightKg: 70, ldlC: 3.0 }, 'si',
       { statin: { drug: 'atorvastatin', dose: 70 }, ezetimibe: 'yes', bempedoicAcid: 'not_tolerated' }).suggestions
       .find((s) => s.id === 'med-statin-switch');
-    expect(switchCard?.description).toContain("You're at or near the maximum dose of Atorvastatin. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.");
+    expect(switchCard?.description).toContain('You take the highest dose of Atorvastatin this plan lists, or close to it. Consider discussing a more potent statin, such as Rosuvastatin, with your doctor.');
   });
 });
 
@@ -3818,9 +3830,9 @@ describe('US-07 AC6: who the plan is for', () => {
     it('very high ApoB: "Discuss treatment, including lifestyle changes, with your doctor."; an adult keeps the statin sentence', () => {
       const unknown = desc({ ...base, apoB: apoB(110) }, undefined, 'apob-very-high');
       expect(unknown).not.toMatch(MEDICINE_WORDS);
-      expect(unknown).toMatch(/is very high, indicating significantly elevated cardiovascular risk\. Discuss treatment, including lifestyle changes, with your doctor\.$/);
+      expect(unknown).toMatch(/is very high\. Levels like this carry a much higher heart risk\. Discuss treatment, including lifestyle changes, with your doctor\.$/);
       expect(desc({ ...adultBase, apoB: apoB(110) }, undefined, 'apob-very-high'))
-        .toMatch(/elevated cardiovascular risk\. Statin therapy and lifestyle changes are typically recommended at this level\. Discuss it with your doctor\.$/);
+        .toMatch(/a much higher heart risk\. Statin therapy and lifestyle changes are typically recommended at this level\. Discuss it with your doctor\.$/);
     });
 
     it('BP stage 2: "Discuss treatment with your doctor." for an unknown age; an adult gets the guideline sentence with a doctor line (US-25 AC28, App Review 1.4.1)', () => {
@@ -3834,9 +3846,9 @@ describe('US-07 AC6: who the plan is for', () => {
     it('very high LDL: "Discuss treatment with your doctor."; an adult keeps the statin sentence', () => {
       const unknown = desc({ ...base, ldlC: ldl(200) }, undefined, 'ldl-very-high');
       expect(unknown).not.toMatch(MEDICINE_WORDS);
-      expect(unknown).toMatch(/This may indicate familial hypercholesterolemia\. Discuss treatment with your doctor\.$/);
+      expect(unknown).toMatch(/Levels this high can be inherited \(familial hypercholesterolemia\); your doctor can check\. Discuss treatment with your doctor\.$/);
       expect(desc({ ...adultBase, ldlC: ldl(200) }, undefined, 'ldl-very-high'))
-        .toMatch(/This may indicate familial hypercholesterolemia\. Guidelines typically recommend statin therapy at this level\. Discuss it with your doctor\.$/);
+        .toMatch(/Levels this high can be inherited \(familial hypercholesterolemia\); your doctor can check\. Guidelines typically recommend statin therapy at this level\. Discuss it with your doctor\.$/);
     });
 
     it('high Lp(a): the "not started" medicine lines go; an adult keeps them', () => {
@@ -3866,7 +3878,7 @@ describe('US-07 AC6: who the plan is for', () => {
     // Adversary R1 (2026-10-14, orchestrator's decision): the BP cards' weight
     // paragraph named GLP-1 medicines for an unknown age. The weight-loss
     // sentences stay; the GLP-1 sentence needs a known adult age.
-    const GLP1_SENTENCE = 'GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.';
+    const GLP1_SENTENCE = 'GLP-1 medicines, such as Tirzepatide, may also lower blood pressure. Consider discussing them with your doctor.';
     it.each([
       ['bp-stage2', { systolicBp: 145, diastolicBp: 92 }],
       ['bp-stage1', { systolicBp: 135, diastolicBp: 85 }],
@@ -3928,7 +3940,7 @@ describe('US-25 AC28a: guideline-voice wording', () => {
   it('the GLP-1 dose step keeps its title and asks for the pros and cons with the doctor', () => {
     expect(weightCard({ glp1: { drug: 'tirzepatide', dose: 5 } }, 'weight-med-glp1-increase')).toMatchObject({
       title: 'Consider discussing your GLP-1 dose with your doctor',
-      description: 'Discuss with your doctor the pros and cons of a higher dose of your current GLP-1 medication.',
+      description: 'Consider discussing a higher dose of your GLP-1 medicine with your doctor, including its pros and cons.',
     });
   });
 

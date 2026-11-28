@@ -12,3 +12,8 @@ export const BMI_THRESHOLDS = {
 /** Over this BMI, an elevated BMI category alone opens the weight-medicine
  *  card, with no other marker raised (US-06 AC6). */
 export const BMI_WEIGHT_MEDICINE_ALONE = 28;
+
+/** The guideline line for a weight medicine with a weight-related condition
+ *  (Endocrine Society 2015, Rec 1.1). Only the card words read it, to say
+ *  whether the plan raises the medicine earlier (US-07 AC24); no rule does. */
+export const BMI_GUIDELINE_WITH_CONDITION = 27;

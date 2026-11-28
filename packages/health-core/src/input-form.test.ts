@@ -156,7 +156,7 @@ describe('screeningForm', () => {
     const form = screeningForm(50, 'female', {});
     expect(form.map((s) => s.id)).toEqual(['cancer-screening', 'bone-density']);
     expect(form[0].groups.find((g) => g.id === 'breast')!.notes).toEqual(['Annual mammograms are recommended at your age (45–54).']);
-    expect(screeningForm(40, 'male', {})[0].groups[0].notes[0]).toMatch(/^Starting at 35 is Dr Brad's recommendation/); // US-07 AC1h
+    expect(screeningForm(40, 'male', {})[0].groups[0].notes[0]).toMatch(/^The American Cancer Society starts screening at 45 for people at average risk\. Starting at 35 is Dr Brad's recommendation/); // US-07 AC1h, AC27
   });
 
   it('opens the date, result and follow-up as each is answered', () => {
@@ -339,7 +339,7 @@ describe('screeningMonths', () => {
 describe('medicationForm', () => {
   it('shows every cholesterol and weight question, without hints, when no cascade is on', () => {
     const form = medicationForm({}, flat);
-    expect(form.map((s) => s.title)).toEqual(['Cholesterol medications', 'Weight & diabetes medications']);
+    expect(form.map((s) => s.title)).toEqual(['Your cholesterol medications', 'Your weight & diabetes medications']);
     expect(keys(form)).toEqual(['statin', 'ezetimibe', 'bempedoic_acid', 'pcsk9i', 'glp1', 'sglt2i', 'metformin']);
     expect(field(form, 'statin').hint).toBeUndefined();
   });

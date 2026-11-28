@@ -53,9 +53,9 @@ export interface FormSection { id: string; title: string; intro: string; groups:
 // ---------------------------------------------------------------------------
 
 export const MEDICATION_TEXT = {
-  lipidTitle: 'Cholesterol medications',
+  lipidTitle: 'Your cholesterol medications',
   lipidNeutral: 'Are you currently taking any cholesterol medications? Recording these helps track your health over time. Discuss any you take with your doctor.',
-  weightTitle: 'Weight & diabetes medications',
+  weightTitle: 'Your weight & diabetes medications',
   weightNeutral: 'Are you currently taking any weight or diabetes medications? Recording these helps track your health over time. Discuss any you take with your doctor.',
   /** A drug field's hint while the plan asks for its dose (US-06 AC8). */
   doseHint: 'Add your dose: what to discuss with your doctor next depends on it.',
@@ -63,7 +63,7 @@ export const MEDICATION_TEXT = {
   escalationRecorded: 'Higher dose or switch (recorded answer)',
   statinLabel: 'Statin',
   statinHint: 'Guidelines name statins the first medicine to consider when cholesterol stays above target. They reduce cholesterol production in the liver.',
-  ezetimibeLabel: 'On Ezetimibe 10mg?',
+  ezetimibeLabel: 'On Ezetimibe?',
   ezetimibeHint: (lipid: string) => `Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipid} reduction.`,
   bempedoicAcidLabel: 'Bempedoic acid',
   bempedoicAcidHint: 'Bempedoic acid lowers cholesterol production via a different pathway than statins. It is an option when a statin is not tolerated.',
@@ -71,15 +71,15 @@ export const MEDICATION_TEXT = {
   pcsk9iHint: (lipid: string) => `PCSK9 inhibitors help your body clear ${lipid} from the blood. They can reduce ${lipid} by ~50%.`,
   statinEscalationLabel: { increase: 'Tried increasing statin dose?', switch: 'Tried switching to a more potent statin?' },
   statinEscalationHint: {
-    increase: (lipid: string) => `A higher dose may lower your ${lipid} further.`,
-    switch: (lipid: string) => `A more potent statin can provide greater ${lipid} reduction at the same or lower dose.`,
+    increase: (lipid: string) => `A higher dose may lower your ${lipid} further. An option to discuss with your doctor.`,
+    switch: (lipid: string) => `A more potent statin can provide greater ${lipid} reduction at the same or lower dose. An option to discuss with your doctor.`,
   },
   glp1Label: 'GLP-1 Medication',
   glp1Hint: 'GLP-1 medications reduce appetite and improve blood sugar control.',
   glp1EscalationLabel: { increase: 'Tried increasing GLP-1 dose?', switch: 'Tried switching to Tirzepatide?' },
   glp1EscalationHint: {
-    increase: 'A higher dose may improve results.',
-    switch: 'Tirzepatide targets two hormones (GIP + GLP-1) and may be more effective for weight loss.',
+    increase: 'A higher dose may improve results. An option to discuss with your doctor.',
+    switch: 'Tirzepatide targets two hormones (GIP + GLP-1) and may be more effective for weight loss. An option to discuss with your doctor.',
   },
   sglt2iLabel: 'SGLT2 Inhibitor',
   sglt2iHint: 'SGLT2 inhibitors help your kidneys remove excess glucose and offer additional heart and kidney protection.',

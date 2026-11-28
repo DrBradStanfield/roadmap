@@ -38,6 +38,8 @@ const minor: HealthInputs = { sex: 'female', heightCm: 160, weightKg: 55, birthY
 const noAge: HealthInputs = { sex: 'male', heightCm: 178, weightKg: 80 };
 const PRODUCT_TEXT = /microvitamin|sleep by|drstanfield|dr brad/i;
 const PRODUCT_NAMES = /microvitamin|sleep by|drstanfield/i;
+/** US-07 AC27 (Brad 2026-11-28): two supplement sentences label Dr Brad's own view; no other line names him. */
+const DR_BRAD_VIEWS = /Dr Brad thinks it is reasonable for adults to consider|Suggesting a daily multivitamin is Dr Brad's view/g;
 
 describe('US-61 AC1: the two new supplement cards, in every market', () => {
   it('US-61 AC1: an adult gets lutein and zeaxanthin and TMG, beside the other supplement cards, with the final text', () => {
@@ -83,7 +85,7 @@ describe('US-61 AC2-AC3: engine output never carries a product or a US variant, 
       const { suggestions } = plan(record, 'conventional');
       expect(suggestions.map((s) => s.description)).not.toContain(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']);
       const supplements = suggestions.filter((s) => s.category === 'supplements');
-      expect(supplements.map((s) => `${s.title} ${s.description} ${JSON.stringify(s.references)}`).join(' ')).not.toMatch(PRODUCT_TEXT);
+      expect(supplements.map((s) => `${s.title} ${s.description} ${JSON.stringify(s.references)}`).join(' ').replace(DR_BRAD_VIEWS, '')).not.toMatch(PRODUCT_TEXT);
       // The base card keeps the WHO sentences: the variant is the overlay's alone.
       expect(supplements.find((s) => s.id === 'supplement-micronutrient-base')!.description).toContain('WHO');
     }
@@ -127,7 +129,7 @@ describe('US-61 AC2-AC3: engine output never carries a product or a US variant, 
     expect(card('supplement-micronutrient-base').description.startsWith(base.split(' If you take')[0])).toBe(true);
     expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-creatine']!).toBe('One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training. Whether it suits you is worth discussing with your doctor or pharmacist.');
     expect(US_SUPPLEMENT_DESCRIPTIONS['supplement-lutein-zeaxanthin']!).toBe('Lutein and zeaxanthin are the pigments of the macula, the part of the eye that sees fine detail. Trials show supplements raise macular pigment density. Whether it suits you is worth discussing with your doctor or pharmacist.');
-    expect(Object.values(US_SUPPLEMENT_DESCRIPTIONS).join(' ')).not.toMatch(PRODUCT_TEXT);
+    expect(Object.values(US_SUPPLEMENT_DESCRIPTIONS).join(' ').replace(DR_BRAD_VIEWS, '')).not.toMatch(PRODUCT_TEXT);
     expect(US_SUPPLEMENT_REFERENCES['supplement-micronutrient-base']!.map((r) => r.label)).not.toContainEqual(expect.stringMatching(/WHO/));
     expect(US_SUPPLEMENT_REFERENCES['supplement-creatine']!.map((r) => r.label.split(' ')[0])).toEqual(['Kreider']);
     expect(US_SUPPLEMENT_REFERENCES['supplement-lutein-zeaxanthin']!.map((r) => r.label)).not.toContainEqual(expect.stringMatching(/AREDS|macular degeneration/i));

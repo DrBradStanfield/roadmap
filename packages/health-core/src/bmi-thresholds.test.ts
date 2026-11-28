@@ -11,6 +11,7 @@ import { toCanonicalValue } from './units';
 vi.mock('./bmi-thresholds', () => ({
   BMI_THRESHOLDS: { normal: 19.5, overweight: 26, obese: 31, obeseClass2: 36, obeseClass3: 41 },
   BMI_WEIGHT_MEDICINE_ALONE: 29,
+  BMI_GUIDELINE_WITH_CONDITION: 28,
 }));
 
 const inputs: HealthInputs = { heightCm: 175, sex: 'male' };
@@ -43,6 +44,15 @@ describe('BMI rules all move with BMI_THRESHOLDS (US-64, A2-3)', () => {
     expect(alcohol(resultsAt(30.5))).toBe(false);
     expect(alcohol(resultsAt(25.5, { waistToHeightRatio: 0.55 }))).toBe(false);
     expect(alcohol(resultsAt(31))).toBe(true);
+  });
+
+  it('the weight-medicine card words follow the obese line and the guideline line (US-07 AC24)', () => {
+    const glp1 = (bmi: number, extra: Partial<HealthInputs> = {}) => generateSuggestions({ ...inputs, ...extra }, resultsAt(bmi)).find((s) => s.id === 'weight-glp1')!.description;
+    const triglycerides = { triglycerides: 2.0 };
+    expect(glp1(27.5, triglycerides)).toMatch(/^Guidelines consider a weight medicine from a BMI of 31, or 28 with/);
+    expect(glp1(28, triglycerides)).toMatch(/^With a BMI of 28 and elevated triglycerides, guidelines consider/);
+    expect(glp1(30.5)).toMatch(/^Guidelines consider a weight medicine from/);
+    expect(glp1(31)).toMatch(/^With a BMI of 31, guidelines consider/);
   });
 
   it('the Lp(a) checklist grades and names the moved lines', () => {

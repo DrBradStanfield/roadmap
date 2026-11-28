@@ -6,7 +6,9 @@ import { getPostFollowupDueDate, getScreeningNextDueDate, MAX_GLP1_DRUG, STATIN_
 import { SCREENING_REFS, inAges, opensFollowup, ruleOf, ruleTakes, screeningAge, screeningFollowupInfo, type CardText, type FollowupInfo, type ScreeningRule } from './screening-rules';
 import { colonoscopyCard, monthLabel } from './colonoscopy-schedule';
 import { psaNextDue, psaRaised, psaRuleHolds, raisedPsaCards } from './psa-schedule';
-import { weightCascade, lipidCascade, type WeightStep, type LipidStep } from './medication-cascades';
+import { weightCascade, lipidCascade, type WeightStep } from './medication-cascades';
+import { BP_WEIGHT_MEDICINE, LIPID_INHERITED, LIPID_VERY_HIGH_RISK, MULTIVITAMIN_VIEW, RETINOID_TEXT, REASON_HBA1C_DIABETES, REASON_HBA1C_PREDIABETES, REASON_WAIST,
+  bpStage1Target, doseCardText, glp1Description, lipidBorderlineText, lipidStepCard, lipidTargetText, lpaLipidTargetNote, measureBpTarget, proteinText, weightMedIntroText, weightStepText } from './card-wording';
 import { LIMIT_NOT_GRADED, formatLimit, formatValue, limitOf, limitSIText, type Comparator, type InputLimit, type LimitField } from './lab-limits';
 import {
   type UnitSystem,
@@ -56,7 +58,7 @@ const LUTEIN_AREDS = 'In the AREDS trial, a formula containing beta-carotene slo
  */
 export const US_SUPPLEMENT_DESCRIPTIONS: Readonly<Partial<Record<UsProductCardId, string>>> = {
   // No WHO dementia sentences (a disease outcome beside a named product).
-  'supplement-micronutrient-base': discuss(`${BASE_COSMOS} ${BASE_K2}`),
+  'supplement-micronutrient-base': discuss(`${BASE_COSMOS} ${BASE_K2} ${MULTIVITAMIN_VIEW}`),
   // Strength and lean mass only: no memory sentence.
   'supplement-creatine': discuss(CREATINE_STRENGTH),
   // Macular pigment only: no macular degeneration outcome.
@@ -129,12 +131,12 @@ export function lipidMarkerFor(
   return null;
 }
 
-/** "Your LDL-c is 3.0 mmol/L; the treatment target is below 1.4 mmol/L." The
- *  plan's cholesterol cards and the form's cholesterol intro both say it. */
+/** "Your LDL-c is 3.0 mmol/L. Guidelines set goals by heart risk. Dr Brad aims for below 1.4 mmol/L, ..."
+ *  The plan's cholesterol cards and the form's cholesterol intro both say it (US-07 AC23). */
 export function lipidTargetSentence(marker: LipidMarker, unitFor: (metric: MetricType) => UnitSystem): string {
   const metric = lipidMarkerMetric(marker);
   const u = unitFor(metric);
-  return `Your ${marker.label} is ${fmtMarkerValue(marker, u)}; the treatment target is below ${fmtLipidTarget(metric, marker.target, u)}.`;
+  return lipidTargetText(marker.kind, marker.label, fmtMarkerValue(marker, u), fmtLipidTarget(metric, marker.target, u));
 }
 
 /** The form's cholesterol intro says it after lipidTargetSentence (US-73 AC6, Brad 2026-11-05). */
@@ -179,36 +181,19 @@ export function weightMedicationTrigger(inputs: HealthInputs, results: HealthRes
   const reasons: string[] = [];
   // A diabetic-range HbA1c is named as such, matching its urgent card (Brad 2026-11-06, US-06 AC6).
   if (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
-    reasons.push(inputs.hba1c >= HBA1C_THRESHOLDS.diabetes ? 'an HbA1c in the diabetes range' : 'an HbA1c in the prediabetes range');
+    reasons.push(inputs.hba1c >= HBA1C_THRESHOLDS.diabetes ? REASON_HBA1C_DIABETES : REASON_HBA1C_PREDIABETES);
   }
   if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) reasons.push('elevated triglycerides');
   if (isBpRaised(inputs.systolicBp, inputs.diastolicBp)) reasons.push('elevated blood pressure');
   const lipid = lipidMarkerFor(inputs, results);
   if (lipid && lipid.value >= LIPID_RISK_ENHANCING[lipid.kind].line) reasons.push(LIPID_RISK_ENHANCING[lipid.kind].reason);
-  if (whr !== undefined && isWaistToHeightElevated(whr)) reasons.push('elevated waist-to-height ratio');
+  if (whr !== undefined && isWaistToHeightElevated(whr)) reasons.push(REASON_WAIST);
   return { on: reasons.length > 0 || (isBmiElevated(results.bmiCategory) && bmi > BMI_WEIGHT_MEDICINE_ALONE), reasons };
 }
 
-/** The GLP-1 card's text, shared by the cascade's first step and the standalone card. */
-function glp1Description(bmi: number, reasons: string[]): string {
-  const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
-  return `With a BMI of ${bmi}${and}, consider discussing Tirzepatide or Semaglutide with your doctor, alongside diet, exercise and sleep. These medications support weight management and metabolic health.`;
-}
-
-/** A dose card's text (US-06 AC8): the steps the missing dose decides
- *  between, for this drug. `switchTo` names the stronger drug its highest dose
- *  would move to; null when the highest dose moves on to the next medication
- *  (tirzepatide, rosuvastatin). */
-function doseCardText(kind: string, switchTo: string | null): string {
-  return `Your ${kind} dose isn't recorded. ${switchTo ? `A higher dose or ${switchTo} may help, and which one to discuss with your doctor depends on your current dose. Add it to see which.` : 'A higher dose may help, or you may already take the highest. Add your current dose to see whether a higher dose is one to discuss with your doctor.'}`;
-}
-
 /** The form's weight-medication intro, in the plan's words: the BMI and the
- *  trigger's reasons, as the GLP-1 card names them (US-06 AC5). */
-export function weightMedIntro(bmi: number, reasons: string[]): string {
-  const and = reasons.length > 0 ? ` and ${joinWithAnd(reasons)}` : '';
-  return `At a BMI of ${bmi}${and}, medications that support weight management and metabolic health are an option to discuss with your doctor.`;
-}
+ *  trigger's reasons, as the GLP-1 card names them (US-06 AC5, US-07 AC24). */
+export const weightMedIntro = (bmi: number, reasons: string[]): string => weightMedIntroText(bmi, reasons, joinWithAnd);
 
 /**
  * Whether the plan shows medicine cards (US-07 AC6): only for a known age of
@@ -286,7 +271,7 @@ export function generateSuggestions(
       priority: 'attention',
       ...(inputs.pressureOrder
         ? { title: 'Check your blood pressure reading', description: 'Your last reading looks swapped: the top number (systolic) should be higher than the bottom (diastolic). Check it and add it again.' }
-        : { title: 'Measure your blood pressure', description: 'High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. Aim for below 120/80 (130/80 if you\'re frail).' }),
+        : { title: 'Measure your blood pressure', description: `High blood pressure usually causes no symptoms, yet it raises the risk of stroke, heart attack and kidney disease. A simple automated upper-arm cuff at home is all you need. Sit quietly for a few minutes, then add your reading. ${measureBpTarget(results.age)}` }),
     });
   }
 
@@ -300,9 +285,7 @@ export function generateSuggestions(
       category: 'nutrition',
       priority: 'info',
       title: `Daily protein target: ${results.proteinTarget}g`,
-      description: isCkd
-        ? `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.`
-        : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us('weight'))}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
+      description: proteinText(isCkd, limitOf(inputs, 'labEgfr') ? undefined : results.eGFR, results.proteinTarget, fmtWeight(results.idealBodyWeight, us('weight'))),
     });
   }
 
@@ -411,18 +394,19 @@ export function generateSuggestions(
   // one standalone suggestion when they are not. Both read one trigger.
   const weightMeds = weightMedicationTrigger(inputs, results);
   if (weightMeds.on) {
-    const glp1Text = glp1Description(results.bmi!, weightMeds.reasons);
+    const glp1Text = glp1Description(results.bmi!, weightMeds.reasons, joinWithAnd);
     if (!medications) {
       suggestions.push({ id: 'weight-glp1', category: 'medication', priority: 'attention', title: 'Consider discussing a weight management medication with your doctor', description: glp1Text });
     } else {
       // Weight & diabetes medication cascade (GLP-1 → its dose if not recorded → escalate → SGLT2i → Metformin)
+      const later = (step: Exclude<WeightStep, 'glp1' | 'glp1-dose'>) => weightStepText(step, weightMeds.reasons);
       const stepCards: Record<WeightStep, [priority: Suggestion['priority'], title: string, text: string]> = {
         glp1: ['attention', 'Consider discussing a GLP-1 medication with your doctor', glp1Text],
-        'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'a switch to Tirzepatide')],
-        'glp1-increase': ['attention', 'Consider discussing your GLP-1 dose with your doctor', 'Discuss with your doctor the pros and cons of a higher dose of your current GLP-1 medication.'],
-        'glp1-switch': ['attention', 'Consider discussing Tirzepatide with your doctor', 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.'],
-        sglt2i: ['attention', 'Consider discussing an SGLT2 inhibitor with your doctor', 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.'],
-        metformin: ['info', 'Consider discussing Metformin with your doctor', 'Metformin provides additional glycemic control and has potential long-term health benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.'],
+        'glp1-dose': ['attention', 'Add your GLP-1 dose', doseCardText('GLP-1', medications.glp1?.drug === MAX_GLP1_DRUG ? null : 'Tirzepatide')],
+        'glp1-increase': ['attention', 'Consider discussing your GLP-1 dose with your doctor', later('glp1-increase')],
+        'glp1-switch': ['attention', 'Consider discussing Tirzepatide with your doctor', later('glp1-switch')],
+        sglt2i: ['attention', 'Consider discussing an SGLT2 inhibitor with your doctor', later('sglt2i')],
+        metformin: ['info', 'Consider discussing Metformin with your doctor', later('metformin')],
       };
       for (const step of weightCascade(medications).suggest) {
         const [priority, title, description] = stepCards[step];
@@ -481,7 +465,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is very high, indicating significantly elevated cardiovascular risk. ${medicinesShown(results) ? 'Statin therapy and lifestyle changes are typically recommended at this level. Discuss it with your doctor.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
+        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is very high. ${LIPID_VERY_HIGH_RISK} ${medicinesShown(results) ? 'Statin therapy and lifestyle changes are typically recommended at this level. Discuss it with your doctor.' : 'Discuss treatment, including lifestyle changes, with your doctor.'}`,
       });
     } else if (apoB >= APOB_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -498,7 +482,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high ApoB',
-        description: `Your ApoB of ${shown('apoB', 'apob', apoB)} is borderline. Optimal is <${fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))}.`,
+        description: lipidBorderlineText('apoB', 'ApoB', shown('apoB', 'apob', apoB), fmtLipidTarget('apob', APOB_THRESHOLDS.borderline, us('apob'))),
       });
     }
   }
@@ -512,7 +496,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high LDL cholesterol',
-        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is significantly elevated. This may indicate familial hypercholesterolemia. ${medicinesShown(results) ? 'Guidelines typically recommend statin therapy at this level. Discuss it with your doctor.' : 'Discuss treatment with your doctor.'}`,
+        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is significantly elevated. ${LIPID_INHERITED} ${medicinesShown(results) ? 'Guidelines typically recommend statin therapy at this level. Discuss it with your doctor.' : 'Discuss treatment with your doctor.'}`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -529,7 +513,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high LDL cholesterol',
-        description: `Your LDL-c of ${shown('ldlC', 'ldl', inputs.ldlC)} is borderline high. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.ldlMmol, us('ldl'))}.`,
+        description: lipidBorderlineText('ldl', 'LDL-c', shown('ldlC', 'ldl', inputs.ldlC), fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.ldlMmol, us('ldl'))),
       });
     }
   }
@@ -544,7 +528,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`,
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is very high. This reflects total atherogenic particle burden. ${LIPID_VERY_HIGH_RISK}`,
       });
     } else if (nonHdl >= NON_HDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -561,7 +545,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))} is borderline. Optimal is <${fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us('ldl'))}.`,
+        description: lipidBorderlineText('nonHdl', 'non-HDL cholesterol', `${formatDisplayValue('ldl', nonHdl, us('ldl'))} ${getDisplayLabel('ldl', us('ldl'))}`, fmtLipidTarget('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us('ldl'))),
       });
     }
   }
@@ -657,7 +641,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: `Elevated Lp(a): ${bare('lpa', inputs.lpa)} nmol/L`,
-        description: `Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n${checklist.join('\n')}${checklist.length > medsFrom ? '\n\nConsider discussing these medicines with your doctor.' : ''}`,
+        description: `Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n${checklist.join('\n')}${lipidMarker ? `\n\n${lpaLipidTargetNote(lipidMarker.kind, lipidMarker.label)}` : ''}${checklist.length > medsFrom ? '\n\nConsider discussing these medicines with your doctor.' : ''}`,
       });
     } else if (inputs.lpa >= LPA_THRESHOLDS.normal) {
       suggestions.push({
@@ -730,7 +714,7 @@ export function generateSuggestions(
     }
     if (weightMeds.on) {
       // The GLP-1 sentence names medicines, so it needs a known adult age (US-07 AC6).
-      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? ' GLP-1 medications (Tirzepatide, Semaglutide) can assist with both weight loss and blood pressure reduction.' : ''}`);
+      bpExtraParagraphs.push(`Weight loss is one of the most effective ways to lower blood pressure. Even a 5% reduction can make a meaningful difference.${medicinesShown(results) ? BP_WEIGHT_MEDICINE : ''}`);
     }
     const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';
 
@@ -757,7 +741,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'attention',
         title: BP_TIER_LABEL.stage1,
-        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. Target is <${bpTargetFor(results.age)}/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
+        description: `Your BP of ${bare('systolicBp', sys)}/${bare('diastolicBp', dia)} mmHg is in the range the ACC/AHA guideline calls stage 1 hypertension. Consider discussing it with your doctor. ${bpStage1Target(results.age)}\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
       });
     }
   }
@@ -778,19 +762,12 @@ export function generateSuggestions(
     // (on a statin, the statin line follows).
     const pregnancyUnstudied = 'Not studied enough in pregnancy: talk to your doctor if you are pregnant or planning to be.'
       + (statinDoses ? ` ${onStatinPregnancy}` : '');
-    const stepCards: Record<LipidStep, [title: string, text: string]> = {
-      statin: ['Consider discussing a statin with your doctor', 'Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor. If you are pregnant or planning a pregnancy, talk to your doctor before starting a statin.'],
-      ezetimibe: ['Consider discussing Ezetimibe with your doctor', `Discuss adding Ezetimibe 10mg with your doctor. ${pregnancyUnstudied}`],
-      'bempedoic-acid': ['Consider discussing Bempedoic acid with your doctor', 'Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor. Not recommended in pregnancy; talk to your doctor if you are pregnant or planning to be.'],
-      'statin-dose': ['Add your statin dose', `${doseCardText('statin', switchesAtTop ? 'a more potent statin' : null)} ${onStatinPregnancy}`],
-      'statin-increase': ['Consider discussing your statin dose with your doctor', `Discuss increasing your statin dose with your doctor. ${onStatinPregnancy}`],
-      'statin-switch': ['Consider discussing a more potent statin with your doctor', `You're at or near the maximum dose of ${statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1)}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor. ${onStatinPregnancy}`],
-      pcsk9i: ['Consider discussing a PCSK9 inhibitor with your doctor', `Discuss a PCSK9 inhibitor with your doctor. ${pregnancyUnstudied}`],
-    };
+    const statin = { drug: statinDrug, dose: medications.statin?.dose ?? null };
+    const pregnancy = { onStatin: onStatinPregnancy, unstudied: pregnancyUnstudied };
     // On a statin: statin → ezetimibe → the statin's dose if not recorded, a step up or a PCSK9 inhibitor.
     // Statin not tolerated: PCSK9 inhibitor → ezetimibe → bempedoic acid (US-06 AC20).
     for (const step of lipidCascade(medications).suggest) {
-      const [title, text] = stepCards[step];
+      const [title, text] = lipidStepCard(step, statin, switchesAtTop, pregnancy);
       suggestions.push({ id: `med-${step}`, category: 'medication', priority: 'attention', title, description: `${lipidReason} ${text}` });
     }
   }
@@ -996,7 +973,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Micronutrient base',
-      description: `${BASE_COSMOS} ${BASE_WHO} ${BASE_K2}`,
+      description: `${BASE_COSMOS} ${BASE_WHO} ${BASE_K2} ${MULTIVITAMIN_VIEW}`,
       ingredients: [
         'Methylated B-complex',
         'Vitamin D3 with K2',
@@ -1040,7 +1017,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Omega-3',
-      description: 'A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Stanfield thinks it is reasonable for everyone to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO\'s 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health.',
+      description: 'A meta-analysis found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death. Dr Brad thinks it is reasonable for adults to consider up to 1 g a day of EPA and DHA combined; atrial fibrillation risk rises slightly at that dose and more above it. If you have atrial fibrillation or take a blood thinner, check with your doctor first. In one trial (VITACOG), B vitamins slowed brain atrophy only with good omega-3 levels; another (FACIT) found the reverse. WHO\'s 2026 guideline recommends against omega-3 supplements to reduce the risk of cognitive decline and dementia in people without a diagnosed deficiency, a strong recommendation based on moderate-certainty evidence. It did not consider the omega-3 analyses of VITACOG or FACIT. It does not address omega-3 for heart health.',
     },
     {
       id: 'supplement-sleep',
@@ -1083,7 +1060,7 @@ export function generateSuggestions(
       category: 'skin',
       priority: 'info',
       title: 'Topical retinoid',
-      description: 'A topical retinoid (Adapalene 0.3% or Tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. It is usually started at 2–3 nights per week and increased as tolerated, with daily sunscreen. Caution: retinoids must not be used during pregnancy. Tretinoin needs a prescription. Discuss it with your doctor or pharmacist before starting.',
+      description: RETINOID_TEXT,
     },
     {
       id: 'skin-advanced',
