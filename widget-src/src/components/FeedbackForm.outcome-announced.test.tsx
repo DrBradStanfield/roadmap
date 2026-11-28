@@ -2,10 +2,12 @@
 /**
  * US-19 AC3a: the failure line is an alert; one status region, empty from the first render, gets the thank-you when
  * a send succeeds; the visible thank-you is a plain line that takes a focus left on the page. jsdom checks roles,
- * text and focus only; no screen reader runs. sendFeedback is mocked. Synthetic values.
+ * text and focus, and Send's grey through the styles.css cascade helper; no screen reader runs. sendFeedback is
+ * mocked. Synthetic values.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cascaded } from '../testing/css-cascade';
 
 const sendFeedback = vi.fn();
 vi.mock('../lib/server-api', () => ({ sendFeedback: (...args: unknown[]) => sendFeedback(...args) }));
@@ -22,10 +24,15 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 const FAILED = 'Failed to send. Please try again.';
 const THANKS = 'Thank you for your feedback!';
 
-/** Fills the open form with synthetic values and presses Send with the focus on it. */
-async function send() {
+/** Fills the open form with synthetic values. */
+function fill() {
   fireEvent.change(screen.getByRole('textbox', { name: /email/i }), { target: { value: 'test@example.com' } });
   fireEvent.change(screen.getByRole('textbox', { name: /message/i }), { target: { value: 'Synthetic message' } });
+}
+
+/** Fills the open form and presses Send with the focus on it. */
+async function send() {
+  fill();
   const button = screen.getByRole('button', { name: 'Send' });
   button.focus();
   await act(async () => { fireEvent.click(button); });
@@ -108,6 +115,63 @@ describe('US-19 AC3a: the outcome of a send has an alert or a status role', () =
     expect(document.activeElement).toBe(thanks);
     const thanksCalls = focus.mock.contexts.flatMap((el, i) => (el === thanks ? [focus.mock.calls[i]] : []));
     expect(thanksCalls).toEqual([[{ preventScroll: true }]]);
+  });
+
+  it('while a send runs, Send says it is unavailable but is not disabled, so it keeps the focus through a failed send', async () => {
+    // A disabled button cannot hold the focus: Chrome moves it to the page, so a keyboard user was no longer on Send.
+    let answer!: (ok: boolean) => void;
+    sendFeedback.mockImplementation(() => new Promise<boolean>((resolve) => { answer = resolve; }));
+    render(<FeedbackForm initialExpanded />);
+    await send();
+    const button = screen.getByRole('button', { name: 'Sending...' }) as HTMLButtonElement;
+    expect([button.disabled, button.getAttribute('aria-disabled')]).toEqual([false, 'true']);
+    expect(document.activeElement).toBe(button);
+    await act(async () => { fireEvent.click(button); fireEvent.submit(button.form!); }); // a second press, or Enter in a field
+    expect(sendFeedback).toHaveBeenCalledTimes(1);
+    await act(async () => { answer(false); });
+    expect(screen.getByRole('alert').textContent).toBe(FAILED);
+    expect(document.activeElement).toBe(button);
+    expect([button.textContent, button.disabled, button.getAttribute('aria-disabled')]).toEqual(['Send', false, 'false']);
+    await act(async () => { fireEvent.click(button); }); // the retry, from where the focus is
+    expect(sendFeedback).toHaveBeenCalledTimes(2);
+  });
+
+  it('Send stays disabled while the email or the message is empty, as before', () => {
+    render(<FeedbackForm initialExpanded />);
+    const button = screen.getByRole('button', { name: 'Send' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.change(screen.getByRole('textbox', { name: /email/i }), { target: { value: 'test@example.com' } });
+    expect(button.disabled).toBe(true);
+    fireEvent.change(screen.getByRole('textbox', { name: /message/i }), { target: { value: ' ' } });
+    expect(button.disabled).toBe(true);
+    fireEvent.change(screen.getByRole('textbox', { name: /message/i }), { target: { value: 'Synthetic message' } });
+    expect(button.disabled).toBe(false);
+    fireEvent.change(screen.getByRole('textbox', { name: /email/i }), { target: { value: ' ' } });
+    expect(button.disabled).toBe(true);
+    const email = screen.getByRole('textbox', { name: /email/i }) as HTMLInputElement;
+    fireEvent.change(email, { target: { value: '\u00a0' } }); // an email input strips ASCII spaces only: a no-break space stays
+    expect([email.value, button.disabled]).toEqual(['\u00a0', true]);
+  });
+
+  it('Send is grey as when disabled only while a send runs, also under the mouse (styles.css cascade)', async () => {
+    let answer!: (ok: boolean) => void;
+    sendFeedback.mockImplementation(() => new Promise<boolean>((resolve) => { answer = resolve; }));
+    render(<FeedbackForm initialExpanded />);
+    const look = (b: Element) => {
+      const mouse = { width: 1280, hover: true, states: [[b, [':hover']]] as Array<[Element, string[]]> };
+      return [cascaded(b, 'background', 1280), cascaded(b, 'background', mouse), cascaded(b, 'cursor', mouse)];
+    };
+    const sendButton = () => screen.getByRole('button', { name: 'Send' });
+    const disabled = look(sendButton()); // both fields empty: disabled
+    expect(disabled).toEqual(['var(--color-gray-light)', 'var(--color-gray-light)', 'not-allowed']);
+    fill(); // filled, before any send: React writes aria-disabled="false", which the grey rule must not match
+    const enabled = [sendButton().getAttribute('aria-disabled'), ...look(sendButton())];
+    expect(enabled).toEqual(['false', 'var(--color-brand-text)', 'var(--color-brand-text-hover)', 'pointer']);
+    await send();
+    expect(look(screen.getByRole('button', { name: 'Sending...' }))).toEqual(disabled);
+    await act(async () => { answer(false); });
+    fireEvent.mouseOut(sendButton()); // jsdom holds :hover on a clicked button until a mouseout
+    expect([sendButton().getAttribute('aria-disabled'), ...look(sendButton())]).toEqual(enabled); // the retry
   });
 
   it('the status region empties when the thank-you closes after 3 s, and stays mounted', async () => {
