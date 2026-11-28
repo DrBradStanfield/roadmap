@@ -11,7 +11,7 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { useModalDialog } from './use-dialog';
+import { useModalDialog } from '../src/lib/use-dialog';
 
 const HistoryPanel = React.lazy(() =>
   import('../src/components/HistoryPanel').then((m) => ({ default: m.HistoryPanel })),

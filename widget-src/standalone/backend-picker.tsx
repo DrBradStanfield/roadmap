@@ -20,7 +20,7 @@ import { adapterFor, finishFormConnect, forgetBackend, logOff, prepareSwitch, ty
 import { dispatch, getSwitchFlow, runMove, stepOf, useSwitchFlow, type MoveStep } from './switch-flow';
 import { PROVIDERS, recordStays } from './providers';
 import { trackProductEvent } from '../src/lib/server-api';
-import { useModalDialog } from './use-dialog';
+import { useModalDialog } from '../src/lib/use-dialog';
 import { PICKER_TITLE, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
 
 /* Minimal brand marks (Brad OK'd logos). Inline so no asset fetches. */

@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
 /**
  * US-14 AC7a: the document viewer is a modal dialog, opened with showModal()
- * through the standalone's own hook (US-09 AC34). It is named by the
+ * through the shared hook, src/lib/use-dialog.ts (US-09 AC34). It is named by the
  * document's title, takes the focus to that title, and gives the focus back to
  * the row that opened it when it closes. Before this it was a plain box: the
  * focus stayed on the row behind the backdrop and Tab walked the page behind.
  * jsdom has no showModal, so the stub does what the tests need: it opens the
  * dialog and moves the focus to its first button, as Firefox does (Chromium
  * and WebKit focus the title itself). jsdom does not move the focus on Tab, so
- * Tab order is not tested here. Synthetic document only.
+ * Tab order is not tested here. jsdom also keeps `overflow` apart from
+ * `overflow-x` and `overflow-y`; the stub below makes it the shorthand a
+ * browser has (it sets both, and reads '' unless both are set). Synthetic
+ * document only.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { StrictMode, useState } from 'react';
@@ -33,21 +36,26 @@ beforeAll(() => {
     this.setAttribute('open', '');
     this.querySelector('button')?.focus();
   };
+  Object.defineProperty(Object.getPrototypeOf(document.documentElement.style), 'overflow', {
+    configurable: true,
+    get(this: CSSStyleDeclaration) { const x = this.overflowX, y = this.overflowY; return x && y ? (x === y ? x : `${x} ${y}`) : ''; },
+    set(this: CSSStyleDeclaration, value: string) { const [x = '', y = x] = value.split(' ').filter(Boolean); this.overflowX = x; this.overflowY = y; },
+  });
 });
-afterEach(() => { cleanup(); vi.clearAllMocks(); shown.length = 0; });
+afterEach(() => { cleanup(); vi.clearAllMocks(); shown.length = 0; document.documentElement.removeAttribute('style'); });
 
 /** A documents list as MyHealth draws it: a row button opens the viewer, a delete takes the row away. */
-function Page() {
+function Page({ shownDoc = doc }: { shownDoc?: ApiDocument }) {
   const [open, setOpen] = useState(false);
   const [listed, setListed] = useState(true);
   return <>
     {listed && <button type="button" onClick={() => setOpen(true)}>Synthetic chest X-ray row</button>}
-    {open && <DocumentLightbox doc={doc} onClose={() => setOpen(false)} onDeleted={() => setListed(false)} />}
+    {open && <DocumentLightbox doc={shownDoc} onClose={() => setOpen(false)} onDeleted={() => setListed(false)} />}
   </>;
 }
 
-function openFromRow(strict = false) {
-  render(strict ? <StrictMode><Page /></StrictMode> : <Page />);
+function openFromRow(strict = false, shownDoc = doc) {
+  render(strict ? <StrictMode><Page shownDoc={shownDoc} /></StrictMode> : <Page shownDoc={shownDoc} />);
   const row = screen.getByRole('button', { name: 'Synthetic chest X-ray row' });
   row.focus();
   fireEvent.click(row);
@@ -79,6 +87,26 @@ describe('US-14 AC7a: the document viewer is a modal dialog', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.activeElement).toBe(row);
     expect(document.documentElement.style.overflow).toBe('');
+  });
+
+  it.each(['', '   '])('a document with a blank title (%j) is named "Untitled", and the focus goes to that title', (blank) => {
+    openFromRow(false, { ...doc, title: blank });
+    const named = screen.getByRole('dialog', { name: 'Untitled' });
+    expect(named.querySelector('h3')?.textContent).toBe('Untitled');
+    expect(document.activeElement).toBe(named.querySelector('h3'));
+  });
+
+  it.each([
+    ['overflow-y only', { overflowY: 'scroll' }],
+    ['overflow-x and overflow-y apart', { overflowX: 'clip', overflowY: 'auto' }],
+    ['overflow on both', { overflowX: 'auto', overflowY: 'auto' }],
+  ])('closing gives back the overflow the host page had set on <html> (%s)', (_, host) => {
+    Object.assign(document.documentElement.style, host);
+    const before = [document.documentElement.style.overflowX, document.documentElement.style.overflowY];
+    openFromRow();
+    expect(document.documentElement.style.overflow).toBe('hidden');
+    fireEvent.click(button('Close'));
+    expect([document.documentElement.style.overflowX, document.documentElement.style.overflowY]).toEqual(before);
   });
 
   it('a click inside the box does not close it', () => {
