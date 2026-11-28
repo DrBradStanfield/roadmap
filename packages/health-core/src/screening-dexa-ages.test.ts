@@ -136,7 +136,10 @@ describe('US-07 AC22: evidence, algorithm doc and page', () => {
   });
 
   it('the Changelog has the approved line, dated 28 November 2026, below the retinoid line of that date', () => {
-    const line = quotes(specLine('**Page**', '- Changelog:'))[0];
+    // The spec's line with one word changed, approved by Brad 2026-11-28: "Dr Brad's recommendation", not "Dr Stanfield's".
+    const spec = quotes(specLine('**Page**', '- Changelog:'))[0];
+    const line = 'Bone density: the tool now suggests a DXA scan for all men from 60 (was 70), and the page says that all women from 50 and all men from 60 is Dr Brad\'s recommendation, earlier than the guidelines [161], [162].';
+    expect(line).toBe(spec.replace("Dr Stanfield's", "Dr Brad's"));
     const items = HTML.slice(HTML.indexOf('<h2 id="changelog">')).match(/<li>[^\n]*/g)!;
     expect(items[1]).toBe(`<li>28<sup>th</sup> November 2026: ${line}</li>`);
   });
