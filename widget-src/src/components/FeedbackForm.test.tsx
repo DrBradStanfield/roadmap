@@ -133,3 +133,22 @@ describe('US-19 AC3: a send that ends after the form closed changes nothing', ()
     expect(sendFeedback).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('US-19 AC3b: Send needs both the email and the message', () => {
+  it('while either is blank after trim(), Send is disabled and a submit sends nothing', () => {
+    const utils = render(<FeedbackForm initialExpanded />);
+    const button = utils.getByRole('button', { name: 'Send' }) as HTMLButtonElement;
+    const email = utils.getByPlaceholderText('your@email.com') as HTMLInputElement;
+    const message = utils.getByPlaceholderText('Your feedback...');
+    // An email box drops ASCII spaces itself, so its blank case is a no-break space, which only trim() removes.
+    for (const [e, m] of [['', ''], ['a@b.co', ''], ['a@b.co', ' \n '], ['', 'Nice tool'], ['\u00a0', 'Nice tool']]) {
+      fireEvent.change(email, { target: { value: e } });
+      fireEvent.change(message, { target: { value: m } });
+      fireEvent.submit(button.closest('form')!);
+      expect([email.value, m, button.disabled]).toEqual([e, m, true]);
+    }
+    expect(sendFeedback).not.toHaveBeenCalled();
+    fill(utils);
+    expect(button.disabled).toBe(false);
+  });
+});
