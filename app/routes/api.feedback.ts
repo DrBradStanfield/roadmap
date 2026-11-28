@@ -17,9 +17,6 @@ const checkFeedbackRateLimit = createRateLimiter<IpKey>(FEEDBACK_PER_HOUR, 60 * 
 const feedbackSchema = z.object({
   email: z.email().max(200),
   message: z.string().min(1).max(2000),
-  // Honeypot: a filled field fails max(0), so the request is a 400 before any
-  // insert or send. The trap is the schema — there is no second check below.
-  website: z.string().max(0).optional(),
 });
 
 export async function action({ request }: ActionFunctionArgs) {

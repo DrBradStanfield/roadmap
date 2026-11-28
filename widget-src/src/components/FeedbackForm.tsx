@@ -142,10 +142,6 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
               rows={4}
             />
           </label>
-          {/* Honeypot — hidden from real users */}
-          <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', opacity: 0 }}>
-            <input type="text" name="website" tabIndex={-1} autoComplete="off" />
-          </div>
           {mode.kind === 'failed' && (
             <p className="feedback-error" role="alert">Failed to send. Please try again.</p>
           )}
