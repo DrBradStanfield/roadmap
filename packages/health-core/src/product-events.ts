@@ -162,6 +162,9 @@ export const PRODUCT_EVENT_NAMES = [
   'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved', // US-74, US-75: a widget block mounted / saved; the names alone, never a value, grade or unit
   'save_retry', // US-09 AC30: a retry of a failed cloud save; metadata { trigger, outcome } (save-retry-words.ts) only
   'upload_labs_opened', // US-73 AC14: an "Upload labs" heading button pressed; metadata { placement } (UPLOAD_LABS_PLACEMENTS) only
+  // US-09 AC67: whether the cloud account id can be read, and how many record copies Drive lists as owned.
+  // Closed words only (cloud-identity.ts): never an id, an email, a file id or a body.
+  'cloud_identity_read', 'drive_record_copies',
 ] as const;
 
 /** The `measurement_added` counter's words (US-07 AC11): which prompted measure was saved. */
@@ -218,7 +221,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
  * a distinct user action whose count is the signal (US-12 AC10, one per upload
  * run). The events route's per-visitor and per-IP limits still bound them.
  */
-export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved', 'reminder_optout', 'reminder_cancel_many'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures; US-17 AC19: once per Turn off
+export const PER_ACTION_EVENT_NAMES = ['upload_outcome', 'upload_review', 'save_retry', 'waist_widget_viewed', 'waist_widget_saved', 'bp_widget_viewed', 'bp_widget_saved', 'reminder_optout', 'reminder_cancel_many', 'cloud_identity_read', 'drive_record_copies'] as const satisfies readonly ProductEventName[]; // US-74: once per page view, which the widget itself ensures; US-17 AC19: once per Turn off; US-09 AC67: once per day per provider, by its own day key
 
 /**
  * The hosted connector's tool names, as a counter may name them. They live in

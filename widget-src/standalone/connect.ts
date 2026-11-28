@@ -23,7 +23,7 @@ import { BACKEND_KEY, webRecordHost } from '../src/storage/web-record-host';
 import { clearAutoEnrolBlock } from './reminders';
 import { didNotConnect, signInRefused, switchStopCause, switchStopMessage } from './switch-stop';
 import { PROVIDERS, SIGN_IN_KEYS, providerOf, type CloudBackend } from './providers';
-import { clearLocalStorage, clearOffFileHealthData, healthWritesAllowed, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
+import { clearLocalStorage, clearOffFileHealthData, healthWritesAllowed, IDENTITY_DAY_KEY, removeByPrefix, safeGetItem, safeRemoveItem, setSignIn, type LogOffId } from '../src/lib/storage';
 import { CLEARED_ERASE_KEY } from '../src/lib/cleared-erase';
 import { failureTags, recordFailure } from '../src/lib/error-diagnostics';
 import { deviceRecordStored, FULL } from '../src/storage/local-storage-adapter';
@@ -286,6 +286,7 @@ export async function logOff(backend: Backend): Promise<void> {
   clearLocalStorage();
   clearOffFileHealthData();
   safeRemoveItem(CLEARED_ERASE_KEY); // the next sign-in's record adopts its own erase (US-11 AC6)
+  removeByPrefix(IDENTITY_DAY_KEY); // a sign-in after this log-off is measured the same day (US-09 AC67)
   forgetBackend();
   // Again, now the wipe has freed space for it (Codex re-check R1).
   signalLogOff();

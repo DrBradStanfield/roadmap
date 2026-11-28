@@ -515,10 +515,10 @@ export function canonicalLabValue(
   return { value: scaleBy(value, factor), unit: entry.unit, factor };
 }
 
-/** The factor from a matched spelling to the entry's unit, or `undefined` when it takes no such spelling. */
+/** The factor from a matched spelling to the entry's unit, or `undefined` when it takes no such spelling: only an own key of `conversions` counts, not one it inherits such as `constructor` (US-21 AC7a). */
 function factorOf(entry: LabCatalogEntry, spelling: string): number | undefined {
   if (!spelling) return entry.unit === 'ratio' ? 1 : undefined; // a ratio prints with no unit (US-21 AC29)
-  return spelling === entry.unit.toLowerCase() || entry.unitAliases?.includes(spelling) ? 1 : entry.conversions?.[spelling];
+  return spelling === entry.unit.toLowerCase() || entry.unitAliases?.includes(spelling) ? 1 : entry.conversions && Object.prototype.hasOwnProperty.call(entry.conversions, spelling) ? entry.conversions[spelling] : undefined;
 }
 
 /** Why a row in a spelling its test takes was refused for its numbers: a count

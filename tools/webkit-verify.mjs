@@ -1,7 +1,8 @@
 // US-20: exercise real WebKit against the storefront, using disposable synthetic data.
 // A new probe is advisory until it has passed on one production deploy.
 import assert from 'node:assert/strict';
-import { pathToFileURL } from 'node:url';
+import { existsSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { webkit, devices } from 'playwright';
 import { probeDateCellRing, probeFocusRing, probeLabFocusRing } from './webkit-focus-probes.mjs';
 export { assertFocusRing, collectFocus, probeDateCellRing, probeFocusRing, probeLabFocusRing } from './webkit-focus-probes.mjs';
@@ -435,7 +436,9 @@ async function inspect(browser, deviceName, viewport) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Node gives import.meta.url as the real path and argv[1] as typed, so both are resolved (US-32 AC56a).
+const entry = process.argv[1] && existsSync(process.argv[1]) ? realpathSync(process.argv[1]) : '';
+if (entry === realpathSync(fileURLToPath(import.meta.url))) {
   const browser = await webkit.launch();
   try {
     await inspect(browser, 'iPhone 13');

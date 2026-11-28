@@ -30,5 +30,5 @@ export async function boot(
   const started = await startOnBackend(resolved, initStore).catch((error) => onLoadFailure(error, refused));
   // The page's one sign-in state, for every provider (US-09 AC48): the UI reads only it.
   bootSignIn(signInAtBoot(started));
-  return { backend: started.backend, refused, fromEmail };
+  return { backend: started.backend, adapter: started.adapter, refused, fromEmail };
 }

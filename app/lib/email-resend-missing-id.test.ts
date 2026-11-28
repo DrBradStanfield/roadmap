@@ -128,4 +128,18 @@ describe('US-17 AC14: a send with no error and no id is not a sent reminder', ()
     expect(recordSent).toHaveBeenCalledWith('optin-accepted', { blood_test_lipids: '2026-10-25' });
     expect(recordServerEvent).toHaveBeenCalledWith('reminder_sent', { provider: 'typed', count: 1 });
   });
+
+  it('with no Resend key nothing is accepted: the reminder and feedback sends return false', async () => {
+    vi.stubEnv('RESEND_API_KEY', '');
+    vi.resetModules();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const unset = await import('./email.server');
+      await expect(unset.sendReminderEmail('synthetic.reader@example.test', '<p>due</p>', 'https://u', 'S')).resolves.toBe(false);
+      await expect(unset.sendFeedbackEmail('synthetic.reader@example.test', 'nice tool', null)).resolves.toBe(false);
+      expect(send).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
