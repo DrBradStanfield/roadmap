@@ -124,7 +124,7 @@ export function buildIndex(entries: Entry[], weights: Weights = BEST): Index {
 /** The query's stems, each known abbreviation followed by its spelled-out form. */
 function queryTerms(query: string): string[] {
   const words = query.toLowerCase().match(/[a-z0-9']+/g) ?? [];
-  return [...new Set(tokenize(words.map((w) => abbreviations[w] ? `${w} ${abbreviations[w]}` : w).join(' ')))];
+  return [...new Set(tokenize(words.map((w) => Object.hasOwn(abbreviations, w) ? `${w} ${abbreviations[w]}` : w).join(' ')))];
 }
 
 const K1 = 1.2;

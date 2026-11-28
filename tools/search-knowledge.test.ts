@@ -79,6 +79,22 @@ describe('US-41 AC1 — a lexical ranker, no model', () => {
     expect(search(buildIndex(corpus), 'What does HTN mean?')[0].handle).toBe('high-blood-pressure');
   });
 
+  it('US-41 AC1a: a built-in object name such as constructor is not an abbreviation', () => {
+    const corpus = [...CORPUS,
+      { handle: 'kidney-function', title: 'Kidney Function', summary: 'The native kidney: an object lesson in code.' },
+      { handle: 'high-blood-pressure', title: 'Hypertension', summary: 'High blood pressure in adults.' }];
+    const index = buildIndex(corpus);
+    expect(search(index, 'zzqqx', 8)).toEqual([]);
+    const body = '# Intro\nopening text\n# Kidney\nfunction of the native kidney';
+    for (const word of ['constructor', 'toString', '__proto__', ...Object.getOwnPropertyNames(Object.prototype)]) {
+      expect(search(index, word, 8)).toEqual(search(index, 'zzqqx', 8));
+      expect(search(index, `What is ${word}?`, 8)).toEqual([]);
+      expect(bestSection(body, word, 200)).toBe(bestSection(body, 'zzqqx', 200));
+    }
+    expect(search(buildIndex(loadBlogIndex()), 'constructor', 8)).toEqual([]);
+    expect(search(index, 'htn', 8).map((h) => h.handle)).toEqual(['high-blood-pressure']);
+  });
+
   it('keeps the abbreviation map small and unambiguous: under 60 single-token keys', () => {
     const keys = Object.keys(ABBREVIATIONS);
     for (const ambiguous of ['hg', 'als', 'af', 'mi', 'me', 'ed']) expect(keys).not.toContain(ambiguous);
