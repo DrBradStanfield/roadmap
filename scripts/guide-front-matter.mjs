@@ -9,21 +9,20 @@ const unquote = (value) => {
   return quoted ? quoted[1].replace(/\\(["\\])/g, '$1') : value;
 };
 
-// The block at the top: a first line of ---, up to the next line of --- or ..., each with only spaces or tabs
-// after it (and a newline after the closing one). One `key: value` per line, the key trimmed; a line with no colon
-// is left out. Null (no front matter) for an empty block, a block line starting with --- that is no fence (a CR, a
-// fourth dash), no closing line, or a key given twice: each may have run into the body, which must give no metadata.
-export const splitGuide = (md) => {
+// The block at the top, fenced as the builder on main fenced it: a first line of exactly ---, up to the next line of
+// exactly --- (with a newline after it). One `key: value` per line, the key the text before the first colon as
+// written; a line with no colon is left out. Null (no front matter) for an empty block, a key given twice, or a block
+// line that is blank, starts with a space or a tab, or starts with ---: each may be a block that ran on into the
+// body, which must give no metadata. So a file read here is one main's builder took, with the same block.
+export const frontMatter = (md) => {
   const lines = md.split('\n');
-  const end = lines.findIndex((l, i) => i > 0 && /^(?:---|\.\.\.)[ \t]*$/.test(l));
+  const end = lines.indexOf('---', 1);
   const block = lines.slice(1, end);
-  if (!/^---[ \t]*$/.test(lines[0]) || end < 2 || end === lines.length - 1 || block.some((l) => l.startsWith('---'))) return null;
+  if (lines[0] !== '---' || end < 2 || end === lines.length - 1 || block.some((l) => /^(?:---|\s|$)/.test(l))) return null;
   const pairs = block.filter((l) => l.includes(':')).map((l) => {
     const i = l.indexOf(':');
-    return [l.slice(0, i).trim(), unquote(l.slice(i + 1).trim())];
+    return [l.slice(0, i), unquote(l.slice(i + 1).trim())];
   });
   const meta = Object.fromEntries(pairs);
-  return Object.keys(meta).length === pairs.length ? { meta, body: lines.slice(end + 1).join('\n') } : null;
+  return Object.keys(meta).length === pairs.length ? meta : null;
 };
-
-export const frontMatter = (md) => splitGuide(md)?.meta ?? null;

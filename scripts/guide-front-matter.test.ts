@@ -34,7 +34,6 @@ const guide = (value: string, slug: string) => `---\ntitle: ${value}\ndescriptio
 
 // [what the guide shows, its whole front matter and body, the title and description both readers give]
 const BLOCKS: [string, string, string, string | undefined][] = [
-  ['indented keys', '---\n  title: "Indented title"\n\tdescription: "Indented description"\nslug: "s"\n---\n\nBody text.\n', 'Indented title', 'Indented description'],
   ['a body line that looks like metadata', '---\ntitle: "Body test"\nslug: "s"\n---\n\nBody text.\n\n---\ndescription: Not front matter\n---\n\nMore text.\n', 'Body test', undefined],
 ];
 
@@ -107,6 +106,9 @@ describe('US-38 AC3a: one front-matter block, read by both the same way', () => 
     expect.soft(ld.description, 'build-guide-html description').toBe(description);
   });
 
+  it('a key is the text before its colon as written, so "slug :" is another key and the dry run finds no slug', () => {
+    stops(dryRun([['case.md', '---\ntitle: "Real"\nslug : "other-guide"\n---\n\nBody text.\n']]).run, 'no slug or title in front matter');
+  });
   it('a block line with no colon is left out, so "titles" and "slugs" leave the title and slug as written', () => {
     const { dir, run } = dryRun([['case.md', '---\ntitle: "Colon test"\nslug: "real-guide"\ntitles\nslugs\n---\n\nBody text.\n']]);
     expect(run.status, run.stderr).toBe(0);
@@ -127,18 +129,25 @@ const stops = (run: ReturnType<typeof spawnSync>, error: string, made = [BLOG]) 
 // Brad's example: metadata in the body, before a --- rule. None of it may become the guide's.
 const EXAMPLE = '\nAn example:\n\ntitle: "Body title"\nslug: "other-guide"\n\n---\n\nMore text.\n';
 const REAL = '---\ntitle: "Real"\nslug: "real-guide"\n';
+// A block with a title and no closing line, then a body that gives a slug before a rule, with or without blank lines.
+const RUN_ON = (gap: string, slug: string, rule: string) => `---\ntitle: "Real"\n${gap}An example:\n${slug}\n${gap}${rule}\n\nMore text.\n`;
 
 describe('US-38 AC3a: the fence lines around the block', () => {
   // Refused by both with their existing messages: the dry run looks up no article, the builder prints nothing.
   it.each([
     ['an empty block (two --- lines)', '---\n---\n' + EXAMPLE],
     ...['--- ', '---\t', '---\r', '----'].map((fence) => [`an empty block closed by ${JSON.stringify(fence)}`, `---\n${fence}\n` + EXAMPLE]),
+    ...['--- ', '----'].map((fence) => [`an empty block closed by ${JSON.stringify(fence)}, the example right under it`, `---\n${fence}\ntitle: "Body title"\nslug: "other-guide"\n---\n\nMore text.\n`]),
+    ['a block holding only a blank line', '---\n\n---\n' + EXAMPLE],
     ['an empty block in a CRLF file', ('---\n---\n' + EXAMPLE).replace(/\n/g, '\r\n')],
     ['a block in a CRLF file', (REAL + '---\n' + EXAMPLE).replace(/\n/g, '\r\n')],
     ['a block after a byte-order mark', '\uFEFF' + REAL + '---\n' + EXAMPLE],
-    ...['----', '---\r'].map((fence) => [`a block closed by ${JSON.stringify(fence)}`, `${REAL}${fence}\n` + EXAMPLE]),
-    ['a block opened by "----"', '-' + REAL + '---\n' + EXAMPLE],
+    ...['--- ', '---\t', '---\r', '----', '...', '...  '].map((fence) => [`a block closed by ${JSON.stringify(fence)}`, `${REAL}${fence}\n` + EXAMPLE]),
+    ...['----', '--- '].map((open) => [`a block opened by ${JSON.stringify(open)}`, REAL.replace('---', open) + '---\n' + EXAMPLE]),
+    ['a block with indented keys (spaces, a tab)', '---\n  title: "Indented title"\n\tdescription: "Indented description"\nslug: "s"\n---\n\nBody text.\n'],
     ['a block with no closing fence', REAL + EXAMPLE],
+    ...[['--- ', '\n'], ['...', '\n'], ['---', '\n'], ['--- ', ''], ['...', '']].map(([rule, gap]) => [`a block with no closing line, the body's slug before a ${JSON.stringify(rule)} rule${gap ? '' : ', no blank line'}`, RUN_ON(gap, 'slug: "other-guide"', rule)]),
+    ...['\n', ''].map((gap) => [`a block with no closing line, an indented body slug before a "---" rule${gap ? '' : ', no blank line'}`, RUN_ON(gap, '    slug: "other-guide"', '---')]),
     ['a block closed at the end of the file, with no newline', REAL + '---'],
     ['a block that gives a key twice', '---\ntitle: "First"\ntitle: "Last"\nslug: "s"\n---\n\nBody text.\n'],
   ])('%s is no front matter: the dry run and the builder refuse it', (_shows, md) => {
@@ -147,18 +156,6 @@ describe('US-38 AC3a: the fence lines around the block', () => {
     const mdPath = join(dir, 'docs', 'guides', 'case.md');
     const b = build(mdPath);
     expect({ status: b.status, stdout: b.stdout, stderr: b.stderr }).toEqual({ status: 1, stdout: '', stderr: `${mdPath}: no front matter. A guide starts with a --- block carrying at least title: and slug:.\n` });
-  });
-
-  // A fence with trailing spaces or a tab opens or closes the block, and YAML's ... closes it: the slug is the
-  // block's, and the page is the one the same guide with plain --- fences builds.
-  it.each([['---', '--- '], ['---', '---\t'], ['---', '...'], ['---', '...  '], ['--- ', '---']])('a block opened by %j and closed by %j gives the block\'s slug and title, never the body\'s', (open, fence) => {
-    const { dir, run } = dryRun([['case.md', REAL.replace('---', open) + fence + '\n' + EXAMPLE]]);
-    expect(run.status, run.stderr).toBe(0);
-    expect(run.stderr.split('\n').filter((l) => l.startsWith('fetch '))).toEqual([BLOG, `${LOOKUP}real-guide`]);
-    expect(run.stdout.split('\n').slice(0, 7)).toEqual(['blog "guides" id 1', '', 'case.md -> /blogs/guides/real-guide', expect.stringMatching(/^ {2}article id 9, /), '  title live:     "old"', '  title rendered: "Real"', expect.stringMatching(/^ {2}first body difference/)]);
-    const b = build(join(dir, 'docs', 'guides', 'case.md'));
-    const plain = build(join(scratch([['case.md', REAL + '---\n' + EXAMPLE]]), 'docs', 'guides', 'case.md'));
-    expect({ status: b.status, stderr: b.stderr, stdout: b.stdout }).toEqual({ status: 0, stderr: 'title: Real\nslug:  real-guide\n', stdout: plain.stdout });
   });
 });
 
