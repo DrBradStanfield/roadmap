@@ -408,10 +408,10 @@ const NOT_RUN = 'Not run: one run_roadmap per turn; use the first result.';
 export const UNIT_SUSPECT = 'Not saved: this value looks like it may be in a different unit. Ask the user to confirm the value and its unit. If they confirm it as stated, tell them to enter it in their record themselves, and do not propose it again.';
 
 /** A propose_field_edit whose value reads as a unit swap (`askUnit`, run_roadmap's own test), e.g. LDL 3.4 mg/dL:
- *  it is answered with UNIT_SUSPECT and never reaches the client. */
+ *  whatever its date (US-16 AC1b), it is answered with UNIT_SUSPECT and never reaches the client. */
 function unitSuspect(b: ChatContentBlock): boolean {
   if (b.type !== 'tool_use' || b.name !== PROPOSE_FIELD_EDIT_TOOL.name) return false;
-  const edit = parseProposedEdit(b.name, b.input);
+  const edit = parseProposedEdit(b.name, { ...obj(b.input), date: null });
   if (edit?.kind !== 'field') return false;
   const metric = FIELD_TO_METRIC[edit.field] as MetricType;
   return askUnit(metric, { valueSI: toCanonicalValue(metric, edit.displayValue, edit.unitSystem), system: edit.unitSystem });

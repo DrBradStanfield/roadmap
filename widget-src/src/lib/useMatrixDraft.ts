@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { isLpaUnit } from '@roadmap/health-core/cell-unit';
 import { localDay } from '@roadmap/health-core/merge';
 import { DAY_NOT_HAPPENED } from '@roadmap/health-core/lab-series';
+import { isCalendarDay } from '@roadmap/health-core/measurement-history';
 import type { LpaUnit, UnitSystem } from '@roadmap/health-core/units';
 import type { CellUnit } from './blood-test-cell';
 import { DRAFTS_CLEARED_EVENT, ownLogOffHasBegun, pageOnChosenRecord, safeGetItem, safeRemoveItem, safeSetItem } from './storage';
@@ -184,11 +185,11 @@ export function useMatrixDraft<K extends string>(storageKey: string, record: {
     type: (cell: CellRef<K>, typed: string, unit?: CellUnit, byHand = true) => setState((s) => set(s, cell, typed, (was) => ({
       unit, expected: was?.expected ?? rowsUnder(cell[0] ?? dayOf(s), cell[1]), byHand: byHand ? PAGE : undefined,
     }))),
-    /** The day the user picked. Anything else is never taken: iOS's Reset
-     *  hands back '', and the column keeps its day. Another day is another
-     *  slot: the cells typed in the column expect what the page shows there. */
+    /** The day the user picked. Anything else is never taken, so the column keeps its day:
+     *  iOS's Reset hands back '', and a day the calendar does not have (US-16 AC1b). Another
+     *  day is another slot: the cells typed in the column expect what the page shows there. */
     setDate: (day: string) => {
-      if (!isDay(day)) return;
+      if (!isCalendarDay(day)) return;
       setState((s) => {
         const meta = { ...s.meta };
         if (day !== dayOf(s)) {

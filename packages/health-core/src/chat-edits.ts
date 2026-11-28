@@ -27,6 +27,7 @@ import { formatHeightDisplay, lookupUnit, reportedToCanonical, type MetricType, 
 import { FIELD_TO_METRIC, LONGITUDINAL_FIELDS } from './mappings';
 import { ESCALATION_KEY_OF, MEDICATION_KEYS, sanitizeInputs, UNANSWERED_OF } from './validation';
 import { escalationOptions } from './input-form';
+import { isCalendarDay } from './measurement-history';
 import {
   BEMPEDOIC_ACID_OPTIONS, EZETIMIBE_OPTIONS, GLP1_NAMES, METFORMIN_OPTIONS, PCSK9I_OPTIONS, SGLT2I_NAMES, STATIN_NAMES,
   type HealthInputs,
@@ -363,13 +364,11 @@ export type ProposedEdit = ProposedFieldEdit | ProposedMedicationEdit | Proposed
 // Zod validators
 // ---------------------------------------------------------------------------
 
-const isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
-
 const rawFieldEditSchema = z.object({
   field: z.enum(EDITABLE_FIELDS as unknown as [EditableField, ...EditableField[]]),
   value: z.number(),
   unit: z.string().min(1),
-  date: z.string().regex(isoDateRe).optional().nullable(),
+  date: z.string().refine(isCalendarDay).optional().nullable(),
 });
 
 // An empty drugName is a misfit to ask about (US-16 AC3), not a shape to drop.
@@ -548,7 +547,7 @@ const receivedEdit = z.discriminatedUnion('kind', [
     field: z.enum(EDITABLE_FIELDS as unknown as [EditableField, ...EditableField[]]),
     displayValue: z.number().finite(),
     unitSystem: z.enum(['si', 'conventional']),
-    date: z.string().regex(isoDateRe).nullable(),
+    date: z.string().refine(isCalendarDay).nullable(),
   }),
   z.object({
     kind: z.literal('medication'),
