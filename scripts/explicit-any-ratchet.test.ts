@@ -1,8 +1,9 @@
-// US-64 AC42: app and test TypeScript add no explicit `any`; a file's count can only fall.
+// US-64 AC42: app and test TypeScript add no explicit `any`; a file's count never rises.
+// Only a rise fails; a fall keeps its entry until someone tightens it by hand (Brad 2026-11-28).
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { WRITE_CMD, anyCounts, countExplicitAny, fresh, grown, isScanned, loose, readBaseline, scannedFiles } from './explicit-any-baseline.mjs';
+import { anyCounts, countExplicitAny, fresh, grown, isScanned, readBaseline, scannedFiles } from './explicit-any-baseline.mjs';
 import { ROOT } from './file-size-baseline.mjs';
 
 // The named exceptions. A new one is a change to this list.
@@ -20,10 +21,6 @@ describe('explicit-any ratchet (US-64 AC42)', () => {
     expect(fresh(baseline.files, now), fresh(baseline.files, now).join('\n')).toEqual([]);
   });
 
-  it('every baseline entry is still a file at its recorded count: a fall needs the baseline rewritten', () => {
-    expect(loose(baseline.files, now), loose(baseline.files, now).join('\n')).toEqual([]);
-  });
-
   it('scans .ts, .tsx, .mts and .cts (.d.mts included), not .mjs/.js; an .mts snippet counts `as any`', () => {
     expect(['a.ts', 'a.tsx', 'a.mts', 'a.cts', 'a.d.mts', 'a.mjs', 'a.js', 'a.json'].filter(isScanned)).toEqual(['a.ts', 'a.tsx', 'a.mts', 'a.cts', 'a.d.mts']);
     expect(scannedFiles()).toEqual(expect.arrayContaining(['instrument-self-report.d.mts', 'ios/scripts/app-store-video-lab-server.mts']));
@@ -37,22 +34,6 @@ describe('explicit-any ratchet (US-64 AC42)', () => {
     expect(grown({ 'a.ts': 2 }, { 'a.ts': 1 })).toEqual([]);
     expect(fresh({ 'a.ts': 1 }, { 'a.ts': 1, 'new.tsx': 1 })).toEqual(['new.tsx: 1 explicit any and not in the baseline. Give it a real type or unknown.']);
     expect(fresh({ 'a.ts': 1 }, {})).toEqual([]);
-  });
-
-  it('the stale check on a made-up baseline: a lowered file and a deleted file fail until rewritten; equal passes', () => {
-    const on = (f: string) => f !== 'gone.ts';
-    expect(loose({ 'a.ts': 2, 'b.ts': 1 }, { 'a.ts': 1, 'b.ts': 1 }, on)).toEqual([
-      `a.ts: recorded 2 explicit any, now 1. Lower the entry: run \`${WRITE_CMD}\`.`,
-    ]);
-    expect(loose({ 'a.ts': 1 }, { 'a.ts': 1 }, on)).toEqual([]);
-    expect(loose({ 'gone.ts': 1 }, {}, on)).toEqual([`gone.ts: no longer exists. Delete its entry: run \`${WRITE_CMD}\`.`]);
-    expect(loose({ 'a.ts': 3 }, {}, on)).toEqual([`a.ts: now 0 explicit any. Delete its entry: run \`${WRITE_CMD}\`.`]);
-    // After the rewrite drops a.ts, an any that comes back is outside the baseline and fails.
-    expect(fresh({}, { 'a.ts': 1 })).toEqual(['a.ts: 1 explicit any and not in the baseline. Give it a real type or unknown.']);
-    // The exception's entry gets the same check.
-    expect(loose({ [ALLOWED_EXCEPTIONS[0]]: 1 }, {}, on)).toEqual([
-      `${ALLOWED_EXCEPTIONS[0]}: now 0 explicit any. Delete its entry: run \`${WRITE_CMD}\`.`,
-    ]);
   });
 
   it('every exception is on the fixed list, in files, exists and gives a reason; the scrubber keeps its alias', () => {

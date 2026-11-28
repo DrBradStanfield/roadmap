@@ -117,6 +117,18 @@ commit or range review the working tree may be newer than the snapshot, so
 say which you observed. A failed MCP call is evidence about the server
 process, not about the change.
 ` : ""}
+Setting "blocks_merge" (Brad 2026-11-28). Realism bar: a finding blocks a merge
+only if it names a scenario a real user plausibly reaches through normal use,
+or a way real data is lost, exposed or made wrong. State who does what, and
+how often you expect it. These are noted, never blocking: races that need
+sub-second timing between tabs or devices; a full disk or blocked browser
+storage; a person editing storage or provider files by hand; and any case the
+change makes no worse than main. Local tools: scripts that run only on Brad's
+Mac (tools/, scripts/, hooks) trust that Mac: its files, environment and
+installed apps. Do not file findings about symlinks, swapped binaries,
+environment variables or file races there. Still in scope: a secret reaching
+a log, a commit or another service, and anything that writes to production.
+
 Status rules. "incomplete" when a check that the change's correctness,
 security, privacy, or data integrity depends on could not be verified (a
 needed file unreadable, the patch truncated, a cited story missing). A

@@ -29,8 +29,8 @@ with a date in their name), other archives (`docs/knowledge-refresh/`, `docs/cha
 elsewhere; never edit it.
 
 **The check.** `node scripts/glossary-words.mjs` counts a few retired words where their entry retires them and fails
-when a file uses one more often than `scripts/glossary-words-baseline.json` records. After a fix lowers a count, run
-it with `--write`; it refuses to raise one, and fills in a new rule's first counts (so a rule deleted from the JSON is
+when a file uses one more often than `scripts/glossary-words-baseline.json` records; a count that falls passes. To tighten
+the record by hand after a fix, run it with `--write`; it refuses to raise one, and fills in a new rule's first counts (so a rule deleted from the JSON is
 re-seeded at today's count; review baseline diffs). Each rule names its entry, and `scripts/glossary-words.test.ts`
 checks that the word is in that entry's Retired list here. Add a rule only for a word that is wrong nearly everywhere
 it is scanned; it does not read comments, identifiers or tests.

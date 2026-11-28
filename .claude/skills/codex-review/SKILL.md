@@ -256,8 +256,9 @@ which is NOT a pass and NOT the plan-limit waiver (US-40 AC18).
    finding in your reply: Accepted, Disputed (with evidence), or Needs Brad.
 3. **Fix accepted findings** with regression coverage, then re-run the
    review ONCE, scoped to the fix diff (`docs/review-format.md` round cap). A disputed BLOCKING
-   finding stays blocking until the reviewer withdraws it, a fix lands, or
-   Brad decides. Unresolved after that re-check → Brad, both positions.
+   finding stays blocking until the reviewer withdraws it, a fix lands,
+   Brad decides, or you rule it "noted, not realistic" (`docs/review-format.md`
+   § What blocks a merge, third paragraph; never for clinical, FHIR/merge or auth). Unresolved after that re-check → Brad, both positions.
 4. **Drift** in the output means the tree changed mid-review; the verdict
    covers the snapshot only. Re-run before relying on it.
 5. Report the snapshot id and model (the report's `model` and `deep`) with the verdict. Do not invoke this
