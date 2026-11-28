@@ -306,6 +306,52 @@ describe('US-41 AC8 — get_article: one entry, size-capped, sections on request
     expect(['not-found', 'malformed']).toContain(refused.reason);
   });
 
+  const SECTION_CAP = (KNOWLEDGE_TOOLS[1].inputSchema as { properties: { section: { maxLength: number } } }).properties.section.maxLength;
+  const read = (handle: string, section: string) => callKnowledgeTool('get_article', { handle, section });
+  const sectionOf = (handle: string, section: string) => (read(handle, section).structured as { section?: string } | undefined)?.section;
+
+  it('US-41 AC8a: every listed heading of every served entry, asked for as listed, reads that heading', () => {
+    const misses: string[] = [];
+    let asked = 0;
+    for (const e of loadBlogIndex().filter(isServed)) {
+      for (const h of (callKnowledgeTool('get_article', { handle: e.handle }).structured as { sections: string[] }).sections) {
+        if (!h || h.length > SECTION_CAP) continue; // Limits: an empty heading, or one past the section cap, cannot be asked for.
+        asked++;
+        const s = read(e.handle, h).structured as { section: string; body: string } | undefined;
+        if (s?.section !== h || s.body.split('\n')[0].slice(3).trim() !== h) misses.push(`${e.handle}: ${h} -> ${s?.section ?? 'refused'}`);
+      }
+    }
+    expect(misses).toEqual([]);
+    expect(asked).toBeGreaterThan(2_000);
+  });
+
+  it('US-41 AC8a: a heading of only stop words, or one whose words an earlier heading also holds, reads itself', () => {
+    expect(sectionOf('we-were-wrong-about-aspirin-new-evidence', 'What You Should Do')).toBe('What You Should Do');
+    expect(sectionOf('calcium-rich-foods-diet', 'Sources')).toBe('Sources');
+    expect(sectionOf('mothers-took-choline-their-kids-scored-8-iq-points-higher', 'What They Found')).toBe('What They Found');
+    // Case and the spaces around it do not matter (zod trims, U+00A0 included).
+    expect(sectionOf('we-were-wrong-about-aspirin-new-evidence', 'what you SHOULD do')).toBe('What You Should Do');
+    expect(sectionOf('calcium-rich-foods-diet', ' \u00a0Sources\u00a0 ')).toBe('Sources');
+    // No exact heading: the word rule, first heading holding every word, as before.
+    expect(sectionOf('calcium-rich-foods-diet', 'source')).toBe('Dietary Sources of Calcium');
+    expect(sectionOf('calcium-rich-foods-diet', 'calcium supplements')).toBe('Are Calcium Supplements a Viable Option?');
+    expect(sectionOf('mothers-took-choline-their-kids-scored-8-iq-points-higher', 'they found')).toBe('Found in an Egg');
+    expect(read('we-were-wrong-about-aspirin-new-evidence', 'What You Should').isError).toBe(true);
+    // Limit: a markdown heading is matched exactly only with its markdown; without it the word rule decides, and `What is it?` is all stop words.
+    expect(sectionOf('how-to-correctly-use-hyaluronic-acid-to-reverse-wrinkles-by-18', '**What is it?**')).toBe('**What is it?**');
+    expect(read('how-to-correctly-use-hyaluronic-acid-to-reverse-wrinkles-by-18', 'What is it?').isError).toBe(true);
+    // Limits: a blank section, or one past the cap, is refused before any heading is looked at.
+    for (const blank of [' \u00a0 ', 'x'.repeat(SECTION_CAP + 1)]) expect(read('calcium-rich-foods-diet', blank).reason).toBe('malformed');
+  });
+
+  it('US-41 AC8a: a heading the not-found refusal lists reads that heading', () => {
+    const refusal = read('we-were-wrong-about-aspirin-new-evidence', 'zebra canary');
+    expect(refusal.isError).toBe(true);
+    const listed = refusal.text.split('Its sections: ')[1].split(' | ');
+    expect(listed).toContain('What You Should Do');
+    for (const h of listed) expect(sectionOf('we-were-wrong-about-aspirin-new-evidence', h)).toBe(h);
+  });
+
   it('refuses an unknown or path-shaped handle without echoing it', async () => {
     const access = await connect();
     for (const handle of ['zebra-canary-handle', '../../etc/passwd', 'A'.repeat(300)]) {
