@@ -86,6 +86,18 @@ describe('the chat carries the connector\'s safety sections (US-50 AC13a)', () =
     expect(reducedMaster(MASTER)).toContain('### 5. Who should not take it');
   });
 
+  // One heading per word of the rule, each naming that word alone, so a word dropped from the rule fails here.
+  const RISK_WORDS = ['Long-term Safety', 'Side Effects', 'Toxicity', 'Drug Interactions', 'Contraindications', 'Precautions', 'Adverse Events', 'Cautions', 'Warnings', 'Pregnancy', 'Special Populations', 'Risk Factors', 'Who should not take it'];
+  it('each word of the rule makes a safety heading for both readers, at `##` and as a `###` under a non-safety section', () => {
+    const missed: string[] = [];
+    for (const h of RISK_WORDS) {
+      if (safetyBlocks(`## ${h}\nx\n## End\nz`).join('|') !== `## ${h}\nx`) missed.push(`## ${h}`);
+      if (safetyBlocks(`## Uses\nu\n### Common ${h}\ny\n## End\nz`).join('|') !== `### Common ${h}\ny`) missed.push(`### Common ${h}`);
+      if (!reducedMaster(MASTER.replace('### Bone', `### ${h}`))!.includes(`#### ${h}\n\nBone text.`)) missed.push(`reduced: ${h}`);
+    }
+    expect(missed).toEqual([]);
+  });
+
   it('the connector\'s cut reads the same rule: a "who should not" section past the cut follows it, and so do malformed key safety points', () => {
     const body = `## Intro\n${'a'.repeat(9_000)}\n## Key safety points\n- Only one.\n## 5. Who should not take it\nNot for some.\n## End\nz`;
     const cut = cutEntry(body, 5_000);
