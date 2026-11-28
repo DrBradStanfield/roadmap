@@ -85,8 +85,8 @@ describe('US-06 AC23: roadmap_text.html, the prostate section', () => {
   it('the Changelog has the new 26 November entry; the 13 November one stays', () => {
     const [entry] = quotes(specLine('**Page, the PSA bullet**', '- New changelog entry, 26th November 2026'));
     const log = HTML.slice(HTML.indexOf('<h2 id="changelog">'));
-    // A later entry (28 November, US-07 AC21) now opens the list.
-    expect(log).toContain(`\n<li>26<sup>th</sup> November 2026: ${entry}</li>\n`);
+    // Second since the 28 November entry (US-07 AC21) went above it.
+    expect(log).toContain(`</li>\n<li>26<sup>th</sup> November 2026: ${entry}</li>\n`);
     expect(log.split('<li>26<sup>th</sup> November 2026: Prostate').length - 1).toBe(1);
     expect(log.split('<li>13<sup>th</sup> November 2026: Prostate').length - 1).toBe(1);
   });
