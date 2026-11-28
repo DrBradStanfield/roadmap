@@ -14,13 +14,16 @@ function sources(dir: string): string[] {
   });
 }
 
-// Every import form: `from` (import, import type, export from), a side-effect `import '...'`,
-// `import(...)`, `require(...)`, `import.meta.glob(...)` and CSS `@import`, and the bare
-// `.../standalone` path as well as `.../standalone/...`.
+// These forms, for a path under `.../standalone/` or the bare `.../standalone` folder: `from`
+// (import, import type, export from), a side-effect `import '...'`, `import(...)`, `require(...)`,
+// `import.meta.glob(...)`, and CSS `@import` with a quoted path or `url(...)`, quoted or not.
+// Not caught: a comment between `import` and its path, `new URL(..., import.meta.url)`,
+// `/// <reference path>`, `require.resolve(...)`, a CSS `url(...)` asset, and a quoted path
+// with a space or a `)` before `/standalone`.
 const NAMES_STANDALONE =
-  /(?:\bfrom|\bimport|\brequire|\bimport\.meta\.glob)\s*\(?\s*\[?\s*(?:url\(\s*)?['"`][^'"`]*\/standalone(?:\/|['"`])/;
+  /(?:\bfrom|\bimport|\brequire|\bimport\.meta\.glob)\s*\(?\s*\[?\s*(?:url\(\s*['"`]?|['"`])[^'"`)\s]*\/standalone(?:[\/'"`)\s])/;
 
-describe('widget-src/src never imports widget-src/standalone', () => {
+describe('widget-src/src must not import widget-src/standalone (the forms above)', () => {
   it('no production file under src names a standalone module', () => {
     const offenders = sources(SRC).filter((file) => NAMES_STANDALONE.test(readFileSync(file, 'utf8')));
     expect(offenders.map((file) => relative(SRC, file))).toEqual([]);
