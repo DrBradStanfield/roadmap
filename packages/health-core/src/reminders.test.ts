@@ -477,15 +477,14 @@ describe('DEXA screening reminders', () => {
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeDefined();
   });
 
-  it('does not return DEXA reminder for male age 69', () => {
-    const youngMale: ReminderProfile = { sex: 'male', age: 69 };
+  it('returns the overdue DEXA reminder for men from 60, not at 59 (US-07 AC22)', () => {
     const screenings: ScreeningInputs = {
       dexaScreening: 'dexa_scan',
       dexaLastDate: monthsAgoYYYYMM(65),
       dexaResult: 'normal',
     };
-    const result = dueReminders(youngMale, screenings, {}, [], NOW);
-    expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
+    const has = (age: number) => dueReminders({ sex: 'male', age }, screenings, {}, [], NOW).reminders.some(r => r.category === 'screening_dexa');
+    expect([59, 60, 69].map(has)).toEqual([false, true, true]);
   });
 
   it('does not return DEXA reminder when not_yet_started', () => {

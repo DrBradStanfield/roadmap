@@ -152,7 +152,7 @@ NICE and RACGP advise against a repeat scan within 2 years, except in unusual ca
 | | Brad's roadmap | New Zealand (bpacnz 2019, Healthify) | Australia (RACGP) | United States (USPSTF, ACP) | United Kingdom (NICE, NHS) |
 |---|---|---|---|---|---|
 | Scan women | From 50 (the health tool) | Age 65+ is a risk factor; DXA if at risk [46] | If FRAX major risk 10% or more [4] | From 65; younger if at risk [6] | Consider from 65; earlier with risk factors [1] |
-| Scan men | From 70 (the health tool) | Age 75+ is a risk factor [46] | If FRAX major risk 10% or more [4] | Evidence insufficient [6] | Consider from 75; earlier with risk factors [1] |
+| Scan men | From 60 (the health tool) | Age 75+ is a risk factor [46] | If FRAX major risk 10% or more [4] | Evidence insufficient [6] | Consider from 75; earlier with risk factors [1] |
 | Repeat scan | 5 years normal, 2 osteopenia, 1 after osteoporosis follow-up (the health tool) | After 4 to 5 years of treatment [46] | Not under 2 years [50] | | Not within 2 years; 2 to 3 years if near treatment, else 5 [3] |
 | When to treat | | Hip T-score -2.5 or lower, or hip risk 3% or more [46] | T-score -2.5; or -1.5 to -2.5 plus FRAX 20% (major) or 3% (hip) [4] | Individual for osteopenia over 65 [7] | Shared decision, no fixed FRAX line [2] |
 | Calcium | Food first [42] | Food first [9][46] | 1000 to 1300 mg a day [5] | Against low-dose supplements for prevention [19] | Food first; supplement if prescribed [10] |

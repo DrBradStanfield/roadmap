@@ -34,7 +34,7 @@ describe('the plan\'s screening cards and the reminders read one age (US-23 AC6c
     ['Auckland, 1 Oct 01:00, a woman born Oct 1976: 49 at the UTC month, no card and no reminder', 'Pacific/Auckland', '2026-09-30T12:00:00Z', { sex: 'female', birthMonth: 10 }, neither(50)],
     ['Auckland, the last second of September in UTC: still neither', 'Pacific/Auckland', '2026-09-30T23:59:59Z', { sex: 'female', birthMonth: 10 }, neither(50)],
     ['Auckland, the turn of the UTC month: both together', 'Pacific/Auckland', '2026-10-01T00:00:00Z', { sex: 'female', birthMonth: 10 }, both(50)],
-    ['Los Angeles, 30 Nov 19:00, a man born Dec 1956 (DEXA from 70)', 'America/Los_Angeles', '2026-12-01T03:00:00Z', { sex: 'male', birthYear: 1956, birthMonth: 12 }, both(69)],
+    ['Los Angeles, 30 Nov 19:00, a man born Dec 1966 (DEXA from 60, US-07 AC22)', 'America/Los_Angeles', '2026-12-01T03:00:00Z', { sex: 'male', birthYear: 1966, birthMonth: 12 }, both(59)],
     ['Los Angeles, a smoker born Dec 1945: lung stops at 80, 81 at the UTC month on both sides', 'America/Los_Angeles', '2026-12-01T03:00:00Z', { sex: 'male', birthYear: 1945, birthMonth: 12, lung: true }, { age: 80, cards: [], reminder: false }],
     ['Auckland, no birth month (January): 1 Jan 01:00 is still 31 Dec in UTC', 'Pacific/Auckland', '2026-12-31T12:00:00Z', { sex: 'female', birthYear: 1977 }, neither(50)],
     ['Auckland, no birth month: the UTC new year', 'Pacific/Auckland', '2027-01-01T00:00:00Z', { sex: 'female', birthYear: 1977 }, both(50)],

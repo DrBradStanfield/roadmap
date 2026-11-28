@@ -109,6 +109,14 @@ describe('US-07 AC22: evidence, algorithm doc and page', () => {
     expect(ALGO).not.toContain(before);
   });
 
+  it('the chatbot\'s bone health guideline gives the tool\'s ages: women from 50, men from 60 (Brad 2026-11-28)', () => {
+    const guide = read('docs/guideline/bone-health.md');
+    expect(guide).toContain('\n- The Health Roadmap suggests a bone density scan for women from 50 and men from 60 (the health tool).\n');
+    expect(guide).toContain('\n- It suggests a DEXA scan for women from 50 and men from 60. With no sex on record, the card does not show.\n');
+    expect(guide).toContain('\n| Scan men | From 60 (the health tool) |');
+    expect(guide).not.toMatch(/men from 70|From 70 \(the health tool\)/);
+  });
+
   const REF_LIST = HTML.slice(HTML.indexOf('<h2 id="references">'), HTML.indexOf('<h2 id="changelog">')).match(/^<li>.*$/gm) ?? [];
   const strip = (h: string) => h.replace(/<[^>]+>/g, '');
   const dexa = HTML.slice(HTML.indexOf('<strong data-mce-fragment="1">Osteoporosis Screening</strong>'), HTML.indexOf('<h2 id="medication-options">'));
