@@ -1,9 +1,9 @@
 // US-16 AC1b: a chat edit dated to a day the calendar does not have is refused where the edit is
 // parsed, the way an edit whose date is not YYYY-MM-DD already is. Synthetic values.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseProposedEdit, parseProposedEdits, readProposedEdits } from './chat-edits';
 import { CHAT_VALUES_UNREADABLE, refuseUnreadableEdits } from './chat-edit-refusals';
-import { roadmapToolResults } from './run-roadmap';
+import { roadmapToolResults, UNIT_SUSPECT, withRoadmapRound } from './run-roadmap';
 
 const FIELD = 'propose_field_edit';
 const NO_SUCH_DAY = ['2026-02-30', '2026-02-29', '2025-02-29', '2026-04-31', '2026-13-01', '2026-01-00', '0000-00-00'];
@@ -53,5 +53,27 @@ describe('US-16 AC1b: a chat edit dated a day the calendar does not have is refu
       expect(parseProposedEdit(FIELD, ldl(day))).toBeNull();
       expect(readProposedEdits([received(day), statin])).toEqual({ edits: [statin], invalid: ['field'] });
     }
+  });
+
+  // Brad's agent, round 2: the bad day keeps the edit from being proposed, but the field, value and unit are
+  // still checked, so a value that looks like the wrong unit still gets its round and the model asks.
+  const turn = async (input: object, app: boolean) => {
+    const asked = { contentBlocks: [{ type: 'text', text: 'Is that 3.4 mmol/L or mg/dL?' }] };
+    const send = vi.fn().mockResolvedValueOnce({ contentBlocks: [{ type: 'tool_use', id: 'v', name: FIELD, input }] }).mockResolvedValueOnce(asked);
+    const said = [{ role: 'user' as const, content: 'my LDL was 3.4 mg/dL' }];
+    return { send, done: await withRoadmapRound(said, send, {}, undefined, undefined, app) };
+  };
+
+  it.each([['2026-02-30', false], ['2026-02-30', true], ['2026-2-3', false]])('LDL 3.4 mg/dL dated %s, no run_roadmap: the round asks the model to confirm the unit, and nothing is proposed (app %s)', async (day, app) => {
+    const { send, done } = await turn({ field: 'ldlC', value: 3.4, unit: 'mg/dL', date: day }, app as boolean);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[1][0].messages.at(-1).content).toEqual([{ type: 'tool_result', tool_use_id: 'v', content: UNIT_SUSPECT }]);
+    expect(done.proposedEdits).toEqual([]);
+  });
+
+  it('LDL 3.1 mmol/L dated 2026-02-30, no run_roadmap: no round, as before, and nothing is proposed', async () => {
+    const { send, done } = await turn(ldl('2026-02-30'), false);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(done.proposedEdits).toEqual([]);
   });
 });
