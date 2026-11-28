@@ -89,8 +89,9 @@ describe('US-14 AC7a: the document viewer is a modal dialog', () => {
     expect(document.documentElement.style.overflow).toBe('');
   });
 
-  it.each(['', '   '])('a document with a blank title (%j) is named "Untitled", and the focus goes to that title', (blank) => {
-    openFromRow(false, { ...doc, title: blank });
+  // A row with no title, or a null one, is kept readable (US-65 AC1), so the viewer can get one.
+  it.each(['', '   ', undefined, null])('a document with a missing or blank title (%j) is named "Untitled", and the focus goes to that title', (blank) => {
+    openFromRow(false, { ...doc, title: blank as string });
     const named = screen.getByRole('dialog', { name: 'Untitled' });
     expect(named.querySelector('h3')?.textContent).toBe('Untitled');
     expect(document.activeElement).toBe(named.querySelector('h3'));
