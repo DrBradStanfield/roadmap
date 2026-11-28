@@ -116,3 +116,6 @@ export async function labImport(
     return { result: null, error: 'Could not read this document. Try again.', errorCode: 'server_error' };
   }
 }
+
+// The Pages build swaps upload-api.ts for this module, so tsc fails here when this module stops standing in for it.
+({ checkLabImportQuota, labImport }) satisfies typeof import('./upload-api');
