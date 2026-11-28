@@ -26,11 +26,12 @@ import { HistoryLightboxHost } from './history-lightbox';
 import { boot } from './boot';
 import { storageState } from './connect';
 import { resolveBackend } from './resolve-backend';
+import { CloudIdentityObserver } from './cloud-identity-observe';
 
 async function main() {
   // Nothing may run before boot(): its first line notes another tab's log-off
   // (US-09 AC2h), and logout-latch-during-load.test.ts runs only boot().
-  const { backend, refused, fromEmail } = await boot(resolveBackend, initRoadmapStore);
+  const { backend, adapter, refused, fromEmail } = await boot(resolveBackend, initRoadmapStore);
   const state = storageState(backend);
   const emailLanding = await emailLandingApplies(fromEmail, state);
   // "Delete all my data" must also delete the reminder row on Brad's server.
@@ -71,6 +72,8 @@ async function main() {
           />
         </GuestContext.Provider>
         <HistoryLightboxHost />
+        {/* US-09 AC67: a measurement only, started after the first commit; it changes nothing a person sees. */}
+        <CloudIdentityObserver adapter={adapter} />
       </CrashBoundary>
     </React.StrictMode>,
   );

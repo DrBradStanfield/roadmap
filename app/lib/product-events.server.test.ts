@@ -40,7 +40,9 @@ describe('parseProductEvent', () => {
         : eventName === 'measurement_added' ? { metadata: { measure: 'waist' } }
         : eventName === 'save_retry' ? { metadata: { trigger: 'online', outcome: 'landed' } } // US-09 AC30: needs its trigger
         : eventName === 'upload_review' ? { metadata: { saved: 1 } } // US-13 AC13: needs how it ended
-        : eventName === 'reminder_cancel_many' ? { metadata: { provider: 'dropbox', count: 2 } } : {}; // US-17 AC19: needs both
+        : eventName === 'reminder_cancel_many' ? { metadata: { provider: 'dropbox', count: 2 } } // US-17 AC19: needs both
+        : eventName === 'cloud_identity_read' ? { metadata: { provider: 'github', grant: 'pat', outcome: 'ok' } } // US-09 AC67: needs all three
+        : eventName === 'drive_record_copies' ? { metadata: { outcome: 'refused' } } : {}; // US-09 AC67: needs its outcome
       expect(parseProductEvent({ eventName, visitorId: VISITOR, ...metadata })).toEqual({
         eventName,
         visitorId: VISITOR,

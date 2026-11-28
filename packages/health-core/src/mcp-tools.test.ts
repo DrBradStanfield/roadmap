@@ -1934,6 +1934,15 @@ describe('US-32 AC9 — a surface that can file, files it', () => {
     expect((answer.structured as { filed: boolean }).filed).toBe(true);
   });
 
+  it('a dry run with a filer files nothing and answers with the proposal (US-36 AC9)', async () => {
+    // The hosted server's first call is a dry run: the issue is filed only on the confirm.
+    const { seen, filer } = spy();
+    const answer = await runToolOverSync(NO_SYNC, 'report_feedback', GOOD, NOW, { dryRun: true, fileFeedback: filer });
+    expect(seen).toHaveLength(0);
+    expect(answer).toMatchObject({ isError: false, structured: { filed: false } });
+    expect(answer.text).toContain(GOOD.detail);
+  });
+
   it('still words a malformed call as malformed, filer or no filer', async () => {
     const { seen, filer } = spy();
     const answer = await runToolOverSync(NO_SYNC, 'report_feedback', { kind: 'wat' }, NOW, { fileFeedback: filer });
@@ -2955,6 +2964,14 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(base()), version: 1 });
     return recordSync(new MemoryAdapter(cloud), 'test', NOW);
   }
+
+  it('a pending import the surface cannot park is answered as an error, with no receipt (US-35 AC18)', async () => {
+    const refusal = 'The candidates could not be parked. Nothing was written.';
+    const unparked: ImportSurface = { ...surface, async stash() { return { refusal }; } };
+    const answer = await runToolOverSync(syncOver(new MemoryCloud()), 'import_documents', {}, NOW, { importer: unparked, latestDay: TODAY });
+    expect(answer).toMatchObject({ text: refusal, isError: true });
+    expect(answer.structured).toBeUndefined();
+  });
 
   /**
    * The published `outputSchema`, as a strict client applies it (US-35, live

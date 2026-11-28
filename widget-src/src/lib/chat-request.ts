@@ -6,6 +6,7 @@
 import * as Sentry from '@sentry/react';
 import type { ChatReply } from './chat-api';
 import { LOCAL_FIRST } from './build-flags';
+import { logOffId, ownLogOffHasBegun, safeRemoveItem, type LogOffId } from './storage';
 
 /** A reply's guest session token, or undefined when it is not a non-empty string (US-15 AC6b). */
 export function tokenOf(data: ChatReply | null): string | undefined {
@@ -18,8 +19,16 @@ export function getGuestSessionToken(): string | null {
   try { return localStorage.getItem(GUEST_SESSION_KEY); } catch { return null; }
 }
 
-export function setGuestSessionToken(token: string): void {
+/** Kept only while `gen`, the log-off id the request was sent under, is still
+ *  current and this page's own log-off has not begun (US-09 AC68). */
+export function setGuestSessionToken(token: string, gen: LogOffId): void {
+  if (ownLogOffHasBegun() || gen !== logOffId()) return;
   try { localStorage.setItem(GUEST_SESSION_KEY, token); } catch { /* noop */ }
+}
+
+/** At log-off (US-09 AC68). */
+export function clearGuestSessionToken(): void {
+  safeRemoveItem(GUEST_SESSION_KEY);
 }
 
 const TRANSIENT_RETRY_DELAY_MS = 1000;
@@ -84,9 +93,9 @@ export const threadNotFound = (status: number, data: ChatReply | null): boolean 
  * A guest's 404 for a thread it no longer owns (US-15 AC6a): its IP changed,
  * so it is a new guest. Keep the session the server handed back.
  */
-export function guestThreadGone(status: number, data: ChatReply | null): boolean {
+export function guestThreadGone(status: number, data: ChatReply | null, gen: LogOffId): boolean {
   if (!threadNotFound(status, data) || data?.isGuest !== true) return false;
   const sessionToken = tokenOf(data);
-  if (sessionToken) setGuestSessionToken(sessionToken);
+  if (sessionToken) setGuestSessionToken(sessionToken, gen);
   return true;
 }

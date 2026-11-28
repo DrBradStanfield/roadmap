@@ -123,6 +123,15 @@ describe('US-59 AC3: the model sees facts and rules, never a token', () => {
     expect(formatSubscriptionBlock({ enabled: true, error: 'unavailable' })).toContain(SUBSCRIPTION_HELP_LINE);
     expect(formatSubscriptionBlock({ enabled: true, subscriptions: [] })).toContain('no active or paused subscription');
   });
+  it('a gateway error or an unavailable note read through the summary still says unreadable, not none', async () => {
+    for (const extra of [{ error: 'store_down' }, { note: 'unavailable' }]) {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ok: true, enabled: true, subscriptions: [], ...extra })));
+      invalidateSubscriptions('7001');
+      const block = formatSubscriptionBlock((await getCachedSubscriptions(new Request(SIGNED_URL), '7001'))!);
+      expect(block).toContain(SUBSCRIPTION_HELP_LINE);
+      expect(block).not.toContain('no active or paused subscription');
+    }
+  });
 });
 
 describe('US-59 AC4: a proposal becomes a card only for a listed subscription and an allowed action', () => {
@@ -142,6 +151,23 @@ describe('US-59 AC4: a proposal becomes a card only for a listed subscription an
     expect(subscriptionCard(summary, { ref: 'S2', action: 'skip', reason: null })).toBeNull();
     expect(subscriptionCard(summary, { ref: 'S9', action: 'cancel', reason: null })).toBeNull();
     expect(subscriptionCard(null, { ref: 'S1', action: 'cancel', reason: null })).toBeNull();
+  });
+});
+
+describe('US-59 AC5: a confirm the gateway did not clearly answer is unconfirmed, never refused', () => {
+  const answer = (body: unknown, status = 200) => vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(body, { status })));
+  const confirm = () => postSubscriptionAction(new Request(SIGNED_URL), 'tok', null);
+  beforeEach(() => { vi.spyOn(console, 'error').mockImplementation(() => {}); });
+
+  it('a 500 is unconfirmed (the change may have been made)', async () => {
+    answer({ error: 'boom' }, 500);
+    expect(await confirm()).toEqual({ status: 'unconfirmed' });
+  });
+  it('a 200 without ok: true, or without a string status, is unconfirmed', async () => {
+    answer({ ok: false, status: 'done' });
+    expect(await confirm()).toEqual({ status: 'unconfirmed' });
+    answer({ ok: true, status: 7 });
+    expect(await confirm()).toEqual({ status: 'unconfirmed' });
   });
 });
 

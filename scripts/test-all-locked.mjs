@@ -144,6 +144,8 @@ async function main() {
   });
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+// Node gives import.meta.url as the real path and argv[1] as typed, so both are resolved (US-32 AC56a).
+const entry = process.argv[1] && fs.existsSync(process.argv[1]) ? fs.realpathSync(process.argv[1]) : '';
+if (entry === fs.realpathSync(fileURLToPath(import.meta.url))) {
   main().catch((e) => { console.error(e.message); process.exit(1); });
 }

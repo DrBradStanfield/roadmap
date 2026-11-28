@@ -110,7 +110,7 @@ describe('build-master-html pins (US-64 AC23 split, US-50 AC9)', () => {
   it('exports the same names', () => {
     expect(Object.keys(mod).sort()).toEqual([
       'buildMasterHtml', 'extractCarried', 'headingKey', 'placeCarried', 'renderBlocks',
-      'renderCallout', 'splitMaster', 'stripForCommerce', 'tokenizeTags',
+      'renderCallout', 'safeHref', 'splitMaster', 'stripForCommerce', 'tokenizeTags',
     ]);
   });
 

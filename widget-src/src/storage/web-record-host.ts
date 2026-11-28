@@ -35,7 +35,7 @@ import { failureTags, recordFailure, storageCauseClass, storageFailureClass } fr
 export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
 
 /** The device copy's revision a connect's lift uploaded (DeviceMirror.lifted). */
-const LIFTED_REVISION_KEY = 'health_roadmap_lifted_revision';
+export const LIFTED_REVISION_KEY = 'health_roadmap_lifted_revision';
 
 export { BACKEND_KEY } from '../lib/storage';
 
@@ -172,7 +172,7 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       Sentry.captureException(recordFailure(error, 'Cloud sync failed'), {
         tags: {
           area: 'cloud-sync', op: at.op, backend: store.id, ...(at.cause ? { cause: at.cause } : {}),
-          errorClass: failureTags(error).errorClass, causeClass: storageCauseClass(error),
+          ...failureTags(error), causeClass: storageCauseClass(error), // US-09 AC66: httpStatus too
         },
       });
     },
@@ -201,7 +201,8 @@ export function webRecordHost(store: StorageAdapter): RecordHost {
       pending: { get: isSyncPending, set: markSyncPending, clear: clearSyncPending },
       lifted: {
         get: () => safeGetItem(LIFTED_REVISION_KEY),
-        set: (revision: string) => safeSetItem(LIFTED_REVISION_KEY, revision),
+        // Not after a log-off since the sign-in began (US-09 AC68).
+        set: (revision: string) => { if (openedUnder === logOffId()) safeSetItem(LIFTED_REVISION_KEY, revision); },
         clear: () => safeRemoveItem(LIFTED_REVISION_KEY),
       },
       writesStopped: roadmapLocalWritesStopped,

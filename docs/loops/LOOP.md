@@ -160,6 +160,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
     evidence (+ /simplify) → an INDEPENDENT reviewer (fresh context, diff-only,
     correctness-only mandate) posts a sha-pinned APPROVE → `auto-ship.yml`
     opens Brad's veto issue, waits 30 min, merges, dispatches `deploy.yml`.
+    It never merges a PR that touches `ios/` (Brad 2026-11-27, US-46 AC20).
     That 30 min is the ONLY window: since 2026-09-02 the `production`
     environment has no wait timer and no required reviewer, so `deploy.yml`
     runs straight through once its gate passes (veto = close PR / `hold`

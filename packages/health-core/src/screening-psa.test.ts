@@ -209,8 +209,8 @@ describe('US-07 AC1i: roadmap_text.html (spec lines 108-109)', () => {
     expect(log).toContain(`\n<li>12<sup>th</sup> November 2026: ${line}</li>\n`);
   });
 
-  it('no new reference: the list still ends at [159], Siegel 2019', () => {
-    expect(REF_LIST).toHaveLength(159);
+  it('no new reference: [159] is still Siegel 2019 ([160] came later, US-07 AC21)', () => {
+    expect(REF_LIST).toHaveLength(160);
     expect(REF_LIST[158]).toContain('Global patterns and trends in colorectal cancer incidence in young adults');
   });
 });
