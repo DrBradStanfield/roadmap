@@ -9,14 +9,21 @@ const unquote = (value) => {
   return quoted ? quoted[1].replace(/\\(["\\])/g, '$1') : value;
 };
 
-// Only the --- block at the top of the file, one `key: value` per line. The key is the
-// text before the first colon, trimmed, so an indented key counts; the last line with
-// a key wins, and a line with no colon is left out. Null when the file has no block,
-// or an empty one: two --- lines are no block, so a later --- rule cannot close it.
-export const frontMatter = (md) => {
-  const block = /^---\n(?!---\n)([\s\S]*?)\n---\n/.exec(md);
-  return block && Object.fromEntries(block[1].split('\n').filter((l) => l.includes(':')).map((l) => {
+// The block at the top: a first line of ---, up to the next line of --- or ..., each with only spaces or tabs
+// after it (and a newline after the closing one). One `key: value` per line, the key trimmed; a line with no colon
+// is left out. Null (no front matter) for an empty block, a block line starting with --- that is no fence (a CR, a
+// fourth dash), no closing line, or a key given twice: each may have run into the body, which must give no metadata.
+export const splitGuide = (md) => {
+  const lines = md.split('\n');
+  const end = lines.findIndex((l, i) => i > 0 && /^(?:---|\.\.\.)[ \t]*$/.test(l));
+  const block = lines.slice(1, end);
+  if (!/^---[ \t]*$/.test(lines[0]) || end < 2 || end === lines.length - 1 || block.some((l) => l.startsWith('---'))) return null;
+  const pairs = block.filter((l) => l.includes(':')).map((l) => {
     const i = l.indexOf(':');
     return [l.slice(0, i).trim(), unquote(l.slice(i + 1).trim())];
-  }));
+  });
+  const meta = Object.fromEntries(pairs);
+  return Object.keys(meta).length === pairs.length ? { meta, body: lines.slice(end + 1).join('\n') } : null;
 };
+
+export const frontMatter = (md) => splitGuide(md)?.meta ?? null;

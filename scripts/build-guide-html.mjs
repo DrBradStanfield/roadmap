@@ -13,7 +13,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
-import { frontMatter } from './guide-front-matter.mjs';
+import { splitGuide } from './guide-front-matter.mjs';
 import { escapeHtml as esc } from '../tools/escape-html.mjs';
 
 const argv = process.argv.slice(2);
@@ -29,11 +29,12 @@ if (!mdPath) {
 const ASSETS = new URL('../docs/guides/assets/', import.meta.url);
 const md = readFileSync(mdPath, 'utf8');
 
-const meta = frontMatter(md);
-if (!meta) {
+const guide = splitGuide(md);
+if (!guide) {
   console.error(`${mdPath}: no front matter. A guide starts with a --- block carrying at least title: and slug:.`);
   process.exit(1);
 }
+const { meta } = guide;
 
 // --- held HTML ------------------------------------------------------------
 // Generated HTML and code alike are parked as one-line tokens before the
@@ -58,7 +59,7 @@ const restore = (html) =>
     return alone !== undefined && fragment.startsWith('<code') ? `<p>${fragment}</p>` : fragment;
   });
 
-let body = md.slice(md.indexOf('\n---\n', 4) + 5);
+let { body } = guide;
 
 // --- [connect:*] markers ---------------------------------------------------
 const providers = JSON.parse(readFileSync(new URL('providers.json', ASSETS), 'utf8'));

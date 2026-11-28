@@ -1,14 +1,7 @@
-/**
- * US-38 AC3a: a guide's front-matter title and description reach the Shopify
- * article and the page's JSON-LD the same way. publish-guides.mjs (the title and
- * summary it compares and would PUT) and build-guide-html.mjs (headline and
- * description) read them through one reader and must agree.
- *
- * publish-guides runs as a dry run only, from a scratch folder whose scripts/ and
- * tools/ link to the real ones, so its docs/guides/ holds only the synthetic
- * guides below. fetch is replaced before it loads: one fake shop host answers,
- * any other URL throws, and no --publish is ever passed.
- */
+// US-38 AC3a: publish-guides.mjs (the title, summary and article it would PUT) and build-guide-html.mjs (the page)
+// read a guide's front matter through one reader and must agree. publish-guides runs as a dry run only, from a
+// scratch folder holding only the synthetic guides below; fetch is replaced before it loads, one fake shop host
+// answers, any other URL throws, and no --publish is ever passed.
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
@@ -43,35 +36,37 @@ const guide = (value: string, slug: string) => `---\ntitle: ${value}\ndescriptio
 const BLOCKS: [string, string, string, string | undefined][] = [
   ['indented keys', '---\n  title: "Indented title"\n\tdescription: "Indented description"\nslug: "s"\n---\n\nBody text.\n', 'Indented title', 'Indented description'],
   ['a body line that looks like metadata', '---\ntitle: "Body test"\nslug: "s"\n---\n\nBody text.\n\n---\ndescription: Not front matter\n---\n\nMore text.\n', 'Body test', undefined],
-  ['a key given twice', '---\ntitle: "First"\ntitle: "Last"\nslug: "s"\n---\n\nBody text.\n', 'Last', undefined],
 ];
 
 const dirs: string[] = [];
 const stub = () => join(dirs[0], 'fetch-stub.mjs');
-// A scratch repo holding only these guides, and its dry-run report.
-const dryRun = (guides: [string, string][]) => {
+// A scratch repo whose scripts/ and tools/ link to the real ones, holding only these guides.
+const scratch = (guides: [string, string][]) => {
   const dir = mkdtempSync(join(tmpdir(), 'guide-front-'));
   dirs.push(dir);
   symlinkSync(join(ROOT, 'scripts'), join(dir, 'scripts'));
   symlinkSync(join(ROOT, 'tools'), join(dir, 'tools'));
   mkdirSync(join(dir, 'docs', 'guides'), { recursive: true });
   for (const [name, md] of guides) writeFileSync(join(dir, 'docs', 'guides', name), md);
-  // Every article exists with an old title and summary, so the dry run prints what it would write.
-  // Each request is logged to stderr, so a test can show which ones were made.
+  return dir;
+};
+// Its dry-run report. Every article exists with an old title and summary, so the dry run prints what it would write.
+// It carries the handle asked for, but moved-guide's is other-guide and bare-guide's has none. Requests go to stderr.
+const dryRun = (guides: [string, string][]) => {
+  const dir = scratch(guides);
   if (dirs.length === 1) writeFileSync(stub(), `globalThis.fetch = async (url, init) => {
   const u = new URL(String(url));
   if (u.hostname !== 'fake-shop.example') throw new Error('blocked: ' + url);
   process.stderr.write('fetch ' + (init?.method ?? 'GET') + ' ' + u.pathname + u.search + '\\n');
+  const h = u.searchParams.get('handle');
   const body = u.pathname.endsWith('/blogs.json') ? { blogs: [{ id: 1, handle: 'guides' }] }
-    : { articles: [{ id: 9, title: 'old', summary_html: '<p>old</p>', body_html: '<p>old</p>' }] };
+    : { articles: [{ id: 9, ...(h !== 'bare-guide' && { handle: h === 'moved-guide' ? 'other-guide' : h }), title: 'old', summary_html: '<p>old</p>', body_html: '<p>old</p>' }] };
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
 };\n`);
-  const run = spawnSync(process.execPath, ['--preserve-symlinks-main', '--import', pathToFileURL(stub()).href, join(dir, 'scripts', 'publish-guides.mjs')], {
-    cwd: dir, encoding: 'utf8', timeout: 120_000,
-    env: { PATH: process.env.PATH ?? '', SHOPIFY_EDU_SHOP: 'fake-shop.example', SHOPIFY_EDU_ACCESS_TOKEN: 'test-token-good' },
-  });
-  return { dir, run };
+  const env = { PATH: process.env.PATH ?? '', SHOPIFY_EDU_SHOP: 'fake-shop.example', SHOPIFY_EDU_ACCESS_TOKEN: 'test-token-good' };
+  return { dir, run: spawnSync(process.execPath, ['--preserve-symlinks-main', '--import', pathToFileURL(stub()).href, join(dir, 'scripts', 'publish-guides.mjs')], { cwd: dir, encoding: 'utf8', timeout: 120_000, env }) };
 };
+const build = (mdPath: string, script = join(ROOT, 'scripts', 'build-guide-html.mjs')) => spawnSync(process.execPath, ['--preserve-symlinks-main', script, mdPath], { encoding: 'utf8' });
 
 const published = new Map<string, { title: string; summary: string }>();
 let casesDir = '';
@@ -87,7 +82,7 @@ beforeAll(() => {
 afterAll(() => dirs.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
 
 const jsonLd = (mdPath: string) => {
-  const run = spawnSync(process.execPath, [join(ROOT, 'scripts', 'build-guide-html.mjs'), mdPath], { encoding: 'utf8' });
+  const run = build(mdPath);
   expect(run.status, run.stderr).toBe(0);
   return JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(run.stdout)![1]);
 };
@@ -111,63 +106,83 @@ describe('US-38 AC3a: one front-matter block, read by both the same way', () => 
     expect.soft(ld.headline, 'build-guide-html headline').toBe(title);
     expect.soft(ld.description, 'build-guide-html description').toBe(description);
   });
-});
-
-// The message an uncaught throw in publish-guides.mjs prints, and the requests the stub logged.
-const thrown = (stderr: string) => /^Error: (.*)$/m.exec(stderr)?.[1];
-const requests = (stderr: string) => stderr.split('\n').filter((l) => l.startsWith('fetch '));
-const build = (mdPath: string, flags: string[] = []) => spawnSync(process.execPath, [...flags, mdPath], { encoding: 'utf8' });
-const NO_FRONT_MATTER = 'no front matter. A guide starts with a --- block carrying at least title: and slug:.';
-
-describe('US-38 AC3a: what the reader leaves out of a guide\'s metadata', () => {
-  it('an empty block (two --- lines) is no front matter, so an example in the body before a --- rule gives no title or slug', () => {
-    const md = '---\n---\n\nAn example:\n\ntitle: "Body title"\nslug: "other-guide"\n\n---\n\nMore text.\n';
-    const { dir, run } = dryRun([['case.md', md]]);
-    expect({ status: run.status, error: thrown(run.stderr), stdout: run.stdout }).toEqual({ status: 1, error: 'case.md: no slug or title in front matter', stdout: 'blog "guides" id 1\n' });
-    const mdPath = join(dir, 'docs', 'guides', 'case.md');
-    const b = build(mdPath, [join(ROOT, 'scripts', 'build-guide-html.mjs')]);
-    expect({ status: b.status, stdout: b.stdout, stderr: b.stderr }).toEqual({ status: 1, stdout: '', stderr: `${mdPath}: ${NO_FRONT_MATTER}\n` });
-  });
 
   it('a block line with no colon is left out, so "titles" and "slugs" leave the title and slug as written', () => {
-    const md = '---\ntitle: "Colon test"\nslug: "real-guide"\ntitles\nslugs\n---\n\nBody text.\n';
-    const { dir, run } = dryRun([['case.md', md]]);
+    const { dir, run } = dryRun([['case.md', '---\ntitle: "Colon test"\nslug: "real-guide"\ntitles\nslugs\n---\n\nBody text.\n']]);
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout.split('\n').slice(0, 5)).toEqual(['blog "guides" id 1', '', 'case.md -> /blogs/guides/real-guide', expect.stringMatching(/^ {2}article id 9, /), '  title live:     "old"']);
     expect(run.stdout).toContain('\n  title rendered: "Colon test"\n');
-    const b = build(join(dir, 'docs', 'guides', 'case.md'), [join(ROOT, 'scripts', 'build-guide-html.mjs')]);
-    expect(b.stderr).toBe('title: Colon test\nslug:  real-guide\n');
-    expect(JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/.exec(b.stdout)![1]).mainEntityOfPage).toBe('https://drstanfield.com/blogs/guides/real-guide');
+    expect(build(join(dir, 'docs', 'guides', 'case.md')).stderr).toBe('title: Colon test\nslug:  real-guide\n');
+    expect(jsonLd(join(dir, 'docs', 'guides', 'case.md')).mainEntityOfPage).toBe('https://drstanfield.com/blogs/guides/real-guide');
+  });
+});
+
+// The run stops at case.md with this error, having printed only the blog line and made only these requests.
+const BLOG = 'fetch GET /admin/api/2025-07/blogs.json';
+const LOOKUP = 'fetch GET /admin/api/2025-07/blogs/1/articles.json?handle=';
+const stops = (run: ReturnType<typeof spawnSync>, error: string, made = [BLOG]) => expect({
+  status: run.status, error: /^Error: (.*)$/m.exec(String(run.stderr))?.[1], stdout: run.stdout, requests: String(run.stderr).split('\n').filter((l) => l.startsWith('fetch ')),
+}).toEqual({ status: 1, error: `case.md: ${error}`, stdout: 'blog "guides" id 1\n', requests: made });
+
+// Brad's example: metadata in the body, before a --- rule. None of it may become the guide's.
+const EXAMPLE = '\nAn example:\n\ntitle: "Body title"\nslug: "other-guide"\n\n---\n\nMore text.\n';
+const REAL = '---\ntitle: "Real"\nslug: "real-guide"\n';
+
+describe('US-38 AC3a: the fence lines around the block', () => {
+  // Refused by both with their existing messages: the dry run looks up no article, the builder prints nothing.
+  it.each([
+    ['an empty block (two --- lines)', '---\n---\n' + EXAMPLE],
+    ...['--- ', '---\t', '---\r', '----'].map((fence) => [`an empty block closed by ${JSON.stringify(fence)}`, `---\n${fence}\n` + EXAMPLE]),
+    ['an empty block in a CRLF file', ('---\n---\n' + EXAMPLE).replace(/\n/g, '\r\n')],
+    ['a block in a CRLF file', (REAL + '---\n' + EXAMPLE).replace(/\n/g, '\r\n')],
+    ['a block after a byte-order mark', '\uFEFF' + REAL + '---\n' + EXAMPLE],
+    ...['----', '---\r'].map((fence) => [`a block closed by ${JSON.stringify(fence)}`, `${REAL}${fence}\n` + EXAMPLE]),
+    ['a block opened by "----"', '-' + REAL + '---\n' + EXAMPLE],
+    ['a block with no closing fence', REAL + EXAMPLE],
+    ['a block closed at the end of the file, with no newline', REAL + '---'],
+    ['a block that gives a key twice', '---\ntitle: "First"\ntitle: "Last"\nslug: "s"\n---\n\nBody text.\n'],
+  ])('%s is no front matter: the dry run and the builder refuse it', (_shows, md) => {
+    const { dir, run } = dryRun([['case.md', md]]);
+    stops(run, 'no slug or title in front matter');
+    const mdPath = join(dir, 'docs', 'guides', 'case.md');
+    const b = build(mdPath);
+    expect({ status: b.status, stdout: b.stdout, stderr: b.stderr }).toEqual({ status: 1, stdout: '', stderr: `${mdPath}: no front matter. A guide starts with a --- block carrying at least title: and slug:.\n` });
+  });
+
+  // A fence with trailing spaces or a tab opens or closes the block, and YAML's ... closes it: the slug is the
+  // block's, and the page is the one the same guide with plain --- fences builds.
+  it.each([['---', '--- '], ['---', '---\t'], ['---', '...'], ['---', '...  '], ['--- ', '---']])('a block opened by %j and closed by %j gives the block\'s slug and title, never the body\'s', (open, fence) => {
+    const { dir, run } = dryRun([['case.md', REAL.replace('---', open) + fence + '\n' + EXAMPLE]]);
+    expect(run.status, run.stderr).toBe(0);
+    expect(run.stderr.split('\n').filter((l) => l.startsWith('fetch '))).toEqual([BLOG, `${LOOKUP}real-guide`]);
+    expect(run.stdout.split('\n').slice(0, 7)).toEqual(['blog "guides" id 1', '', 'case.md -> /blogs/guides/real-guide', expect.stringMatching(/^ {2}article id 9, /), '  title live:     "old"', '  title rendered: "Real"', expect.stringMatching(/^ {2}first body difference/)]);
+    const b = build(join(dir, 'docs', 'guides', 'case.md'));
+    const plain = build(join(scratch([['case.md', REAL + '---\n' + EXAMPLE]]), 'docs', 'guides', 'case.md'));
+    expect({ status: b.status, stderr: b.stderr, stdout: b.stdout }).toEqual({ status: 0, stderr: 'title: Real\nslug:  real-guide\n', stdout: plain.stdout });
   });
 });
 
 describe('US-38 AC3a: the slug', () => {
-  // publish-guides.mjs looks the article up by its handle and overwrites the one it gets back.
-  it.each([['a\\"b', 'a"b'], ['Other-guide', 'Other-guide'], ['../connect-claude', '../connect-claude']])(
-    'publish-guides refuses the slug %s before any article is looked up', (written, slug) => {
-      const { run } = dryRun([['case.md', `---\ntitle: "T"\nslug: "${written}"\n---\n\nBody text.\n`]]);
-      expect({ status: run.status, error: thrown(run.stderr), stdout: run.stdout, requests: requests(run.stderr) }).toEqual({
-        status: 1, error: `case.md: slug ${JSON.stringify(slug)} is not lowercase letters, digits and hyphens`,
-        stdout: 'blog "guides" id 1\n', requests: ['fetch GET /admin/api/2025-07/blogs.json'],
-      });
-    });
+  // The slug picks the article publish-guides.mjs overwrites. It looks the article up by that handle; a slug that is
+  // not a handle's shape is refused before the lookup, and an article that does not carry the handle after it.
+  const shape = (slug: string) => `slug ${JSON.stringify(slug)} is not lowercase letters, digits and hyphens`;
+  it.each([
+    ['a\\"b', shape('a"b'), []],
+    ['Other-guide', shape('Other-guide'), []],
+    ['../connect-claude', shape('../connect-claude'), []],
+    ['moved-guide', 'the article Shopify returned for slug "moved-guide" (id 9) has handle "other-guide"', [`${LOOKUP}moved-guide`]],
+    ['bare-guide', 'the article Shopify returned for slug "bare-guide" (id 9) has handle undefined', [`${LOOKUP}bare-guide`]],
+  ])('publish-guides stops at the slug %s: %s', (written, error, lookups) => {
+    stops(dryRun([['case.md', `---\ntitle: "T"\nslug: "${written}"\n---\n\nBody text.\n`]]).run, error, [BLOG, ...lookups]);
+  });
 
   // With REPO_PUBLIC false the builder links the published guide by its slug. A scratch repo holds a plan.ts that says so.
-  it.each([
-    ['real-guide', 'real-guide'],
-    ['a\\"b<c&d\'e', 'a&quot;b&lt;c&amp;d&#39;e'],
-  ])('with REPO_PUBLIC false, the builder\'s link for the slug %s is escaped as %s', (written, inHtml) => {
-    const dir = mkdtempSync(join(tmpdir(), 'guide-front-'));
-    dirs.push(dir);
-    symlinkSync(join(ROOT, 'scripts'), join(dir, 'scripts'));
-    symlinkSync(join(ROOT, 'tools'), join(dir, 'tools'));
-    mkdirSync(join(dir, 'docs', 'guides'), { recursive: true });
+  it.each([['real-guide', 'real-guide'], ['a\\"b<c&d\'e', 'a&quot;b&lt;c&amp;d&#39;e']])('with REPO_PUBLIC false, the builder\'s link for the slug %s is escaped as %s', (written, inHtml) => {
+    const dir = scratch([['case.md', `---\ntitle: "T"\nslug: "${written}"\n---\n\nBody text.\n`]]);
     symlinkSync(join(ROOT, 'docs', 'guides', 'assets'), join(dir, 'docs', 'guides', 'assets'));
     mkdirSync(join(dir, 'packages', 'health-core', 'src'), { recursive: true });
     writeFileSync(join(dir, 'packages', 'health-core', 'src', 'plan.ts'), 'export const REPO_PUBLIC = false;\n');
-    const mdPath = join(dir, 'docs', 'guides', 'case.md');
-    writeFileSync(mdPath, `---\ntitle: "T"\nslug: "${written}"\n---\n\nBody text.\n`);
-    const b = build(mdPath, ['--preserve-symlinks-main', join(dir, 'scripts', 'build-guide-html.mjs')]);
+    const b = build(join(dir, 'docs', 'guides', 'case.md'), join(dir, 'scripts', 'build-guide-html.mjs'));
     expect(b.status, b.stderr).toBe(0);
     expect(/<p class="rmg-md">.*<\/p>/.exec(b.stdout)?.[0]).toBe(
       `<p class="rmg-md">This page is built from docs/guides/case.md, which is not public while the project’s GitHub is not. The published guide is <a href="https://drstanfield.com/blogs/guides/${inHtml}">drstanfield.com/blogs/guides/${inHtml}</a>.</p>`,

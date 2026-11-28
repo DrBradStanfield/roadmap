@@ -101,6 +101,8 @@ for (const file of files) {
     console.log(`\n${file} -> /blogs/guides/${slug}\n  NO ARTICLE with that handle. Not created; create it in Shopify first.`);
     continue;
   }
+  // Only the article the slug names is ever written, whatever the lookup returns.
+  if (article.handle !== slug) throw new Error(`${file}: the article Shopify returned for slug ${JSON.stringify(slug)} (id ${article.id}) has handle ${JSON.stringify(article.handle)}`);
 
   const live = article.body_html ?? '';
   // Shopify lowercases attribute names (viewBox -> viewbox) and inserts
