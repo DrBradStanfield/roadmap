@@ -23,4 +23,11 @@ describe('retinoid section citations (US-07 AC21)', () => {
     expect(HTML).not.toContain('A large study in 2018');
     expect(REF_LIST[43]).toContain('Comparable efficacy of adapalene 0.3% gel and tretinoin 0.05% cream');
   });
+
+  it('the Changelog opens with the 28 November 2026 line', () => {
+    const log = HTML.slice(HTML.indexOf('<h2 id="changelog">'));
+    expect(log.match(/<li>[^\n]*/)?.[0]).toBe(
+      '<li>28<sup>th</sup> November 2026: The Young Skin section no longer calls the 2018 retinoid study [44] "large". Reference [160] added; none renumbered.</li>',
+    );
+  });
 });
