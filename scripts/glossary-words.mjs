@@ -2,8 +2,8 @@
 // where the entry retires it. `copy` is text people read: web and iPhone code (a phrase in string literals and JSX
 // text, a single word in string literals only) and the user guides. `docs` is every other Markdown file outside the
 // skipped folders. Comments, identifiers, log lines, tests, health-core agent code, the Shopify admin, the blog and
-// dated docs are never scanned. Existing uses are recorded in glossary-words-baseline.json; a fix lowers a count, nothing raises it.
-// Run `node scripts/glossary-words.mjs` to check, `--write` to lower the baseline after a fix or seed a new rule.
+// dated docs are never scanned. Existing uses are recorded in glossary-words-baseline.json; only a rise fails.
+// Run `node scripts/glossary-words.mjs` to check, `--write` to tighten the baseline by hand after a fix or seed a new rule.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -122,13 +122,9 @@ const grownLine = (baseline, [rule, f, n]) => (rule in baseline
   ? `${f}: "${wordOf(rule)}" count ${n}, recorded ${at(baseline, rule, f)}. docs/glossary.md retires it (${rule}); use the entry's word.`
   : `${f}: ${rule} has no baseline yet. Seed it: node scripts/glossary-words.mjs --write`);
 
-/** Problems between a baseline and today's counts: a new or grown use fails; a count that fell must be lowered. */
-export function compare(baseline, now) {
-  const grown = cells(now).filter(([rule, f, n]) => n > at(baseline, rule, f)).map((cell) => grownLine(baseline, cell));
-  const fell = cells(baseline).filter(([rule, f, was]) => at(now, rule, f) < was)
-    .map(([rule, f, was]) => `${f}: ${rule} recorded ${was}, now ${at(now, rule, f)}. Lower the entry: node scripts/glossary-words.mjs --write`);
-  return [...grown, ...fell];
-}
+/** Problems between a baseline and today's counts: a new or grown use fails; a count that fell passes (Brad 2026-11-28). */
+export const compare = (baseline, now) =>
+  cells(now).filter(([rule, f, n]) => n > at(baseline, rule, f)).map((cell) => grownLine(baseline, cell));
 
 /** What --write stores: today's counts, sorted. It refuses to raise a rule the baseline already has, and seeds a new one. */
 export function nextBaseline(baseline, now) {

@@ -23,7 +23,7 @@ Rules:
 
 Before you hand back (Brad 2026-11-25, US-64 AC40):
 - Merge origin/main into your branch. If main touched your files, run your tests again.
-- Run `scripts/file-size-ratchet.test.ts`. If a listed file shrank, run `node scripts/file-size-baseline.mjs --write`: entries only go down.
+- Run `scripts/file-size-ratchet.test.ts`. It fails only when a file grows; a file that shrank needs no baseline change (Brad 2026-11-28).
 - Take a new AC id from `node tools/next-ac.mjs <US-id>`, never by reading one file: it checks main and every open PR, but only PRs already pushed, so run it again right before you push, after `git fetch`, and renumber if it changed.
 - One plain git or gh command per call: no `cd`, `&&` or `;` chains.
 - Never read Fly or server logs, and never run anything against a live service, unless the brief says so.

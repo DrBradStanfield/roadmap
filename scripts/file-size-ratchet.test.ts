@@ -1,8 +1,9 @@
 // US-64 AC23: a production file over 500 lines never grows (Brad 2026-11-09, CLAUDE.md "File budgets").
+// Only growth fails; a file that shrank keeps its entry until someone tightens it by hand (Brad 2026-11-28).
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { LIMIT, REGEN_CMD, ROOT, generatedFiles, lineCount, overLimit, readBaseline } from './file-size-baseline.mjs';
+import { LIMIT, ROOT, generatedFiles, grown, overLimit, readBaseline } from './file-size-baseline.mjs';
 
 // Data tables only. A new exemption is a change to this list.
 const ALLOWED_EXEMPT = ['packages/health-core/src/evidence.ts', 'packages/health-core/src/mcp-tool-catalogue.ts'];
@@ -15,10 +16,14 @@ const now: Record<string, number> = overLimit(baseline.exempt);
 
 describe('file-size ratchet (US-64 AC23)', () => {
   it('no baseline file has grown: split it first', () => {
-    const grown = Object.entries(baseline.files)
-      .filter(([f, recorded]) => existsSync(join(ROOT, f)) && lineCount(f) > recorded)
-      .map(([f, recorded]) => `${f}: recorded ${recorded}, now ${lineCount(f)}. Split it first, then it can only shrink.`);
-    expect(grown, grown.join('\n')).toEqual([]);
+    expect(grown(baseline.files), grown(baseline.files).join('\n')).toEqual([]);
+  });
+
+  it('the growth check on a made-up baseline: a grown file fails; a shrunk, equal, under-limit or deleted file passes', () => {
+    const lines: Record<string, number> = { 'a.ts': 601, 'b.ts': 520, 'c.ts': 400, 'd.ts': 700 };
+    expect(grown({ 'a.ts': 600, 'b.ts': 560, 'c.ts': 700, 'd.ts': 700, 'gone.ts': 900 }, (f: string) => lines[f] ?? 0)).toEqual([
+      'a.ts: recorded 600, now 601. Split it first, then it can only shrink.',
+    ]);
   });
 
   it(`no file outside the baseline is over ${LIMIT} lines`, () => {
@@ -26,20 +31,6 @@ describe('file-size ratchet (US-64 AC23)', () => {
       .filter(([f]) => !(f in baseline.files))
       .map(([f, n]) => `${f}: ${n} lines, over ${LIMIT} and not in the baseline. Split it first.`);
     expect(fresh, fresh.join('\n')).toEqual([]);
-  });
-
-  it('every baseline entry is still a file over the limit', () => {
-    const stale = Object.keys(baseline.files)
-      .filter((f) => !(f in now))
-      .map(
-        (f) =>
-          `${f}: ${existsSync(join(ROOT, f)) ? `now ${lineCount(f)} lines, at or under ${LIMIT}` : 'no longer exists'}. ` +
-          `Lower or delete its entry: run \`${REGEN_CMD}\`.`,
-      );
-    const loose = Object.entries(baseline.files)
-      .filter(([f, recorded]) => f in now && now[f] < recorded)
-      .map(([f, recorded]) => `${f}: recorded ${recorded}, now ${now[f]}. Lower the entry: run \`${REGEN_CMD}\`.`);
-    expect([...stale, ...loose], [...stale, ...loose].join('\n')).toEqual([]);
   });
 
   it('every exempt file is on the fixed list, exists and gives a reason', () => {

@@ -106,7 +106,7 @@ describe('glossary-words: countAll', () => {
   });
 });
 
-describe('glossary-words: the baseline only goes down', () => {
+describe('glossary-words: only a rise fails, and --write never raises the baseline', () => {
   const base = { 'G13-cloud-provider': { 'a.md': 2 } };
   it('passes when counts match', () => expect(compare(base, { 'G13-cloud-provider': { 'a.md': 2 } })).toEqual([]));
   it('fails a grown count and a new file', () => {
@@ -126,8 +126,9 @@ describe('glossary-words: the baseline only goes down', () => {
     expect(s.refused).toEqual([]);
     expect(JSON.stringify(s.next)).toBe(JSON.stringify({ 'G13-cloud-provider': { 'a.md': 1, 'z.md': 1 }, 'G21-ios-app': { 'b.md': 4 } }));
   });
-  it('asks for the entry to be lowered when a fix removed a use', () => {
-    expect(compare(base, { 'G13-cloud-provider': { 'a.md': 1 } })).toEqual([expect.stringMatching(/a\.md: .*now 1\. Lower the entry/)]);
+  it('passes when a fix removed a use or every use: only a rise fails (Brad 2026-11-28)', () => {
+    expect(compare(base, { 'G13-cloud-provider': { 'a.md': 1 } })).toEqual([]);
+    expect(compare(base, { 'G13-cloud-provider': {} })).toEqual([]);
   });
 });
 
