@@ -17,7 +17,8 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory } from '../lib/mcp-grants.server';
 import { type AdapterFactory, INSTRUCTIONS, mcpEndpoint } from '../lib/mcp.server';
-import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS, MAX_RESULTS, NOTICE, safetyBlocks } from '../lib/mcp-knowledge.server';
+import { callKnowledgeTool, cutEntry, isServed, KNOWLEDGE_NOTE, KNOWLEDGE_TOOLS, MAX_ARTICLE_CHARS, MAX_EXCERPT_CHARS, MAX_MASTER_EXCERPT_CHARS, MAX_RESULTS, NOTICE } from '../lib/mcp-knowledge.server';
+import { safetyBlocks } from '../lib/master-safety';
 import { loadBlogIndex } from '../lib/blog-index.server';
 import { routerView } from '../lib/router-view';
 import { buildIndex, search } from '../lib/search-knowledge';
@@ -337,6 +338,7 @@ describe('US-41 AC9 — the user\'s AI pays: no network, no model, no record', (
       '../../packages/health-core/src/zod', // zod, jitless
       './blog-index.server',
       './frontmatter',
+      './master-safety',
       './matched-content',
       './router-view',
       './search-knowledge',

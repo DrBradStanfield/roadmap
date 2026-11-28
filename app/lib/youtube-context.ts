@@ -5,6 +5,7 @@ import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { requireChatDocs } from './chat-system-prompt.server';
 import { loadBlogArticle, contentHeader } from './matched-content';
 import { parseFrontmatter, stripFrontmatter } from './frontmatter';
+import { safetyBlocks } from './master-safety';
 
 // ---------------------------------------------------------------------------
 // Platform-context construction — substitutes the video's blog post (looked up
@@ -86,10 +87,6 @@ export function currentViewSection(md: string): string | null {
   return section && `#${section}`;
 }
 
-/** A body heading that names safety, side effects, cautions, interactions,
- *  contraindications or who should not take it ("## 5. Safety and Side
- *  Effects", "## 6. Drug Interactions" on the published masters). */
-const SAFETY_HEADING = /^## .*\b(?:safety|side effects?|cautions?|interactions?|contraindications?|who should not)\b/i;
 const INTERACTIONS_HEADING = /^#+ .*\binteractions?\b/i;
 const KEY_POINTS_HEADING = /^## Key safety points[ \t]*$/m;
 const DOSING_HEADING = /^## (?:\d+\. )?Recommended Dosing\b.*$/m;
@@ -125,18 +122,18 @@ function withCitations(section: string, refs: Map<number, string>): string {
   return cited.length > 0 ? `${demoted}\n\nReferences cited above:\n\n${cited.join('\n')}` : demoted;
 }
 
-/** Each safety section of a master except its key safety points, heading to
- *  the next `## ` heading, with the lines it cites. Interactions sections come
- *  first. Empty when the master has none. */
+/** Each safety block of a master (master-safety.ts, the connector's rule)
+ *  except its key safety points, with the lines it cites. Interactions
+ *  sections come first. Empty when the master has none. */
 export function safetySections(md: string): string[] {
   const body = stripFrontmatter(md);
   const refs = bibliography(body);
   return safetyBodies(body).map(s => withCitations(s, refs));
 }
 
-/** safetySections() before demotion and citations. */
-const safetyBodies = (body: string): string[] => body.split(/^(?=## )/m)
-  .filter(s => SAFETY_HEADING.test(s) && !KEY_POINTS_HEADING.test(s))
+/** safetySections() before demotion and citations, less any block inside a part already `kept`. */
+const safetyBodies = (body: string, kept: (string | null)[] = []): string[] => safetyBlocks(body)
+  .filter(s => !KEY_POINTS_HEADING.test(s) && !kept.some(p => p?.includes(s)))
   .sort((a, b) => Number(INTERACTIONS_HEADING.test(b)) - Number(INTERACTIONS_HEADING.test(a)));
 
 /** A master's "Key safety points" section (US-50 AC12), demoted, with its [n]
@@ -156,7 +153,7 @@ function keySafetyPoints(md: string): { text: string | null; dropped?: string } 
  * A master cut to what must reach the answer model when the whole page would
  * pass the chat's content cap (US-50 AC13): its current view (unless over
  * MAX_VIEW_CHARS), key safety points (unless malformed as in AC12), every
- * safety section and, with `dosing`, its Recommended Dosing section (where the
+ * safety block (master-safety.ts, AC13a) and, with `dosing`, its Recommended Dosing section (where the
  * upper limits live), demoted, then the reference line of every [n] they cite.
  * reducedDrops() names what a malformed view or key points cost, for the
  * caller to log, as masterViews does. The markers stay, unlike YouTube's key points: each has its line
@@ -165,11 +162,13 @@ function keySafetyPoints(md: string): { text: string | null; dropped?: string } 
 export function reducedMaster(md: string, dosing = false): string | null {
   const body = stripFrontmatter(md);
   const view = sectionOf(body, VIEW_HEADING);
+  // A safety block inside the view or the dosing section goes in with it, once.
+  const kept = [view && view.length < MAX_VIEW_CHARS ? view : null, dosing ? sectionOf(body, DOSING_HEADING) : null];
   const parts = [
-    view && view.length < MAX_VIEW_CHARS ? view : null,
+    kept[0],
     keySafetyPoints(md).text ? sectionOf(body, KEY_POINTS_HEADING) : null,
-    ...safetyBodies(body),
-    dosing ? sectionOf(body, DOSING_HEADING) : null,
+    ...safetyBodies(body, kept),
+    kept[1],
   ].filter((p): p is string => !!p);
   return parts.length > 0 ? withCitations(parts.join('\n\n'), bibliography(body)) : null;
 }
