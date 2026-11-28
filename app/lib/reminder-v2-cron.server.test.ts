@@ -167,6 +167,48 @@ describe('reminder v2 cron tick — US-28 AC2: lock errors retry same day, losse
   });
 });
 
+// US-23 AC15: the fence before each send re-reads the row this cron's tick
+// took. Both names come from REMINDER_LOCK; as two literals, a swap to another
+// valid lock name compiled, and the fence would read another cron's row.
+describe('reminder v2 cron tick — US-23 AC15: the fence reads the lock the tick took', () => {
+  let stop: (() => void) | null = null;
+  const dueRow = {
+    id: 'row-fence', email: 'fence@example.com', provider: 'typed' as const, token: 'tok', created_at: '2026-08-01T00:00:00Z',
+    schedule: [{ category: 'blood_test_lipids', label: 'Lipid panel', dueAt: '2026-08-01' }], last_sent: {},
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-28T09:30:00Z'));
+  });
+
+  afterEach(() => {
+    stop?.();
+    stop = null;
+    vi.unstubAllEnvs();
+    vi.useRealTimers();
+  });
+
+  it('asks stillHoldsLock about the same lock name tryAcquireCronLock won', async () => {
+    const { cron, lockMock, optinsMock } = await loadCron();
+    stop = cron.stopReminderV2Cron;
+    const { stillHoldsLock } = await import('./supabase-cron-lock.server');
+    const { sendReminderEmail } = await import('./email.server');
+    vi.mocked(stillHoldsLock).mockClear();
+    vi.mocked(sendReminderEmail).mockResolvedValue(true);
+    lockMock.mockResolvedValue('won');
+    optinsMock.mockResolvedValueOnce([dueRow]).mockResolvedValue([]);
+
+    cron.startReminderV2Cron();
+    await vi.advanceTimersByTimeAsync(HOUR_MS); // 10:30: lock won, one due row, one fencing read
+    expect(lockMock).toHaveBeenCalledTimes(1);
+    expect(stillHoldsLock).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(stillHoldsLock).mock.calls[0][0]).toBe(lockMock.mock.calls[0][2]);
+    expect(lockMock.mock.calls[0][2]).toBe(cron.REMINDER_LOCK);
+    expect(cron.REMINDER_LOCK).toBe('reminder_v2_cron'); // the row rls-policies.sql seeds
+  });
+});
+
 // US-17 AC1b: a row switched off keeps its address and token; the daily run is
 // what stops "kept" meaning "forever".
 describe('reminder v2 cron — tombstone retention', () => {
