@@ -207,7 +207,7 @@ const mdFile = `docs/guides/${basename(mdPath)}`;
 const repoPublic = /export const REPO_PUBLIC = true;/.test(readFileSync(new URL('../packages/health-core/src/plan.ts', import.meta.url), 'utf8'));
 const mdLink = repoPublic
   ? `<p class="rmg-md">This guide is also published as plain Markdown for AI agents: <a href="https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/${mdFile}">${mdFile}</a>. The Markdown is the master; this page is built from it.</p>`
-  : `<p class="rmg-md">This page is built from ${mdFile}, which is not public while the project’s GitHub is not. The published guide is <a href="https://drstanfield.com/blogs/guides/${meta.slug}">drstanfield.com/blogs/guides/${meta.slug}</a>.</p>`;
+  : `<p class="rmg-md">This page is built from ${mdFile}, which is not public while the project’s GitHub is not. The published guide is <a href="https://drstanfield.com/blogs/guides/${esc(meta.slug)}">drstanfield.com/blogs/guides/${esc(meta.slug)}</a>.</p>`;
 
 // Structured data for AI and search crawlers, from front matter only. "<" is
 // escaped so no value can close the script tag. Dropped by --no-script, whose

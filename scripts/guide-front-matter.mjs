@@ -11,10 +11,11 @@ const unquote = (value) => {
 
 // Only the --- block at the top of the file, one `key: value` per line. The key is the
 // text before the first colon, trimmed, so an indented key counts; the last line with
-// a key wins. Null when the file has no block.
+// a key wins, and a line with no colon is left out. Null when the file has no block,
+// or an empty one: two --- lines are no block, so a later --- rule cannot close it.
 export const frontMatter = (md) => {
-  const block = /^---\n([\s\S]*?)\n---\n/.exec(md);
-  return block && Object.fromEntries(block[1].split('\n').map((l) => {
+  const block = /^---\n(?!---\n)([\s\S]*?)\n---\n/.exec(md);
+  return block && Object.fromEntries(block[1].split('\n').filter((l) => l.includes(':')).map((l) => {
     const i = l.indexOf(':');
     return [l.slice(0, i).trim(), unquote(l.slice(i + 1).trim())];
   }));

@@ -86,6 +86,8 @@ for (const file of files) {
   // uses, so the article and the page take every value the same way.
   const { slug, title, description } = frontMatter(readFileSync(mdPath, 'utf8')) ?? {};
   if (!slug || !title) throw new Error(`${file}: no slug or title in front matter`);
+  // The slug picks the article this overwrites, so only a handle's shape goes on.
+  if (!/^[a-z0-9-]+$/.test(slug)) throw new Error(`${file}: slug ${JSON.stringify(slug)} is not lowercase letters, digits and hyphens`);
   // The builder escapes every character of prose it puts in the page; the summary
   // is prose too, so it is escaped the same way or an & in a description ships raw.
   const summary = description ? `<p>${esc(description)}</p>` : null;
