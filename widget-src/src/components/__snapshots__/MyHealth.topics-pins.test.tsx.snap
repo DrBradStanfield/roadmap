@@ -4218,6 +4218,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
           "Send feedback"
         <a href="https://github.com/DrBradStanfield/roadmap" target="_blank" rel="noopener noreferrer" class="source-code-link">
           "View source code"
+      <p class="hr-sr-only" role="status">
     <a href="https://drstanfield.com/blogs/guides/ai-health-record" target="_blank" rel="noopener" class="hr-guide-card no-print">
       <span class="hr-guide-card-title">
         "Supercharge this tool"
@@ -4248,6 +4249,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
           "Send feedback"
         <a href="https://github.com/DrBradStanfield/roadmap" target="_blank" rel="noopener noreferrer" class="source-code-link">
           "View source code"
+      <p class="hr-sr-only" role="status">
     <a href="https://drstanfield.com/blogs/guides/ai-health-record" target="_blank" rel="noopener" class="hr-guide-card no-print">
       <span class="hr-guide-card-title">
         "Supercharge this tool"
@@ -10726,6 +10728,7 @@ exports[`US-62 AC40: the web's My health, pinned before and after it draws planT
           "Send feedback"
         <a href="https://github.com/DrBradStanfield/roadmap" target="_blank" rel="noopener noreferrer" class="source-code-link">
           "View source code"
+      <p class="hr-sr-only" role="status">
     <a href="https://drstanfield.com/blogs/guides/ai-health-record" target="_blank" rel="noopener" class="hr-guide-card no-print">
       <span class="hr-guide-card-title">
         "Supercharge this tool"
