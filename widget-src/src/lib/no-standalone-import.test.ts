@@ -14,14 +14,22 @@ function sources(dir: string): string[] {
   });
 }
 
-// These forms, for a path under `.../standalone/` or the bare `.../standalone` folder: `from`
-// (import, import type, export from), a side-effect `import '...'`, `import(...)`, `require(...)`,
-// `import.meta.glob(...)`, and CSS `@import` with a quoted path or `url(...)`, quoted or not.
-// Not caught: a comment between `import` and its path, `new URL(..., import.meta.url)`,
-// `/// <reference path>`, `require.resolve(...)`, a CSS `url(...)` asset, and a quoted path
-// with a space or a `)` before `/standalone`.
+// Caught, for a quoted or `url(...)` path that holds `/standalone/` or ends in `/standalone`: `from`
+// (import, import type, export from, CSS `composes`), a side-effect `import '...'`, `import(...)`
+// (a type `import('...')` too), `require(...)` and `import x = require(...)`, `import.meta.glob(...)`
+// (one pattern, or a quoted pattern first or later in an array, or `standalone` after `{` or `,` in
+// a brace group), and CSS `@import` with a quoted path or `url(...)`, quoted or not.
+// Not caught (forms.md): a comment between the keyword and the path, or before the pattern in a
+// glob array; `new URL(..., import.meta.url)`, also inside `new Worker(...)`; `import.meta.resolve`;
+// `/// <reference path>` and `/// <reference types>`; `declare module '...'`; `require.resolve`;
+// a CSS `url(...)` asset, `image-set(...)` or `@IMPORT` in capitals; a quoted path with a space or a
+// `)` before `/standalone`; a glob wildcard, class or extglob for the folder (`*`, `**`, `stand*`,
+// `[s]`, `@(standalone)`); the glob `base` option; a template `import()` with `${}` for the folder;
+// another letter case (`Standalone`); an escape (`\u0073`, CSS `\73`); a root-relative path such
+// as `/app.tsx`, which the standalone build resolves in its root, `standalone/`; the bare folder
+// with a query; `.html`, `.scss` or `.less` files; and a file outside src that one of them imports.
 const NAMES_STANDALONE =
-  /(?:\bfrom|\bimport|\brequire|\bimport\.meta\.glob)\s*\(?\s*\[?\s*(?:url\(\s*['"`]?|['"`])[^'"`)\s]*\/standalone(?:[\/'"`)\s])/;
+  /(?:\bfrom|\bimport|\brequire|\bimport\.meta\.glob)\s*\(?\s*\[?(?:\s*['"`][^'"`]*['"`]\s*,)*\s*(?:url\(\s*['"`]?|['"`])[^'"`)\s]*[\/{,]standalone(?:[\/'"`)\s},])/;
 
 describe('widget-src/src must not import widget-src/standalone (the forms above)', () => {
   it('no production file under src names a standalone module', () => {
