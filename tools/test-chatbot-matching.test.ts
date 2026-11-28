@@ -1248,15 +1248,15 @@ describe('test-chatbot-matching report and request shapes (synthetic fixtures)',
 describe('test-chatbot-matching count flags (US-15 AC24c)', () => {
   const INDEX = [{ title: 'Pin A', handle: 'pin-a', url: 'https://example.com/a', type: 'article', summary: 'Synthetic summary A.' }];
 
-  /** One in-process run of a one-case synthetic suite whose router always routes pin-a. */
-  async function run(flags: string[]) {
+  /** One in-process run of a one-case synthetic suite whose router always routes pin-a; `check` adds answer checks. */
+  async function run(flags: string[], check: object = {}) {
     const dir = mkdtempSync(join(tmpdir(), 'chatbot-count-'));
     try {
       const index = join(dir, 'index.json');
       writeFileSync(index, JSON.stringify(INDEX));
       let calls = 0;
       const r = await runHarness(['--index', index, '--category', 'pin', ...flags], {
-        fixtures: [{ query: 'q-count', category: 'pin', expected: ['pin-a'] }],
+        fixtures: [{ query: 'q-count', category: 'pin', expected: ['pin-a'], ...check }],
         fetch: async () => { calls++; return textReply('{"handles":["pin-a"]}'); },
       });
       return { status: r.status, out: noColour(r.out), err: r.err, calls };
@@ -1303,6 +1303,26 @@ describe('test-chatbot-matching count flags (US-15 AC24c)', () => {
     expect(r.calls).toBe(0);
     expect(r.err).toContain(`Error: ${flag} must be 9007199254740991 or less`);
     expect(r.out).not.toContain('ESTIMATE');
+  });
+
+  // A huge safe count is accepted, not capped (Brad's ruling), and --estimate prices it with no call.
+  // Before, the estimate built one entry per answer call: past 4294967295 that threw RangeError.
+  const answerEstimate = (flags: string[]) => run(['--answer-check', '--estimate', ...flags], { must_mention: ['alpha'] });
+  const SAFE = String(Number.MAX_SAFE_INTEGER);
+  it.each([['--answer-check-runs', '4294967296'], ['--answer-check-runs', SAFE], ['--runs', '4294967296'], ['--runs', SAFE]])(
+    '--answer-check --estimate %s %s prints the estimate and exits 0, with no API call', async (flag, value) => {
+      const r = await answerEstimate([flag, value]);
+      expect(r.status, r.err).toBe(0);
+      expect(r.calls).toBe(0);
+      expect(r.out).toContain(`answer calls=${value} expected $`);
+      expect(r.out).toContain('No API call made.');
+      expect(r.out).not.toMatch(/NaN|Infinity/);
+    });
+
+  it('--estimate prices each answer run: twice the answer runs, twice the "up to" answer figure', async () => {
+    const upTo = async (n: string) => Number((await answerEstimate(['--answer-check-runs', n])).out
+      .match(/answer calls=\d+ expected \$[\d.]+ with prompt caching, up to \$([\d.]+)/)![1]);
+    expect(await upTo('8589934592')).toBeCloseTo(2 * await upTo('4294967296'), 1);
   });
 
   function refused(r: Awaited<ReturnType<typeof run>>, flag: string) {

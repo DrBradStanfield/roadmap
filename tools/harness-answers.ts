@@ -116,7 +116,8 @@ export interface RunPlan {
   /** Answer calls in flight at once (--concurrency): on a cold cache each may write the same entry. Default 1. */
   concurrency?: number;
 }
-export interface AnswerCallPlan { cacheKey: string; cachedChars: number; chars: number }
+/** `runs`: how many times this call is made (--answer-check-runs), default 1. A count, not copies, so a huge one still prices. */
+export interface AnswerCallPlan { cacheKey: string; cachedChars: number; chars: number; runs?: number }
 
 export interface RunCost { router: number; answer: number; total: number }
 
@@ -137,8 +138,9 @@ export function estimateRunCost(plan: RunPlan): { expected: RunCost; upper: RunC
   const cached = (calls: number, chars: number, writes: number) =>
     tokens(chars) * (Math.min(writes, calls) * p.cacheWrite + Math.max(0, calls - writes) * p.cacheRead);
   const routerOut = plan.routerCalls * ROUTER_OUT_TOKENS * p.output / 1e6;
-  const answerRest = plan.answerCalls.reduce((t, c) => t + tokens(c.chars) * p.input + ANSWER_OUT_TOKENS * p.output / 1e6, 0);
-  const shapes = [...Map.groupBy(plan.answerCalls, c => c.cacheKey).values()].map(calls => ({ n: calls.length, chars: Math.max(...calls.map(c => c.cachedChars)) }));
+  const runs = (c: AnswerCallPlan) => c.runs ?? 1;
+  const answerRest = plan.answerCalls.reduce((t, c) => t + runs(c) * tokens(c.chars) * p.input + runs(c) * ANSWER_OUT_TOKENS * p.output / 1e6, 0);
+  const shapes = [...Map.groupBy(plan.answerCalls, c => c.cacheKey).values()].map(calls => ({ n: calls.reduce((n, c) => n + runs(c), 0), chars: Math.max(...calls.map(c => c.cachedChars)) }));
   const cost = (routerWrites: number, answerWrites: (n: number) => number): RunCost => {
     const router = cached(plan.routerCalls, plan.routerPromptChars, routerWrites) + routerOut;
     const answer = shapes.reduce((t, s) => t + cached(s.n, s.chars, answerWrites(s.n)), 0) + answerRest;

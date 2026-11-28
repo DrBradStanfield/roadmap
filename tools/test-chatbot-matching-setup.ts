@@ -297,18 +297,18 @@ export function answerRequest(q: TestQuery, handles: string[]) {
 if (estimateOnly) {
   // Routed cases are priced as if routing passes and loads their expected handles. Each call's cached prefix is
   // its tools plus the cache_control blocks; each tool shape is its own cache entry (US-15 AC24b).
-  const answerCalls = suite.filter(hasAnswerCheck).flatMap(q => {
+  // One entry per case with its run count, not one per call, so any safe --answer-check-runs prices (US-15 AC24c).
+  const answerCalls = suite.filter(hasAnswerCheck).map(q => {
     const { system, messages, tools } = answerRequest(q, Array.isArray(q.expected) ? q.expected : q.answer_handles!);
     const size = (cached: boolean) => system.reduce((n, b) => n + (!!b.cache_control === cached ? b.text.length : 0), 0);
-    const call = { cacheKey: JSON.stringify(tools?.map(t => t.name) ?? []), cachedChars: JSON.stringify(tools ?? []).length + size(true),
-      chars: size(false) + JSON.stringify(messages).length };
-    return Array(answerCheckRuns).fill(call);
+    return { cacheKey: JSON.stringify(tools?.map(t => t.name) ?? []), cachedChars: JSON.stringify(tools ?? []).length + size(true),
+      chars: size(false) + JSON.stringify(messages).length, runs: answerCheckRuns };
   });
   const routerCalls = filtered.length ? filtered.length * runs + 1 : 0;
   const cost = estimateRunCost({ routerCalls, routerPromptChars: ROUTER_PROMPT.length + ROUTER_INDEX_BLOCK.length, answerCalls, concurrency });
   // Brad approves a paid run on the "up to" figure (US-15 AC24b).
   const both = (k: keyof typeof cost.upper) =>
     `expected $${cost.expected[k].toFixed(2)} with prompt caching, up to $${cost.upper[k].toFixed(2)} if the cache never hits`;
-  console.log(`ESTIMATE router calls=${routerCalls} ${both('router')}; answer calls=${answerCalls.length} ${both('answer')}; total ${both('total')}. No API call made.`);
+  console.log(`ESTIMATE router calls=${routerCalls} ${both('router')}; answer calls=${answerCalls.length * answerCheckRuns} ${both('answer')}; total ${both('total')}. No API call made.`);
   process.exit(0);
 }
