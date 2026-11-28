@@ -28,11 +28,14 @@ vi.mock('../lib/email.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   sendPlanReadyEmail: (...a: unknown[]) => sendPlanReadyEmail(...(a as [])),
 }));
+vi.mock('../lib/reminder-v2-request.server', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  verifyGoogleIdToken: (t: string) => verifyGoogleIdToken(t),
+}));
 vi.mock('../lib/reminder-v2.server', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   enrolByEmail: (e: string, p: string, s: unknown) => enrolByEmail(e, p, s),
   upsertVerifiedOptin: (e: string, s: unknown) => upsertVerifiedOptin(e, s),
-  verifyGoogleIdToken: (t: string) => verifyGoogleIdToken(t),
   cancelByToken: (...a: unknown[]) => cancelByToken(...(a as [])),
 }));
 vi.mock('../lib/product-events.server', async (importOriginal) => ({

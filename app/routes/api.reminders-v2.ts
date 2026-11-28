@@ -6,14 +6,12 @@ import { clientKey, hashedKey, type IpKey, type PlainKey } from '../lib/ip-key.s
 import {
   buildUnsubscribeUrl,
   cancelByToken,
-  emailLimiterKey,
   enrolByEmail,
-  scheduleSchema,
   updateScheduleByToken,
   upsertVerifiedOptin,
-  verifyGoogleIdToken,
   type Enrolment,
 } from '../lib/reminder-v2.server';
+import { emailLimiterKey, scheduleSchema, verifyGoogleIdToken } from '../lib/reminder-v2-request.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { sendPlanReadyEmail } from '../lib/email.server';
 import { hashClientIp } from '../lib/supabase-guest.server';
