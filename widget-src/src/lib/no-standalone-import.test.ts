@@ -29,35 +29,35 @@ const NAMES_STANDALONE =
 
 const flags = (name: string, text: string) => scanned(name) && NAMES_STANDALONE.test(text);
 type Row = [file: string, text: string];
-const P = '../../standalone';
+const P = './../standalone'; // '.' + P is '../../standalone'; the dot stops declared-dependencies reading plants as packages
 const ts = (...texts: string[]) => texts.map((text): Row => ['x.ts', text]);
 const css = (...texts: string[]) => texts.map((text): Row => ['x.css', text]);
 // The checked forms, each a file name and its text: each must be flagged.
 const PLANTED: Row[] = [
-  ...ts(`import x from '${P}/x';`, `import {\n  a,\n} from "${P}/x";`, `import type { X } from '${P}/x';`),
-  ...ts(`export { x } from '${P}/x';`, `export * from '${P}/x';`, `export * as ns from '${P}/x';`, `import x from'${P}/x';`),
-  ...ts(`import d from '${P}/d.json' with { type: 'json' };`), ...css(`.a { composes: b from '${P}/x.module.css'; }`),
-  ...['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'mts', 'cts', 'd.ts'].map((kind): Row => [`x.${kind}`, `import '${P}/x';`]),
-  ...ts(`const m = import('${P}/x');`, `const m = import(\`${P}/x\`);`, `const m = import(\n  '${P}/x'\n);`),
-  ...ts(`type T = import('${P}/x').T;`, `type M = typeof import('${P}/x');`, `const m = import('${P}/d.json', { with: { type: 'json' } });`),
-  ...ts(`const m = require('${P}/x');`, `import x = require('${P}/x');`),
-  ...ts(`const m = import.meta.glob('${P}/*.ts');`, `const m = import.meta.glob(['${P}/*.ts']);`),
-  ...ts(`const m = import.meta.glob('${P}/*.svg', { query: '?raw', import: 'default', eager: true });`),
-  ...ts(`export const m = import.meta.glob(['./*.ts', '${P}/*.ts']);`, `const m = import.meta.glob(['!./x.ts', '${P}/*.ts']);`),
-  ...ts(`const m = import.meta.glob([\n  './a/*.ts',\n  "./b/*.ts",\n  '${P}/*.ts',\n]);`, `const m = import.meta.glob(['./*.ts', '!${P}/*.ts']);`),
+  ...ts(`import x from '.${P}/x';`, `import {\n  a,\n} from ".${P}/x";`, `import type { X } from '.${P}/x';`),
+  ...ts(`export { x } from '.${P}/x';`, `export * from '.${P}/x';`, `export * as ns from '.${P}/x';`, `import x from'.${P}/x';`),
+  ...ts(`import d from '.${P}/d.json' with { type: 'json' };`), ...css(`.a { composes: b from '.${P}/x.module.css'; }`),
+  ...['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'mts', 'cts', 'd.ts'].map((kind): Row => [`x.${kind}`, `import '.${P}/x';`]),
+  ...ts(`const m = import('.${P}/x');`, `const m = import(\`.${P}/x\`);`, `const m = import(\n  '.${P}/x'\n);`),
+  ...ts(`type T = import('.${P}/x').T;`, `type M = typeof import('.${P}/x');`, `const m = import('.${P}/d.json', { with: { type: 'json' } });`),
+  ...ts(`const m = require('.${P}/x');`, `import x = require('.${P}/x');`),
+  ...ts(`const m = import.meta.glob('.${P}/*.ts');`, `const m = import.meta.glob(['.${P}/*.ts']);`),
+  ...ts(`const m = import.meta.glob('.${P}/*.svg', { query: '?raw', import: 'default', eager: true });`),
+  ...ts(`export const m = import.meta.glob(['./*.ts', '.${P}/*.ts']);`, `const m = import.meta.glob(['!./x.ts', '.${P}/*.ts']);`),
+  ...ts(`const m = import.meta.glob([\n  './a/*.ts',\n  "./b/*.ts",\n  '.${P}/*.ts',\n]);`, `const m = import.meta.glob(['./*.ts', '!.${P}/*.ts']);`),
   ...ts("const m = import.meta.glob('../../{lib,standalone}/*.ts');", "const m = import.meta.glob('../../{standalone,lib}/*.ts');"),
   ...ts("const m = import.meta.glob('../../{a,{b,standalone}}/*.ts');"),
-  ...css(`@import '${P}/x.css';`, `@import"${P}/x.css";`, `@import url("${P}/x.css");`, `@import url('${P}/x.css');`),
-  ...css(`@import url(${P}/x.css);`, `@import url( ${P}/x.css ) screen;`, `@import url(\n  ${P}/x.css\n);`),
-  ...css(`@import '${P}/x.css' layer(base) supports(display: grid);`, `@import url(${P});`),
-  ...ts(`import x from '${P}';`, `import x from '${P}/';`, `import W from '${P}/w.ts?worker';`, `import s from '${P}/x.ts?raw';`),
-  ...ts(`import u from '${P}/logo.svg?url';\nimport i from '${P}/logo.svg?inline';`, "import x from '/standalone/x';"),
+  ...css(`@import '.${P}/x.css';`, `@import".${P}/x.css";`, `@import url(".${P}/x.css");`, `@import url('.${P}/x.css');`),
+  ...css(`@import url(.${P}/x.css);`, `@import url( .${P}/x.css ) screen;`, `@import url(\n  .${P}/x.css\n);`),
+  ...css(`@import '.${P}/x.css' layer(base) supports(display: grid);`, `@import url(.${P});`),
+  ...ts(`import x from '.${P}';`, `import x from '.${P}/';`, `import W from '.${P}/w.ts?worker';`, `import s from '.${P}/x.ts?raw';`),
+  ...ts(`import u from '.${P}/logo.svg?url';\nimport i from '.${P}/logo.svg?inline';`, "import x from '/standalone/x';"),
   ...ts("import x from '/@fs/repo/widget-src/standalone/x';", "import x from 'health-tool-widget/standalone/x';"),
-  ...ts(`import x from '${P}/../standalone/x';`),
+  ...ts(`import x from '.${P}/../standalone/x';`),
 ];
 // Controls: each must not be flagged.
 const CONTROLS: Row[] = [
-  ['x.test.ts', `import '${P}/x';`],
+  ['x.test.ts', `import '.${P}/x';`],
   ...ts("import x from './not-standalone/x';", "import x from './standalone-mode';", "import './standalone.css';"),
   ...ts('// see widget-src/standalone/ for the app', "const u = 'https://example.com/standalone/x';"),
   ...css('@import url(./own.css);\n/* see widget-src/standalone/ */'),
