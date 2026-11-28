@@ -10,10 +10,10 @@
 //   node tools/agent-channel.mjs fetch [--channel agent|general] <message id> <attachment id>
 //   node tools/agent-channel.mjs post <text>        (or the text on stdin; always the agent channel)
 import { randomBytes } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { parseEnv } from 'node:util';
 import { attachmentsOf, download, Refused, SNOWFLAKE } from './agent-channel-files.mjs';
 import { isSecretName } from './codex-review-names.mjs';
@@ -434,7 +434,9 @@ export async function run(argv, deps = {}) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Node gives import.meta.url as the real path and argv[1] as typed, so both are resolved (US-32 AC56a).
+const entry = process.argv[1] && existsSync(process.argv[1]) ? realpathSync(process.argv[1]) : '';
+if (entry === realpathSync(fileURLToPath(import.meta.url))) {
   const r = await run(process.argv.slice(2));
   process.stdout.write(r.stdout);
   process.stderr.write(r.stderr);

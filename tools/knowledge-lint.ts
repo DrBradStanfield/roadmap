@@ -37,9 +37,9 @@
  *                             that only knowledge-lint-compare.ts --run advances it
  *       --probe               with --init-state: say what it would do and write nothing (the CLI-guard pin, T20)
  */
-import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, appendFileSync, realpathSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { getArg } from '../packages/health-core/src/models';
 import { VIEW_HEADING, duplicateKeys, fmValue, guideErrors, isGuideText, keySafetyErrors, masterKeyError, sentences, validDate } from './knowledge-batch-check';
 import {
@@ -439,7 +439,9 @@ export async function main(argv: string[], root: string, log: (s: string) => voi
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Node gives import.meta.url as the real path and argv[1] as typed, so both are resolved (US-32 AC56a).
+const entry = process.argv[1] && existsSync(process.argv[1]) ? realpathSync(process.argv[1]) : '';
+if (entry === realpathSync(fileURLToPath(import.meta.url))) {
   const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
   main(process.argv.slice(2), repo).then(code => process.exit(code));
 }

@@ -16,7 +16,8 @@
  * error message repeats it. Run from the repo root: the index and bodies are
  * read through the chat server's own loaders, which resolve from the cwd.
  */
-import { pathToFileURL } from 'node:url';
+import { existsSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { loadBlogIndex } from '../app/lib/blog-index.server';
 import { loadBlogArticle, MAX_BLOG_CHARS } from '../app/lib/matched-content';
 import { bestSection, buildIndex, DEFAULT_K, MAX_K, search } from '../app/lib/search-knowledge';
@@ -155,7 +156,9 @@ export function run(argv: string[]): number {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Node gives import.meta.url as the real path and argv[1] as typed, so both are resolved (US-32 AC56a).
+const entry = process.argv[1] && existsSync(process.argv[1]) ? realpathSync(process.argv[1]) : '';
+if (entry === realpathSync(fileURLToPath(import.meta.url))) {
   // exitCode, not exit(): a piped stdout drains before the process ends.
   process.exitCode = run(process.argv.slice(2));
 }
