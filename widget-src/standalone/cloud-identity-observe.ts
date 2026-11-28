@@ -22,7 +22,6 @@ import { trackProductEvent } from '../src/lib/server-api';
 import { SHOPIFY_SURFACE } from '../src/lib/build-flags';
 import { healthWritesAllowed, IDENTITY_DAY_KEY, ownLogOffHasBegun, safeGetItem, safeSetItem } from '../src/lib/storage';
 
-export { IDENTITY_DAY_KEY };
 const CALL_TIMEOUT_MS = 8_000;
 
 const DRIVE_ABOUT_URL = `${DRIVE_API}/about?fields=${encodeURIComponent('user(permissionId)')}`;
@@ -74,9 +73,9 @@ export async function observeCloudIdentity(adapter: StorageAdapter): Promise<voi
     if (safeGetItem(key) === day && !tokenReply) return;
     // The log-off barrier: a page whose writes have stopped writes no key and asks nothing.
     if (!healthWritesAllowed() || ownLogOffHasBegun()) return;
-    // The day's slot is taken only if it stored: a refused or full storage asks nothing and sends nothing.
-    safeSetItem(key, day);
-    if (safeGetItem(key) !== day) return;
+    // The day's slot is taken only if the write was taken and reads back: a refused or full storage asks
+    // nothing and sends nothing, even where an earlier write left today's day in place.
+    if (!safeSetItem(key, day) || safeGetItem(key) !== day) return;
     const read = { provider, grant, ...(tokenReply ? { tokenReply } : {}) };
     if (!token || lostSignIn()) {
       trackProductEvent('cloud_identity_read', { ...read, outcome: 'skipped' });

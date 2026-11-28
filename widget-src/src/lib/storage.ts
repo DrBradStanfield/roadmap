@@ -348,8 +348,9 @@ export function safeGetItem(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
 }
 
-export function safeSetItem(key: string, value: string): void {
-  try { localStorage.setItem(key, value); } catch {}
+/** True when the write was taken; callers that need no answer ignore it. */
+export function safeSetItem(key: string, value: string): boolean {
+  try { localStorage.setItem(key, value); return true; } catch { return false; }
 }
 
 export function safeRemoveItem(key: string): void {

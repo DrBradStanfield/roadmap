@@ -18,7 +18,8 @@ vi.mock('../src/lib/server-api', async (real) => ({ ...(await real<object>()), t
 
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter, LocalStorageAdapter } from '../src/storage';
 import { bootSignIn, currentSignIn } from '../src/storage/sign-in-state';
-import { CloudIdentityObserver, IDENTITY_DAY_KEY, observeCloudIdentity } from './cloud-identity-observe';
+import { CloudIdentityObserver, observeCloudIdentity } from './cloud-identity-observe';
+import { IDENTITY_DAY_KEY } from '../src/lib/storage';
 
 const DRIVE_TOKENS = 'health_roadmap_gdrive_tokens';
 const DRIVE_CONFIG = 'health_roadmap_gdrive';
@@ -159,6 +160,19 @@ describe('observeCloudIdentity (US-09 AC67)', () => {
       expect(trackProductEvent.mock.calls).toEqual([['cloud_identity_read', { provider: 'dropbox', grant: 'refreshable', outcome: 'ok', tokenReply: 'had_id' }]]);
     });
 
+    it('with today\'s key present and a refused day-key write: no fetch, no event', async () => {
+      localStorage.setItem(`${IDENTITY_DAY_KEY}dropbox`, today());
+      const adapter = await returnFromDropbox({ account_id: 'dbid:test' });
+      const realSet = Storage.prototype.setItem;
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, k: string, v: string) {
+        if (k.startsWith(IDENTITY_DAY_KEY)) throw new DOMException('full', 'QuotaExceededError');
+        realSet.call(this, k, v);
+      });
+      await observeCloudIdentity(adapter);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(trackProductEvent).not.toHaveBeenCalled();
+    });
+
     it('sends no_id when the reply had no account id', async () => {
       await observeCloudIdentity(await returnFromDropbox({}));
       expect(trackProductEvent.mock.calls).toEqual([['cloud_identity_read', { provider: 'dropbox', grant: 'refreshable', outcome: 'ok', tokenReply: 'no_id' }]]);
@@ -216,7 +230,17 @@ describe('observeCloudIdentity (US-09 AC67)', () => {
     expect(trackProductEvent).not.toHaveBeenCalled();
   });
 
-  it('the full app starts it after the first commit, and once under Strict Mode', async () => {
+  it('a day-key write that is taken but does not read back: no call and no event', async () => {
+    const realSet = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, k: string, v: string) {
+      if (!k.startsWith(IDENTITY_DAY_KEY)) realSet.call(this, k, v); // the day key is dropped without an error
+    });
+    await observeCloudIdentity(seedDrive({ accessToken: 'test-token-good', refreshToken: 'test-refresh', expiresAt: Date.now() + HOUR }));
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(trackProductEvent).not.toHaveBeenCalled();
+  });
+
+  it('the observer starts after the first commit, and once under Strict Mode', async () => {
     answers = { [DRIVE_ABOUT]: { status: 200, body: { user: { permissionId: 'p' } } }, [DRIVE_FILES]: { status: 200, body: { files: [] } } };
     const adapter = seedDrive({ accessToken: 'test-token-good', refreshToken: 'test-refresh', expiresAt: Date.now() + HOUR });
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

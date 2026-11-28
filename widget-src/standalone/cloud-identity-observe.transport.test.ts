@@ -12,7 +12,8 @@ vi.mock('../src/lib/build-flags', () => ({ LOCAL_FIRST: true, SHOPIFY_SURFACE: t
 
 import { GoogleDriveAdapter } from '../src/storage';
 import { bootSignIn } from '../src/storage/sign-in-state';
-import { IDENTITY_DAY_KEY, observeCloudIdentity } from './cloud-identity-observe';
+import { observeCloudIdentity } from './cloud-identity-observe';
+import { IDENTITY_DAY_KEY } from '../src/lib/storage';
 
 const EVENTS_URL = '/apps/health-tool-1/api/events';
 const fetchMock = vi.fn(async (url: string | URL, _init?: RequestInit) => {
