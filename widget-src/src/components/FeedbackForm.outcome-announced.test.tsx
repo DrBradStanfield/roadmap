@@ -2,10 +2,12 @@
 /**
  * US-19 AC3a: the failure line is an alert; one status region, empty from the first render, gets the thank-you when
  * a send succeeds; the visible thank-you is a plain line that takes a focus left on the page. jsdom checks roles,
- * text and focus only; no screen reader runs. sendFeedback is mocked. Synthetic values.
+ * text and focus, and Send's grey through the styles.css cascade helper; no screen reader runs. sendFeedback is
+ * mocked. Synthetic values.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cascaded } from '../testing/css-cascade';
 
 const sendFeedback = vi.fn();
 vi.mock('../lib/server-api', () => ({ sendFeedback: (...args: unknown[]) => sendFeedback(...args) }));
@@ -141,6 +143,22 @@ describe('US-19 AC3a: the outcome of a send has an alert or a status role', () =
     expect(button.disabled).toBe(false);
     fireEvent.change(screen.getByRole('textbox', { name: /email/i }), { target: { value: ' ' } });
     expect(button.disabled).toBe(true);
+    const email = screen.getByRole('textbox', { name: /email/i }) as HTMLInputElement;
+    fireEvent.change(email, { target: { value: '\u00a0' } }); // an email input strips ASCII spaces only: a no-break space stays
+    expect([email.value, button.disabled]).toEqual(['\u00a0', true]);
+  });
+
+  it('while a send runs, Send is grey as when disabled, also under the mouse (styles.css cascade)', async () => {
+    sendFeedback.mockImplementation(() => new Promise<boolean>(() => {}));
+    render(<FeedbackForm initialExpanded />);
+    const look = (b: Element) => {
+      const mouse = { width: 1280, hover: true, states: [[b, [':hover']]] as Array<[Element, string[]]> };
+      return [cascaded(b, 'background', 1280), cascaded(b, 'background', mouse), cascaded(b, 'cursor', mouse)];
+    };
+    const disabled = look(screen.getByRole('button', { name: 'Send' })); // both fields empty: disabled
+    expect(disabled).toEqual(['var(--color-gray-light)', 'var(--color-gray-light)', 'not-allowed']);
+    await send();
+    expect(look(screen.getByRole('button', { name: 'Sending...' }))).toEqual(disabled);
   });
 
   it('the status region empties when the thank-you closes after 3 s, and stays mounted', async () => {
